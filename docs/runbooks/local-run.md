@@ -1,8 +1,8 @@
 # Локальный запуск
 
-Инструкция для разработчика/агента. Разделы «Core» работают уже сейчас;
-разделы «Admin» описывают целевые команды этапа 1 и помечены как ожидающие
-реализации. Все команды выполняются из корня соответствующего репозитория.
+Инструкция для разработчика/агента. Раздел «Core» и стек Admin API
+(часть 1.2) работают; frontend появится в части 1.4. Все команды
+выполняются из корня соответствующего репозитория.
 
 ## Требования
 
@@ -84,16 +84,19 @@ DELETE FROM jobs WHERE id::text LIKE 'f1b00000-%';
 DELETE FROM audit_log WHERE actor_type = 'fixture';
 ```
 
-## Admin: стек админки (после части 1.2)
+## Admin: стек админки (часть 1.2)
+
+Admin API, PostgreSQL и мигратор уже есть. Frontend появится в части 1.4;
+сейчас вход проверяется прямыми запросами к API.
 
 ```sh
-cp .env.example .env            # заполнить CORE_ADMIN_API_TOKEN = ADMIN_API_TOKEN пилота
+cp .env.example .env            # CORE_ADMIN_API_TOKEN нужен с части 1.3
 make config
-make up                          # admin-postgres, migrate, admin-api, frontend
+make up                          # admin-postgres, migrate, admin-api
 make migrate                     # при необходимости повторно
 ```
 
-Первый администратор:
+Первый администратор (пароль только через stdin):
 
 ```sh
 printf '%s' 'choose-a-strong-password' | \
@@ -101,8 +104,20 @@ printf '%s' 'choose-a-strong-password' | \
   employee create --email admin@example.invalid --name "Admin" --role admin --password-stdin
 ```
 
-Интерфейс: `http://127.0.0.1:5173` (dev) или порт nginx из compose.
+Проверка входа (мутации требуют CSRF-заголовки):
+
+```sh
+curl -sS -D - -o /tmp/admin-login.json \
+  -H 'Content-Type: application/json' \
+  -H 'X-Requested-With: admin-ui' \
+  -H 'Origin: http://127.0.0.1:5173' \
+  -d '{"email":"admin@example.invalid","password":"choose-a-strong-password"}' \
+  http://127.0.0.1:8090/api/v1/auth/login
+curl --fail http://127.0.0.1:8092/live
+```
+
 Admin API: `http://127.0.0.1:8090/api/v1`, management `127.0.0.1:8092`.
+Интерфейс `http://127.0.0.1:5173` появится в части 1.4.
 
 ## Проверки
 
