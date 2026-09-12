@@ -3,7 +3,7 @@ SHELL := /bin/sh
 # Docker-first workflow, same as amocrm-pro. Host Go/Node are optional for
 # quick loops; the canonical checks run in containers.
 DOCKER ?= docker
-COMPOSE ?= docker compose
+COMPOSE ?= $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo docker-compose)
 COMPOSE_FILE ?= deploy/docker-compose.yml
 GO_VERSION ?= 1.25
 GO_IMAGE ?= golang:$(GO_VERSION)-alpine
@@ -11,6 +11,11 @@ GOLANGCI_LINT_VERSION ?= v2.13.2
 GOLANGCI_LINT_IMAGE ?= golangci/golangci-lint:$(GOLANGCI_LINT_VERSION)-alpine
 NODE_IMAGE ?= node:24-alpine
 POSTGRES_IMAGE ?= postgres:17-alpine
+PLAYWRIGHT_IMAGE ?= mcr.microsoft.com/playwright:v1.63.0-jammy
+E2E_PROJECT ?= amocrm-pro-admin-e2e
+E2E_EMAIL ?= admin@example.invalid
+E2E_PASSWORD ?= correct-horse-battery
+E2E_BASE_URL ?= http://host.docker.internal:5173
 
 # Core pilot stack of amocrm-pro (docker-compose.activity.yml). Fixtures and
 # local runs target this stack only; production is never a fixture target.
@@ -118,7 +123,24 @@ integration-test: ## Migrations up/down and *_integration_test.go against dispos
 
 e2e: ## Playwright scenarios against the built stack with the fixture adapter
 	@test -d frontend/e2e || { echo "frontend/e2e is not created yet (stage 1, part 1.4)" >&2; exit 1; }
-	$(DOCKER_NODE) sh -ec 'npm ci --no-audit --no-fund && npx playwright test'
+	@set -eu; \
+	files="-f deploy/docker-compose.yml -f deploy/docker-compose.e2e.yml"; \
+	cleanup() { $(COMPOSE) -p $(E2E_PROJECT) $$files down --volumes --remove-orphans >/dev/null 2>&1 || true; }; \
+	trap cleanup EXIT INT TERM; \
+	$(COMPOSE) -p $(E2E_PROJECT) $$files up --build --detach --wait; \
+	printf '%s' '$(E2E_PASSWORD)' | $(COMPOSE) -p $(E2E_PROJECT) $$files --profile tools run --rm -T admin-cli \
+	  employee create --email '$(E2E_EMAIL)' --name Admin --role admin --password-stdin \
+	  >/dev/null 2>&1 || true; \
+	$(DOCKER) run --rm \
+	  --add-host=host.docker.internal:host-gateway \
+	  --env HOME=/tmp \
+	  --env E2E_BASE_URL='$(E2E_BASE_URL)' \
+	  --env E2E_EMAIL='$(E2E_EMAIL)' \
+	  --env E2E_PASSWORD='$(E2E_PASSWORD)' \
+	  --volume "$(CURDIR)/frontend:/src:ro" \
+	  --workdir /tmp/e2e \
+	  $(PLAYWRIGHT_IMAGE) \
+	  bash -ec 'cp -a /src/. . && rm -rf node_modules && npm ci --no-audit --no-fund && npx playwright test'
 
 check: docs-check lint test integration-test ## Everything required before merging
 

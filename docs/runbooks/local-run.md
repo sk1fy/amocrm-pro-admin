@@ -1,8 +1,8 @@
 # Локальный запуск
 
-Инструкция для разработчика/агента. Раздел «Core» и стек Admin API
-(часть 1.2) работают; frontend появится в части 1.4. Все команды
-выполняются из корня соответствующего репозитория.
+Инструкция для разработчика/агента. Стек Admin API, frontend и
+fixture-адаптер для e2e работают. Все команды выполняются из корня
+соответствующего репозитория.
 
 ## Требования
 
@@ -84,15 +84,15 @@ DELETE FROM jobs WHERE id::text LIKE 'f1b00000-%';
 DELETE FROM audit_log WHERE actor_type = 'fixture';
 ```
 
-## Admin: стек админки (часть 1.2)
+## Admin: стек админки
 
-Admin API, PostgreSQL и мигратор уже есть. Frontend появится в части 1.4;
-сейчас вход проверяется прямыми запросами к API.
+`make up` поднимает PostgreSQL, мигратор, Admin API и frontend
+(nginx на `http://127.0.0.1:5173`, прокси `/api` на Admin API).
 
 ```sh
-cp .env.example .env            # CORE_ADMIN_API_TOKEN нужен с части 1.3
+cp .env.example .env            # CORE_ADMIN_API_TOKEN нужен для core-http
 make config
-make up                          # admin-postgres, migrate, admin-api
+make up                          # admin-postgres, migrate, admin-api, frontend
 make migrate                     # при необходимости повторно
 ```
 
@@ -104,7 +104,10 @@ printf '%s' 'choose-a-strong-password' | \
   employee create --email admin@example.invalid --name "Admin" --role admin --password-stdin
 ```
 
-Проверка входа (мутации требуют CSRF-заголовки):
+Вход в интерфейс: открыть `http://127.0.0.1:5173`, email
+`admin@example.invalid`, пароль тот, что передан в CLI.
+
+Проверка входа прямым запросом к API (мутации требуют CSRF-заголовки):
 
 ```sh
 curl -sS -D - -o /tmp/admin-login.json \
@@ -116,8 +119,16 @@ curl -sS -D - -o /tmp/admin-login.json \
 curl --fail http://127.0.0.1:8092/live
 ```
 
-Admin API: `http://127.0.0.1:8090/api/v1`, management `127.0.0.1:8092`.
-Интерфейс `http://127.0.0.1:5173` появится в части 1.4.
+Admin API: `http://127.0.0.1:8090/api/v1`, management `127.0.0.1:8092`,
+интерфейс `http://127.0.0.1:5173`. Для локальной разработки UI без
+сборки образа: `cd frontend && npm run dev` (Vite проксирует `/api` на
+`:8090`).
+
+Сквозные сценарии против fixture-адаптера (не входят в `make check`):
+
+```sh
+make e2e
+```
 
 ## Проверки
 
