@@ -51,22 +51,32 @@ docs-check: ## Verify relative Markdown links resolve
 # Stack (available after stage 1 part 1.2 creates deploy/docker-compose.yml)
 # ---------------------------------------------------------------------------
 
-config: $(COMPOSE_FILE) ## Validate the resolved Compose configuration
+define require_compose
+	@test -f $(COMPOSE_FILE) || { echo "$(COMPOSE_FILE) is not created yet (stage 1, part 1.2)" >&2; exit 1; }
+endef
+
+config: ## Validate the resolved Compose configuration
+	$(require_compose)
 	$(COMPOSE) -f $(COMPOSE_FILE) config --quiet
 
-build: $(COMPOSE_FILE) ## Build admin-api, admin-cli and frontend images
+build: ## Build admin-api, admin-cli and frontend images
+	$(require_compose)
 	$(COMPOSE) -f $(COMPOSE_FILE) build
 
-up: $(COMPOSE_FILE) ## Build and start the local admin stack
+up: ## Build and start the local admin stack
+	$(require_compose)
 	$(COMPOSE) -f $(COMPOSE_FILE) up --build --detach
 
-down: $(COMPOSE_FILE) ## Stop the local admin stack
+down: ## Stop the local admin stack
+	$(require_compose)
 	$(COMPOSE) -f $(COMPOSE_FILE) down --remove-orphans
 
-logs: $(COMPOSE_FILE) ## Follow admin-api logs
+logs: ## Follow admin-api logs
+	$(require_compose)
 	$(COMPOSE) -f $(COMPOSE_FILE) logs --follow admin-api
 
-migrate: $(COMPOSE_FILE) ## Apply pending admin DB migrations
+migrate: ## Apply pending admin DB migrations
+	$(require_compose)
 	$(COMPOSE) -f $(COMPOSE_FILE) run --rm migrate up
 
 # ---------------------------------------------------------------------------
