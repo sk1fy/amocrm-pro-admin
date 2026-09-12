@@ -36,19 +36,24 @@
 
 ### 2.2. Команды Core (`amocrm-pro/internal/admincommand`)
 
-HTTP-обработчики вызывают те же прикладные функции, что CLI:
+HTTP-обработчики вызывают те же прикладные функции, что CLI. У
+`internal/integrations.Store` **один** публичный метод —
+`Apply(ctx, Command) (Result, error)`; команда выбирается строковым
+`Command.Action`, валидируется `Command.Validate`, `Command.Actor` идёт в
+аудит. `Result` содержит только `integration_id`, `installation_id`, `code`,
+`status`, `action`, `webhook_error` — секретов нет.
 
-| Команда | Прикладной вызов (проверить при старте) | Заметки |
+| Команда | `Command.Action` | Заметки |
 | --- | --- | --- |
-| Создать интеграцию | `integrations.Store.Create` | секрет — в теле запроса один раз, не логируется, в ответ не возвращается |
-| Изменить параметры | `Store.Update` | только `redirect_uri`, `webhook_events` |
-| Ротация секрета | `Store.RotateSecret` | сохранённый секрет не читается |
-| Включить/отключить интеграцию | `Store.Enable/Disable` | |
-| Грант сервиса | `Store.SetService` | только `enabled` |
-| Включить/отключить установку | `Store.EnableInstallation/DisableInstallation` | |
-| Revoke | `Store.Revoke` | локальная инвалидация; показать шаг «повторная авторизация: ссылка OAuth start» |
-| Uninstall | `Store.Uninstall` | частичный результат: статус зафиксирован, `webhook_error` → `partial`; повтор идемпотентен |
-| Reconcile webhook | постановка job `webhook.reconcile` через `jobs.Store` — проверить существующий способ | |
+| Создать интеграцию | `create` (`Code`, `ClientID`, `Secret`, `RedirectURI`, `WebhookEvents`, `Services`) | секрет — в теле запроса один раз, не логируется, в ответ не возвращается |
+| Изменить параметры | `update` | только `RedirectURI`, `WebhookEvents` |
+| Ротация секрета | `rotate-secret` (`Secret`) | сохранённый секрет не читается; отключённую интеграцию не включает |
+| Включить/отключить интеграцию | `enable` / `disable` | |
+| Грант сервиса | `set-service` (`Service`, `Enabled`) | только `enabled`, сервисы из `services.Known` (`lead-status`, `activity`) |
+| Включить/отключить установку | `enable-installation` / `disable-installation` (`InstallationID`) | `enable-installation` только из `disabled` |
+| Revoke | `revoke` | локальная инвалидация; показать шаг «повторная авторизация: ссылка OAuth start» |
+| Uninstall | `uninstall` | частичный результат: статус зафиксирован, `Result.WebhookError` → `partial`; повтор идемпотентен |
+| Reconcile webhook | нет прикладной функции — job `webhook.reconcile` ставит `oauth.Store.SaveInstallation`; для ручного запуска добавить функцию в `internal/webhook` (постановка через `jobs.Store.Enqueue`) | |
 | Проверка подключения | новый прикладной сервис: `GET /account` через `amocrm.Client` с OAuth token provider **в worker/Gateway**, а не в API | классификация: `auth_error` (401/403), `network_error`, `rate_limited` (429 + Retry-After), `internal_error`; результат сохраняется как наблюдение с `observed_at` |
 | Повтор доставки Activity | `activitybridge.RetryDelivery` | только моложе 7 суток |
 | Pilot enable/disable | `activitybridge.SetPilot` | |
@@ -58,7 +63,11 @@ HTTP-обработчики вызывают те же прикладные фу
 `admin.connection_check` с результатом в `jobs.result` и опросом через
 `GET /admin/v1/jobs/{id}`. Решение записать в ADR обоих репозиториев.
 
-`audit_log.actor_type = 'admin'`, `actor_id` из `X-Admin-Actor`.
+`audit_log.actor_type = 'admin'`, `actor_id` из `X-Admin-Actor`. Отдельного
+пакета аудита в Core нет: `INSERT INTO audit_log` выполняется внутри
+транзакций `integrations.Store.Apply`, `oauth.Store`, `webhook.Store`,
+`activitybridge.SetPilot/RetryDelivery`. Новые команды admin используют тот же
+приём — запись в той же транзакции, что изменение.
 
 ### 2.3. Повторы задач
 

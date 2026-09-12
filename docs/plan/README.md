@@ -39,6 +39,13 @@
   (ADR-0011); административный контекст для него — задача этапа 3.
 - Тест `api/openapi_test.go` требует точного соответствия `openapi.yaml` и
   `apicontract.Routes`: admin-маршруты идут в отдельный список.
+- В Core нет HTTP-списков установок/интеграций/jobs/аудита и нет отдельного
+  пакета аудита: хранилища мутационные (`integrations.Store.Apply` с
+  строковым `Action`), `INSERT INTO audit_log` выполняется в транзакции
+  каждого изменения. Чтение для админки пишется заново в `internal/adminread`.
+- В `amocrm-pro` нет `.cursor/`, `AGENTS.md`, `CLAUDE.md`; правила — в
+  `docs/README.md` (приоритет источников: код/миграции → ADR → Issues),
+  `docs/project-memory/CONTEXT.md` (инварианты) и ADR-0003 (Docker-only).
 - Локально запущен пилотный стек `amocrm-activity` (`docker-compose.activity.yml`,
   API `127.0.0.1:18080`, management `127.0.0.1:18082`); его Core DB на момент
   планирования пуста (0 интеграций, 0 установок). Реальные установки требуют

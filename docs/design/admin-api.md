@@ -18,6 +18,9 @@
   Коды: `unauthenticated`, `forbidden`, `not_found`, `invalid_argument`,
   `conflict`, `rate_limited`, `backend_unavailable`, `backend_timeout`,
   `internal`. Сообщения безопасны: без SQL, DSN, токенов, stack trace.
+  Необязательное поле `retryable: bool` — как в envelope Activity bridge
+  (`internal/activitybridge/http.go`, `writeError`); Core admin использует тот
+  же формат, чтобы адаптер разбирал ошибки единообразно.
 - Списки: `{ "items": [...], "next_cursor": "…", "total": 123|null, "sources": [...] }`.
   Курсор — непрозрачная строка (base64 от ключа сортировки). `total` — `null`,
   если не считается за разумное время. `limit` ограничен сервером (по
@@ -158,4 +161,14 @@
 - Тесты: unit на маппинг состояний авторизации; integration
   (`*_integration_test.go`, пакет добавляется в список `integration-test`
   Dockerfile) на список/карточку/пагинацию/отсутствие секретных полей в JSON
-  (проверка по ключам ответа).
+  (проверка по ключам ответа). Хелпер `testkit.Reset` очищает (TRUNCATE) фиксированный
+  список таблиц Core, в котором нет `activity_pilots`,
+  `activity_command_receipts/outbox`, `job_queue_lanes`,
+  `installation_webhook_destinations`, `integration_services`; тесты admin read,
+  использующие эти таблицы, чистят их сами или расширяют список в `testkit`
+  отдельным коммитом.
+- Существующие Go-хранилища ориентированы на мутации и admission: списков
+  установок, интеграций, jobs, аудита в них нет (`installations.Store` —
+  только `FindActiveBy*`, `jobs.Store` — `GetForInstallation*`,
+  `integrations.Store` — `Apply`). Запросы чтения пишутся заново в
+  `internal/adminread` и не дублируют SQL мутаций.
