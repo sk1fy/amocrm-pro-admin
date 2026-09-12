@@ -44,7 +44,9 @@ ADR 0001–0004. Перед реализацией — сверка с акту�
 - [x] Зафиксированные версии (`npm view` 2026-09-12; Go — `go.mod` Core):
       Go `1.25.0`, PostgreSQL `17`, React `19.3.0`, Vite `8.3.0`,
       TanStack Router `1.170.35`, TanStack Query `5.102.8`,
-      TypeScript `7.0.2`, Vitest `5.0.0`, Playwright `1.63.0`.
+      TypeScript `5.9.2` (в `npm view` на дату сверки значилась `7.0.2`, но
+      `tsc` 7.x на тот момент не установился с `typescript-eslint` 8.43;
+      фактически закреплён `5.9.2`), Vitest `5.0.0`, Playwright `1.63.0`.
       Записываются в `frontend/package.json` в части 1.4.
 
 ## Части этапа (в порядке выполнения)
@@ -167,20 +169,28 @@ http://127.0.0.1:18083/admin/v1/backend` отвечает; без токена �
       `POST /system/employees`); `employees:*` только у `admin`.
 - [x] Недоступность источника: адаптер с ошибкой даёт `sources.unavailable`
       и баннер; вход и сотрудники не зависят от Core. Живая остановка
-      контейнера `api` пилота в этой сессии не выполнялась.
-- [x] Свежесть (`observed_at`) видна у блоков данных (`<time>` в e2e).
-- [x] Пагинация: курсор стабилен, `limit` > 100 обрезается (integration).
+      контейнера `api` пилота выполнена 2026-09-13: `sources: core:
+      unavailable`, `total: null`, баннер, после рестарта данные вернулись.
+- [x] Свежесть (`observed_at`) видна у блоков данных (`<time>` в e2e);
+      карточка аккаунта использует наблюдение адаптера, а не `updated_at`
+      строки, и не подменяет свежесть на `fresh` при отсутствии времени.
+- [x] Пагинация: курсор стабилен, `limit` > 100 обрезается (integration в
+      оба репозитория); пост-фильтры применяются до пагинации через
+      ограниченный скан (ADR-0007), `total` точен при завершённом скане.
 - [x] Ответы Core admin read и Admin API не содержат ключей с `secret`,
       `token`, `ciphertext`, `key_hash` (автотест; JSON `credential_version`).
 - [x] Фильтры и курсор в URL; прямая ссылка на аккаунт и подключение после
-      входа (e2e `next=` и reload).
+      входа (e2e `next=` и reload). Ссылка на подключение из списка jobs.
 - [x] Метка `fixture` / «тестовые данные» на тестовых данных.
-- [x] `make check` зелёный локально в обоих репозиториях. CI GitHub не
-      гонялся: ветки не пушились.
+- [x] `make check` зелёный локально в обоих репозиториях, `make e2e`
+      зелёный после переработки UI. CI GitHub не гонялся: ветки не пушились.
 
 ## Отчёт
 
-Дата: 2026-09-12. Коммиты: amocrm-pro-admin
+Дата: 2026-09-13. Коммиты: amocrm-pro-admin
+`70addb0` (frontend), `21e83fb` (admin-api), `d57292d` (deploy), docs —
+этот коммит; amocrm-pro `7dd571f` (build), `11110d4` (admin read).
+Предыдущая версия отчёта: amocrm-pro-admin
 `3dce06a433fab0f457a4c6ef32d15b1c981f2b53`, amocrm-pro
 `219504b3598cc74b5e6cbedc5dd20b8f39d135ab`.
 
@@ -191,14 +201,67 @@ http://127.0.0.1:18083/admin/v1/backend` отвечает; без токена �
   глобальные Операции, Система (бекенды, сотрудники, сессии, аудит).
 - Операций изменения Core нет (этап 2). Изменения сотрудников:
   create / patch / revoke-sessions (роль admin).
+- Интерфейс переработан по мокапу: сайдбар с группами и пользователем,
+  топбар с хлебными крошками и off-canvas меню, панели, таблицы, чипы
+  состояний, активация вкладок; шрифты Manrope/JetBrains Mono
+  самохостятся (`@fontsource-variable`, без внешних CDN). Логика,
+  состояния и тексты словаря не менялись, e2e-контракт сохранён.
+
+### Закрытие замечаний аудита (2026-09-13)
+
+- `job_failures` был мёртвым: `ConnectionSummary` не несла jobs. Core
+  отдаёт `recent_failed_jobs` (failed/dead за 24 ч), агрегат и карточка
+  считают проблемы по этому факту; то же для `webhook_error` и
+  `missing_credentials` — Core отдаёт `webhook_status` и
+  `authorization_state`. Счётчики Обзора стали точными (`total`), при
+  недоступном источнике — «—».
+- Убран скрытый `fresh`: карточка аккаунта берёт `observed_at`/`freshness`
+  наблюдения адаптера; при отсутствии времени — `unknown`, не `fresh`.
+- Ограниченный скан пост-фильтров до пагинации (ADR-0007) вместо фильтрации
+  страницы; `limit=101` обрезается, покрыто integration-тестом.
+- Частичная доступность: тесты на ошибку, таймаут и отсутствие capability.
+- Rate limit и аудит за nginx: `TRUST_PROXY_HEADERS` (ADR-0006), nginx
+  передаёт один `X-Forwarded-For`.
+- Дыры screens.md закрыты: раскрытие попыток jobs, подключения на карточке
+  интеграции, вкладка «Виджеты» — отдельная таблица, total на Обзоре,
+  `observed_at` в списках, фильтры операций аккаунта.
+- Ложь в отчёте исправлена: TypeScript `5.9.2` (не `7.0.2`), job_failures
+  работает, старые SHA заменены фактическими.
+- Инфраструктурный дефект: legacy-сборщик Docker переиспользовал COPY-слои,
+  из-за чего тесты и `make integration-test` в admin шли на старом коде
+  (в admin цель вообще не собирала образ). Добавлены стадия-бамп
+  `BUILD_REVISION`, сборка в `integration-test` и content-hash рабочего
+  дерева (коммиты `7dd571f`, `d57292d`).
+
+### Часть 1.6: данные пилота (выполнено 2026-09-13)
+
+- Пилотный Core пересобран с admin listener (порт `127.0.0.1:18083`).
+- Интеграции `fixture-widget-a`/`fixture-widget-b` созданы audited CLI
+  (`integrations create`, секреты через stdin).
+- `make fixtures-core-dry-run` и `make fixtures-core
+  FIXTURES_CONFIRM=core-pilot` применены: 8 установок, 2 activity pilot,
+  6 jobs, 9 попыток, аудит с `actor_type = 'fixture'`.
+- Проверено сквозным путём: Admin API → Core admin listener отдаёт
+  6 аккаунтов `origin=fixture`, `sources: core: available`; вход,
+  карточка `91000002` с двумя подключениями (`reauth_required` и
+  `active`), подключение `fixture-widget-a` (`missing` + `unverified`).
+- Исправлены помешавшие запуску дефекты: `fixtures-core*` передавали
+  host-путь в `psql` внутри контейнера (теперь stdin `-f -`); `make e2e`
+  использовал общие порты dev-стека (теперь изолированные
+  `E2E_*_PORT`, e2e можно гонять параллельно с dev-стеком).
 
 ### Изменения контрактов и миграции
 
 - Admin API: `/api/v1` auth, me, employees, audit, accounts,
   connections, integrations, operations/jobs, catalog, system/backends.
-  OpenAPI `backend/api/openapi.yaml`.
+  OpenAPI `backend/api/openapi.yaml`. Добавлены: `total` списка аккаунтов,
+  `account_id` jobs, параметр `since`; `integration_id` в подключениях
+  аккаунта.
 - Core admin: `/admin/v1/*` на listener `ADMIN_HTTP_ADDRESS`,
-  `api/admin-openapi.yaml`, пакет `internal/adminread`.
+  `api/admin-openapi.yaml`, пакет `internal/adminread`. Список аккаунтов
+  отдаёт `total`, `webhook_status`, `authorization_state`,
+  `recent_failed_jobs`; jobs — `account_id`, сортировку по `updated_at`
+  и фильтр `type`.
 - Миграции admin DB: `000001_employees`, `000002_sessions`,
   `000003_admin_audit_log`. Core: схема не менялась.
 
@@ -206,9 +269,12 @@ http://127.0.0.1:18083/admin/v1/backend` отвечает; без токена �
 
 | Команда | Репозиторий | Результат |
 | --- | --- | --- |
-| make check | amocrm-pro-admin | ok |
-| make fmt-check vet test openapi-check integration-test | amocrm-pro | ok |
-| Playwright e2e | amocrm-pro-admin | 1 сценарий ok |
+| make check | amocrm-pro-admin | ok (2026-09-13, финальный прогон) |
+| make fmt-check vet test openapi-check integration-test | amocrm-pro | ok (2026-09-13) |
+| Playwright e2e | amocrm-pro-admin | 1 сценарий ok (2026-09-13) |
+| Ручной сценарий 1.6 | пилотный Core + Admin API | ok (6 аккаунтов fixture, счётчики проблем 1/2/3/3/1, карточка 91000002) |
+| Живая остановка `amocrm-activity-api-1` | пилотный Core | ok (`sources: unavailable`, `total: null`, баннер; после старта данные вернулись) |
+| Браузерная проверка UI | Chromium (Playwright, локальный стек) | ok, ошибок консоли нет; вкладка «Виджеты», раскрытие попыток, подключения интеграции |
 
 ### Инструкция запуска и демонстрационный сценарий
 
@@ -217,11 +283,13 @@ http://127.0.0.1:18083/admin/v1/backend` отвечает; без токена �
 
 ### Происхождение данных демонстрации
 
-- real: пилотный Core после OAuth настоящей установки amoCRM (у команды
-  может не быть).
+- real: пилотный Core с admin listener и SQL-fixture установок;
+  интеграции созданы реальным CLI-путём. OAuth с настоящим amoCRM не
+  выполнялся: тестового аккаунта у команды нет.
 - fixture: SQL `deploy/fixtures/core-installations.sql`
-  (`settings.origin=fixture`) и/или adapter `kind: fixture` (`Demo`,
-  e2e). Бейдж «тестовые данные».
+  (`settings.origin=fixture`, `audit_log.actor_type='fixture'`, домены
+  `*.amocrm.test`) и adapter `kind: fixture` (`Demo`, e2e). Бейдж
+  «тестовые данные» виден на всех fixture-аккаунтах.
 
 ### Ограничения и зависимости следующего этапа
 
@@ -230,6 +298,14 @@ http://127.0.0.1:18083/admin/v1/backend` отвечает; без токена �
 - Activity SyncStatus — `unknown` до этапа 3.
 - Пользователи и контакты аккаунта — нет источника.
 - CI GitHub для новых веток не запускался.
+- Пост-фильтры списка аккаунтов идут ограниченным сканом (≤1000
+  аккаунтов, ≤10 страниц): при выходе за лимит `total` и продолжение не
+  выдаются, страница помечается неполной неявно (ADR-0007). После
+  появления серверных фильтров в Core механизм удаляется.
+- `TRUST_PROXY_HEADERS` включается только при прокси перед API; при
+  прямом доступе флаг должен быть выключен (ADR-0006).
+- UI переработан без изменения данных и состояний; e2e-селекторы
+  сохранены.
 
 ## Известные ограничения на входе
 

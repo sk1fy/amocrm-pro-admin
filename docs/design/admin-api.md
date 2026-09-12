@@ -47,11 +47,11 @@
 
 | Метод и путь | Право | Назначение |
 | --- | --- | --- |
-| `GET /api/v1/accounts?q=&product=&connection=&problem=&origin=&sort=&limit=&cursor=` | `accounts:read` | Поиск и список. `q` — ID, поддомен, домен или ссылка; Admin API нормализует и передаёт в Core уже id/domain/subdomain |
+| `GET /api/v1/accounts?q=&product=&connection=&problem=&origin=&limit=&cursor=` | `accounts:read` | Поиск и список. `q` — ID, поддомен, домен или ссылка; Admin API нормализует и передаёт в Core уже id/domain/subdomain. Пост-фильтры (`product`, `connection`, `problem`, `origin`) применяются до пагинации ограниченным сканом (ADR-0007): `total` точен, пока скан завершён и все источники доступны, иначе `null` |
 | `GET /api/v1/accounts/{account_id}` | `accounts:read` | Карточка: домены, агрегат, `connections[]` (каждое — Observation) |
 | `GET /api/v1/accounts/{account_id}/history?cursor=` | `audit:read` | Объединённая лента: Core audit по установкам аккаунта + admin audit |
 | `GET /api/v1/connections/{backend}/{connection_id}` | `connections:read` | Карточка подключения: `connection`, `authorization`, `webhook`, `grants[]`, `activity`, `recent_jobs[]`, `recent_audit[]` — каждое отдельным Observation |
-| `GET /api/v1/connections/{backend}/{connection_id}/jobs?status=&cursor=` | `operations:read` | Jobs подключения |
+| `GET /api/v1/connections/{backend}/{connection_id}/jobs?status=&type=&cursor=` | `operations:read` | Jobs подключения |
 | `GET /api/v1/connections/{backend}/{connection_id}/audit?cursor=` | `audit:read` | Аудит Core по установке |
 
 Ответ списка аккаунтов (фрагмент):
@@ -85,7 +85,7 @@
 | `GET /api/v1/catalog` | `system:read` | Продукты, бекенды, сервисы каталога |
 | `GET /api/v1/integrations?backend=` | `integrations:read` | Список интеграций всех бекендов |
 | `GET /api/v1/integrations/{backend}/{integration_id}` | `integrations:read` | Карточка интеграции с грантами и счётчиками подключений |
-| `GET /api/v1/operations/jobs?backend=&status=&type=&cursor=` | `operations:read` | Jobs всех аккаунтов |
+| `GET /api/v1/operations/jobs?backend=&status=&type=&since=&cursor=` | `operations:read` | Jobs всех аккаунтов; `since` — RFC 3339, старше 7 суток обрезается до окна retention. Сортировка — по `updated_at` (новые первыми). В каждом job есть `account_id` |
 | `GET /api/v1/operations/jobs/{backend}/{job_id}` | `operations:read` | Job с попытками |
 | `GET /api/v1/system/backends` | `system:read` | Состояние каждого бекенда (Observation) |
 | `GET /api/v1/system/audit?employee_id=&action=&cursor=` | `audit:read` | Аудит админки |
@@ -110,16 +110,16 @@
 | Метод и путь | Назначение | Источник |
 | --- | --- | --- |
 | `GET /admin/v1/backend` | `{ backend: "core", revision, contract_version: "v1", capabilities: [...], components: {...}, observed_at }` | `buildinfo`, `services.Components()`, `componentruntime` catalog |
-| `GET /admin/v1/accounts?q=&integration_id=&status=&limit=&cursor=` | Аккаунты как агрегат установок | `installations` GROUP BY `account_id` |
+| `GET /admin/v1/accounts?q=&integration_id=&status=&limit=&cursor=` | Аккаунты как агрегат установок; `total` — `count(DISTINCT account_id)` по фильтрам. Каждая установка несёт `webhook_status`, `authorization_state` и `recent_failed_jobs` (failed/dead за 24 ч) для счётчиков проблем Admin API | `installations` GROUP BY `account_id`, `oauth_credentials` (не ciphertext), `jobs` |
 | `GET /admin/v1/accounts/{account_id}` | Аккаунт со всеми установками (без секретов) | `installations` ⋈ `integrations` ⋈ `integration_services` |
 | `GET /admin/v1/installations?account_id=&domain=&integration_id=&status=&webhook_status=&limit=&cursor=` | Список установок | `installations` |
 | `GET /admin/v1/installations/{id}` | Установка + `authorization` (вычисленное состояние, `expires_at`, `credential_version`, `refreshed_at`, `key_version`, `lease_active`, `unverified`) + webhook + `activity.pilot` + `webhook_destinations_count` | `installations`, `oauth_credentials` (не ciphertext), `activity_pilots`, `installation_webhook_destinations` |
-| `GET /admin/v1/installations/{id}/jobs?status=&limit=&cursor=` | Jobs установки без `payload`/`result` | `jobs` |
+| `GET /admin/v1/installations/{id}/jobs?status=&type=&limit=&cursor=` | Jobs установки без `payload`/`result`, сортировка по `updated_at` | `jobs` |
 | `GET /admin/v1/installations/{id}/audit?limit=&cursor=` | Аудит по установке | `audit_log` |
 | `GET /admin/v1/installations/{id}/activity/deliveries?limit=` | Квитанции и outbox команд Activity | `activitybridge.ListDeliveries` (расширить фильтром по установке) |
 | `GET /admin/v1/integrations` | Интеграции с грантами и счётчиками установок | `integrations`, `integration_services`, `installations` |
 | `GET /admin/v1/integrations/{id}` | Карточка интеграции | там же |
-| `GET /admin/v1/jobs?status=&type=&since=&limit=&cursor=` | Jobs всех установок (окно ≤ 7 суток) | `jobs` |
+| `GET /admin/v1/jobs?status=&type=&since=&limit=&cursor=` | Jobs всех установок (окно ≤ 7 суток), в каждом `account_id` и `installation_id`; сортировка по `updated_at` | `jobs` ⋈ `installations` |
 | `GET /admin/v1/jobs/{id}` | Job с попытками | `jobs`, `job_attempts` |
 | `GET /admin/v1/jobs/summary` | Счётчики по статусам | `jobs` GROUP BY `status` |
 | `GET /admin/v1/audit?object_type=&object_id=&action=&limit=&cursor=` | Аудит по объекту (интеграция и др.) | `audit_log` |

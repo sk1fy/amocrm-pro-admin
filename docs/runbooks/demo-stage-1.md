@@ -20,19 +20,24 @@ make e2e
 
 `make e2e` поднимает стек, создаёт
 `admin@example.invalid` / `correct-horse-battery` и гоняет Playwright.
+Стек e2e изолирован портами (`POSTGRES_PORT=5434`, `FRONTEND_PORT=5174`,
+`HTTP_PORT=8094`, `MANAGEMENT_PORT=8095`) и не конфликтует с dev-стеком.
 Для ручного просмотра того же стека:
 
 ```sh
-docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.e2e.yml \
+POSTGRES_PORT=5434 FRONTEND_PORT=5174 HTTP_PORT=8094 MANAGEMENT_PORT=8095 \
+  ADMIN_PUBLIC_ORIGIN='http://host.docker.internal:5174' \
+  docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.e2e.yml \
   -p amocrm-pro-admin-e2e up --build --detach --wait
 printf '%s' 'correct-horse-battery' | \
+  POSTGRES_PORT=5434 FRONTEND_PORT=5174 HTTP_PORT=8094 MANAGEMENT_PORT=8095 \
   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.e2e.yml \
   -p amocrm-pro-admin-e2e --profile tools run --rm -T admin-cli \
   employee create --email admin@example.invalid --name Admin --role admin \
   --password-stdin
 ```
 
-Интерфейс: `http://127.0.0.1:5173`.
+Интерфейс: `http://127.0.0.1:5174`.
 
 ## Путь B. Пилотный Core + SQL-fixture
 

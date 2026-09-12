@@ -154,3 +154,7 @@ command → результат/операция → аудит в admin DB и в
   `X-Requested-With: admin-ui` и совпадение `Origin`.
 - Все действия сотрудников аудируются с `employee_id`, `request_id`, действием,
   объектом и безопасным списком изменённых полей.
+- Реальный IP клиента для лимита входа и аудита читается из `X-Real-IP`/
+  `X-Forwarded-For` только при `TRUST_PROXY_HEADERS=true`
+  ([ADR-0006](../adr/0006-trusted-proxy-headers.md)); без прокси доверие
+  выключено.

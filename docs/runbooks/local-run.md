@@ -70,10 +70,11 @@ make fixtures-core FIXTURES_CONFIRM=core-pilot # применить к пило�
 ```
 
 Fixture идемпотентен (фиксированные UUID, `ON CONFLICT DO NOTHING`) и падает с
-понятной ошибкой, если интеграции не созданы. Состояние на 2026-09-12: SQL
-сверен со всеми миграциями Core вручную; живой dry-run не выполнен из-за
-переполненного диска Docker VM — выполнить `make fixtures-core-dry-run`
-перед первым применением.
+понятной ошибкой, если интеграции не созданы. SQL передаётся в `psql` через
+stdin (`-f -`), поэтому путь к файлу не нужен внутри контейнера. Проверено на
+пилотном стеке 2026-09-12: `fixtures-core-dry-run` и `fixtures-core` применили
+8 установок, 6 задач, попытки и аудит; Admin API показал 6 аккаунтов с
+`origin=fixture` и `sources: core: available`.
 
 Удаление fixture (при необходимости, только dev-стек):
 
@@ -87,7 +88,11 @@ DELETE FROM audit_log WHERE actor_type = 'fixture';
 ## Admin: стек админки
 
 `make up` поднимает PostgreSQL, мигратор, Admin API и frontend
-(nginx на `http://127.0.0.1:5173`, прокси `/api` на Admin API).
+(nginx на `http://127.0.0.1:5173`, прокси `/api` на Admin API). Compose
+выставляет `TRUST_PROXY_HEADERS=true`, потому что перед API всегда стоит
+nginx и передаёт `X-Real-IP`/`X-Forwarded-For`; при прямом доступе к `:8090`
+без прокси переменная должна быть `false`
+([ADR-0006](../adr/0006-trusted-proxy-headers.md)).
 
 ```sh
 cp .env.example .env            # CORE_ADMIN_API_TOKEN нужен для core-http
@@ -129,6 +134,10 @@ Admin API: `http://127.0.0.1:8090/api/v1`, management `127.0.0.1:8092`,
 ```sh
 make e2e
 ```
+
+Стек e2e изолирован портами (`E2E_POSTGRES_PORT=5434`,
+`E2E_FRONTEND_PORT=5174`, `E2E_HTTP_PORT=8094`, `E2E_MANAGEMENT_PORT=8095`)
+и может работать одновременно с dev-стеком.
 
 Демонстрационный сценарий экранов:
 [demo-stage-1.md](demo-stage-1.md).

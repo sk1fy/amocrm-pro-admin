@@ -168,6 +168,17 @@ Outcome попытки: `completed`, `retry`, `failed`, `dead`, `cancelled`,
 `unknown`. `unknown_outcome` — обрыв соединения при выполнении; интерфейс
 предлагает «Проверить состояние», а не сообщает об ошибке команды.
 
+## Сотрудник (admin DB)
+
+Источник: admin DB `employees`. Роли и права — [roles.md](roles.md).
+Роли показываются нейтральным текстом: `admin` → «Администратор»,
+`operator` → «Оператор», `viewer` → «Наблюдатель».
+
+| Канон | Из `employees.status` | Тон | Текст |
+| --- | --- | --- | --- |
+| `active` | `active` | `ok` | Активен |
+| `disabled` | `disabled` | `off` | Отключён |
+
 ## Аккаунт (агрегат)
 
 Аккаунт — `account_id` amoCRM. Агрегированное состояние вычисляется в Admin
@@ -179,13 +190,17 @@ API только для сортировки/фильтра и всегда по
 | `partial` | Хотя бы один участвующий бекенд `unavailable` (подключения всё равно перечисляются) |
 | `needs_action` | Хотя бы одно подключение `reauth_required` или авторизация `missing` при статусе `active`/`pending` |
 | `error` | Хотя бы одно подключение `error` или webhook `error` |
-| `attention` | Хотя бы одно `pending`/`authorizing`, либо есть `dead`/`failed` jobs за 24 ч (если jobs есть в полезной нагрузке) |
+| `attention` | Хотя бы одно `pending`/`authorizing`, либо `recent_failed_jobs > 0` (failed/dead за 24 ч) |
 | `inactive` | Все подключения `disabled`/`uninstalled` |
 | `ok` | Все подключения `active` без проблем |
 | `attention` | Любой остальной набор состояний |
 
 Типы проблем для фильтра: `reauth_required`, `webhook_error`, `job_failures`,
-`missing_credentials`, `disabled`, `source_unavailable`.
+`missing_credentials`, `disabled`, `source_unavailable`. Проблемы считаются
+по фактам из списка аккаунтов (`webhook_status`, `authorization_state`,
+`recent_failed_jobs`); при недоступном источнике выводится
+`source_unavailable`, а счётчики «Требуют внимания» не показывают число
+(«—»), пока источник не ответит.
 
 ## Происхождение данных
 
