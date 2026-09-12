@@ -1,0 +1,41 @@
+.block {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.time {
+  font-variant-numeric: tabular-nums;
+}
+
+.stale,
+.unavailable,
+.unknown {
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+
+.stale {
+  background: var(--tone-attention-bg);
+}
+
+.unavailable {
+  background: var(--tone-error-bg);
+}
+
+.unknown {
+  background: var(--tone-unknown-bg);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+}

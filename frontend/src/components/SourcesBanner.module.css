@@ -1,0 +1,11 @@
+.banner {
+  background: var(--tone-error-bg);
+  border: 1px solid color-mix(in srgb, var(--tone-error) 30%, white);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+}
+
+.list {
+  margin: var(--space-2) 0 0;
+  padding-left: 1.2rem;
+}

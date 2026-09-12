@@ -1,0 +1,54 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.ok {
+  color: var(--tone-ok);
+  background: var(--tone-ok-bg);
+  border-color: color-mix(in srgb, var(--tone-ok) 30%, white);
+}
+
+.attention {
+  color: var(--tone-attention);
+  background: var(--tone-attention-bg);
+  border-color: color-mix(in srgb, var(--tone-attention) 35%, white);
+}
+
+.action {
+  color: var(--tone-action);
+  background: var(--tone-action-bg);
+  border-color: color-mix(in srgb, var(--tone-action) 35%, white);
+}
+
+.error {
+  color: var(--tone-error);
+  background: var(--tone-error-bg);
+  border-color: color-mix(in srgb, var(--tone-error) 35%, white);
+}
+
+.off {
+  color: var(--tone-off);
+  background: var(--tone-off-bg);
+  border-color: var(--color-border);
+}
+
+.unknown {
+  color: var(--tone-unknown);
+  background: var(--tone-unknown-bg);
+  border-color: color-mix(in srgb, var(--tone-unknown) 35%, white);
+  font-style: italic;
+}
+
+.raw {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}

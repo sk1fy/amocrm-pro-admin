@@ -1,0 +1,22 @@
+.card {
+  width: min(24rem, 100%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+  box-shadow: var(--shadow);
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.error {
+  background: var(--tone-error-bg);
+  color: var(--tone-error);
+  padding: var(--space-3);
+  border-radius: var(--radius);
+}

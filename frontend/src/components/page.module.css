@@ -1,0 +1,72 @@
+.page {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: inherit;
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab {
+  padding: 0.4rem 0.8rem;
+  text-decoration: none;
+  color: var(--color-muted);
+  border-bottom: 2px solid transparent;
+}
+
+.tabActive {
+  color: var(--color-text);
+  border-bottom-color: var(--color-text);
+}
+
+.dl {
+  display: grid;
+  grid-template-columns: 12rem 1fr;
+  gap: 0.35rem 1rem;
+}
+
+.dl dt {
+  color: var(--color-muted);
+}
+
+.skeleton {
+  height: 1.2rem;
+  background: linear-gradient(90deg, #ececec, #f7f7f7, #ececec);
+  border-radius: 4px;
+}
