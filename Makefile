@@ -7,6 +7,8 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= deploy/docker-compose.yml
 GO_VERSION ?= 1.25
 GO_IMAGE ?= golang:$(GO_VERSION)-alpine
+GOLANGCI_LINT_VERSION ?= v2.13.2
+GOLANGCI_LINT_IMAGE ?= golangci/golangci-lint:$(GOLANGCI_LINT_VERSION)-alpine
 NODE_IMAGE ?= node:24-alpine
 POSTGRES_IMAGE ?= postgres:17-alpine
 
@@ -21,7 +23,13 @@ UID := $(shell id -u)
 GID := $(shell id -g)
 DOCKER_GO := $(DOCKER) run --rm --user "$(UID):$(GID)" \
 	--env HOME=/tmp --env GOCACHE=/tmp/go-build --env GOMODCACHE=/tmp/go/pkg/mod \
-	--volume "$(CURDIR)/backend:/src" --workdir /src $(GO_IMAGE)
+	--volume "$(CURDIR)/backend:/src" --volume "$(CURDIR)/docs:/docs:ro" \
+	--workdir /src $(GO_IMAGE)
+DOCKER_GOLANGCI := $(DOCKER) run --rm --user "$(UID):$(GID)" \
+	--env HOME=/tmp --env GOCACHE=/tmp/go-build --env GOMODCACHE=/tmp/go/pkg/mod \
+	--env GOLANGCI_LINT_CACHE=/tmp/golangci \
+	--volume "$(CURDIR)/backend:/src" --volume "$(CURDIR)/docs:/docs:ro" \
+	--workdir /src $(GOLANGCI_LINT_IMAGE)
 DOCKER_NODE := $(DOCKER) run --rm --user "$(UID):$(GID)" \
 	--env HOME=/tmp --volume "$(CURDIR)/frontend:/src" --workdir /src $(NODE_IMAGE)
 
@@ -83,14 +91,20 @@ migrate: ## Apply pending admin DB migrations
 # Checks (each target requires the corresponding source tree to exist)
 # ---------------------------------------------------------------------------
 
-lint: ## gofmt/vet in Docker; eslint + tsc in Docker
+lint: ## gofmt/vet/golangci-lint in Docker; eslint + tsc in Docker
 	@test -d backend || { echo "backend/ is not created yet (stage 1, part 1.2)" >&2; exit 1; }
 	$(DOCKER_GO) sh -ec 'files="$$(gofmt -l .)"; if [ -n "$$files" ]; then printf "%s\n" "$$files"; exit 1; fi; go vet ./...'
+	$(DOCKER_GOLANGCI) golangci-lint run --timeout 5m
 	@if [ -d frontend ]; then $(DOCKER_NODE) sh -ec 'npm ci --no-audit --no-fund && npm run lint && npx tsc --noEmit'; fi
 
 test: ## Race-enabled Go tests and Vitest in Docker
 	@test -d backend || { echo "backend/ is not created yet (stage 1, part 1.2)" >&2; exit 1; }
-	$(DOCKER_GO) go test -race -count=1 ./...
+	$(DOCKER) run --rm \
+		--env HOME=/tmp --env GOCACHE=/tmp/go-build --env GOMODCACHE=/tmp/go/pkg/mod \
+		--env CGO_ENABLED=1 \
+		--volume "$(CURDIR)/backend:/src" --volume "$(CURDIR)/docs:/docs:ro" \
+		--workdir /src $(GO_IMAGE) \
+		sh -ec 'apk add --no-cache build-base >/dev/null && go test -race -count=1 ./...'
 	@if [ -d frontend ]; then $(DOCKER_NODE) sh -ec 'npm ci --no-audit --no-fund && npm test -- --run'; fi
 
 integration-test: ## Migrations up/down and *_integration_test.go against disposable PostgreSQL
