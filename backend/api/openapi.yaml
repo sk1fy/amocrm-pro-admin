@@ -16,6 +16,12 @@ tags:
   - name: Me
   - name: Employees
   - name: Audit
+  - name: Accounts
+  - name: Connections
+  - name: Integrations
+  - name: Operations
+  - name: Catalog
+  - name: System
 paths:
   /api/v1/auth/login:
     post:
@@ -315,6 +321,377 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/v1/accounts:
+    get:
+      tags: [Accounts]
+      operationId: listAccounts
+      summary: Search and list accounts aggregated from backends.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - name: q
+          in: query
+          schema: {type: string}
+        - name: product
+          in: query
+          schema: {type: string}
+        - name: connection
+          in: query
+          schema: {type: string}
+        - name: problem
+          in: query
+          schema: {type: string}
+        - name: origin
+          in: query
+          schema: {type: string}
+        - name: sort
+          in: query
+          schema: {type: string}
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Account list with source availability.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/accounts/{account_id}:
+    get:
+      tags: [Accounts]
+      operationId: getAccount
+      summary: Account card with connection breakdown.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/AccountID'
+      responses:
+        '200':
+          description: Account card.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountCard'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/accounts/{account_id}/history:
+    get:
+      tags: [Accounts]
+      operationId: getAccountHistory
+      summary: Combined Core and admin audit for an account.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/AccountID'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: History list.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/connections/{backend}/{connection_id}:
+    get:
+      tags: [Connections]
+      operationId: getConnection
+      summary: Connection card with independent observations.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+      responses:
+        '200':
+          description: Connection card.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionCard'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/connections/{backend}/{connection_id}/jobs:
+    get:
+      tags: [Connections]
+      operationId: listConnectionJobs
+      summary: Jobs of a connection.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+        - name: status
+          in: query
+          schema: {type: string}
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Job list.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/connections/{backend}/{connection_id}/audit:
+    get:
+      tags: [Connections]
+      operationId: listConnectionAudit
+      summary: Core audit of a connection.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Audit list.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/catalog:
+    get:
+      tags: [Catalog]
+      operationId: getCatalog
+      summary: Products and backends from the registry YAML.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Catalog.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalog'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/integrations:
+    get:
+      tags: [Integrations]
+      operationId: listIntegrations
+      summary: Integrations from backends.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - name: backend
+          in: query
+          schema: {type: string}
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Integration list.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/integrations/{backend}/{integration_id}:
+    get:
+      tags: [Integrations]
+      operationId: getIntegration
+      summary: Integration card.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/IntegrationID'
+      responses:
+        '200':
+          description: Integration observation.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Observation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/operations/jobs:
+    get:
+      tags: [Operations]
+      operationId: listJobs
+      summary: Jobs from backends.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - name: backend
+          in: query
+          schema: {type: string}
+        - name: status
+          in: query
+          schema: {type: string}
+        - name: type
+          in: query
+          schema: {type: string}
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Job list.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/operations/jobs/{backend}/{job_id}:
+    get:
+      tags: [Operations]
+      operationId: getJob
+      summary: Job with attempts.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/JobID'
+      responses:
+        '200':
+          description: Job observation.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Observation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/system/backends:
+    get:
+      tags: [System]
+      operationId: listBackends
+      summary: Health observation of each backend.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Backend health observations.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackendList'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
 components:
   securitySchemes:
     adminSession:
@@ -363,6 +740,36 @@ components:
     Cursor:
       name: cursor
       in: query
+      schema:
+        type: string
+    AccountID:
+      name: account_id
+      in: path
+      required: true
+      schema:
+        type: string
+    Backend:
+      name: backend
+      in: path
+      required: true
+      schema:
+        type: string
+    ConnectionID:
+      name: connection_id
+      in: path
+      required: true
+      schema:
+        type: string
+    IntegrationID:
+      name: integration_id
+      in: path
+      required: true
+      schema:
+        type: string
+    JobID:
+      name: job_id
+      in: path
+      required: true
       schema:
         type: string
   headers:
@@ -550,6 +957,180 @@ components:
       properties:
         ok:
           type: boolean
+    ObservationError:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string}
+        message: {type: string}
+    Observation:
+      type: object
+      required: [source, observed_at, freshness]
+      properties:
+        source: {type: string}
+        observed_at: {type: string, format: date-time}
+        freshness:
+          type: string
+          enum: [fresh, stale, unavailable, unknown]
+        error:
+          $ref: '#/components/schemas/ObservationError'
+        data: {}
+        raw: {type: string}
+    SourceStatus:
+      type: object
+      required: [backend, status]
+      properties:
+        backend: {type: string}
+        status:
+          type: string
+          enum: [available, degraded, unavailable, unknown]
+        observed_at:
+          type: [string, 'null']
+          format: date-time
+        error:
+          $ref: '#/components/schemas/ObservationError'
+    SourcedList:
+      type: object
+      required: [items, sources]
+      properties:
+        items:
+          type: array
+          items: {}
+        next_cursor:
+          type: [string, 'null']
+        total:
+          type: [integer, 'null']
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceStatus'
+    AccountConnection:
+      type: object
+      required: [backend, connection_id, state]
+      properties:
+        backend: {type: string}
+        connection_id: {type: string}
+        integration_code: {type: string}
+        state: {type: string}
+        raw: {type: string}
+    AccountListItem:
+      type: object
+      required: [account_id, domains, state, problems, origin, connections]
+      properties:
+        account_id: {type: string}
+        domains:
+          type: array
+          items: {type: string}
+        state: {type: string}
+        problems:
+          type: array
+          items: {type: string}
+        origin: {type: string}
+        last_activity_at:
+          type: [string, 'null']
+          format: date-time
+        connections:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountConnection'
+    AccountList:
+      type: object
+      required: [items, sources]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountListItem'
+        next_cursor:
+          type: [string, 'null']
+        total:
+          type: [integer, 'null']
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceStatus'
+    AccountCard:
+      type: object
+      required: [account_id, domains, state, problems, origin, connections, sources]
+      properties:
+        account_id: {type: string}
+        domains:
+          type: array
+          items: {type: string}
+        state: {type: string}
+        problems:
+          type: array
+          items: {type: string}
+        origin: {type: string}
+        last_activity_at:
+          type: [string, 'null']
+          format: date-time
+        connections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Observation'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceStatus'
+    ConnectionCard:
+      type: object
+      required: [backend, connection, authorization, webhook, grants, activity, activity_sync, recent_jobs, recent_audit]
+      properties:
+        backend: {type: string}
+        connection:
+          $ref: '#/components/schemas/Observation'
+        authorization:
+          $ref: '#/components/schemas/Observation'
+        webhook:
+          $ref: '#/components/schemas/Observation'
+        grants:
+          $ref: '#/components/schemas/Observation'
+        activity:
+          $ref: '#/components/schemas/Observation'
+        activity_sync:
+          $ref: '#/components/schemas/Observation'
+        recent_jobs:
+          $ref: '#/components/schemas/Observation'
+        recent_audit:
+          $ref: '#/components/schemas/Observation'
+    CatalogProduct:
+      type: object
+      required: [code, display_name]
+      properties:
+        code: {type: string}
+        display_name: {type: string}
+    CatalogBackend:
+      type: object
+      required: [code, kind, display_name, products]
+      properties:
+        code: {type: string}
+        kind: {type: string}
+        display_name: {type: string}
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogProduct'
+    Catalog:
+      type: object
+      required: [backends, products]
+      properties:
+        backends:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogBackend'
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogProduct'
+    BackendList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Observation'
     ErrorEnvelope:
       type: object
       required: [error]
@@ -567,6 +1148,8 @@ components:
                 - invalid_argument
                 - conflict
                 - rate_limited
+                - backend_unavailable
+                - backend_timeout
                 - internal
             message:
               type: string

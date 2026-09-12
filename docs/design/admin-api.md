@@ -47,7 +47,7 @@
 
 | Метод и путь | Право | Назначение |
 | --- | --- | --- |
-| `GET /api/v1/accounts?q=&product=&connection=&problem=&origin=&sort=&limit=&cursor=` | `accounts:read` | Поиск и список. `q` — ID, поддомен, домен или ссылка; нормализация на сервере |
+| `GET /api/v1/accounts?q=&product=&connection=&problem=&origin=&sort=&limit=&cursor=` | `accounts:read` | Поиск и список. `q` — ID, поддомен, домен или ссылка; Admin API нормализует и передаёт в Core уже id/domain/subdomain |
 | `GET /api/v1/accounts/{account_id}` | `accounts:read` | Карточка: домены, агрегат, `connections[]` (каждое — Observation) |
 | `GET /api/v1/accounts/{account_id}/history?cursor=` | `audit:read` | Объединённая лента: Core audit по установкам аккаунта + admin audit |
 | `GET /api/v1/connections/{backend}/{connection_id}` | `connections:read` | Карточка подключения: `connection`, `authorization`, `webhook`, `grants[]`, `activity`, `recent_jobs[]`, `recent_audit[]` — каждое отдельным Observation |
@@ -113,7 +113,7 @@
 | `GET /admin/v1/accounts?q=&integration_id=&status=&limit=&cursor=` | Аккаунты как агрегат установок | `installations` GROUP BY `account_id` |
 | `GET /admin/v1/accounts/{account_id}` | Аккаунт со всеми установками (без секретов) | `installations` ⋈ `integrations` ⋈ `integration_services` |
 | `GET /admin/v1/installations?account_id=&domain=&integration_id=&status=&webhook_status=&limit=&cursor=` | Список установок | `installations` |
-| `GET /admin/v1/installations/{id}` | Установка + `authorization` (вычисленное состояние, `expires_at`, `token_version`, `refreshed_at`, `key_version`, `lease_active`) + webhook + `activity.pilot` + `webhook_destinations_count` | `installations`, `oauth_credentials` (не ciphertext), `activity_pilots`, `installation_webhook_destinations` |
+| `GET /admin/v1/installations/{id}` | Установка + `authorization` (вычисленное состояние, `expires_at`, `credential_version`, `refreshed_at`, `key_version`, `lease_active`, `unverified`) + webhook + `activity.pilot` + `webhook_destinations_count` | `installations`, `oauth_credentials` (не ciphertext), `activity_pilots`, `installation_webhook_destinations` |
 | `GET /admin/v1/installations/{id}/jobs?status=&limit=&cursor=` | Jobs установки без `payload`/`result` | `jobs` |
 | `GET /admin/v1/installations/{id}/audit?limit=&cursor=` | Аудит по установке | `audit_log` |
 | `GET /admin/v1/installations/{id}/activity/deliveries?limit=` | Квитанции и outbox команд Activity | `activitybridge.ListDeliveries` (расширить фильтром по установке) |
@@ -139,8 +139,8 @@
   },
   "authorization": {
     "state": "reauth_required", "credentials_present": true,
-    "expires_at": "…", "token_version": 3, "refreshed_at": "…",
-    "key_version": 1, "lease_active": false
+    "expires_at": "…", "credential_version": 3, "refreshed_at": "…",
+    "key_version": 1, "lease_active": false, "unverified": true
   },
   "webhook": {
     "status": "active", "events": ["add_lead", "status_lead"],

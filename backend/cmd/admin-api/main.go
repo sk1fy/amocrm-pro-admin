@@ -2,14 +2,17 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/sk1fy/amocrm-pro-admin/internal/accounts"
 	"github.com/sk1fy/amocrm-pro-admin/internal/audit"
 	"github.com/sk1fy/amocrm-pro-admin/internal/auth"
+	"github.com/sk1fy/amocrm-pro-admin/internal/catalog"
 	"github.com/sk1fy/amocrm-pro-admin/internal/employees"
 	"github.com/sk1fy/amocrm-pro-admin/internal/httpapi"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/config"
@@ -57,6 +60,15 @@ func run() error {
 	auditStore := audit.NewStore(pool, cfg.DatabaseTimeout)
 	limiter := auth.NewLimiter(cfg.LoginRatePerMinute)
 
+	if cfg.BackendsFile == "" {
+		return fmt.Errorf("BACKENDS_FILE is required")
+	}
+	registry, err := catalog.Load(cfg.BackendsFile, catalog.Options{})
+	if err != nil {
+		return err
+	}
+	accountService := accounts.New(registry.Backends(), auditStore)
+
 	cleanupContext, stopCleanup := context.WithCancel(ctx)
 	cleanupDone := make(chan struct{})
 	go func() {
@@ -87,6 +99,8 @@ func run() error {
 		PublicOrigin: cfg.AdminPublicOrigin,
 		Logger:       logger,
 		Timeout:      cfg.DatabaseTimeout,
+		Registry:     registry,
+		Accounts:     accountService,
 	})
 	management := httpapi.Management(pool, cfg.DatabaseTimeout, logger)
 

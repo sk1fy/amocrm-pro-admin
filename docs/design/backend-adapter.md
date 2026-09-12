@@ -1,4 +1,4 @@
-# Контракт адаптера бекенда (v1, черновик)
+# Контракт адаптера бекенда (v1)
 
 Адаптер — единственный способ Admin API общаться с бекендом. Core — первый
 адаптер (`adapter/core`), fixture — тестовый (`adapter/fixture`). Контракт
@@ -21,7 +21,10 @@
   URL как `{backend}/{id}`. Связь с аккаунтом — только через `AccountID`
   (amoCRM account id) и `ProductCode` (код продукта каталога).
 
-## Интерфейс (Go, черновик)
+## Интерфейс (Go)
+
+Реализация: `backend/internal/adapter`. Адаптер получает `Actor` (строка
+`employee:<uuid>` для `X-Admin-Actor`) и не знает о сессиях админки.
 
 ```go
 package adapter
@@ -40,32 +43,42 @@ type Capabilities struct {
 }
 
 type Observation[T any] struct {
-    Source     string
-    ObservedAt time.Time
-    Data       T
+    Source     string     `json:"source"`
+    ObservedAt time.Time  `json:"observed_at"`
+    Freshness  string     `json:"freshness"` // fresh|stale|unavailable|unknown
+    Error      *ObsError  `json:"error,omitempty"`
+    Data       *T         `json:"data,omitempty"` // omit when unavailable
+    Raw        string     `json:"raw,omitempty"`
 }
 
 type Backend interface {
     Descriptor() Descriptor
     Capabilities() Capabilities
-    Health(ctx context.Context) (Observation[Health], error)
+    Health(ctx context.Context, actor Actor) (Observation[Health], error)
 
-    ListAccounts(ctx context.Context, f AccountFilter) (Observation[Page[Account]], error)
-    GetAccount(ctx context.Context, accountID int64) (Observation[Account], error)
+    ListAccounts(ctx context.Context, actor Actor, f AccountFilter) (Observation[Page[Account]], error)
+    GetAccount(ctx context.Context, actor Actor, accountID int64) (Observation[Account], error)
 
-    ListConnections(ctx context.Context, f ConnectionFilter) (Observation[Page[Connection]], error)
-    GetConnection(ctx context.Context, id string) (Observation[ConnectionDetail], error)
-    ListConnectionJobs(ctx context.Context, id string, f JobFilter) (Observation[Page[Job]], error)
-    ListConnectionAudit(ctx context.Context, id string, f PageFilter) (Observation[Page[AuditEntry]], error)
+    ListConnections(ctx context.Context, actor Actor, f ConnectionFilter) (Observation[Page[ConnectionSummary]], error)
+    GetConnection(ctx context.Context, actor Actor, id string) (Observation[ConnectionDetail], error)
+    ListConnectionJobs(ctx context.Context, actor Actor, id string, f JobFilter) (Observation[Page[Job]], error)
+    ListConnectionAudit(ctx context.Context, actor Actor, id string, f PageFilter) (Observation[Page[AuditEntry]], error)
+    ListConnectionDeliveries(ctx context.Context, actor Actor, id string, f PageFilter) (Observation[[]Delivery], error)
 
-    ListIntegrations(ctx context.Context) (Observation[[]Integration], error)
-    GetIntegration(ctx context.Context, id string) (Observation[Integration], error)
+    ListIntegrations(ctx context.Context, actor Actor, f PageFilter) (Observation[Page[Integration]], error)
+    GetIntegration(ctx context.Context, actor Actor, id string) (Observation[Integration], error)
 
-    ListJobs(ctx context.Context, f JobFilter) (Observation[Page[Job]], error)
-    GetJob(ctx context.Context, id string) (Observation[JobDetail], error)
-    JobsSummary(ctx context.Context) (Observation[JobsSummary], error)
+    ListJobs(ctx context.Context, actor Actor, f JobFilter) (Observation[Page[Job]], error)
+    GetJob(ctx context.Context, actor Actor, id string) (Observation[JobDetail], error)
+    JobsSummary(ctx context.Context, actor Actor) (Observation[JobsSummary], error)
 }
 ```
+
+Типизированные ошибки: `ErrUnavailable`, `ErrTimeout`, `ErrNotFound`,
+`ErrUnsupported`, `ErrInvalidArgument`, `ErrConflict`. HTTP-адаптер Core
+переводит 401/5xx в `ErrUnavailable`, таймаут в `ErrTimeout`, 404 в
+`ErrNotFound`. Неизвестное бекендное состояние → канон `unknown` и `Raw`
+с оригиналом; значение `active` не подставляется.
 
 Типы данных (`Account`, `Connection`, `ConnectionDetail`, `Authorization`,
 `Webhook`, `Grant`, `ActivityFacts`, `Job`, `JobAttempt`, `AuditEntry`,

@@ -66,6 +66,7 @@ services:
       SESSION_IDLE_TTL: "${SESSION_IDLE_TTL:-2h}"
       LOGIN_RATE_PER_MINUTE: "${LOGIN_RATE_PER_MINUTE:-10}"
       BACKENDS_FILE: "${BACKENDS_FILE:-/etc/admin/backends.yaml}"
+      CORE_ADMIN_API_TOKEN: "${CORE_ADMIN_API_TOKEN:-admin-dev-token-change-me}"
       MIGRATIONS_DIR: /migrations
     ports:
       - "127.0.0.1:8090:8090"

@@ -74,6 +74,7 @@ type Entry struct {
 type ListFilter struct {
 	EmployeeID *uuid.UUID
 	Action     string
+	ObjectRefs []string
 	Cursor     string
 	Limit      int
 }
@@ -139,6 +140,10 @@ func (s *Store) List(ctx context.Context, filter ListFilter) ([]Entry, *string, 
 	if action := strings.TrimSpace(filter.Action); action != "" {
 		args = append(args, action)
 		conditions = append(conditions, fmt.Sprintf("action = $%d", len(args)))
+	}
+	if refs := compactStrings(filter.ObjectRefs); len(refs) > 0 {
+		args = append(args, refs)
+		conditions = append(conditions, fmt.Sprintf("object_ref = ANY($%d)", len(args)))
 	}
 	if filter.Cursor != "" {
 		createdAt, id, err := decodeCursor(filter.Cursor)
@@ -245,6 +250,20 @@ func decodeCursor(raw string) (time.Time, int64, error) {
 		return time.Time{}, 0, ErrInvalidCursor
 	}
 	return at, id, nil
+}
+
+func compactStrings(values []string) []string {
+	out := make([]string, 0, len(values))
+	seen := map[string]bool{}
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" || seen[value] {
+			continue
+		}
+		seen[value] = true
+		out = append(out, value)
+	}
+	return out
 }
 
 func nullString(value string) any {

@@ -14,13 +14,15 @@ import (
 )
 
 const (
-	CodeUnauthenticated = "unauthenticated"
-	CodeForbidden       = "forbidden"
-	CodeNotFound        = "not_found"
-	CodeInvalidArgument = "invalid_argument"
-	CodeConflict        = "conflict"
-	CodeRateLimited     = "rate_limited"
-	CodeInternal        = "internal"
+	CodeUnauthenticated    = "unauthenticated"
+	CodeForbidden          = "forbidden"
+	CodeNotFound           = "not_found"
+	CodeInvalidArgument    = "invalid_argument"
+	CodeConflict           = "conflict"
+	CodeRateLimited        = "rate_limited"
+	CodeBackendUnavailable = "backend_unavailable"
+	CodeBackendTimeout     = "backend_timeout"
+	CodeInternal           = "internal"
 )
 
 type requestIDKey struct{}
@@ -55,6 +57,14 @@ func Conflict(message string) Error {
 
 func RateLimited(message string) Error {
 	return Error{Status: http.StatusTooManyRequests, Code: CodeRateLimited, Message: message}
+}
+
+func BackendUnavailable(message string) Error {
+	return Error{Status: http.StatusServiceUnavailable, Code: CodeBackendUnavailable, Message: message}
+}
+
+func BackendTimeout(message string) Error {
+	return Error{Status: http.StatusGatewayTimeout, Code: CodeBackendTimeout, Message: message}
 }
 
 func Internal() Error {

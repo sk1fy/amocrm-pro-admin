@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -181,17 +180,7 @@ func TestCSRFRejectedOnLogin(t *testing.T) {
 }
 
 func testRouter(t *testing.T, pool *pgxpool.Pool, loginRate int) http.Handler {
-	t.Helper()
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	return New(Dependencies{
-		Employees:    employees.NewStore(pool, 2*time.Second),
-		Sessions:     auth.NewService(pool, 2*time.Second, 12*time.Hour, 2*time.Hour, false),
-		Audit:        audit.NewStore(pool, 2*time.Second),
-		Limiter:      auth.NewLimiter(loginRate),
-		PublicOrigin: testOrigin,
-		Logger:       logger,
-		Timeout:      2 * time.Second,
-	})
+	return testRouterWithRegistry(t, pool, loginRate, nil)
 }
 
 func createEmployee(t *testing.T, ctx context.Context, store *employees.Store, email, name, role string) employees.Employee {

@@ -18,6 +18,18 @@ var (
 	SystemEmployee        = Route{Method: http.MethodPatch, Path: "/api/v1/system/employees/{id}"}
 	SystemEmployeeRevoke  = Route{Method: http.MethodPost, Path: "/api/v1/system/employees/{id}/sessions/revoke"}
 	SystemAudit           = Route{Method: http.MethodGet, Path: "/api/v1/system/audit"}
+	Accounts              = Route{Method: http.MethodGet, Path: "/api/v1/accounts"}
+	Account               = Route{Method: http.MethodGet, Path: "/api/v1/accounts/{account_id}"}
+	AccountHistory        = Route{Method: http.MethodGet, Path: "/api/v1/accounts/{account_id}/history"}
+	Connection            = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}"}
+	ConnectionJobs        = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/jobs"}
+	ConnectionAudit       = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/audit"}
+	Catalog               = Route{Method: http.MethodGet, Path: "/api/v1/catalog"}
+	Integrations          = Route{Method: http.MethodGet, Path: "/api/v1/integrations"}
+	Integration           = Route{Method: http.MethodGet, Path: "/api/v1/integrations/{backend}/{integration_id}"}
+	OperationsJobs        = Route{Method: http.MethodGet, Path: "/api/v1/operations/jobs"}
+	OperationsJob         = Route{Method: http.MethodGet, Path: "/api/v1/operations/jobs/{backend}/{job_id}"}
+	SystemBackends        = Route{Method: http.MethodGet, Path: "/api/v1/system/backends"}
 
 	Routes = []Route{
 		AuthLogin,
@@ -30,5 +42,17 @@ var (
 		SystemEmployee,
 		SystemEmployeeRevoke,
 		SystemAudit,
+		Accounts,
+		Account,
+		AccountHistory,
+		Connection,
+		ConnectionJobs,
+		ConnectionAudit,
+		Catalog,
+		Integrations,
+		Integration,
+		OperationsJobs,
+		OperationsJob,
+		SystemBackends,
 	}
 )
