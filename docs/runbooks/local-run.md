@@ -130,6 +130,9 @@ Admin API: `http://127.0.0.1:8090/api/v1`, management `127.0.0.1:8092`,
 make e2e
 ```
 
+Демонстрационный сценарий экранов:
+[demo-stage-1.md](demo-stage-1.md).
+
 ## Проверки
 
 ```sh
