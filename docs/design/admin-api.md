@@ -1,0 +1,161 @@
+# Контракты: Admin API v1 и Core admin read v1
+
+Два контракта, два репозитория. Здесь — черновик уровня «что и в какой форме»;
+формальные схемы пишутся как OpenAPI 3 при реализации:
+`backend/api/openapi.yaml` (Admin API) и `api/admin-openapi.yaml` (Core).
+
+## Общие правила
+
+- Версия в пути: `/api/v1/…`, `/admin/v1/…`. Несовместимые изменения — новая
+  версия; добавление необязательных полей — совместимо.
+- JSON, `snake_case`, время — RFC 3339 UTC, идентификаторы — строки.
+- Ошибка — единый envelope:
+
+  ```json
+  { "error": { "code": "not_found", "message": "installation not found", "request_id": "…", "details": {} } }
+  ```
+
+  Коды: `unauthenticated`, `forbidden`, `not_found`, `invalid_argument`,
+  `conflict`, `rate_limited`, `backend_unavailable`, `backend_timeout`,
+  `internal`. Сообщения безопасны: без SQL, DSN, токенов, stack trace.
+- Списки: `{ "items": [...], "next_cursor": "…", "total": 123|null, "sources": [...] }`.
+  Курсор — непрозрачная строка (base64 от ключа сортировки). `total` — `null`,
+  если не считается за разумное время. `limit` ограничен сервером (по
+  умолчанию 25, максимум 100).
+- Данные бекендов оборачиваются в `Observation` (ADR-0004).
+- `X-Request-ID` принимается и возвращается; логируется на всех уровнях.
+- Мутации (этап 2) требуют `Idempotency-Key` и возвращают `operation`.
+
+## Admin API v1 (этот репозиторий)
+
+Аутентификация — cookie-сессия; мутации требуют `X-Requested-With: admin-ui`.
+
+### Auth и профиль
+
+| Метод и путь | Право | Назначение |
+| --- | --- | --- |
+| `POST /api/v1/auth/login` `{email, password}` | — | Создаёт сессию, ставит cookie. 401 без деталей; 429 при превышении частоты |
+| `POST /api/v1/auth/logout` | сессия | Отзывает текущую сессию |
+| `GET /api/v1/me` | сессия | `{id, email, name, role, permissions[]}` |
+| `GET /api/v1/me/sessions` | `sessions:self` | Список своих сессий (без токенов) |
+| `DELETE /api/v1/me/sessions/{id}` | `sessions:self` | Отзыв своей сессии |
+
+### Аккаунты и подключения
+
+| Метод и путь | Право | Назначение |
+| --- | --- | --- |
+| `GET /api/v1/accounts?q=&product=&connection=&problem=&origin=&sort=&limit=&cursor=` | `accounts:read` | Поиск и список. `q` — ID, поддомен, домен или ссылка; нормализация на сервере |
+| `GET /api/v1/accounts/{account_id}` | `accounts:read` | Карточка: домены, агрегат, `connections[]` (каждое — Observation) |
+| `GET /api/v1/accounts/{account_id}/history?cursor=` | `audit:read` | Объединённая лента: Core audit по установкам аккаунта + admin audit |
+| `GET /api/v1/connections/{backend}/{connection_id}` | `connections:read` | Карточка подключения: `connection`, `authorization`, `webhook`, `grants[]`, `activity`, `recent_jobs[]`, `recent_audit[]` — каждое отдельным Observation |
+| `GET /api/v1/connections/{backend}/{connection_id}/jobs?status=&cursor=` | `operations:read` | Jobs подключения |
+| `GET /api/v1/connections/{backend}/{connection_id}/audit?cursor=` | `audit:read` | Аудит Core по установке |
+
+Ответ списка аккаунтов (фрагмент):
+
+```json
+{
+  "items": [
+    {
+      "account_id": "31415926",
+      "domains": ["example.amocrm.ru"],
+      "state": "needs_action",
+      "problems": ["reauth_required"],
+      "origin": "real",
+      "last_activity_at": "2026-09-12T10:00:00Z",
+      "connections": [
+        { "backend": "core", "connection_id": "…", "integration_code": "widget-a", "state": "reauth_required" },
+        { "backend": "core", "connection_id": "…", "integration_code": "widget-b", "state": "active" }
+      ]
+    }
+  ],
+  "next_cursor": null,
+  "total": 1,
+  "sources": [ { "backend": "core", "status": "available", "observed_at": "2026-09-12T10:05:00Z" } ]
+}
+```
+
+### Виджеты, операции, система
+
+| Метод и путь | Право | Назначение |
+| --- | --- | --- |
+| `GET /api/v1/catalog` | `system:read` | Продукты, бекенды, сервисы каталога |
+| `GET /api/v1/integrations?backend=` | `integrations:read` | Список интеграций всех бекендов |
+| `GET /api/v1/integrations/{backend}/{integration_id}` | `integrations:read` | Карточка интеграции с грантами и счётчиками подключений |
+| `GET /api/v1/operations/jobs?backend=&status=&type=&cursor=` | `operations:read` | Jobs всех аккаунтов |
+| `GET /api/v1/operations/jobs/{backend}/{job_id}` | `operations:read` | Job с попытками |
+| `GET /api/v1/system/backends` | `system:read` | Состояние каждого бекенда (Observation) |
+| `GET /api/v1/system/audit?employee_id=&action=&cursor=` | `audit:read` | Аудит админки |
+| `GET /api/v1/system/employees` | `employees:read` | Сотрудники |
+| `POST /api/v1/system/employees` `{email, name, role, password}` | `employees:write` | Создание |
+| `PATCH /api/v1/system/employees/{id}` `{name?, role?, status?}` | `employees:write` | Изменение; смена роли/блокировка отзывает сессии |
+| `POST /api/v1/system/employees/{id}/sessions/revoke` | `employees:write` | Отзыв всех сессий сотрудника |
+
+### Этап 2 (зарезервировано)
+
+`POST /api/v1/connections/{backend}/{id}/commands/{command}`,
+`POST /api/v1/integrations/{backend}/{id}/commands/{command}`,
+`GET /api/v1/operations/admin?state=`, `GET /api/v1/operations/admin/{id}`.
+Команда возвращает `202 { "operation": { "id", "state", "target", "command", "created_at" } }`.
+
+## Core admin read v1 (`amocrm-pro`, listener `ADMIN_HTTP_ADDRESS`)
+
+Аутентификация: `Authorization: Bearer <ADMIN_API_TOKEN>`; обязательный
+`X-Admin-Actor`. Ответы содержат `observed_at` и `source: "core"`. Только чтение
+на этапе 1.
+
+| Метод и путь | Назначение | Источник |
+| --- | --- | --- |
+| `GET /admin/v1/backend` | `{ backend: "core", revision, contract_version: "v1", capabilities: [...], components: {...}, observed_at }` | `buildinfo`, `services.Components()`, `componentruntime` catalog |
+| `GET /admin/v1/accounts?q=&integration_id=&status=&limit=&cursor=` | Аккаунты как агрегат установок | `installations` GROUP BY `account_id` |
+| `GET /admin/v1/accounts/{account_id}` | Аккаунт со всеми установками (без секретов) | `installations` ⋈ `integrations` ⋈ `integration_services` |
+| `GET /admin/v1/installations?account_id=&domain=&integration_id=&status=&webhook_status=&limit=&cursor=` | Список установок | `installations` |
+| `GET /admin/v1/installations/{id}` | Установка + `authorization` (вычисленное состояние, `expires_at`, `token_version`, `refreshed_at`, `key_version`, `lease_active`) + webhook + `activity.pilot` + `webhook_destinations_count` | `installations`, `oauth_credentials` (не ciphertext), `activity_pilots`, `installation_webhook_destinations` |
+| `GET /admin/v1/installations/{id}/jobs?status=&limit=&cursor=` | Jobs установки без `payload`/`result` | `jobs` |
+| `GET /admin/v1/installations/{id}/audit?limit=&cursor=` | Аудит по установке | `audit_log` |
+| `GET /admin/v1/installations/{id}/activity/deliveries?limit=` | Квитанции и outbox команд Activity | `activitybridge.ListDeliveries` (расширить фильтром по установке) |
+| `GET /admin/v1/integrations` | Интеграции с грантами и счётчиками установок | `integrations`, `integration_services`, `installations` |
+| `GET /admin/v1/integrations/{id}` | Карточка интеграции | там же |
+| `GET /admin/v1/jobs?status=&type=&since=&limit=&cursor=` | Jobs всех установок (окно ≤ 7 суток) | `jobs` |
+| `GET /admin/v1/jobs/{id}` | Job с попытками | `jobs`, `job_attempts` |
+| `GET /admin/v1/jobs/summary` | Счётчики по статусам | `jobs` GROUP BY `status` |
+| `GET /admin/v1/audit?object_type=&object_id=&action=&limit=&cursor=` | Аудит по объекту (интеграция и др.) | `audit_log` |
+
+Фрагмент `GET /admin/v1/installations/{id}`:
+
+```json
+{
+  "source": "core",
+  "observed_at": "2026-09-12T10:05:00Z",
+  "installation": {
+    "id": "…", "integration_id": "…", "integration_code": "widget-a",
+    "account_id": 31415926, "account_domain": "example.amocrm.ru",
+    "status": "reauth_required", "installed_by": 123,
+    "origin": "real",
+    "created_at": "…", "updated_at": "…"
+  },
+  "authorization": {
+    "state": "reauth_required", "credentials_present": true,
+    "expires_at": "…", "token_version": 3, "refreshed_at": "…",
+    "key_version": 1, "lease_active": false
+  },
+  "webhook": {
+    "status": "active", "events": ["add_lead", "status_lead"],
+    "checked_at": "…", "last_error": null, "confirmed_destinations": 1
+  },
+  "grants": [ { "service": "lead-status", "enabled": true }, { "service": "activity", "enabled": false } ],
+  "activity": { "pilot": "not_configured" }
+}
+```
+
+Правила реализации в Core:
+
+- SQL выбирает колонки явно; `SELECT *` запрещён.
+- Пагинация — keyset по `(updated_at, id)` или `(created_at, id)`;
+  `LIMIT` ≤ 100.
+- Таймаут запроса к БД — `DATABASE_TIMEOUT` из конфигурации API.
+- Ошибки — JSON envelope того же формата, что и Admin API.
+- Тесты: unit на маппинг состояний авторизации; integration
+  (`*_integration_test.go`, пакет добавляется в список `integration-test`
+  Dockerfile) на список/карточку/пагинацию/отсутствие секретных полей в JSON
+  (проверка по ключам ответа).
