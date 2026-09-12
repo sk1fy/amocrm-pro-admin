@@ -13,6 +13,7 @@ import {
   allSourcesUnavailable,
   sourcesUnavailable,
 } from '../../components/SourcesBanner'
+import { SourcesCaption } from '../../components/SourcesCaption'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
 import { formatNull, formatTime } from '../../lib/format'
@@ -158,69 +159,74 @@ export function AccountsPage() {
         )
       ) : null}
       {list.data && list.data.items.length > 0 ? (
-        <DataTable
-          rows={list.data.items}
-          rowKey={(row) => row.account_id}
-          nextCursor={list.data.next_cursor}
-          onReset={() => setSearch({ cursor: undefined })}
-          onNext={() => setSearch({ cursor: list.data?.next_cursor ?? undefined })}
-          columns={[
-            {
-              id: 'account',
-              header: 'Аккаунт',
-              cell: (row) => (
-                <div>
-                  <Link to="/accounts/$accountId" params={{ accountId: row.account_id }}>
-                    {row.account_id}
-                  </Link>
-                  <div className={page.muted}>{row.domains.join(', ') || formatNull(null)}</div>
-                </div>
-              ),
-            },
-            {
-              id: 'connections',
-              header: 'Подключения',
-              cell: (row) => (
-                <div className={page.row}>
-                  {row.connections.map((conn) => (
-                    <Link
-                      key={`${conn.backend}:${conn.connection_id}`}
-                      to="/accounts/$accountId/widgets/$backend/$connectionId"
-                      params={{
-                        accountId: row.account_id,
-                        backend: conn.backend,
-                        connectionId: conn.connection_id,
-                      }}
-                    >
-                      <StatusBadge
-                        domain="connection"
-                        state={conn.state}
-                        raw={conn.raw}
-                        testId="connection-badge"
-                      />
-                      <span className={page.muted}> {conn.integration_code}</span>
+        <>
+          <SourcesCaption sources={list.data.sources} />
+          <DataTable
+            rows={list.data.items}
+            rowKey={(row) => row.account_id}
+            nextCursor={list.data.next_cursor}
+            onReset={() => setSearch({ cursor: undefined })}
+            onNext={() => setSearch({ cursor: list.data?.next_cursor ?? undefined })}
+            columns={[
+              {
+                id: 'account',
+                header: 'Аккаунт',
+                cell: (row) => (
+                  <div>
+                    <Link to="/accounts/$accountId" params={{ accountId: row.account_id }}>
+                      {row.account_id}
                     </Link>
-                  ))}
-                </div>
-              ),
-            },
-            {
-              id: 'state',
-              header: 'Агрегат',
-              cell: (row) => <StatusBadge domain="account" state={row.state} />,
-            },
-            {
-              id: 'activity',
-              header: 'Последняя активность',
-              cell: (row) => formatTime(row.last_activity_at),
-            },
-            {
-              id: 'origin',
-              header: 'Происхождение',
-              cell: (row) => <StatusBadge domain="origin" state={row.origin} />,
-            },
-          ]}
-        />
+                    <div className={page.muted}>
+                      {row.domains.length > 0 ? row.domains.join(', ') : formatNull(null)}
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                id: 'connections',
+                header: 'Подключения',
+                cell: (row) => (
+                  <div className={page.row}>
+                    {row.connections.map((conn) => (
+                      <Link
+                        key={`${conn.backend}:${conn.connection_id}`}
+                        to="/accounts/$accountId/widgets/$backend/$connectionId"
+                        params={{
+                          accountId: row.account_id,
+                          backend: conn.backend,
+                          connectionId: conn.connection_id,
+                        }}
+                      >
+                        <StatusBadge
+                          domain="connection"
+                          state={conn.state}
+                          raw={conn.raw}
+                          testId="connection-badge"
+                        />
+                        <span className={page.muted}> {conn.integration_code}</span>
+                      </Link>
+                    ))}
+                  </div>
+                ),
+              },
+              {
+                id: 'state',
+                header: 'Агрегат',
+                cell: (row) => <StatusBadge domain="account" state={row.state} />,
+              },
+              {
+                id: 'activity',
+                header: 'Последняя активность',
+                cell: (row) => formatTime(row.last_activity_at),
+              },
+              {
+                id: 'origin',
+                header: 'Происхождение',
+                cell: (row) => <StatusBadge domain="origin" state={row.origin} />,
+              },
+            ]}
+          />
+        </>
       ) : null}
     </div>
   )

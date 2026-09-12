@@ -81,9 +81,11 @@ export type AdminAudit = {
 export type AccountConnection = {
   backend: string
   connection_id: string
+  integration_id?: string
   integration_code: string
   state: string
   raw?: string
+  recent_failed_jobs?: number
 }
 
 export type AccountListItem = {
@@ -179,6 +181,7 @@ export type Delivery = {
 export type Job = {
   id: string
   installation_id?: string | null
+  account_id?: string | null
   type: string
   actor_type?: string | null
   actor_id?: string | null

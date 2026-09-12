@@ -1,70 +1,143 @@
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { fetchJob, keys } from '../../api/queries'
 import type { Job } from '../../api/types'
 import { DataTable } from '../../components/DataTable'
 import { StatusBadge } from '../../components/StatusBadge'
 import { formatNull, formatTime } from '../../lib/format'
+import styles from './JobsTable.module.css'
+
+export type JobRow = {
+  job: Job
+  backend: string
+}
 
 type Props = {
-  jobs: Job[]
-  backend?: string
+  rows: JobRow[]
   accountId?: string
   nextCursor?: string | null
   onNext?: () => void
   onReset?: () => void
 }
 
-export function JobsTable({ jobs, backend, accountId, nextCursor, onNext, onReset }: Props) {
+function formatDuration(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return formatNull(null)
+  }
+  return `${value} мс`
+}
+
+function JobAttempts({ backend, jobId }: { backend: string; jobId: string }) {
+  const query = useQuery({
+    queryKey: keys.job(backend, jobId),
+    queryFn: () => fetchJob(backend, jobId),
+  })
+  if (query.isPending) {
+    return <p className={styles.muted}>Загрузка…</p>
+  }
+  if (query.error) {
+    return (
+      <p className={styles.muted}>
+        {query.error instanceof Error ? query.error.message : 'Не удалось загрузить попытки'}
+      </p>
+    )
+  }
+  const attempts = query.data?.data?.attempts ?? []
+  if (attempts.length === 0) {
+    return <p className={styles.muted}>Попыток нет</p>
+  }
+  return (
+    <table className={styles.attempts}>
+      <thead>
+        <tr>
+          <th scope="col">№</th>
+          <th scope="col">Исход</th>
+          <th scope="col">Начало</th>
+          <th scope="col">Завершение</th>
+          <th scope="col">Длительность</th>
+          <th scope="col">Ошибка</th>
+        </tr>
+      </thead>
+      <tbody>
+        {attempts.map((attempt) => (
+          <tr key={attempt.id}>
+            <td>{formatNull(attempt.attempt)}</td>
+            <td>
+              <StatusBadge domain="job_outcome" state={attempt.outcome} raw={attempt.raw} />
+            </td>
+            <td>{formatTime(attempt.started_at)}</td>
+            <td>{formatTime(attempt.finished_at)}</td>
+            <td>{formatDuration(attempt.duration_ms)}</td>
+            <td>{formatNull(attempt.error_message)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+export function JobsTable({ rows, accountId, nextCursor, onNext, onReset }: Props) {
   return (
     <DataTable
-      rows={jobs}
-      rowKey={(job) => job.id}
+      rows={rows}
+      rowKey={(row) => row.job.id}
       nextCursor={nextCursor}
       onNext={onNext}
       onReset={onReset}
+      renderDetail={(row) =>
+        row.backend ? (
+          <JobAttempts backend={row.backend} jobId={row.job.id} />
+        ) : (
+          <p className={styles.muted}>Бекенд не определён</p>
+        )
+      }
       columns={[
         {
           id: 'type',
           header: 'Тип',
-          cell: (job) => job.type,
+          cell: (row) => row.job.type,
         },
         {
           id: 'status',
           header: 'Статус',
-          cell: (job) => <StatusBadge domain="job" state={job.status} raw={job.raw} />,
+          cell: (row) => <StatusBadge domain="job" state={row.job.status} raw={row.job.raw} />,
         },
         {
           id: 'attempts',
           header: 'Попытки',
-          cell: (job) => `${formatNull(job.attempts)}/${formatNull(job.max_attempts)}`,
+          cell: (row) => `${formatNull(row.job.attempts)}/${formatNull(row.job.max_attempts)}`,
         },
         {
           id: 'updated',
           header: 'Обновлено',
-          cell: (job) => formatTime(job.updated_at),
+          cell: (row) => formatTime(row.job.updated_at),
         },
         {
           id: 'error',
           header: 'Ошибка',
-          cell: (job) => formatNull(job.last_error_message),
+          cell: (row) => formatNull(row.job.last_error_message),
         },
         {
           id: 'link',
           header: 'Подключение',
-          cell: (job) =>
-            job.installation_id && backend && accountId ? (
-              <Link
-                to="/accounts/$accountId/widgets/$backend/$connectionId"
-                params={{
-                  accountId,
-                  backend,
-                  connectionId: job.installation_id,
-                }}
-              >
-                открыть
-              </Link>
-            ) : (
-              formatNull(job.installation_id)
-            ),
+          cell: (row) => {
+            const targetAccountId = row.job.account_id ?? accountId
+            if (row.job.installation_id && row.backend && targetAccountId) {
+              return (
+                <Link
+                  to="/accounts/$accountId/widgets/$backend/$connectionId"
+                  params={{
+                    accountId: targetAccountId,
+                    backend: row.backend,
+                    connectionId: row.job.installation_id,
+                  }}
+                >
+                  открыть
+                </Link>
+              )
+            }
+            return formatNull(null)
+          },
         },
       ]}
     />

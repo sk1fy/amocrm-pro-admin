@@ -1,0 +1,30 @@
+.muted {
+  color: var(--color-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.attempts {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.attempts th,
+.attempts td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border-soft);
+  vertical-align: top;
+}
+
+.attempts th {
+  color: var(--color-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.attempts tbody tr:last-child td {
+  border-bottom: none;
+}

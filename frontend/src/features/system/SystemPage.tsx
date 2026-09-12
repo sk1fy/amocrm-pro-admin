@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import { fetchBackends, fetchMe, keys } from '../../api/queries'
 import { ErrorState } from '../../components/ErrorState'
 import { Observation } from '../../components/Observation'
@@ -10,22 +10,27 @@ import { formatNull } from '../../lib/format'
 export function SystemNav() {
   const me = useQuery({ queryKey: keys.me, queryFn: fetchMe })
   const admin = me.data?.role === 'admin'
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const tabs = [
+    { to: '/system', label: 'Бекенды' },
+    { to: '/system/employees', label: 'Сотрудники', adminOnly: true },
+    { to: '/system/sessions', label: 'Сессии' },
+    { to: '/system/audit', label: 'Аудит' },
+  ]
   return (
     <nav className={page.tabs} aria-label="Система">
-      <Link to="/system" className={page.tab}>
-        Бекенды
-      </Link>
-      {admin ? (
-        <Link to="/system/employees" className={page.tab}>
-          Сотрудники
-        </Link>
-      ) : null}
-      <Link to="/system/sessions" className={page.tab}>
-        Сессии
-      </Link>
-      <Link to="/system/audit" className={page.tab}>
-        Аудит
-      </Link>
+      {tabs
+        .filter((tab) => !tab.adminOnly || admin)
+        .map((tab) => (
+          <Link
+            key={tab.to}
+            to={tab.to}
+            className={pathname === tab.to ? `${page.tab} ${page.tabActive}` : page.tab}
+            aria-current={pathname === tab.to ? 'page' : undefined}
+          >
+            {tab.label}
+          </Link>
+        ))}
     </nav>
   )
 }

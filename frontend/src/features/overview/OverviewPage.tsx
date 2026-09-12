@@ -6,20 +6,31 @@ import { SourcesBanner, sourcesUnavailable } from '../../components/SourcesBanne
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
 import { formatNull, formatTime } from '../../lib/format'
-import { problemCodes } from '../../states'
+import { lookupState, problemCodes } from '../../states'
+
+const failedStatuses = ['failed', 'dead']
 
 export function OverviewPage() {
   const backends = useQuery({ queryKey: keys.backends, queryFn: fetchBackends })
   const problems = useQueries({
     queries: problemCodes.map((problem) => ({
-      queryKey: keys.accounts({ problem, limit: 1 }),
-      queryFn: () => fetchAccounts({ problem, limit: 1 }),
+      queryKey: keys.accounts({ problem, limit: 100 }),
+      queryFn: () => fetchAccounts({ problem, limit: 100 }),
     })),
   })
-  const failedJobs = useQuery({
-    queryKey: keys.jobs({ status: 'failed', limit: 10 }),
-    queryFn: () => fetchJobs({ status: 'failed', limit: 10 }),
+  const latestJobs = useQueries({
+    queries: failedStatuses.map((status) => ({
+      queryKey: keys.jobs({ status, limit: 10 }),
+      queryFn: () => fetchJobs({ status, limit: 10 }),
+    })),
   })
+  const recentJobs = latestJobs
+    .flatMap((query) => query.data?.items ?? [])
+    .sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1))
+    .slice(0, 10)
+  const jobsPending = latestJobs.some((query) => query.isPending)
+  const jobsError = latestJobs.find((query) => query.error)?.error
+  const jobSources = latestJobs.flatMap((query) => query.data?.sources ?? [])
 
   return (
     <div className={page.page}>
@@ -49,10 +60,7 @@ export function OverviewPage() {
           {problemCodes.map((problem, index) => {
             const query = problems[index]
             const unavailable = sourcesUnavailable(query.data?.sources)
-            const count =
-              query.data?.total === null || query.data?.total === undefined
-                ? query.data?.items.length
-                : query.data.total
+            const count = query.data?.total ?? query.data?.items.length
             return (
               <Link
                 key={problem}
@@ -72,15 +80,20 @@ export function OverviewPage() {
       </section>
       <section>
         <h2>Последние ошибки задач</h2>
-        {failedJobs.error ? (
-          <ErrorState error={failedJobs.error} onRetry={() => void failedJobs.refetch()} />
+        {jobsError ? (
+          <ErrorState
+            error={jobsError}
+            onRetry={() => latestJobs.forEach((query) => void query.refetch())}
+          />
         ) : null}
-        <SourcesBanner sources={failedJobs.data?.sources} />
-        {(failedJobs.data?.items.length ?? 0) === 0 ? (
-          <p className={page.muted}>Нет задач со статусом «ошибка».</p>
-        ) : (
+        <SourcesBanner sources={jobSources} />
+        {jobsPending ? <div className={page.skeleton} /> : null}
+        {!jobsPending && recentJobs.length === 0 ? (
+          <p className={page.muted}>Нет задач с ошибками.</p>
+        ) : null}
+        {recentJobs.length > 0 ? (
           <ul>
-            {(failedJobs.data?.items ?? []).map((job) => (
+            {recentJobs.map((job) => (
               <li key={job.id}>
                 {job.type} · <StatusBadge domain="job" state={job.status} raw={job.raw} /> ·{' '}
                 {formatTime(job.updated_at)}
@@ -88,10 +101,10 @@ export function OverviewPage() {
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
         <p>
           <Link to="/operations" search={{ status: 'dead' }}>
-            Задачи в статусе dead
+            Задачи со статусом «{lookupState('job', 'dead').label}»
           </Link>
         </p>
       </section>

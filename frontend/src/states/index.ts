@@ -24,6 +24,7 @@ export type StateDomain =
   | 'account'
   | 'origin'
   | 'problem'
+  | 'employee_status'
 
 const unknownEntry: StateEntry = { tone: 'unknown', label: 'Неизвестно' }
 
@@ -135,6 +136,16 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     disabled: { tone: 'off', label: 'Отключено' },
     source_unavailable: { tone: 'error', label: 'Источник недоступен' },
   },
+  employee_status: {
+    active: { tone: 'ok', label: 'Активен' },
+    disabled: { tone: 'off', label: 'Отключён' },
+  },
+}
+
+export const employeeRoleLabels: Record<string, string> = {
+  admin: 'Администратор',
+  operator: 'Оператор',
+  viewer: 'Наблюдатель',
 }
 
 export const problemCodes = [

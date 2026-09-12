@@ -1,20 +1,35 @@
 .form {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
+  gap: 12px;
   align-items: end;
-  margin-bottom: var(--space-4);
+  margin-bottom: 1.25rem;
 }
 
-.field {
+.field,
+.fieldGrow {
   display: grid;
-  gap: 0.2rem;
+  gap: 6px;
   min-width: 10rem;
 }
 
 .fieldGrow {
-  display: grid;
-  gap: 0.2rem;
-  min-width: 10rem;
   flex: 1 1 16rem;
+}
+
+.field > span,
+.fieldGrow > span {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.form button[type='submit'] {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: #fff;
+}
+
+.form button[type='submit']:hover {
+  background: #2a2d28;
 }

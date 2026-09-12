@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { usePushSearch, useRouteSearch } from '../../app/hooks'
 import type { CursorSearch } from '../../app/search'
@@ -6,15 +7,25 @@ import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { FilterBar, FilterField } from '../../components/FilterBar'
 import { SourcesBanner, allSourcesUnavailable } from '../../components/SourcesBanner'
+import { SourcesCaption } from '../../components/SourcesCaption'
 import { JobsTable } from './JobsTable'
 import page from '../../components/page.module.css'
 import { lookupState } from '../../states'
 
-const jobStatuses = ['queued', 'processing', 'retry', 'completed', 'failed', 'dead', 'cancelled']
+export const jobStatuses = [
+  'queued',
+  'processing',
+  'retry',
+  'completed',
+  'failed',
+  'dead',
+  'cancelled',
+]
 
 export function OperationsPage() {
   const search = useRouteSearch<CursorSearch>()
   const pushSearch = usePushSearch()
+  const [since] = useState(() => new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
   const setSearch = (patch: Partial<CursorSearch>) => {
     pushSearch('/operations', { ...search, ...patch })
   }
@@ -23,6 +34,7 @@ export function OperationsPage() {
     status: search.status,
     type: search.type,
     backend: search.backend,
+    since,
     cursor: search.cursor,
     limit: 25,
   }
@@ -30,8 +42,11 @@ export function OperationsPage() {
     queryKey: keys.jobs(params),
     queryFn: () => fetchJobs(params),
   })
-  const backend =
-    search.backend ?? (jobs.data?.sources.length === 1 ? jobs.data.sources[0]?.backend : undefined)
+  const sources = jobs.data?.sources ?? []
+  const rows = (jobs.data?.items ?? []).map((job) => ({
+    job,
+    backend: search.backend ?? (sources.length === 1 ? (sources[0]?.backend ?? '') : ''),
+  }))
 
   return (
     <div className={page.page}>
@@ -80,6 +95,12 @@ export function OperationsPage() {
           </select>
         </FilterField>
       </FilterBar>
+      <p
+        className={page.muted}
+        title="Core хранит задачи 7 суток (retention), поэтому список ограничен этим окном"
+      >
+        Окно: последние 7 суток
+      </p>
       <SourcesBanner sources={jobs.data?.sources} />
       {jobs.isPending ? <div className={page.skeleton} /> : null}
       {jobs.error ? <ErrorState error={jobs.error} onRetry={() => void jobs.refetch()} /> : null}
@@ -91,13 +112,15 @@ export function OperationsPage() {
         )
       ) : null}
       {jobs.data && jobs.data.items.length > 0 ? (
-        <JobsTable
-          jobs={jobs.data.items}
-          backend={backend}
-          nextCursor={jobs.data.next_cursor}
-          onReset={() => setSearch({ cursor: undefined })}
-          onNext={() => setSearch({ cursor: jobs.data?.next_cursor ?? undefined })}
-        />
+        <>
+          <SourcesCaption sources={jobs.data.sources} />
+          <JobsTable
+            rows={rows}
+            nextCursor={jobs.data.next_cursor}
+            onReset={() => setSearch({ cursor: undefined })}
+            onNext={() => setSearch({ cursor: jobs.data?.next_cursor ?? undefined })}
+          />
+        </>
       ) : null}
     </div>
   )

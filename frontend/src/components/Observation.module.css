@@ -9,33 +9,49 @@
   gap: var(--space-2);
   align-items: center;
   color: var(--color-muted);
-  font-size: 0.85rem;
+  font-size: 12.5px;
+}
+
+.head strong {
+  color: var(--color-text);
+  font-weight: 700;
 }
 
 .time {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--color-subtle);
   font-variant-numeric: tabular-nums;
 }
 
 .stale,
 .unavailable,
 .unknown {
-  border-radius: var(--radius);
-  padding: var(--space-3);
+  border-radius: 8px;
+  padding: var(--space-3) var(--space-4);
 }
 
 .stale {
   background: var(--tone-attention-bg);
+  border: 1px solid color-mix(in srgb, var(--tone-attention) 24%, var(--color-surface));
 }
 
 .unavailable {
   background: var(--tone-error-bg);
+  border: 1px solid color-mix(in srgb, var(--tone-error) 24%, var(--color-surface));
 }
 
 .unknown {
   background: var(--tone-unknown-bg);
+  border: 1px solid color-mix(in srgb, var(--tone-unknown) 20%, var(--color-surface));
 }
 
 .actions {
   display: flex;
   gap: var(--space-2);
+}
+
+.block p {
+  margin: 0;
+  font-size: 13.5px;
 }

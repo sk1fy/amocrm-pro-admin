@@ -6,6 +6,7 @@ import { DataTable } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { SourcesBanner } from '../../components/SourcesBanner'
+import { SourcesCaption } from '../../components/SourcesCaption'
 import page from '../../components/page.module.css'
 import { formatNull, formatTime } from '../../lib/format'
 
@@ -30,47 +31,50 @@ export function AccountHistoryPage() {
       <SourcesBanner sources={history.data?.sources} />
       {items.length === 0 ? <EmptyState title="История пуста" /> : null}
       {items.length > 0 ? (
-        <DataTable
-          rows={items}
-          rowKey={(item) => `${item.source}:${item.occurred_at}:${item.action}`}
-          nextCursor={history.data?.next_cursor}
-          onReset={() =>
-            pushSearch(`/accounts/${accountId}/history`, { ...search, cursor: undefined })
-          }
-          onNext={() =>
-            pushSearch(`/accounts/${accountId}/history`, {
-              ...search,
-              cursor: history.data?.next_cursor ?? undefined,
-            })
-          }
-          columns={[
-            {
-              id: 'when',
-              header: 'Когда',
-              cell: (item) => formatTime(item.occurred_at),
-            },
-            {
-              id: 'source',
-              header: 'Источник',
-              cell: (item) => item.source,
-            },
-            {
-              id: 'action',
-              header: 'Действие',
-              cell: (item) => item.action,
-            },
-            {
-              id: 'actor',
-              header: 'Актор',
-              cell: (item) => formatNull(item.actor_email ?? item.actor_id ?? item.actor_type),
-            },
-            {
-              id: 'object',
-              header: 'Объект',
-              cell: (item) => formatNull(item.object_ref ?? item.object_id),
-            },
-          ]}
-        />
+        <>
+          <SourcesCaption sources={history.data?.sources} />
+          <DataTable
+            rows={items}
+            rowKey={(item) => `${item.source}:${item.occurred_at}:${item.action}`}
+            nextCursor={history.data?.next_cursor}
+            onReset={() =>
+              pushSearch(`/accounts/${accountId}/history`, { ...search, cursor: undefined })
+            }
+            onNext={() =>
+              pushSearch(`/accounts/${accountId}/history`, {
+                ...search,
+                cursor: history.data?.next_cursor ?? undefined,
+              })
+            }
+            columns={[
+              {
+                id: 'when',
+                header: 'Когда',
+                cell: (item) => formatTime(item.occurred_at),
+              },
+              {
+                id: 'source',
+                header: 'Источник',
+                cell: (item) => item.source,
+              },
+              {
+                id: 'action',
+                header: 'Действие',
+                cell: (item) => item.action,
+              },
+              {
+                id: 'actor',
+                header: 'Актор',
+                cell: (item) => formatNull(item.actor_email ?? item.actor_id ?? item.actor_type),
+              },
+              {
+                id: 'object',
+                header: 'Объект',
+                cell: (item) => formatNull(item.object_ref ?? item.object_id),
+              },
+            ]}
+          />
+        </>
       ) : null}
     </div>
   )

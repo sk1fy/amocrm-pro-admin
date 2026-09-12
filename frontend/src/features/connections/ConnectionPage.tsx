@@ -49,13 +49,13 @@ export function ConnectionPage() {
           <dl className={page.dl}>
             <dt>Интеграция</dt>
             <dd>{conn.integration_code}</dd>
-            <dt>installation_id</dt>
+            <dt>ID установки</dt>
             <dd>{conn.id}</dd>
-            <dt>account_id</dt>
+            <dt>ID аккаунта</dt>
             <dd>{conn.account_id}</dd>
             <dt>Домен</dt>
             <dd>{formatNull(conn.account_domain)}</dd>
-            <dt>installed_by</dt>
+            <dt>Кем установлено</dt>
             <dd>{formatNull(conn.installed_by ?? null)}</dd>
             <dt>Создано</dt>
             <dd>{formatTime(conn.created_at)}</dd>
@@ -87,8 +87,8 @@ export function ConnectionPage() {
             </div>
             <p>Учётные данные: {auth.credentials_present ? 'есть' : 'нет'}</p>
             <p>Действует до: {formatTime(auth.expires_at)}</p>
-            <p>Версия credentials: {formatNull(auth.credential_version ?? null)}</p>
-            <p>key_version: {formatNull(auth.key_version ?? null)}</p>
+            <p>Версия учётных данных: {formatNull(auth.credential_version ?? null)}</p>
+            <p>Версия ключа: {formatNull(auth.key_version ?? null)}</p>
           </div>
         )}
       </Observation>

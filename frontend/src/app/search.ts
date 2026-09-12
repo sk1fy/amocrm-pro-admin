@@ -44,6 +44,7 @@ export type CursorSearch = {
   backend?: string
   employee?: string
   action?: string
+  limit?: number
 }
 
 export function cursorSearch(search: Record<string, unknown>): CursorSearch {
@@ -54,5 +55,6 @@ export function cursorSearch(search: Record<string, unknown>): CursorSearch {
     backend: stringParam(search.backend),
     employee: stringParam(search.employee),
     action: stringParam(search.action),
+    limit: numberParam(search.limit),
   }
 }

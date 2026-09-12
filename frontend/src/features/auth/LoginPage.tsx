@@ -38,43 +38,52 @@ export function LoginPage() {
 
   return (
     <LoginShell>
-      <form
-        className={styles.card}
-        onSubmit={(event) => void onSubmit(event)}
-        data-testid="login-form"
-      >
-        <h1>Вход в Ракурс</h1>
-        {error ? (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        ) : null}
-        <label className={styles.field}>
-          Email
-          <input
-            name="email"
-            type="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </label>
-        <label className={styles.field}>
-          Пароль
-          <input
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
-        <button type="submit" disabled={pending}>
-          Войти
-        </button>
-      </form>
+      <div className={styles.panel}>
+        <div className={styles.brand}>
+          <span className={styles.brandMark} aria-hidden="true" />
+          <div>
+            <div className={styles.brandName}>Ракурс</div>
+            <div className={styles.brandCaption}>панель управления</div>
+          </div>
+        </div>
+        <form
+          className={styles.card}
+          onSubmit={(event) => void onSubmit(event)}
+          data-testid="login-form"
+        >
+          <h1>Вход в Ракурс</h1>
+          {error ? (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          ) : null}
+          <label className={styles.field}>
+            <span>Email</span>
+            <input
+              name="email"
+              type="email"
+              autoComplete="username"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </label>
+          <label className={styles.field}>
+            <span>Пароль</span>
+            <input
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+          <button type="submit" disabled={pending}>
+            Войти
+          </button>
+        </form>
+      </div>
     </LoginShell>
   )
 }
