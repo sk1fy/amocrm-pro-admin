@@ -80,3 +80,42 @@ func TestNormalizeOriginTrimsTrailingSlash(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestLoadAPITrustProxyDefaultsToFalse(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://admin:admin@example.invalid:5432/admin")
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("TRUST_PROXY_HEADERS", "")
+
+	cfg, err := LoadAPI()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.TrustProxy {
+		t.Fatal("proxy headers must not be trusted by default")
+	}
+}
+
+func TestLoadAPITrustProxyEnabled(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://admin:admin@example.invalid:5432/admin")
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("TRUST_PROXY_HEADERS", "true")
+
+	cfg, err := LoadAPI()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.TrustProxy {
+		t.Fatal("expected proxy headers to be trusted")
+	}
+}
+
+func TestLoadAPIRejectsInvalidTrustProxy(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://admin:admin@example.invalid:5432/admin")
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("TRUST_PROXY_HEADERS", "sometimes")
+
+	_, err := LoadAPI()
+	if err == nil || !strings.Contains(err.Error(), "TRUST_PROXY_HEADERS") {
+		t.Fatalf("error = %v", err)
+	}
+}

@@ -66,6 +66,16 @@ func New(backends []adapter.Backend, auditStore *audit.Store) *Service {
 	return &Service{backends: backends, audit: auditStore}
 }
 
+const (
+	scanPageSize    = 100
+	maxScanAccounts = 1000
+	scanCursor      = "scan:"
+)
+
+func hasPostFilter(f ListFilter) bool {
+	return f.Product != "" || f.Connection != "" || f.Problem != "" || f.Origin != ""
+}
+
 func (s *Service) ListAccounts(ctx context.Context, actor adapter.Actor, filter ListFilter) (ListResult, error) {
 	limit := filter.Limit
 	if limit <= 0 {
@@ -74,12 +84,30 @@ func (s *Service) ListAccounts(ctx context.Context, actor adapter.Actor, filter 
 	if limit > 100 {
 		limit = 100
 	}
-	cursors, err := DecodeCursors(filter.Cursor)
-	if err != nil {
-		return ListResult{}, adapter.ErrInvalidArgument
+	scanOffset := 0
+	scanMode := strings.HasPrefix(filter.Cursor, scanCursor)
+	if scanMode {
+		parsed, err := strconv.Atoi(strings.TrimPrefix(filter.Cursor, scanCursor))
+		if err != nil || parsed < 0 {
+			return ListResult{}, adapter.ErrInvalidArgument
+		}
+		scanOffset = parsed
+	}
+	var cursors map[string]string
+	if !scanMode {
+		decoded, err := DecodeCursors(filter.Cursor)
+		if err != nil {
+			return ListResult{}, adapter.ErrInvalidArgument
+		}
+		cursors = decoded
+	} else {
+		cursors = map[string]string{}
 	}
 	query := NormalizeQuery(filter.Q)
 	backends := s.accountBackends(filter.Backend)
+	if hasPostFilter(filter) || scanMode {
+		return s.scanAccounts(ctx, actor, filter, query, backends, scanOffset, limit)
+	}
 	gathered := adapter.Gather(ctx, backends, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Account]], error) {
 		return backend.ListAccounts(ctx, actor, adapter.AccountFilter{
 			Query:  query.CoreQ(),
@@ -91,6 +119,8 @@ func (s *Service) ListAccounts(ctx context.Context, actor adapter.Actor, filter 
 		return ListResult{}, adapter.ErrInvalidArgument
 	}
 
+	totalKnown := true
+	total := 0
 	unavailable := sourceUnavailable(gathered.Sources)
 	merged := map[int64]*Aggregated{}
 	order := make([]int64, 0)
@@ -98,10 +128,16 @@ func (s *Service) ListAccounts(ctx context.Context, actor adapter.Actor, filter 
 	for _, obs := range gathered.Items {
 		backend := obs.Source
 		if obs.Data == nil {
+			totalKnown = false
 			continue
 		}
 		if obs.Data.NextCursor != nil && *obs.Data.NextCursor != "" {
 			next[backend] = *obs.Data.NextCursor
+		}
+		if obs.Data.Total == nil {
+			totalKnown = false
+		} else {
+			total += *obs.Data.Total
 		}
 		for _, account := range obs.Data.Items {
 			item := Aggregate(account, backend, unavailable)
@@ -134,7 +170,133 @@ func (s *Service) ListAccounts(ctx context.Context, actor adapter.Actor, filter 
 		}
 		return items[i].AccountID > items[j].AccountID
 	})
-	return ListResult{Items: items, NextCursor: EncodeCursors(next), Sources: gathered.Sources}, nil
+	var totalPtr *int
+	if totalKnown {
+		totalPtr = &total
+	}
+	return ListResult{Items: items, NextCursor: EncodeCursors(next), Total: totalPtr, Sources: gathered.Sources}, nil
+}
+
+// scanAccounts walks backend pages while a post-filter is active so that
+// filtering happens before pagination, and returns an exact total when the
+// scan completed within maxScanAccounts. The returned cursor is an opaque
+// offset that replays the same scan on the next page.
+func (s *Service) scanAccounts(
+	ctx context.Context,
+	actor adapter.Actor,
+	filter ListFilter,
+	query Query,
+	backends []adapter.Backend,
+	offset, limit int,
+) (ListResult, error) {
+	pageCursors := map[string]string{}
+	sources := []adapter.SourceStatus{}
+	unavailable := false
+	merged := map[int64]*Aggregated{}
+	order := make([]int64, 0)
+	complete := false
+	for page := 0; page < maxScanAccounts/scanPageSize; page++ {
+		gathered := adapter.Gather(ctx, backends, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Account]], error) {
+			return backend.ListAccounts(ctx, actor, adapter.AccountFilter{
+				Query:  query.CoreQ(),
+				Limit:  scanPageSize,
+				Cursor: pageCursors[backend.Descriptor().Code],
+			})
+		})
+		if gathered.Invalid != nil {
+			return ListResult{}, adapter.ErrInvalidArgument
+		}
+		if page == 0 {
+			sources = gathered.Sources
+		} else {
+			for _, source := range gathered.Sources {
+				sources = upsertSource(sources, source)
+			}
+		}
+		pageUnavailable := sourceUnavailable(gathered.Sources)
+		if pageUnavailable {
+			unavailable = true
+		}
+		more := false
+		for _, obs := range gathered.Items {
+			if obs.Data == nil {
+				continue
+			}
+			for _, account := range obs.Data.Items {
+				item := Aggregate(account, obs.Source, pageUnavailable)
+				if existing, ok := merged[account.AccountID]; ok {
+					existing.Connections = append(existing.Connections, item.Connections...)
+					existing.Domains = uniqueStrings(append(existing.Domains, item.Domains...))
+					if item.LastActivityAt.After(existing.LastActivityAt) {
+						existing.LastActivityAt = item.LastActivityAt
+					}
+					reaggregated := AggregateConnections(existing.AccountID, existing.Domains, existing.LastActivityAt, existing.Connections, pageUnavailable)
+					*existing = reaggregated
+					continue
+				}
+				copyItem := item
+				merged[account.AccountID] = &copyItem
+				order = append(order, account.AccountID)
+			}
+			if obs.Data.NextCursor != nil && *obs.Data.NextCursor != "" {
+				pageCursors[obs.Source] = *obs.Data.NextCursor
+				more = true
+			} else {
+				delete(pageCursors, obs.Source)
+			}
+		}
+		if !more {
+			complete = true
+			break
+		}
+		if len(merged) >= maxScanAccounts {
+			break
+		}
+	}
+
+	items := make([]Aggregated, 0, len(order))
+	for _, id := range order {
+		item := *merged[id]
+		if matchAggregated(item, filter) {
+			items = append(items, item)
+		}
+	}
+	sort.SliceStable(items, func(i, j int) bool {
+		if !items[i].LastActivityAt.Equal(items[j].LastActivityAt) {
+			return items[i].LastActivityAt.After(items[j].LastActivityAt)
+		}
+		return items[i].AccountID > items[j].AccountID
+	})
+
+	total := len(items)
+	if offset > total {
+		offset = total
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	next := ""
+	if end < total {
+		next = scanCursor + strconv.Itoa(end)
+	}
+	var totalPtr *int
+	if complete && !unavailable {
+		totalPtr = &total
+	}
+	return ListResult{
+		Items:      items[offset:end],
+		NextCursor: optionalCursor(next),
+		Total:      totalPtr,
+		Sources:    sources,
+	}, nil
+}
+
+func optionalCursor(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
 }
 
 func (s *Service) GetAccount(ctx context.Context, actor adapter.Actor, accountID int64) (AccountCard, error) {
@@ -157,6 +319,10 @@ func (s *Service) GetAccount(ctx context.Context, actor adapter.Actor, accountID
 		}
 		found = true
 		item := Aggregate(*obs.Data, obs.Source, unavailable)
+		for i := range item.Connections {
+			item.Connections[i].ObservedAt = obs.ObservedAt
+			item.Connections[i].Freshness = obs.Freshness
+		}
 		connections = append(connections, item.Connections...)
 		domains = append(domains, item.Domains...)
 		if item.LastActivityAt.After(lastActivity) {

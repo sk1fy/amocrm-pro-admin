@@ -38,6 +38,7 @@ type accountListItemDTO struct {
 type accountConnectionDTO struct {
 	Backend         string `json:"backend"`
 	ConnectionID    string `json:"connection_id"`
+	IntegrationID   string `json:"integration_id,omitempty"`
 	IntegrationCode string `json:"integration_code"`
 	State           string `json:"state"`
 	Raw             string `json:"raw,omitempty"`
@@ -115,6 +116,7 @@ type activityDTO struct {
 type jobDTO struct {
 	ID               string     `json:"id"`
 	InstallationID   *string    `json:"installation_id"`
+	AccountID        *string    `json:"account_id,omitempty"`
 	Type             string     `json:"type"`
 	ActorType        *string    `json:"actor_type"`
 	ActorID          *string    `json:"actor_id"`
@@ -233,7 +235,8 @@ func toAccountListItem(item accounts.Aggregated) accountListItemDTO {
 	for _, conn := range item.Connections {
 		connections = append(connections, accountConnectionDTO{
 			Backend: conn.Backend, ConnectionID: conn.ConnectionID,
-			IntegrationCode: conn.IntegrationCode, State: conn.State.Canonical, Raw: conn.State.Raw,
+			IntegrationID: conn.IntegrationID, IntegrationCode: conn.IntegrationCode,
+			State: conn.State.Canonical, Raw: conn.State.Raw,
 		})
 	}
 	return accountListItemDTO{
@@ -250,12 +253,14 @@ func toAccountListItem(item accounts.Aggregated) accountListItemDTO {
 func toAccountCard(card accounts.AccountCard) accountCardDTO {
 	connections := make([]observationDTO, 0, len(card.Connections))
 	for _, conn := range card.Connections {
-		at := conn.UpdatedAt
-		if at.IsZero() {
-			at = time.Now().UTC()
+		observedAt := conn.ObservedAt
+		freshness := conn.Freshness
+		if observedAt.IsZero() || freshness == "" {
+			observedAt = time.Now().UTC()
+			freshness = adapter.FreshnessUnknown
 		}
 		connections = append(connections, observationDTO{
-			Source: conn.Backend, ObservedAt: at, Freshness: adapter.FreshnessFresh,
+			Source: conn.Backend, ObservedAt: observedAt, Freshness: freshness,
 			Data: map[string]any{
 				"backend":          conn.Backend,
 				"connection_id":    conn.ConnectionID,
@@ -325,7 +330,8 @@ func toGrantDTOs(items []adapter.Grant) []grantDTO {
 
 func toJobDTO(item adapter.Job) jobDTO {
 	return jobDTO{
-		ID: item.ID, InstallationID: item.InstallationID, Type: item.Type,
+		ID: item.ID, InstallationID: item.InstallationID, AccountID: formatAccountIDPtr(item.AccountID),
+		Type:      item.Type,
 		ActorType: item.ActorType, ActorID: item.ActorID, ResourceType: item.ResourceType, ResourceID: item.ResourceID,
 		Status: item.Status.Canonical, Raw: item.Status.Raw, Priority: item.Priority,
 		Attempts: item.Attempts, MaxAttempts: item.MaxAttempts, RunAfter: item.RunAfter.UTC(),
@@ -404,6 +410,14 @@ func unavailableObservation(source string, err error) observationDTO {
 
 func formatAccountID(id int64) string {
 	return strconv.FormatInt(id, 10)
+}
+
+func formatAccountIDPtr(id *int64) *string {
+	if id == nil {
+		return nil
+	}
+	formatted := formatAccountID(*id)
+	return &formatted
 }
 
 func timeOrNil(value time.Time) *time.Time {

@@ -97,6 +97,7 @@ func run() error {
 		Audit:        auditStore,
 		Limiter:      limiter,
 		PublicOrigin: cfg.AdminPublicOrigin,
+		TrustProxy:   cfg.TrustProxy,
 		Logger:       logger,
 		Timeout:      cfg.DatabaseTimeout,
 		Registry:     registry,

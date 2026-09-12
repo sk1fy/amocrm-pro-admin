@@ -198,21 +198,22 @@ type Account struct {
 }
 
 type ConnectionSummary struct {
-	ID              string
-	IntegrationID   string
-	IntegrationCode string
-	AccountID       int64
-	AccountDomain   string
-	Status          State
-	WebhookStatus   State
-	Authorization   State
-	Origin          string
-	OriginRaw       string
-	InstalledBy     *int64
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	Grants          []Grant
-	Pilot           State
+	ID               string
+	IntegrationID    string
+	IntegrationCode  string
+	AccountID        int64
+	AccountDomain    string
+	Status           State
+	WebhookStatus    State
+	Authorization    State
+	Origin           string
+	OriginRaw        string
+	InstalledBy      *int64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	Grants           []Grant
+	Pilot            State
+	RecentFailedJobs int
 }
 
 type ConnectionDetail struct {
@@ -254,6 +255,7 @@ type ActivityFacts struct {
 type Job struct {
 	ID               string
 	InstallationID   *string
+	AccountID        *int64
 	Type             string
 	ActorType        *string
 	ActorID          *string

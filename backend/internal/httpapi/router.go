@@ -28,6 +28,7 @@ type Dependencies struct {
 	Audit        *audit.Store
 	Limiter      *auth.Limiter
 	PublicOrigin string
+	TrustProxy   bool
 	Logger       *slog.Logger
 	Timeout      time.Duration
 	Registry     *catalog.Registry
@@ -35,12 +36,13 @@ type Dependencies struct {
 }
 
 type api struct {
-	employees *employees.Store
-	sessions  *auth.Service
-	audit     *audit.Store
-	limiter   *auth.Limiter
-	registry  *catalog.Registry
-	accounts  *accounts.Service
+	employees  *employees.Store
+	sessions   *auth.Service
+	audit      *audit.Store
+	limiter    *auth.Limiter
+	registry   *catalog.Registry
+	accounts   *accounts.Service
+	trustProxy bool
 }
 
 func New(deps Dependencies) http.Handler {
@@ -53,12 +55,13 @@ func New(deps Dependencies) http.Handler {
 		accountSvc = accounts.New(registry.Backends(), deps.Audit)
 	}
 	h := &api{
-		employees: deps.Employees,
-		sessions:  deps.Sessions,
-		audit:     deps.Audit,
-		limiter:   deps.Limiter,
-		registry:  registry,
-		accounts:  accountSvc,
+		employees:  deps.Employees,
+		sessions:   deps.Sessions,
+		audit:      deps.Audit,
+		limiter:    deps.Limiter,
+		registry:   registry,
+		accounts:   accountSvc,
+		trustProxy: deps.TrustProxy,
 	}
 	router := chi.NewRouter()
 	router.Use(httpx.RequestID)

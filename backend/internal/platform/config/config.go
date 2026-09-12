@@ -34,6 +34,7 @@ type API struct {
 	SessionAbsoluteTTL    time.Duration
 	SessionIdleTTL        time.Duration
 	LoginRatePerMinute    int
+	TrustProxy            bool
 	BackendsFile          string
 	MigrationsDir         string
 	CookieSecure          bool
@@ -105,6 +106,10 @@ func LoadAPI() (API, error) {
 	if err != nil {
 		return API{}, err
 	}
+	trustProxy, err := boolean("TRUST_PROXY_HEADERS", false)
+	if err != nil {
+		return API{}, err
+	}
 
 	origin := strings.TrimSpace(os.Getenv("ADMIN_PUBLIC_ORIGIN"))
 	if origin == "" {
@@ -136,6 +141,7 @@ func LoadAPI() (API, error) {
 		SessionAbsoluteTTL:    absoluteTTL,
 		SessionIdleTTL:        idleTTL,
 		LoginRatePerMinute:    loginRate,
+		TrustProxy:            trustProxy,
 		BackendsFile:          strings.TrimSpace(os.Getenv("BACKENDS_FILE")),
 		MigrationsDir:         migrationsDir,
 		CookieSecure:          environment != envDevelopment,
@@ -226,6 +232,18 @@ func integer(name string, fallback, minValue, maxValue int) (int, error) {
 	value, err := strconv.Atoi(raw)
 	if err != nil || value < minValue || value > maxValue {
 		return 0, fmt.Errorf("%s must be an integer between %d and %d: %q", name, minValue, maxValue, raw)
+	}
+	return value, nil
+}
+
+func boolean(name string, fallback bool) (bool, error) {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return fallback, nil
+	}
+	value, err := strconv.ParseBool(raw)
+	if err != nil {
+		return false, fmt.Errorf("%s must be a boolean: %q", name, raw)
 	}
 	return value, nil
 }

@@ -618,6 +618,12 @@ paths:
         - name: type
           in: query
           schema: {type: string}
+        - name: since
+          in: query
+          description: Lower bound of the job window, RFC 3339. Values older than 7 days are clamped to the retention window.
+          schema:
+            type: string
+            format: date-time
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
       responses:
@@ -1010,6 +1016,7 @@ components:
       properties:
         backend: {type: string}
         connection_id: {type: string}
+        integration_id: {type: string}
         integration_code: {type: string}
         state: {type: string}
         raw: {type: string}

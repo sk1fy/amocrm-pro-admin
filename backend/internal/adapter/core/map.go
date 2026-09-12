@@ -9,14 +9,22 @@ import (
 func mapAccountListItem(item accountListItem) adapter.Account {
 	connections := make([]adapter.ConnectionSummary, 0, len(item.Installations))
 	for _, inst := range item.Installations {
-		connections = append(connections, adapter.ConnectionSummary{
-			ID:              inst.ID,
-			IntegrationID:   inst.IntegrationID,
-			IntegrationCode: inst.IntegrationCode,
-			AccountID:       item.AccountID,
-			Status:          adapter.MapConnectionStatus(inst.Status),
-			Origin:          mapOriginValue(item.Origin),
-		})
+		summary := adapter.ConnectionSummary{
+			ID:               inst.ID,
+			IntegrationID:    inst.IntegrationID,
+			IntegrationCode:  inst.IntegrationCode,
+			AccountID:        item.AccountID,
+			Status:           adapter.MapConnectionStatus(inst.Status),
+			Origin:           mapOriginValue(item.Origin),
+			RecentFailedJobs: inst.RecentFailedJobs,
+		}
+		if inst.Authorization != "" {
+			summary.Authorization = adapter.MapAuthState(inst.Authorization)
+		}
+		if inst.WebhookStatus != "" {
+			summary.WebhookStatus = adapter.MapWebhookStatus(inst.WebhookStatus)
+		}
+		connections = append(connections, summary)
 	}
 	return adapter.Account{
 		AccountID:      item.AccountID,
@@ -136,6 +144,7 @@ func mapJob(item job) adapter.Job {
 	return adapter.Job{
 		ID:               item.ID,
 		InstallationID:   item.InstallationID,
+		AccountID:        item.AccountID,
 		Type:             item.Type,
 		ActorType:        item.ActorType,
 		ActorID:          item.ActorID,

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/sk1fy/amocrm-pro-admin/internal/accounts"
 	"github.com/sk1fy/amocrm-pro-admin/internal/adapter"
@@ -29,9 +30,22 @@ func (h *api) listJobs(w http.ResponseWriter, r *http.Request) {
 	actor := adminActor(r)
 	status := strings.TrimSpace(r.URL.Query().Get("status"))
 	jobType := strings.TrimSpace(r.URL.Query().Get("type"))
+	var since *time.Time
+	if raw := strings.TrimSpace(r.URL.Query().Get("since")); raw != "" {
+		parsed, parseErr := time.Parse(time.RFC3339, raw)
+		if parseErr != nil {
+			httpx.WriteError(w, r, httpx.InvalidArgument("invalid since"))
+			return
+		}
+		parsed = parsed.UTC()
+		if time.Since(parsed) > 7*24*time.Hour {
+			parsed = time.Now().UTC().Add(-(7*24*time.Hour - time.Minute))
+		}
+		since = &parsed
+	}
 	gathered := adapter.Gather(r.Context(), backends, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Job]], error) {
 		return backend.ListJobs(ctx, actor, adapter.JobFilter{
-			Status: status, Type: jobType, Limit: limit, Cursor: cursors[backend.Descriptor().Code],
+			Status: status, Type: jobType, Since: since, Limit: limit, Cursor: cursors[backend.Descriptor().Code],
 		})
 	})
 	if gathered.Invalid != nil {

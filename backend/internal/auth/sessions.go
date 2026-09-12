@@ -308,9 +308,64 @@ func NormalizeEmail(email string) string {
 }
 
 func ClientIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	return ClientIPFrom(r, false)
+}
+
+func ClientIPFrom(r *http.Request, trustProxy bool) string {
+	if trustProxy {
+		if ip := firstForwardedIP(r.Header.Values("X-Forwarded-For")); ip != "" {
+			return ip
+		}
+		if ip := firstHeaderIP(r.Header.Values("X-Real-IP")); ip != "" {
+			return ip
+		}
+	}
+	return peerIP(r.RemoteAddr)
+}
+
+func firstForwardedIP(values []string) string {
+	for _, value := range values {
+		for _, entry := range strings.Split(value, ",") {
+			if ip := parseClientIP(entry); ip != "" {
+				return ip
+			}
+		}
+	}
+	return ""
+}
+
+func firstHeaderIP(values []string) string {
+	for _, value := range values {
+		if ip := parseClientIP(value); ip != "" {
+			return ip
+		}
+	}
+	return ""
+}
+
+func parseClientIP(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if addr, err := netip.ParseAddr(value); err == nil {
+		return addr.String()
+	}
+	host, _, err := net.SplitHostPort(value)
 	if err != nil {
-		host = r.RemoteAddr
+		return ""
+	}
+	addr, err := netip.ParseAddr(host)
+	if err != nil {
+		return ""
+	}
+	return addr.String()
+}
+
+func peerIP(remoteAddr string) string {
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		host = remoteAddr
 	}
 	if _, err := netip.ParseAddr(host); err != nil {
 		return ""

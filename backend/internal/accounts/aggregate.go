@@ -17,21 +17,23 @@ type Aggregated struct {
 }
 
 type Connection struct {
-	Backend         string
-	ConnectionID    string
-	IntegrationID   string
-	IntegrationCode string
-	State           adapter.State
-	Webhook         adapter.State
-	Authorization   adapter.State
-	Origin          string
-	AccountDomain   string
-	InstalledBy     *int64
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	Grants          []adapter.Grant
-	Pilot           adapter.State
-	Jobs            []adapter.Job
+	Backend          string
+	ConnectionID     string
+	IntegrationID    string
+	IntegrationCode  string
+	State            adapter.State
+	Webhook          adapter.State
+	Authorization    adapter.State
+	Origin           string
+	AccountDomain    string
+	InstalledBy      *int64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	Grants           []adapter.Grant
+	Pilot            adapter.State
+	RecentFailedJobs int
+	ObservedAt       time.Time
+	Freshness        string
 }
 
 func Aggregate(account adapter.Account, backend string, sourceUnavailable bool) Aggregated {
@@ -48,20 +50,21 @@ func ConnectionFromSummary(backend string, conn adapter.ConnectionSummary) Conne
 		origin = adapter.OriginReal
 	}
 	return Connection{
-		Backend:         backend,
-		ConnectionID:    conn.ID,
-		IntegrationID:   conn.IntegrationID,
-		IntegrationCode: conn.IntegrationCode,
-		State:           conn.Status,
-		Webhook:         conn.WebhookStatus,
-		Authorization:   conn.Authorization,
-		Origin:          origin,
-		AccountDomain:   conn.AccountDomain,
-		InstalledBy:     conn.InstalledBy,
-		CreatedAt:       conn.CreatedAt,
-		UpdatedAt:       conn.UpdatedAt,
-		Grants:          conn.Grants,
-		Pilot:           conn.Pilot,
+		Backend:          backend,
+		ConnectionID:     conn.ID,
+		IntegrationID:    conn.IntegrationID,
+		IntegrationCode:  conn.IntegrationCode,
+		State:            conn.Status,
+		Webhook:          conn.WebhookStatus,
+		Authorization:    conn.Authorization,
+		Origin:           origin,
+		AccountDomain:    conn.AccountDomain,
+		InstalledBy:      conn.InstalledBy,
+		CreatedAt:        conn.CreatedAt,
+		UpdatedAt:        conn.UpdatedAt,
+		Grants:           conn.Grants,
+		Pilot:            conn.Pilot,
+		RecentFailedJobs: conn.RecentFailedJobs,
 	}
 }
 
@@ -106,14 +109,7 @@ func stateOf(connections []Connection) string {
 		if c.State.Canonical == adapter.StatusPending || c.State.Canonical == adapter.StatusAuthorizing {
 			return true
 		}
-		cutoff := time.Now().UTC().Add(-24 * time.Hour)
-		for _, job := range c.Jobs {
-			if (job.Status.Canonical == adapter.StatusFailed || job.Status.Canonical == adapter.StatusDead) &&
-				!job.UpdatedAt.Before(cutoff) {
-				return true
-			}
-		}
-		return false
+		return c.RecentFailedJobs > 0
 	}) {
 		return adapter.AccountAttention
 	}
@@ -160,12 +156,8 @@ func problemsOf(connections []Connection, sourceUnavailable bool) []string {
 		if conn.State.Canonical == adapter.StatusDisabled {
 			add(adapter.ProblemDisabled)
 		}
-		cutoff := time.Now().UTC().Add(-24 * time.Hour)
-		for _, job := range conn.Jobs {
-			if (job.Status.Canonical == adapter.StatusFailed || job.Status.Canonical == adapter.StatusDead) &&
-				!job.UpdatedAt.Before(cutoff) {
-				add(adapter.ProblemJobFailures)
-			}
+		if conn.RecentFailedJobs > 0 {
+			add(adapter.ProblemJobFailures)
 		}
 	}
 	if problems == nil {

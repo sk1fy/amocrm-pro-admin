@@ -130,6 +130,7 @@ func (h *api) listConnectionJobs(w http.ResponseWriter, r *http.Request) {
 	}
 	obs, listErr := backend.ListConnectionJobs(r.Context(), adminActor(r), id, adapter.JobFilter{
 		Status: strings.TrimSpace(r.URL.Query().Get("status")),
+		Type:   strings.TrimSpace(r.URL.Query().Get("type")),
 		Limit:  limit,
 		Cursor: strings.TrimSpace(r.URL.Query().Get("cursor")),
 	})

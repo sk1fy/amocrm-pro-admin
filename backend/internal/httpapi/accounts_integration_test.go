@@ -79,6 +79,95 @@ func TestViewerReadsAccountsWithFixtureAdapter(t *testing.T) {
 		t.Fatalf("card=%d %s", card.Code, card.Body.String())
 	}
 	assertNoSecretJSONKeys(t, card.Body.Bytes())
+	var cardBody struct {
+		Connections []struct {
+			ObservedAt string `json:"observed_at"`
+			Freshness  string `json:"freshness"`
+		} `json:"connections"`
+	}
+	decodeBody(t, card, &cardBody)
+	if len(cardBody.Connections) == 0 {
+		t.Fatal("card has no connections")
+	}
+	for _, observation := range cardBody.Connections {
+		if observation.ObservedAt == "" || observation.Freshness == "" {
+			t.Fatalf("connection observation=%+v", observation)
+		}
+	}
+
+	filtered := doJSON(t, router, http.MethodGet, "/api/v1/accounts?problem=job_failures&limit=1", "", cookie)
+	if filtered.Code != http.StatusOK {
+		t.Fatalf("filtered=%d %s", filtered.Code, filtered.Body.String())
+	}
+	var filteredBody struct {
+		Items []struct {
+			AccountID string `json:"account_id"`
+		} `json:"items"`
+		Total *int `json:"total"`
+	}
+	decodeBody(t, filtered, &filteredBody)
+	if len(filteredBody.Items) != 1 {
+		t.Fatalf("problem filter=%s", filtered.Body.String())
+	}
+	if filteredBody.Total != nil {
+		t.Fatalf("total must be withheld while a source is unavailable: %v", *filteredBody.Total)
+	}
+
+	onlyAvailable := testRouterWithRegistry(t, pool, 10, catalog.FromBackends(fx))
+	exact := doJSON(t, onlyAvailable, http.MethodGet, "/api/v1/accounts?problem=job_failures&limit=1", "", cookie)
+	if exact.Code != http.StatusOK {
+		t.Fatalf("exact=%d %s", exact.Code, exact.Body.String())
+	}
+	var exactBody struct {
+		Items []struct {
+			AccountID string `json:"account_id"`
+		} `json:"items"`
+		Total *int `json:"total"`
+	}
+	decodeBody(t, exact, &exactBody)
+	if len(exactBody.Items) != 1 || exactBody.Total == nil || *exactBody.Total != 2 {
+		t.Fatalf("exact total=%s", exact.Body.String())
+	}
+
+	clamped := doJSON(t, onlyAvailable, http.MethodGet, "/api/v1/accounts?limit=101", "", cookie)
+	if clamped.Code != http.StatusOK {
+		t.Fatalf("clamped=%d %s", clamped.Code, clamped.Body.String())
+	}
+	var clampedBody struct {
+		Items []struct {
+			AccountID string `json:"account_id"`
+		} `json:"items"`
+		Total *int `json:"total"`
+	}
+	decodeBody(t, clamped, &clampedBody)
+	if len(clampedBody.Items) > 100 {
+		t.Fatalf("limit was not clamped: %d", len(clampedBody.Items))
+	}
+	if clampedBody.Total == nil || *clampedBody.Total != 6 {
+		t.Fatalf("total=%v", clampedBody.Total)
+	}
+
+	operations := doJSON(t, router, http.MethodGet, "/api/v1/operations/jobs?limit=50", "", cookie)
+	var operationsBody struct {
+		Items []struct {
+			ID        string `json:"id"`
+			AccountID string `json:"account_id"`
+		} `json:"items"`
+	}
+	decodeBody(t, operations, &operationsBody)
+	if len(operationsBody.Items) == 0 {
+		t.Fatal("no jobs returned")
+	}
+	withAccount := 0
+	for _, item := range operationsBody.Items {
+		if item.AccountID != "" {
+			withAccount++
+		}
+	}
+	if withAccount == 0 {
+		t.Fatalf("jobs account_id=%s", operations.Body.String())
+	}
+	assertNoSecretJSONKeys(t, operations.Body.Bytes())
 
 	conn := doJSON(t, router, http.MethodGet, "/api/v1/connections/fixture/f1a00000-0000-4000-8000-000000000003", "", cookie)
 	if conn.Code != http.StatusOK {

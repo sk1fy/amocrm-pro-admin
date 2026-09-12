@@ -97,6 +97,10 @@ type okResponse struct {
 	OK bool `json:"ok"`
 }
 
+func (h *api) clientIP(r *http.Request) string {
+	return auth.ClientIPFrom(r, h.trustProxy)
+}
+
 func (h *api) login(w http.ResponseWriter, r *http.Request) {
 	var body loginRequest
 	if err := decodeJSON(r, &body); err != nil {
@@ -104,7 +108,7 @@ func (h *api) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email := auth.NormalizeEmail(body.Email)
-	ip := auth.ClientIP(r)
+	ip := h.clientIP(r)
 	if !h.limiter.Allow(ip, email) {
 		httpx.WriteError(w, r, httpx.RateLimited("too many attempts"))
 		return
@@ -147,7 +151,7 @@ func (h *api) logout(w http.ResponseWriter, r *http.Request) {
 		ObjectType: "session",
 		ObjectRef:  "session:" + principal.SessionID.String(),
 		RequestID:  httpx.RequestIDFromContext(r.Context()),
-		IP:         auth.ClientIP(r),
+		IP:         h.clientIP(r),
 	})
 	h.sessions.ClearCookie(w)
 	httpx.WriteJSON(w, http.StatusOK, okResponse{OK: true})
@@ -200,7 +204,7 @@ func (h *api) revokeOwnSession(w http.ResponseWriter, r *http.Request) {
 		ObjectType: "session",
 		ObjectRef:  "session:" + id.String(),
 		RequestID:  httpx.RequestIDFromContext(r.Context()),
-		IP:         auth.ClientIP(r),
+		IP:         h.clientIP(r),
 	})
 	httpx.WriteJSON(w, http.StatusOK, okResponse{OK: true})
 }
@@ -263,7 +267,7 @@ func (h *api) createEmployee(w http.ResponseWriter, r *http.Request) {
 		ObjectType: "employee",
 		ObjectRef:  "employee:" + emp.ID.String(),
 		RequestID:  httpx.RequestIDFromContext(r.Context()),
-		IP:         auth.ClientIP(r),
+		IP:         h.clientIP(r),
 		Metadata:   map[string]any{"email": emp.Email, "role": emp.Role},
 	})
 	httpx.WriteJSON(w, http.StatusCreated, toEmployeeDTO(emp))
@@ -357,7 +361,7 @@ func (h *api) patchEmployee(w http.ResponseWriter, r *http.Request) {
 		ObjectType: "employee",
 		ObjectRef:  "employee:" + emp.ID.String(),
 		RequestID:  httpx.RequestIDFromContext(r.Context()),
-		IP:         auth.ClientIP(r),
+		IP:         h.clientIP(r),
 		Metadata:   map[string]any{"changed": changed, "from": from, "to": to},
 	})
 	httpx.WriteJSON(w, http.StatusOK, toEmployeeDTO(emp))
@@ -389,7 +393,7 @@ func (h *api) revokeEmployeeSessions(w http.ResponseWriter, r *http.Request) {
 		ObjectType: "employee",
 		ObjectRef:  "employee:" + id.String(),
 		RequestID:  httpx.RequestIDFromContext(r.Context()),
-		IP:         auth.ClientIP(r),
+		IP:         h.clientIP(r),
 	})
 	httpx.WriteJSON(w, http.StatusOK, okResponse{OK: true})
 }

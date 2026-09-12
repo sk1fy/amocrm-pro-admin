@@ -212,12 +212,35 @@ func demoData() Data {
 			},
 		},
 	}
+	installationAccount := map[string]int64{
+		c1.ID: 91000001, c2.ID: 91000001,
+		c3.ID: 91000002, c4.ID: 91000002,
+		c5.ID: 91000003, c6.ID: 91000004, c7.ID: 91000005, c8.ID: 91000006,
+	}
 	connectionJobs := map[string][]adapter.Job{}
-	for _, detail := range jobs {
+	recentFailures := map[string]int{}
+	cutoff := now.Add(-24 * time.Hour)
+	for i, detail := range jobs {
 		if detail.Job.InstallationID == nil {
 			continue
 		}
-		connectionJobs[*detail.Job.InstallationID] = append(connectionJobs[*detail.Job.InstallationID], detail.Job)
+		job := detail.Job
+		if account, ok := installationAccount[*job.InstallationID]; ok {
+			job.AccountID = &account
+		}
+		if (job.Status.Canonical == adapter.StatusFailed || job.Status.Canonical == adapter.StatusDead) &&
+			!job.UpdatedAt.Before(cutoff) {
+			recentFailures[*job.InstallationID]++
+		}
+		detail.Job = job
+		jobs[i] = detail
+		connectionJobs[*job.InstallationID] = append(connectionJobs[*job.InstallationID], job)
+	}
+	withFailures := func(conns ...adapter.ConnectionSummary) []adapter.ConnectionSummary {
+		for i := range conns {
+			conns[i].RecentFailedJobs = recentFailures[conns[i].ID]
+		}
+		return conns
 	}
 
 	actor := "fixture@example.invalid"
@@ -251,12 +274,12 @@ func demoData() Data {
 
 	return Data{
 		Accounts: []adapter.Account{
-			{AccountID: 91000001, Domains: []string{"fixture-one.amocrm.test"}, Origin: adapter.OriginFixture, LastActivityAt: c1.UpdatedAt, Connections: []adapter.ConnectionSummary{c1, c2}},
-			{AccountID: 91000002, Domains: []string{"fixture-two.amocrm.test"}, Origin: adapter.OriginFixture, LastActivityAt: c3.UpdatedAt, Connections: []adapter.ConnectionSummary{c3, c4}},
-			{AccountID: 91000003, Domains: []string{"fixture-three.amocrm.test"}, Origin: adapter.OriginFixture, LastActivityAt: c5.UpdatedAt, Connections: []adapter.ConnectionSummary{c5}},
-			{AccountID: 91000004, Domains: []string{"fixture-four.kommo.test"}, Origin: adapter.OriginFixture, LastActivityAt: c6.UpdatedAt, Connections: []adapter.ConnectionSummary{c6}},
-			{AccountID: 91000005, Domains: []string{"fixture-five.amocrm.test"}, Origin: adapter.OriginFixture, LastActivityAt: c7.UpdatedAt, Connections: []adapter.ConnectionSummary{c7}},
-			{AccountID: 91000006, Domains: []string{"fixture-six.amocrm.test"}, Origin: adapter.OriginFixture, LastActivityAt: c8.UpdatedAt, Connections: []adapter.ConnectionSummary{c8}},
+			{AccountID: 91000001, Domains: []string{"fixture-one.amocrm.test"}, Origin: adapter.OriginFixture, LastActivityAt: c1.UpdatedAt, Connections: withFailures(c1, c2)},
+			{AccountID: 91000002, Domains: []string{"fixture-two.amocrm.test"}, Origin: adapter.OriginFixture, LastActivityAt: c3.UpdatedAt, Connections: withFailures(c3, c4)},
+			{AccountID: 91000003, Domains: []string{"fixture-three.amocrm.test"}, Origin: adapter.OriginFixture, LastActivityAt: c5.UpdatedAt, Connections: withFailures(c5)},
+			{AccountID: 91000004, Domains: []string{"fixture-four.kommo.test"}, Origin: adapter.OriginFixture, LastActivityAt: c6.UpdatedAt, Connections: withFailures(c6)},
+			{AccountID: 91000005, Domains: []string{"fixture-five.amocrm.test"}, Origin: adapter.OriginFixture, LastActivityAt: c7.UpdatedAt, Connections: withFailures(c7)},
+			{AccountID: 91000006, Domains: []string{"fixture-six.amocrm.test"}, Origin: adapter.OriginFixture, LastActivityAt: c8.UpdatedAt, Connections: withFailures(c8)},
 		},
 		ConnectionDetails: details,
 		Integrations: []adapter.Integration{
