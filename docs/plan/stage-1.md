@@ -18,13 +18,34 @@ ADR 0001–0004. Перед реализацией — сверка с акту�
 
 ## Объём
 
-Заполняется агентом перед началом после сверки с `amocrm-pro/main`:
+Сверка с `amocrm-pro/main` на 2026-09-12:
 
-- [ ] Коммит `amocrm-pro`, относительно которого делается работа: `…`
-- [ ] Расхождения с «Фактами о бекенде» из [README](README.md): …
-- [ ] Зафиксированные версии: Go `…`, PostgreSQL `17`, React `…`, Vite `…`,
-      TanStack Router `…`, TanStack Query `…`, TypeScript `…`, Vitest `…`,
-      Playwright `…` (получены `npm view`, записаны в `package.json`).
+- [x] Коммит `amocrm-pro`, относительно которого делается работа:
+      `76e89ef0d374706e28ba8de0a682504d081242a4`
+      (`deploy: track existing Core Activity overlay and verified stage progress`).
+- [x] Расхождения с «Фактами о бекенде» из [README](README.md):
+      факты подтверждены (Go 1.25, PostgreSQL 17, chi v5, pgx v5, статусы
+      установок/webhook/jobs, outbox `expired` из миграции `000014`,
+      `apicontract.Routes` vs OpenAPI, отсутствие HTTP-списков,
+      `testkit.Reset` без `activity_pilots` /
+      `installation_webhook_destinations` / `integration_services`).
+      Уточнения, не ломающие план:
+      - `ListDeliveries` не фильтрует по `installation_id` и отдаёт только
+        `failed`/`expired`; CLI не меняем — добавляем
+        `ListDeliveriesFiltered`.
+      - `installations.settings` в проде не пишется; метка `fixture`
+        живёт в `settings.origin` только у SQL-fixture админки
+        (как в `data-sources.md`).
+      - `client_secret_key_version` читаем, в JSON отдаём как
+        `key_version` (ключ с подстрокой `secret` в ответах запрещён).
+      - Listener выключен, если `ADMIN_HTTP_ADDRESS` и `ADMIN_API_TOKEN`
+        оба пусты; одна переменная без другой — ошибка старта.
+      В `data-sources.md` правок не требуется.
+- [x] Зафиксированные версии (`npm view` 2026-09-12; Go — `go.mod` Core):
+      Go `1.25.0`, PostgreSQL `17`, React `19.3.0`, Vite `8.3.0`,
+      TanStack Router `1.170.35`, TanStack Query `5.102.8`,
+      TypeScript `7.0.2`, Vitest `5.0.0`, Playwright `1.63.0`.
+      Записываются в `frontend/package.json` в части 1.4.
 
 ## Части этапа (в порядке выполнения)
 
