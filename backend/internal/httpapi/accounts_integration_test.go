@@ -25,7 +25,7 @@ import (
 func TestViewerReadsAccountsWithFixtureAdapter(t *testing.T) {
 	pool := testkit.Postgres(t)
 	testkit.Reset(t, pool)
-	fx := sampleFixture()
+	fx := fixture.Demo("fixture")
 	router := testRouterWithRegistry(t, pool, 10, catalog.FromBackends(fixture.Unavailable("core"), fx))
 	ctx := context.Background()
 	store := employees.NewStore(pool, 2*time.Second)
@@ -139,69 +139,5 @@ func testRouterWithRegistry(t *testing.T, pool *pgxpool.Pool, loginRate int, reg
 		Timeout:      2 * time.Second,
 		Registry:     registry,
 		Accounts:     accounts.New(registry.Backends(), auditStore),
-	})
-}
-
-func sampleFixture() *fixture.Adapter {
-	now := time.Date(2026, 9, 12, 10, 0, 0, 0, time.UTC)
-	reauth := adapter.ConnectionSummary{
-		ID: "f1a00000-0000-4000-8000-000000000003", IntegrationID: "int-a",
-		IntegrationCode: "fixture-widget-a", AccountID: 91000002,
-		AccountDomain: "fixture-two.amocrm.test",
-		Status:        adapter.State{Canonical: adapter.StatusReauthRequired},
-		WebhookStatus: adapter.State{Canonical: adapter.StatusError},
-		Origin:        adapter.OriginFixture, UpdatedAt: now,
-	}
-	active := adapter.ConnectionSummary{
-		ID: "f1a00000-0000-4000-8000-000000000004", IntegrationID: "int-b",
-		IntegrationCode: "fixture-widget-b", AccountID: 91000002,
-		AccountDomain: "fixture-two.amocrm.test",
-		Status:        adapter.State{Canonical: adapter.StatusActive},
-		WebhookStatus: adapter.State{Canonical: adapter.StatusActive},
-		Origin:        adapter.OriginFixture, UpdatedAt: now,
-	}
-	other := adapter.Account{
-		AccountID: 91000001, Domains: []string{"fixture-one.amocrm.test"}, Origin: adapter.OriginFixture,
-		LastActivityAt: now.Add(-time.Hour),
-		Connections: []adapter.ConnectionSummary{{
-			ID: "f1a00000-0000-4000-8000-000000000001", IntegrationCode: "fixture-widget-a",
-			AccountID: 91000001, Status: adapter.State{Canonical: adapter.StatusActive}, Origin: adapter.OriginFixture,
-		}},
-	}
-	return fixture.New(fixture.Options{
-		Code: "fixture",
-		Data: fixture.Data{
-			Accounts: []adapter.Account{
-				other,
-				{
-					AccountID: 91000002, Domains: []string{"fixture-two.amocrm.test"}, Origin: adapter.OriginFixture,
-					LastActivityAt: now, Connections: []adapter.ConnectionSummary{reauth, active},
-				},
-			},
-			ConnectionDetails: map[string]adapter.ConnectionDetail{
-				reauth.ID: {
-					Connection: reauth,
-					Authorization: adapter.Authorization{
-						State:              adapter.State{Canonical: adapter.AuthReauthRequired},
-						CredentialsPresent: true, CredentialVersion: 3, Unverified: true,
-					},
-					Webhook:  adapter.Webhook{Status: adapter.State{Canonical: adapter.StatusError}, Events: []string{"add_lead"}},
-					Grants:   []adapter.Grant{{Service: "lead-status", State: adapter.MapGrant(true)}},
-					Activity: adapter.ActivityFacts{Pilot: adapter.State{Canonical: adapter.PilotDisabled}},
-				},
-			},
-			Integrations: []adapter.Integration{{
-				ID: "int-a", Code: "fixture-widget-a", ClientID: "client-a", Status: adapter.State{Canonical: adapter.StatusActive},
-			}},
-			Jobs: []adapter.JobDetail{{
-				Job: adapter.Job{ID: "job-1", Type: "webhook.reconcile", Status: adapter.State{Canonical: adapter.StatusFailed}, CreatedAt: now, UpdatedAt: now},
-			}},
-			ConnectionJobs: map[string][]adapter.Job{
-				reauth.ID: {{ID: "job-1", Type: "webhook.reconcile", Status: adapter.State{Canonical: adapter.StatusFailed}, CreatedAt: now, UpdatedAt: now}},
-			},
-			ConnectionAudit: map[string][]adapter.AuditEntry{
-				reauth.ID: {{ID: 1, Action: "installation.reauth_required", ActorType: "fixture", CreatedAt: now, Metadata: []byte(`{"origin":"fixture"}`)}},
-			},
-		},
 	})
 }

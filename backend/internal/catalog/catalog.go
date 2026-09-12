@@ -237,7 +237,7 @@ func buildBackend(cfg yamlBackend, lookup func(string) (string, bool), newCore c
 			item.Adapter = backend
 			break
 		}
-		item.Adapter = fixture.New(fixture.Options{Code: code, Timeout: timeout})
+		item.Adapter = fixture.Demo(code)
 	default:
 		return Backend{}, fmt.Errorf("backend %s: unsupported kind %q", code, kind)
 	}

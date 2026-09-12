@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,6 +84,13 @@ backends:
 	item, ok := reg.Get("fixture")
 	if !ok || item.Adapter.Descriptor().Kind != adapter.KindFixture {
 		t.Fatalf("item=%+v ok=%t", item, ok)
+	}
+	page, err := item.Adapter.ListAccounts(context.Background(), adapter.Actor{}, adapter.AccountFilter{Limit: 100})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.Data == nil || page.Data.Total == nil || *page.Data.Total != 6 {
+		t.Fatalf("demo accounts=%+v", page.Data)
 	}
 }
 

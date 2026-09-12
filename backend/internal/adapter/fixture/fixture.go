@@ -254,11 +254,23 @@ func (a *Adapter) ListJobs(ctx context.Context, _ adapter.Actor, f adapter.JobFi
 		return adapter.Observation[adapter.Page[adapter.Job]]{}, err
 	}
 	items := make([]adapter.Job, 0, len(a.data.Jobs))
+	seen := map[string]struct{}{}
+	add := func(item adapter.Job) {
+		if item.ID != "" {
+			if _, ok := seen[item.ID]; ok {
+				return
+			}
+			seen[item.ID] = struct{}{}
+		}
+		items = append(items, item)
+	}
 	for _, detail := range a.data.Jobs {
-		items = append(items, detail.Job)
+		add(detail.Job)
 	}
 	for _, jobs := range a.data.ConnectionJobs {
-		items = append(items, jobs...)
+		for _, job := range jobs {
+			add(job)
+		}
 	}
 	items = filterJobs(items, f)
 	page, err := paginate(items, f.Limit, f.Cursor, func(item adapter.Job) string { return item.ID })
