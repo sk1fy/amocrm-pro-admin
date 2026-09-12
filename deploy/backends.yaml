@@ -1,0 +1,26 @@
+# Backend registry for admin-api. Committed without secrets: each backend
+# names the environment variable that holds its service token.
+# Contract: docs/design/backend-adapter.md (v1 draft).
+version: 1
+backends:
+  - code: core
+    kind: core-http
+    display_name: "Core (amocrm-pro)"
+    # Development: admin listener of the amocrm-pro pilot stack published on the
+    # host loopback (ACTIVITY_ADMIN_PORT, default 18083). From inside the admin
+    # compose network the host is reachable as host.docker.internal.
+    base_url: http://host.docker.internal:18083
+    token_env: CORE_ADMIN_API_TOKEN
+    timeout: 5s
+    health_path: /admin/v1/backend
+    products:
+      - code: lead-status
+        display_name: "Статусы сделок"
+      - code: activity
+        display_name: "Активность сотрудников"
+
+# Stage 4 adds a second entry with kind: fixture to prove the adapter contract:
+#  - code: fixture
+#    kind: fixture
+#    display_name: "Fixture backend"
+#    products: [{ code: fixture-product, display_name: "Тестовый продукт" }]

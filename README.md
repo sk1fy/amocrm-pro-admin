@@ -17,8 +17,10 @@ amoCRM, проверка подключённых виджетов, диагно
 ## Состояние
 
 Репозиторий находится на этапе **подготовки основы**: зафиксированы архитектурные
-решения, план четырёх этапов и стайл-гайд. Код Admin API и frontend ещё не
-создан. Следующий шаг — реализация [этапа 1](docs/plan/stage-1.md).
+решения, план четырёх этапов, стайл-гайд, схема собственной БД, `Makefile`,
+конфигурация бекендов (`deploy/backends.yaml`, `.env.example`) и помеченный
+fixture для пилотного стека Core. Код Admin API и frontend ещё не создан.
+Следующий шаг — реализация [этапа 1](docs/plan/stage-1.md).
 
 ## С чего начать
 
@@ -34,6 +36,8 @@ amoCRM, проверка подключённых виджетов, диагно
 | Роли и права | [docs/design/roles.md](docs/design/roles.md) |
 | Контракты Admin API и Core admin read | [docs/design/admin-api.md](docs/design/admin-api.md) |
 | Контракт адаптера бекенда | [docs/design/backend-adapter.md](docs/design/backend-adapter.md) |
+| Схема собственной БД | [docs/design/admin-db-schema.md](docs/design/admin-db-schema.md) |
+| Локальный запуск и fixtures | [docs/runbooks/local-run.md](docs/runbooks/local-run.md) |
 | Принятые решения | [docs/adr/](docs/adr/) |
 
 ## Целевая структура репозитория
