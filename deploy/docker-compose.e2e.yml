@@ -2,6 +2,5 @@ services:
   admin-api:
     environment:
       BACKENDS_FILE: /etc/admin/backends-e2e.yaml
-      ADMIN_PUBLIC_ORIGIN: http://host.docker.internal:5173
     volumes:
       - ./backends-e2e.yaml:/etc/admin/backends-e2e.yaml:ro

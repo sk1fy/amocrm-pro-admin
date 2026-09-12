@@ -20,9 +20,15 @@ FROM dependencies AS source
 
 ARG BUILD_REVISION=unknown
 
+RUN echo "$BUILD_REVISION" > /build-revision
+
 COPY . .
 
 FROM dependencies AS test-base
+
+ARG BUILD_REVISION=unknown
+
+RUN echo "$BUILD_REVISION" > /build-revision
 
 ENV CGO_ENABLED=1
 

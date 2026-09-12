@@ -65,12 +65,13 @@ services:
       SESSION_ABSOLUTE_TTL: "${SESSION_ABSOLUTE_TTL:-12h}"
       SESSION_IDLE_TTL: "${SESSION_IDLE_TTL:-2h}"
       LOGIN_RATE_PER_MINUTE: "${LOGIN_RATE_PER_MINUTE:-10}"
+      TRUST_PROXY_HEADERS: "${TRUST_PROXY_HEADERS:-true}"
       BACKENDS_FILE: "${BACKENDS_FILE:-/etc/admin/backends.yaml}"
       CORE_ADMIN_API_TOKEN: "${CORE_ADMIN_API_TOKEN:-admin-dev-token-change-me}"
       MIGRATIONS_DIR: /migrations
     ports:
-      - "127.0.0.1:8090:8090"
-      - "127.0.0.1:8092:8092"
+      - "127.0.0.1:${HTTP_PORT:-8090}:8090"
+      - "127.0.0.1:${MANAGEMENT_PORT:-8092}:8092"
     volumes:
       - ./backends.yaml:/etc/admin/backends.yaml:ro
     extra_hosts:
@@ -126,7 +127,7 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
     ports:
-      - "127.0.0.1:5173:80"
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:80"
     depends_on:
       admin-api:
         condition: service_healthy

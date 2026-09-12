@@ -15,7 +15,15 @@ PLAYWRIGHT_IMAGE ?= mcr.microsoft.com/playwright:v1.63.0-jammy
 E2E_PROJECT ?= amocrm-pro-admin-e2e
 E2E_EMAIL ?= admin@example.invalid
 E2E_PASSWORD ?= correct-horse-battery
-E2E_BASE_URL ?= http://host.docker.internal:5173
+# Isolated host ports so the e2e stack can run next to the dev stack.
+E2E_POSTGRES_PORT ?= 5434
+E2E_FRONTEND_PORT ?= 5174
+E2E_HTTP_PORT ?= 8094
+E2E_MANAGEMENT_PORT ?= 8095
+E2E_BASE_URL ?= http://host.docker.internal:$(E2E_FRONTEND_PORT)
+E2E_ENV = POSTGRES_PORT=$(E2E_POSTGRES_PORT) FRONTEND_PORT=$(E2E_FRONTEND_PORT) \
+	HTTP_PORT=$(E2E_HTTP_PORT) MANAGEMENT_PORT=$(E2E_MANAGEMENT_PORT) \
+	ADMIN_PUBLIC_ORIGIN='http://host.docker.internal:$(E2E_FRONTEND_PORT)'
 
 # Core pilot stack of amocrm-pro (docker-compose.activity.yml). Fixtures and
 # local runs target this stack only; production is never a fixture target.
@@ -37,6 +45,12 @@ DOCKER_GOLANGCI := $(DOCKER) run --rm --user "$(UID):$(GID)" \
 	--workdir /src $(GOLANGCI_LINT_IMAGE)
 DOCKER_NODE := $(DOCKER) run --rm --user "$(UID):$(GID)" \
 	--env HOME=/tmp --volume "$(CURDIR)/frontend:/src" --workdir /src $(NODE_IMAGE)
+
+# Content revision of the working tree. Docker's legacy builder does not always
+# invalidate COPY layers on file changes, so the value is used as a cache-bust
+# layer inside the images.
+BUILD_REVISION ?= $(shell { git rev-parse HEAD 2>/dev/null || echo unknown; git status --porcelain 2>/dev/null; git diff HEAD 2>/dev/null; } | { shasum 2>/dev/null || sha1sum; } | cut -c1-12)
+export BUILD_REVISION
 
 .DEFAULT_GOAL := help
 
@@ -117,6 +131,7 @@ integration-test: ## Migrations up/down and *_integration_test.go against dispos
 	@set -eu; \
 	cleanup() { $(COMPOSE) -p amocrm-pro-admin-test -f deploy/docker-compose.test.yml down --volumes --remove-orphans >/dev/null 2>&1 || true; }; \
 	trap cleanup EXIT INT TERM; cleanup; \
+	$(COMPOSE) -p amocrm-pro-admin-test -f deploy/docker-compose.test.yml build migrate integration-test; \
 	$(COMPOSE) -p amocrm-pro-admin-test -f deploy/docker-compose.test.yml up --detach --wait postgres; \
 	$(COMPOSE) -p amocrm-pro-admin-test -f deploy/docker-compose.test.yml run --rm migrate up; \
 	$(COMPOSE) -p amocrm-pro-admin-test -f deploy/docker-compose.test.yml run --rm integration-test
@@ -125,10 +140,10 @@ e2e: ## Playwright scenarios against the built stack with the fixture adapter
 	@test -d frontend/e2e || { echo "frontend/e2e is not created yet (stage 1, part 1.4)" >&2; exit 1; }
 	@set -eu; \
 	files="-f deploy/docker-compose.yml -f deploy/docker-compose.e2e.yml"; \
-	cleanup() { $(COMPOSE) -p $(E2E_PROJECT) $$files down --volumes --remove-orphans >/dev/null 2>&1 || true; }; \
+	cleanup() { $(E2E_ENV) $(COMPOSE) -p $(E2E_PROJECT) $$files down --volumes --remove-orphans >/dev/null 2>&1 || true; }; \
 	trap cleanup EXIT INT TERM; \
-	$(COMPOSE) -p $(E2E_PROJECT) $$files up --build --detach --wait; \
-	printf '%s' '$(E2E_PASSWORD)' | $(COMPOSE) -p $(E2E_PROJECT) $$files --profile tools run --rm -T admin-cli \
+	$(E2E_ENV) $(COMPOSE) -p $(E2E_PROJECT) $$files up --build --detach --wait; \
+	printf '%s' '$(E2E_PASSWORD)' | $(E2E_ENV) $(COMPOSE) -p $(E2E_PROJECT) $$files --profile tools run --rm -T admin-cli \
 	  employee create --email '$(E2E_EMAIL)' --name Admin --role admin --password-stdin \
 	  >/dev/null 2>&1 || true; \
 	$(DOCKER) run --rm \
@@ -149,10 +164,12 @@ check: docs-check lint test integration-test ## Everything required before mergi
 # ---------------------------------------------------------------------------
 
 fixtures-core-dry-run: ## Validate deploy/fixtures/core-installations.sql inside a rolled-back transaction
+	@test -f deploy/fixtures/core-installations.sql || { echo "deploy/fixtures/core-installations.sql is missing" >&2; exit 1; }
 	@$(DOCKER) exec -i $(CORE_PILOT_DB_CONTAINER) psql -v ON_ERROR_STOP=1 -U $(CORE_PILOT_DB_USER) -d $(CORE_PILOT_DB_NAME) \
-		-c 'BEGIN;' -f deploy/fixtures/core-installations.sql -c 'ROLLBACK;' >/dev/null && echo "fixtures: dry run ok"
+		-c 'BEGIN;' -f - -c 'ROLLBACK;' < deploy/fixtures/core-installations.sql >/dev/null && echo "fixtures: dry run ok"
 
 fixtures-core: ## Apply labelled fixture installations to the Core pilot stack (requires FIXTURES_CONFIRM=core-pilot)
 	@test "$(FIXTURES_CONFIRM)" = "core-pilot" || { echo "Refusing: set FIXTURES_CONFIRM=core-pilot (development pilot stack only)" >&2; exit 1; }
+	@test -f deploy/fixtures/core-installations.sql || { echo "deploy/fixtures/core-installations.sql is missing" >&2; exit 1; }
 	$(DOCKER) exec -i $(CORE_PILOT_DB_CONTAINER) psql -v ON_ERROR_STOP=1 -U $(CORE_PILOT_DB_USER) -d $(CORE_PILOT_DB_NAME) \
-		--single-transaction -f deploy/fixtures/core-installations.sql
+		--single-transaction -f - < deploy/fixtures/core-installations.sql
