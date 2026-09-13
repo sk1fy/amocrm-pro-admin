@@ -11,6 +11,7 @@ import { SourcesCaption } from '../../components/SourcesCaption'
 import { JobsTable } from './JobsTable'
 import page from '../../components/page.module.css'
 import { lookupState } from '../../states'
+import { OperationsNav } from './OperationsNav'
 
 export const jobStatuses = [
   'queued',
@@ -51,6 +52,7 @@ export function OperationsPage() {
   return (
     <div className={page.page}>
       <h1>Операции</h1>
+      <OperationsNav />
       <FilterBar
         onSubmit={(event) => {
           event.preventDefault()

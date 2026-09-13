@@ -45,6 +45,10 @@ export type CursorSearch = {
   employee?: string
   action?: string
   limit?: number
+  state?: string
+  target_type?: string
+  target_id?: string
+  command?: string
 }
 
 export function cursorSearch(search: Record<string, unknown>): CursorSearch {
@@ -56,5 +60,9 @@ export function cursorSearch(search: Record<string, unknown>): CursorSearch {
     employee: stringParam(search.employee),
     action: stringParam(search.action),
     limit: numberParam(search.limit),
+    state: stringParam(search.state),
+    target_type: stringParam(search.target_type),
+    target_id: stringParam(search.target_id),
+    command: stringParam(search.command),
   }
 }

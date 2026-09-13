@@ -21,6 +21,8 @@ import { ConnectionPage } from '../features/connections/ConnectionPage'
 import { AccountOperationsPage } from '../features/operations/AccountOperationsPage'
 import { AccountHistoryPage } from '../features/operations/AccountHistoryPage'
 import { OperationsPage } from '../features/operations/OperationsPage'
+import { AdminOperationsPage } from '../features/operations/AdminOperationsPage'
+import { OperationPage } from '../features/operations/OperationPage'
 import { WidgetsPage } from '../features/integrations/WidgetsPage'
 import { IntegrationPage } from '../features/integrations/IntegrationPage'
 import { SystemPage } from '../features/system/SystemPage'
@@ -161,6 +163,18 @@ const operationsRoute = createRoute({
   component: OperationsPage,
 })
 
+const adminOperationsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/operations/admin',
+  validateSearch: cursorSearch,
+  component: AdminOperationsPage,
+})
+const adminOperationRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/operations/admin/$operationId',
+  component: OperationPage,
+})
+
 const systemRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/system',
@@ -201,6 +215,8 @@ const routeTree = rootRoute.addChildren([
     widgetsRoute,
     integrationRoute,
     operationsRoute,
+    adminOperationsRoute,
+    adminOperationRoute,
     systemRoute,
     employeesRoute,
     sessionsRoute,

@@ -34,7 +34,8 @@ frontend использует `GET /api/v1/me` только для скрыти�
 | `integrations:write` (создание, параметры, сервисы) | — | — | ✓ | этап 2 |
 | `integrations:rotate_secret` | — | — | ✓ | этап 2 |
 | `integrations:enable`, `integrations:disable` | — | — | ✓ | этап 2 |
-| `activity:settings:write`, `activity:sync`, `activity:panels:write`, `activity:pilot` | — | ✓ | ✓ | этап 3 |
+| `activity:settings:write`, `activity:sync`, `activity:panels:write` | — | ✓ | ✓ | этап 3 |
+| `activity:pilot` | — | ✓ | ✓ | этап 2 |
 | `leadstatus:rules:write` | — | ✓ | ✓ | этап 3 |
 | `stats:read` | ✓ | ✓ | ✓ | этап 3 |
 | `views:write` (сохранённые представления, общие) | — | ✓ | ✓ | этап 3 |

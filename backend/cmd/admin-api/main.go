@@ -15,6 +15,7 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/catalog"
 	"github.com/sk1fy/amocrm-pro-admin/internal/employees"
 	"github.com/sk1fy/amocrm-pro-admin/internal/httpapi"
+	"github.com/sk1fy/amocrm-pro-admin/internal/operations"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/config"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/logging"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/migrations"
@@ -68,6 +69,11 @@ func run() error {
 		return err
 	}
 	accountService := accounts.New(registry.Backends(), auditStore)
+	operationService := operations.New(operations.NewStore(pool, cfg.DatabaseTimeout, auditStore), registry, employeeStore)
+	reconcileCtx, stopReconcile := context.WithCancel(ctx)
+	reconcileDone := make(chan struct{})
+	go func() { defer close(reconcileDone); operationService.Reconcile(reconcileCtx) }()
+	defer func() { stopReconcile(); <-reconcileDone }()
 
 	cleanupContext, stopCleanup := context.WithCancel(ctx)
 	cleanupDone := make(chan struct{})
@@ -92,6 +98,7 @@ func run() error {
 	}()
 
 	public := httpapi.New(httpapi.Dependencies{
+		Operations:   operationService,
 		Employees:    employeeStore,
 		Sessions:     sessionService,
 		Audit:        auditStore,

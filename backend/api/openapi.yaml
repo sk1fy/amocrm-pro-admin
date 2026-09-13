@@ -742,6 +742,228 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/v1/connections/{backend}/{connection_id}/commands/{command}:
+    post:
+      tags: [Operations]
+      operationId: submitConnectionCommand
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+        - $ref: '#/components/parameters/Command'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: true}
+      responses:
+        '202':
+          description: Durable operation, including terminal or unknown outcomes.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OperationEnvelope'}
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/integrations/{backend}/commands/create:
+    post:
+      tags: [Operations]
+      operationId: createIntegrationCommand
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Backend'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: true}
+      responses:
+        '202':
+          description: Durable operation, including terminal or unknown outcomes.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OperationEnvelope'}
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/integrations/{backend}/{integration_id}/commands/{command}:
+    post:
+      tags: [Operations]
+      operationId: submitIntegrationCommand
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/IntegrationID'
+        - $ref: '#/components/parameters/Command'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: true}
+      responses:
+        '202':
+          description: Durable operation, including terminal or unknown outcomes.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OperationEnvelope'}
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/operations/jobs/{backend}/{job_id}/retry:
+    post:
+      tags: [Operations]
+      operationId: retryJob
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/JobID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: true}
+      responses:
+        '202':
+          description: Durable operation, including terminal or unknown outcomes.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OperationEnvelope'}
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/connections/{backend}/{connection_id}/deliveries/{delivery_id}/retry:
+    post:
+      tags: [Operations]
+      operationId: retryDelivery
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+        - $ref: '#/components/parameters/DeliveryID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: true}
+      responses:
+        '202':
+          description: Durable operation, including terminal or unknown outcomes.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OperationEnvelope'}
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/operations/admin:
+    get:
+      tags: [Operations]
+      operationId: listAdminOperations
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - name: backend
+          in: query
+          schema: {type: string}
+        - name: target_type
+          in: query
+          schema: {type: string}
+        - name: target_id
+          in: query
+          schema: {type: string}
+        - name: command
+          in: query
+          schema: {type: string}
+        - name: state
+          in: query
+          schema: {type: string}
+        - name: request_key
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: Persisted operations in newest-first keyset order.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OperationList'}
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+  /api/v1/operations/admin/{id}:
+    get:
+      tags: [Operations]
+      operationId: getAdminOperation
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '200':
+          description: Current persisted outcome; pending Core receipt is polled read-only.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OperationEnvelope'}
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+
 components:
   securitySchemes:
     adminSession:
@@ -749,6 +971,22 @@ components:
       in: cookie
       name: admin_session
   parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 128}
+    Command:
+      name: command
+      in: path
+      required: true
+      schema: {type: string}
+    DeliveryID:
+      name: delivery_id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+
     RequestID:
       name: X-Request-ID
       in: header
@@ -828,6 +1066,37 @@ components:
         type: string
         format: uuid
   schemas:
+    AdminOperation:
+      type: object
+      required: [id, employee_id, backend, target_type, target_id, command, state, result, created_at, updated_at]
+      properties:
+        id: {type: string, format: uuid}
+        employee_id: {type: string, format: uuid}
+        backend: {type: string}
+        target_type: {type: string}
+        target_id: {type: string}
+        command: {type: string}
+        state: {type: string, enum: [accepted, pending, running, succeeded, failed, partial, unknown_outcome]}
+        outcome: {type: string}
+        result: {type: object, additionalProperties: true}
+        error: {type: object, additionalProperties: true}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        finished_at: {type: string, format: date-time, nullable: true}
+        observed_at: {type: string, format: date-time, nullable: true}
+    OperationEnvelope:
+      type: object
+      required: [operation]
+      properties:
+        operation: {$ref: '#/components/schemas/AdminOperation'}
+    OperationList:
+      type: object
+      required: [items, next_cursor, total]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/AdminOperation'}}
+        next_cursor: {type: string, nullable: true}
+        total: {type: integer, nullable: true}
+
     LoginRequest:
       type: object
       additionalProperties: false

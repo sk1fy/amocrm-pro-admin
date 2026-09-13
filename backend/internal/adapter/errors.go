@@ -11,6 +11,7 @@ var (
 	ErrUnsupported     = errors.New("unsupported")
 	ErrInvalidArgument = errors.New("invalid argument")
 	ErrConflict        = errors.New("conflict")
+	ErrRejected        = errors.New("backend rejected command")
 )
 
 type Error struct {

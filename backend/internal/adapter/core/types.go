@@ -120,6 +120,7 @@ type activityInfo struct {
 }
 
 type job struct {
+	RetryAllowed     *bool      `json:"retry_allowed"`
 	ID               string     `json:"id"`
 	InstallationID   *string    `json:"installation_id"`
 	AccountID        *int64     `json:"account_id"`

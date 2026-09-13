@@ -1,9 +1,10 @@
-import { apiGet, apiSend, queryString } from './client'
+import { apiFetch, apiGet, apiSend, queryString } from './client'
 import type {
   AccountCard,
   AccountListItem,
   AccountJob,
   AdminAudit,
+  AdminOperation,
   BackendsResponse,
   Catalog,
   ConnectionCard,
@@ -15,6 +16,7 @@ import type {
   ListResponse,
   Me,
   Observation,
+  OperationResponse,
   Session,
   SourcedList,
 } from './types'
@@ -43,6 +45,9 @@ export const keys = {
   employees: ['employees'] as const,
   sessions: ['sessions'] as const,
   audit: (params: Record<string, string | number | undefined>) => ['audit', params] as const,
+  adminOperations: (params: Record<string, string | number | undefined>) =>
+    ['admin-operations', params] as const,
+  adminOperation: (id: string) => ['admin-operation', id] as const,
 }
 
 export function fetchMe(): Promise<Me> {
@@ -148,4 +153,26 @@ export function fetchAudit(
   params: Record<string, string | number | undefined>,
 ): Promise<ListResponse<AdminAudit>> {
   return apiGet(`/api/v1/system/audit${queryString(params)}`)
+}
+
+export function sendCommand(
+  path: string,
+  payload: Record<string, unknown>,
+  key: string,
+): Promise<OperationResponse> {
+  return apiFetch(path, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': key },
+    body: JSON.stringify(payload),
+  })
+}
+
+export function fetchAdminOperation(id: string): Promise<OperationResponse> {
+  return apiGet(`/api/v1/operations/admin/${encodeURIComponent(id)}`)
+}
+
+export function fetchAdminOperations(
+  params: Record<string, string | number | undefined>,
+): Promise<ListResponse<AdminOperation>> {
+  return apiGet(`/api/v1/operations/admin${queryString(params)}`)
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/auth"
 	"github.com/sk1fy/amocrm-pro-admin/internal/catalog"
 	"github.com/sk1fy/amocrm-pro-admin/internal/employees"
+	"github.com/sk1fy/amocrm-pro-admin/internal/operations"
 	"github.com/sk1fy/amocrm-pro-admin/internal/rbac"
 	"github.com/sk1fy/amocrm-pro-admin/internal/testkit"
 )
@@ -222,6 +223,7 @@ func testRouterWithRegistry(t *testing.T, pool *pgxpool.Pool, loginRate int, reg
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	auditStore := audit.NewStore(pool, 2*time.Second)
 	return New(Dependencies{
+		Operations:   operations.New(operations.NewStore(pool, 2*time.Second, auditStore), registry, employees.NewStore(pool, 2*time.Second)),
 		Employees:    employees.NewStore(pool, 2*time.Second),
 		Sessions:     auth.NewService(pool, 2*time.Second, 12*time.Hour, 2*time.Hour, false),
 		Audit:        auditStore,

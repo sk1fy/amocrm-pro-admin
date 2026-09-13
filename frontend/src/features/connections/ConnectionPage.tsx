@@ -8,6 +8,9 @@ import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
 import { parseActivity } from '../../lib/activity'
 import { formatNull, formatTime } from '../../lib/format'
+import { CommandAction } from '../operations/CommandAction'
+import { connectionCommand } from '../operations/commands'
+import { RetryDelivery } from '../operations/RetryActions'
 
 export function ConnectionPage() {
   const { accountId, backend, connectionId } = useRouteParams<{
@@ -40,6 +43,35 @@ export function ConnectionPage() {
         </Link>
       </p>
       <h2>Подключение {identity?.integration_code ?? connectionId}</h2>
+      <div className={page.row}>
+        {[
+          'check',
+          'enable',
+          'disable',
+          'revoke',
+          'uninstall',
+          'reconcile',
+          'pilot-enable',
+          'pilot-disable',
+        ].map((command) => (
+          <CommandAction
+            key={command}
+            spec={connectionCommand(backend, connectionId, command, accountId)}
+            disabled={
+              !identity ||
+              (command === 'enable' && identity.state !== 'disabled') ||
+              (command === 'revoke' && ['disabled', 'uninstalled'].includes(identity.state))
+            }
+            onInspect={() => void query.refetch()}
+          />
+        ))}
+      </div>
+      <Link
+        to="/operations/admin"
+        search={{ backend, target_type: 'installation', target_id: connectionId }}
+      >
+        История команд этого подключения
+      </Link>
       <Observation
         title="Идентификация"
         observation={card.connection}
@@ -92,6 +124,23 @@ export function ConnectionPage() {
           </div>
         )}
       </Observation>
+      {card.authorization_check ? (
+        <Observation
+          title="Последняя проверка amoCRM"
+          observation={card.authorization_check}
+          onRetry={() => void query.refetch()}
+        >
+          {(check) => (
+            <div className={page.stack}>
+              <StatusBadge domain="verification" state={check.classification} />
+              <time dateTime={check.observed_at}>{formatTime(check.observed_at)}</time>
+              {check.retry_after !== undefined ? (
+                <p>Повторная проверка через {check.retry_after} с.</p>
+              ) : null}
+            </div>
+          )}
+        </Observation>
+      ) : null}
       <Observation title="Webhook" observation={card.webhook} onRetry={() => void query.refetch()}>
         {(hook) => (
           <div className={page.stack}>
@@ -144,6 +193,12 @@ export function ConnectionPage() {
                       {item.action} → {item.target}{' '}
                       <StatusBadge domain="delivery" state={item.status} raw={item.raw} /> попыток{' '}
                       {formatNull(item.attempts)}/{formatNull(item.max_attempts)}
+                      <RetryDelivery
+                        backend={backend}
+                        connectionId={connectionId}
+                        delivery={item}
+                        onInspect={() => void query.refetch()}
+                      />
                     </li>
                   ))}
                 </ul>

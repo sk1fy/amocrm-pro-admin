@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sk1fy/amocrm-pro-admin/internal/adapter"
@@ -22,10 +23,13 @@ type Data struct {
 }
 
 type Adapter struct {
-	desc adapter.Descriptor
-	caps adapter.Capabilities
-	err  error
-	data Data
+	mu        sync.RWMutex
+	commandMu sync.Mutex
+	commands  map[string]commandReceipt
+	desc      adapter.Descriptor
+	caps      adapter.Capabilities
+	err       error
+	data      Data
 }
 
 type Options struct {
@@ -46,7 +50,7 @@ func New(opts Options) *Adapter {
 		timeout = 5 * time.Second
 	}
 	caps := adapter.Capabilities{
-		Accounts: true, Connections: true, Integrations: true, Jobs: true, Audit: true,
+		Accounts: true, Connections: true, Integrations: true, Jobs: true, Audit: true, Commands: true, Diagnostics: true,
 		ActivityDeliveries: true,
 	}
 	if opts.Caps != nil {
@@ -92,18 +96,20 @@ func (a *Adapter) Descriptor() adapter.Descriptor     { return a.desc }
 func (a *Adapter) Capabilities() adapter.Capabilities { return a.caps }
 
 func (a *Adapter) Health(ctx context.Context, _ adapter.Actor) (adapter.Observation[adapter.Health], error) {
+	data := a.snapshot()
 	if err := a.check(ctx); err != nil {
 		return adapter.Observation[adapter.Health]{}, err
 	}
-	return adapter.Fresh(a.desc.Code, time.Now().UTC(), a.data.Health), nil
+	return adapter.Fresh(a.desc.Code, time.Now().UTC(), data.Health), nil
 }
 
 func (a *Adapter) ListAccounts(ctx context.Context, _ adapter.Actor, f adapter.AccountFilter) (adapter.Observation[adapter.Page[adapter.Account]], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.Accounts); err != nil {
 		return adapter.Observation[adapter.Page[adapter.Account]]{}, err
 	}
-	items := make([]adapter.Account, 0, len(a.data.Accounts))
-	for _, account := range a.data.Accounts {
+	items := make([]adapter.Account, 0, len(data.Accounts))
+	for _, account := range data.Accounts {
 		if matchAccount(account, f) {
 			items = append(items, account)
 		}
@@ -118,10 +124,11 @@ func (a *Adapter) ListAccounts(ctx context.Context, _ adapter.Actor, f adapter.A
 }
 
 func (a *Adapter) GetAccount(ctx context.Context, _ adapter.Actor, accountID int64) (adapter.Observation[adapter.Account], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.Accounts); err != nil {
 		return adapter.Observation[adapter.Account]{}, err
 	}
-	for _, account := range a.data.Accounts {
+	for _, account := range data.Accounts {
 		if account.AccountID == accountID {
 			return adapter.Fresh(a.desc.Code, time.Now().UTC(), account), nil
 		}
@@ -130,11 +137,12 @@ func (a *Adapter) GetAccount(ctx context.Context, _ adapter.Actor, accountID int
 }
 
 func (a *Adapter) ListConnections(ctx context.Context, _ adapter.Actor, f adapter.ConnectionFilter) (adapter.Observation[adapter.Page[adapter.ConnectionSummary]], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.Connections); err != nil {
 		return adapter.Observation[adapter.Page[adapter.ConnectionSummary]]{}, err
 	}
 	items := make([]adapter.ConnectionSummary, 0)
-	for _, account := range a.data.Accounts {
+	for _, account := range data.Accounts {
 		for _, conn := range account.Connections {
 			if conn.AccountID == 0 {
 				conn.AccountID = account.AccountID
@@ -144,7 +152,7 @@ func (a *Adapter) ListConnections(ctx context.Context, _ adapter.Actor, f adapte
 			}
 		}
 	}
-	for id, detail := range a.data.ConnectionDetails {
+	for id, detail := range data.ConnectionDetails {
 		conn := detail.Connection
 		if conn.ID == "" {
 			conn.ID = id
@@ -161,16 +169,17 @@ func (a *Adapter) ListConnections(ctx context.Context, _ adapter.Actor, f adapte
 }
 
 func (a *Adapter) GetConnection(ctx context.Context, _ adapter.Actor, id string) (adapter.Observation[adapter.ConnectionDetail], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.Connections); err != nil {
 		return adapter.Observation[adapter.ConnectionDetail]{}, err
 	}
-	if detail, ok := a.data.ConnectionDetails[id]; ok {
+	if detail, ok := data.ConnectionDetails[id]; ok {
 		if detail.Connection.ID == "" {
 			detail.Connection.ID = id
 		}
 		return adapter.Fresh(a.desc.Code, time.Now().UTC(), detail), nil
 	}
-	for _, account := range a.data.Accounts {
+	for _, account := range data.Accounts {
 		for _, conn := range account.Connections {
 			if conn.ID == id {
 				return adapter.Fresh(a.desc.Code, time.Now().UTC(), adapter.ConnectionDetail{Connection: conn}), nil
@@ -181,13 +190,14 @@ func (a *Adapter) GetConnection(ctx context.Context, _ adapter.Actor, id string)
 }
 
 func (a *Adapter) ListConnectionJobs(ctx context.Context, _ adapter.Actor, id string, f adapter.JobFilter) (adapter.Observation[adapter.Page[adapter.Job]], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.Jobs); err != nil {
 		return adapter.Observation[adapter.Page[adapter.Job]]{}, err
 	}
 	if _, err := a.GetConnection(ctx, adapter.Actor{}, id); err != nil {
 		return adapter.Observation[adapter.Page[adapter.Job]]{}, err
 	}
-	items := append([]adapter.Job{}, a.data.ConnectionJobs[id]...)
+	items := append([]adapter.Job{}, data.ConnectionJobs[id]...)
 	items = filterJobs(items, f)
 	page, err := paginate(items, f.Limit, f.Cursor, func(item adapter.Job) string { return item.ID })
 	if err != nil {
@@ -197,13 +207,14 @@ func (a *Adapter) ListConnectionJobs(ctx context.Context, _ adapter.Actor, id st
 }
 
 func (a *Adapter) ListConnectionAudit(ctx context.Context, _ adapter.Actor, id string, f adapter.PageFilter) (adapter.Observation[adapter.Page[adapter.AuditEntry]], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.Audit); err != nil {
 		return adapter.Observation[adapter.Page[adapter.AuditEntry]]{}, err
 	}
 	if _, err := a.GetConnection(ctx, adapter.Actor{}, id); err != nil {
 		return adapter.Observation[adapter.Page[adapter.AuditEntry]]{}, err
 	}
-	items := append([]adapter.AuditEntry{}, a.data.ConnectionAudit[id]...)
+	items := append([]adapter.AuditEntry{}, data.ConnectionAudit[id]...)
 	sort.Slice(items, func(i, j int) bool {
 		if !items[i].CreatedAt.Equal(items[j].CreatedAt) {
 			return items[i].CreatedAt.After(items[j].CreatedAt)
@@ -223,13 +234,14 @@ func (a *Adapter) ListConnectionAudit(ctx context.Context, _ adapter.Actor, id s
 }
 
 func (a *Adapter) ListConnectionDeliveries(ctx context.Context, _ adapter.Actor, id string, _ adapter.PageFilter) (adapter.Observation[[]adapter.Delivery], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.ActivityDeliveries); err != nil {
 		return adapter.Observation[[]adapter.Delivery]{}, err
 	}
 	if _, err := a.GetConnection(ctx, adapter.Actor{}, id); err != nil {
 		return adapter.Observation[[]adapter.Delivery]{}, err
 	}
-	items := append([]adapter.Delivery{}, a.data.Deliveries[id]...)
+	items := append([]adapter.Delivery{}, data.Deliveries[id]...)
 	if items == nil {
 		items = []adapter.Delivery{}
 	}
@@ -237,10 +249,11 @@ func (a *Adapter) ListConnectionDeliveries(ctx context.Context, _ adapter.Actor,
 }
 
 func (a *Adapter) ListIntegrations(ctx context.Context, _ adapter.Actor, f adapter.PageFilter) (adapter.Observation[adapter.Page[adapter.Integration]], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.Integrations); err != nil {
 		return adapter.Observation[adapter.Page[adapter.Integration]]{}, err
 	}
-	page, err := paginate(a.data.Integrations, f.Limit, f.Cursor, func(item adapter.Integration) string { return item.ID })
+	page, err := paginate(data.Integrations, f.Limit, f.Cursor, func(item adapter.Integration) string { return item.ID })
 	if err != nil {
 		return adapter.Observation[adapter.Page[adapter.Integration]]{}, adapter.InvalidArgument(a.desc.Code, "invalid cursor")
 	}
@@ -248,10 +261,11 @@ func (a *Adapter) ListIntegrations(ctx context.Context, _ adapter.Actor, f adapt
 }
 
 func (a *Adapter) GetIntegration(ctx context.Context, _ adapter.Actor, id string) (adapter.Observation[adapter.Integration], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.Integrations); err != nil {
 		return adapter.Observation[adapter.Integration]{}, err
 	}
-	for _, item := range a.data.Integrations {
+	for _, item := range data.Integrations {
 		if item.ID == id {
 			return adapter.Fresh(a.desc.Code, time.Now().UTC(), item), nil
 		}
@@ -260,10 +274,11 @@ func (a *Adapter) GetIntegration(ctx context.Context, _ adapter.Actor, id string
 }
 
 func (a *Adapter) ListJobs(ctx context.Context, _ adapter.Actor, f adapter.JobFilter) (adapter.Observation[adapter.Page[adapter.Job]], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.Jobs); err != nil {
 		return adapter.Observation[adapter.Page[adapter.Job]]{}, err
 	}
-	items := make([]adapter.Job, 0, len(a.data.Jobs))
+	items := make([]adapter.Job, 0, len(data.Jobs))
 	seen := map[string]struct{}{}
 	add := func(item adapter.Job) {
 		if item.ID != "" {
@@ -274,10 +289,10 @@ func (a *Adapter) ListJobs(ctx context.Context, _ adapter.Actor, f adapter.JobFi
 		}
 		items = append(items, item)
 	}
-	for _, detail := range a.data.Jobs {
+	for _, detail := range data.Jobs {
 		add(detail.Job)
 	}
-	for _, jobs := range a.data.ConnectionJobs {
+	for _, jobs := range data.ConnectionJobs {
 		for _, job := range jobs {
 			add(job)
 		}
@@ -291,15 +306,16 @@ func (a *Adapter) ListJobs(ctx context.Context, _ adapter.Actor, f adapter.JobFi
 }
 
 func (a *Adapter) GetJob(ctx context.Context, _ adapter.Actor, id string) (adapter.Observation[adapter.JobDetail], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.Jobs); err != nil {
 		return adapter.Observation[adapter.JobDetail]{}, err
 	}
-	for _, item := range a.data.Jobs {
+	for _, item := range data.Jobs {
 		if item.Job.ID == id {
 			return adapter.Fresh(a.desc.Code, time.Now().UTC(), item), nil
 		}
 	}
-	for _, jobs := range a.data.ConnectionJobs {
+	for _, jobs := range data.ConnectionJobs {
 		for _, job := range jobs {
 			if job.ID == id {
 				return adapter.Fresh(a.desc.Code, time.Now().UTC(), adapter.JobDetail{Job: job}), nil
@@ -310,11 +326,12 @@ func (a *Adapter) GetJob(ctx context.Context, _ adapter.Actor, id string) (adapt
 }
 
 func (a *Adapter) JobsSummary(ctx context.Context, _ adapter.Actor) (adapter.Observation[adapter.JobsSummary], error) {
+	data := a.snapshot()
 	if err := a.require(ctx, a.caps.Jobs); err != nil {
 		return adapter.Observation[adapter.JobsSummary]{}, err
 	}
 	counts := map[string]int{}
-	for _, detail := range a.data.Jobs {
+	for _, detail := range data.Jobs {
 		if detail.Job.Status.Canonical != "" {
 			counts[detail.Job.Status.Canonical]++
 		}
