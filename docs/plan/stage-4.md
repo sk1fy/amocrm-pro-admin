@@ -3,6 +3,74 @@
 **Цель:** проверить расширяемость и подготовить приложение к постоянной работе
 команды.
 
+## Объём
+
+Сверка 2026-09-13. Admin `3bd48f4` (ветка `feature/stage-4-release` от
+`feature/stage-3-modules`); Core `feature/admin-activity` — рабочее
+дерево с правками ревью этапа 3 (не закоммичено).
+
+Что уже есть в коде Admin и служит основой:
+
+- контракт адаптера v1 (`backend/internal/adapter`): `Descriptor`,
+  `Capabilities`, `Observation`, типизированные ошибки; опциональные
+  `CommandBackend`/`SettingsBackend`/`StatsBackend`; загрузчик
+  `internal/catalog` (`deploy/backends.yaml`); агрегация аккаунтов по
+  нескольким адаптерам в `accounts.Service`; тесты частичной
+  доступности и таймаутов в `accounts` и `adapter/core`;
+- `GET /api/v1/system/backends` отдаёт `Observation<Health>[]`
+  (freshness, `observed_at`, error, revision, contract_version,
+  capabilities, components); `/system` показывает только
+  freshness/ревизию/контракт/возможности; вид и тип адаптера, время
+  последнего ответа и ошибка в интерфейсе не выводятся;
+- management listener Admin API: `/live`, `/ready`; `/metrics` нет,
+  Prometheus-зависимости нет; `.env.example` упоминает `/metrics`
+  ложно;
+- fixture-адаптер в e2e заменяет Core (`kind: fixture`, code `core`);
+  второй бекенд не подключён (`deploy/backends.yaml`, строки 22–26 —
+  комментарий);
+- миграции admin DB 000001–000005; retention/prune, prod-compose и
+  backup-скрипты отсутствуют (backup описан только в
+  admin-db-schema.md); fixture-нагрузки 10^4 нет (SQL-fixture — 8
+  установок);
+- runbooks: `local-run.md`, `demo-stage-1..3.md`; `operator.md` и
+  `new-module.md` отсутствуют.
+
+Фактический объём изменений этапа:
+
+- 4.1 — финализация контракта v1 (`Capabilities.Names`, связь
+  аккаунт/продукт, политика `ContractVersion`) в backend-adapter.md и
+  ADR-0011; реестр бекендов с состоянием (доступность, версия, время
+  последнего ответа, ошибка) в `GET /api/v1/system/backends` и таблицей
+  на `/system`; тесты медленного/падающего адаптера; второй
+  fixture-бекенд (`code: fixture`) в dev и e2e с явной меткой, слияние
+  карточки аккаунта, недоступность fixture не влияет на Core; страница
+  настроек модуля выбирается по возможностям и продуктам бекенда;
+- 4.2 — `SubscriptionSource` (тариф, срок действия, состояние,
+  предоставленные возможности) как опциональный интерфейс и
+  capability; `GET /api/v1/accounts/{id}/subscription`; fixture-данные
+  для части аккаунтов, для остальных — `unknown` («данные подписки
+  недоступны»); блок на карточке аккаунта; ADR-0012;
+- 4.3 — метрики Prometheus на management listener (`/metrics`,
+  конечные labels `route`/`method`/`status`/`backend`/`outcome`,
+  ADR-0013); retention/prune аудита и операций (ADR-0014,
+  `admin-cli prune`, индексы); backup/restore admin DB
+  (`pg_dump --format=custom`, make-цели, проверка restore); compose для
+  целевого хоста и ротация credentials; нагрузка — fixture на 10^4
+  аккаунтов и EXPLAIN тяжёлых Core admin read запросов (по
+  возможности пилотного стека); runbooks `operator.md`,
+  `new-module.md`, `demo-stage-4.md`, чек-лист пилота; закрытие
+  замечаний ревью этапа 3 на стороне Admin (общие saved views, подписи
+  настроек, default period).
+
+Вне объёма этапа: платежи/продления подписок; покрытие
+Grafana/Loki (только ссылки); перенос внешних вызовов Activity за
+транзакцию квитанции Core (issue 6 ревью этапа 3) — фиксируется в
+отчёте как ограничение, если не будет выполнен.
+
+Базовая проверка `make check` на старте этапа: `lint` падал на
+Prettier в 8 файлах frontend; форматирование исправлено до начала
+работ.
+
 ## Части
 
 ### 4.1. Контракт адаптера v1 — завершение

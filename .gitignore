@@ -23,3 +23,6 @@ tmp/
 .DS_Store
 .idea/
 .vscode/
+
+# Admin DB backups (deploy/scripts/backup.sh)
+backups/

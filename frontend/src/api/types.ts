@@ -150,6 +150,19 @@ export type AccountCard = {
   sources: SourceStatus[]
 }
 
+export type Subscription = {
+  plan: string
+  state: string
+  raw?: string
+  expires_at: string | null
+  capabilities: string[]
+}
+
+export type SubscriptionResponse = {
+  items: Observation<Subscription>[]
+  sources: SourceStatus[]
+}
+
 export type ConnectionIdentity = {
   id: string
   integration_id: string
@@ -424,17 +437,25 @@ export type Catalog = {
   products: CatalogProduct[]
 }
 
-export type BackendHealth = {
-  backend?: string
-  revision?: string
-  contract_version?: string
-  capabilities?: string[]
+export type BackendRegistryEntry = {
+  backend: string
+  kind: string
+  display_name: string
+  products: CatalogProduct[]
+  status: string
+  contract_version: string
+  revision: string
+  adapter_capabilities: string[]
+  backend_capabilities: string[]
   components?: unknown
+  observed_at: string | null
+  checked_at: string
+  error?: ObsError | null
 }
 
 export type BackendsResponse = {
-  items: Observation<BackendHealth>[]
-  observability?: {
+  items: BackendRegistryEntry[]
+  observability: {
     grafana_base_url?: string
     loki_base_url?: string
   }

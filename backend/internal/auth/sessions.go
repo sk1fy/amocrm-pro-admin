@@ -24,6 +24,8 @@ const (
 	ReasonRoleChange = "role_change"
 	ReasonDisabled   = "disabled"
 	ReasonExpired    = "expired"
+
+	sessionRetention = 30 * 24 * time.Hour
 )
 
 var (
@@ -230,6 +232,40 @@ func (s *Service) ListOwn(ctx context.Context, employeeID uuid.UUID) ([]Session,
 	return items, nil
 }
 
+// PruneExpiredBefore deletes sessions that were revoked or expired before the
+// cutoff and returns the number of deleted rows. Active sessions are never
+// deleted: the expiry branch additionally requires expires_at < now(), so even
+// a future cutoff cannot remove a live session.
+func (s *Service) PruneExpiredBefore(ctx context.Context, before time.Time) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	tag, err := s.pool.Exec(ctx, `
+		DELETE FROM sessions
+		WHERE (revoked_at IS NOT NULL AND revoked_at < $1)
+		   OR (revoked_at IS NULL AND expires_at < $1 AND expires_at < now())`,
+		before.UTC())
+	if err != nil {
+		return 0, fmt.Errorf("prune sessions: %w", err)
+	}
+	return tag.RowsAffected(), nil
+}
+
+// CountExpiredBefore reports how many sessions PruneExpiredBefore would delete
+// without touching them (dry run).
+func (s *Service) CountExpiredBefore(ctx context.Context, before time.Time) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	var count int64
+	if err := s.pool.QueryRow(ctx, `
+		SELECT count(*) FROM sessions
+		WHERE (revoked_at IS NOT NULL AND revoked_at < $1)
+		   OR (revoked_at IS NULL AND expires_at < $1 AND expires_at < now())`,
+		before.UTC()).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count sessions for prune: %w", err)
+	}
+	return count, nil
+}
+
 func (s *Service) Cleanup(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
@@ -242,10 +278,8 @@ func (s *Service) Cleanup(ctx context.Context) error {
 	); err != nil {
 		return fmt.Errorf("expire sessions: %w", err)
 	}
-	if _, err := s.pool.Exec(ctx, `
-		DELETE FROM sessions
-		WHERE revoked_at IS NOT NULL AND revoked_at < now() - interval '30 days'`); err != nil {
-		return fmt.Errorf("delete old sessions: %w", err)
+	if _, err := s.PruneExpiredBefore(ctx, time.Now().UTC().Add(-sessionRetention)); err != nil {
+		return err
 	}
 	return nil
 }

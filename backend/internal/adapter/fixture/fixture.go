@@ -27,6 +27,7 @@ type Data struct {
 	LeadStatusRuns    map[string][]adapter.LeadStatusRun
 	Stats             map[string]adapter.StatsSnapshot
 	StatsAccounts     map[string][]adapter.StatsAccount
+	Subscriptions     map[int64]adapter.Subscription
 	Health            adapter.Health
 }
 
@@ -59,7 +60,7 @@ func New(opts Options) *Adapter {
 	}
 	caps := adapter.Capabilities{
 		Accounts: true, Connections: true, Integrations: true, Jobs: true, Audit: true, Commands: true, Diagnostics: true,
-		ActivityDeliveries: true, Settings: true, Stats: true,
+		ActivityDeliveries: true, Settings: true, Stats: true, Subscriptions: true,
 	}
 	if opts.Caps != nil {
 		caps = *opts.Caps
@@ -67,9 +68,15 @@ func New(opts Options) *Adapter {
 	health := opts.Data.Health
 	if health.Backend == "" {
 		health.Backend = code
+	}
+	if health.ContractVersion == "" {
 		health.ContractVersion = adapter.ContractVersion
+	}
+	if health.Revision == "" {
 		health.Revision = "fixture"
-		health.Capabilities = []string{"accounts", "installations", "integrations", "jobs", "audit"}
+	}
+	if health.Capabilities == nil {
+		health.Capabilities = []string{"accounts", "connections", "integrations", "jobs", "audit"}
 	}
 	data := opts.Data
 	data.Health = health
@@ -108,6 +115,9 @@ func New(opts Options) *Adapter {
 	}
 	if data.StatsAccounts == nil {
 		data.StatsAccounts = map[string][]adapter.StatsAccount{}
+	}
+	if data.Subscriptions == nil {
+		data.Subscriptions = map[int64]adapter.Subscription{}
 	}
 	return &Adapter{
 		desc: adapter.Descriptor{

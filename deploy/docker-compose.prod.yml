@@ -1,0 +1,91 @@
+# Production overlay for the target host. Applied on top of the base file:
+#
+#   docker-compose --env-file /etc/amocrm-admin/admin.env \
+#     -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml up -d
+#
+# Requires Docker Compose with `!reset`/`!override` support (v2.24+ or the
+# equivalent standalone binary). The release process publishes the backend
+# images from backend/Dockerfile targets admin-api / migrate / admin-cli and
+# the frontend image; the host only pulls them. ADMIN_API_IMAGE and
+# ADMIN_FRONTEND_IMAGE are required. The tool services keep the base
+# MIGRATE_IMAGE / ADMIN_CLI_IMAGE definitions; set both in the host env to
+# the published tool images (otherwise Compose expects the local build tags).
+#
+# Required environment (no development defaults):
+#   ADMIN_API_IMAGE, ADMIN_FRONTEND_IMAGE, ADMIN_DB_PASSWORD,
+#   ADMIN_PUBLIC_ORIGIN, CORE_ADMIN_API_TOKEN
+# Optional: HTTP_PORT, FRONTEND_PORT, BACKENDS_FILE_PATH, POSTGRES_USER,
+#   POSTGRES_DB, SHUTDOWN_TIMEOUT, CONTAINER_STOP_GRACE_PERIOD, MIGRATE_IMAGE,
+#   ADMIN_CLI_IMAGE, GRAFANA_BASE_URL, LOKI_BASE_URL.
+#
+# Network contract: admin-postgres and the admin-api management listener
+# (:8092, /live /ready /metrics) are never published. Only two ports bind to
+# the host loopback, for the operator's TLS reverse proxy:
+#   https://<ADMIN_PUBLIC_ORIGIN>/      -> 127.0.0.1:5173  frontend (SPA)
+#   https://<ADMIN_PUBLIC_ORIGIN>/api/  -> 127.0.0.1:8090  admin-api
+# The proxy must terminate TLS, set X-Forwarded-For/X-Real-IP and keep
+# TRUST_PROXY_HEADERS=true. Cookie security follows APP_ENV=production.
+
+x-log-rotation: &log-rotation
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  admin-postgres:
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-admin}"
+      POSTGRES_USER: "${POSTGRES_USER:-admin}"
+      POSTGRES_PASSWORD: "${ADMIN_DB_PASSWORD:?set ADMIN_DB_PASSWORD}"
+    # No host-published database port in production.
+    ports: !reset []
+    restart: unless-stopped
+    logging: *log-rotation
+
+  migrate:
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER:-admin}:${ADMIN_DB_PASSWORD:?set ADMIN_DB_PASSWORD}@admin-postgres:5432/${POSTGRES_DB:-admin}?sslmode=disable"
+      MIGRATION_TIMEOUT: "${MIGRATION_TIMEOUT:-2m}"
+    logging: *log-rotation
+
+  admin-api:
+    image: "${ADMIN_API_IMAGE:?set ADMIN_API_IMAGE}"
+    build: !reset null
+    environment:
+      APP_ENV: production
+      DATABASE_URL: "postgres://${POSTGRES_USER:-admin}:${ADMIN_DB_PASSWORD:?set ADMIN_DB_PASSWORD}@admin-postgres:5432/${POSTGRES_DB:-admin}?sslmode=disable"
+      ADMIN_PUBLIC_ORIGIN: "${ADMIN_PUBLIC_ORIGIN:?set ADMIN_PUBLIC_ORIGIN}"
+      CORE_ADMIN_API_TOKEN: "${CORE_ADMIN_API_TOKEN:?set CORE_ADMIN_API_TOKEN}"
+      TRUST_PROXY_HEADERS: "${TRUST_PROXY_HEADERS:-true}"
+      SHUTDOWN_TIMEOUT: "${SHUTDOWN_TIMEOUT:-15s}"
+      GRAFANA_BASE_URL: "${GRAFANA_BASE_URL:-}"
+      LOKI_BASE_URL: "${LOKI_BASE_URL:-}"
+    # Only the public API is published, and only on the host loopback. The
+    # management listener (:8092) stays internal for the host checks and for
+    # the operator's Prometheus, which joins the Compose network.
+    ports: !override
+      - "127.0.0.1:${HTTP_PORT:-8090}:8090"
+    volumes:
+      - ${BACKENDS_FILE_PATH:-./backends.yaml}:/etc/admin/backends.yaml:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    # Grace period stays longer than SHUTDOWN_TIMEOUT so admin-api can finish
+    # in-flight requests before Docker sends SIGKILL.
+    stop_grace_period: "${CONTAINER_STOP_GRACE_PERIOD:-20s}"
+    restart: unless-stopped
+    logging: *log-rotation
+
+  admin-cli:
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER:-admin}:${ADMIN_DB_PASSWORD:?set ADMIN_DB_PASSWORD}@admin-postgres:5432/${POSTGRES_DB:-admin}?sslmode=disable"
+    logging: *log-rotation
+
+  frontend:
+    image: "${ADMIN_FRONTEND_IMAGE:?set ADMIN_FRONTEND_IMAGE}"
+    build: !reset null
+    ports: !override
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:80"
+    restart: unless-stopped
+    logging: *log-rotation

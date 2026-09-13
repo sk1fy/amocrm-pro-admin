@@ -18,7 +18,13 @@ const (
 // accounts 91000001–91000006, two widgets on 91000001 and 91000002
 // (reauth vs active), connection ids f1a00000-0000-4000-8000-00000000000N.
 func Demo(code string) *Adapter {
-	return New(Options{Code: code, Data: demoData()})
+	return DemoWithTimeout(code, 0)
+}
+
+// DemoWithTimeout is Demo with an explicit descriptor timeout; zero keeps the
+// adapter default. The catalog passes the backend timeout from backends.yaml.
+func DemoWithTimeout(code string, timeout time.Duration) *Adapter {
+	return New(Options{Code: code, Timeout: timeout, Data: demoData()})
 }
 
 func demoData() Data {
@@ -331,6 +337,35 @@ func demoData() Data {
 		LeadStatusRuns:  demoLeadStatusRuns(c1.ID, now),
 		Stats:           demoStats(now),
 		StatsAccounts:   demoStatsAccounts(),
+		Subscriptions:   demoSubscriptions(now),
+	}
+}
+
+func demoSubscriptions(now time.Time) map[int64]adapter.Subscription {
+	return map[int64]adapter.Subscription{
+		91000001: {
+			Plan:         "Профи",
+			State:        adapter.MapSubscriptionState(adapter.SubscriptionActive),
+			ExpiresAt:    timePtr(now.Add(30 * 24 * time.Hour)),
+			Capabilities: []string{"lead-status", "activity"},
+		},
+		91000002: {
+			Plan:         "Профи",
+			State:        adapter.MapSubscriptionState("grace_period"),
+			Capabilities: []string{"activity"},
+		},
+		91000003: {
+			Plan:         "Пробный",
+			State:        adapter.MapSubscriptionState(adapter.SubscriptionTrial),
+			ExpiresAt:    timePtr(now.Add(7 * 24 * time.Hour)),
+			Capabilities: []string{"lead-status"},
+		},
+		91000005: {
+			Plan:         "Базовый",
+			State:        adapter.MapSubscriptionState(adapter.SubscriptionExpired),
+			ExpiresAt:    timePtr(now.Add(-24 * time.Hour)),
+			Capabilities: []string{},
+		},
 	}
 }
 

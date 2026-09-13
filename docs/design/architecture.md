@@ -158,3 +158,15 @@ command → результат/операция → аудит в admin DB и в
   `X-Forwarded-For` только при `TRUST_PROXY_HEADERS=true`
   ([ADR-0006](../adr/0006-trusted-proxy-headers.md)); без прокси доверие
   выключено.
+
+## Целевой хост
+
+Целевой хост запускает те же сервисы prod-оверлеем
+[deploy/docker-compose.prod.yml](../../deploy/docker-compose.prod.yml)
+поверх [deploy/docker-compose.yml](../../deploy/docker-compose.yml):
+образы из registry, `APP_ENV=production`, обязательные
+`ADMIN_PUBLIC_ORIGIN`, `CORE_ADMIN_API_TOKEN` и `ADMIN_DB_PASSWORD`,
+порты только на loopback за TLS-прокси оператора. Реестр бекендов
+заменяется хост-файлом (`BACKENDS_FILE_PATH`). Развёртывание, ротация
+credentials, наблюдаемость и аварийные сценарии —
+[runbooks/operator.md](../runbooks/operator.md).

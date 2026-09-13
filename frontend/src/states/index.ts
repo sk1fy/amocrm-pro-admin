@@ -12,6 +12,7 @@ export type StateDomain =
   | 'source'
   | 'integration'
   | 'grant'
+  | 'subscription'
   | 'connection'
   | 'authorization'
   | 'verification'
@@ -49,6 +50,12 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
   grant: {
     granted: { tone: 'ok', label: 'Выдан' },
     not_granted: { tone: 'off', label: 'Не выдан' },
+  },
+  subscription: {
+    active: { tone: 'ok', label: 'Активна' },
+    trial: { tone: 'attention', label: 'Пробный период' },
+    expired: { tone: 'error', label: 'Истекла' },
+    cancelled: { tone: 'off', label: 'Отменена' },
   },
   connection: {
     pending: { tone: 'attention', label: 'Ожидает авторизации' },

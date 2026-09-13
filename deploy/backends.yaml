@@ -1,6 +1,12 @@
 # Backend registry for admin-api. Committed without secrets: each backend
 # names the environment variable that holds its service token.
-# Contract: docs/design/backend-adapter.md (v1 draft).
+# Contract: docs/design/backend-adapter.md (v1).
+#
+# `fixture` is the labelled test backend that proves the adapter contract with
+# synthetic data (every response is marked origin=fixture and must be shown as
+# test data). Removing or disabling this entry must not affect `core`: partial
+# availability keeps core data readable and reports only the fixture source as
+# unavailable.
 version: 1
 backends:
   - code: core
@@ -18,9 +24,11 @@ backends:
         display_name: "Статусы сделок"
       - code: activity
         display_name: "Активность сотрудников"
-
-# Stage 4 adds a second entry with kind: fixture to prove the adapter contract:
-#  - code: fixture
-#    kind: fixture
-#    display_name: "Fixture backend"
-#    products: [{ code: fixture-product, display_name: "Тестовый продукт" }]
+  - code: fixture
+    kind: fixture
+    profile: module
+    display_name: "Fixture module (тестовые данные)"
+    timeout: 2s
+    products:
+      - code: fixture-module
+        display_name: "Демонстрационный модуль"

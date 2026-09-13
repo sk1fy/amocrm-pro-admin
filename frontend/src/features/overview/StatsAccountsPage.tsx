@@ -41,7 +41,11 @@ export function StatsAccountsPage() {
           <select
             value={metric}
             onChange={(event) =>
-              pushSearch('/stats/accounts', { ...search, metric: event.target.value, cursor: undefined })
+              pushSearch('/stats/accounts', {
+                ...search,
+                metric: event.target.value,
+                cursor: undefined,
+              })
             }
           >
             <option value="connected">Новые подключения</option>
@@ -55,7 +59,11 @@ export function StatsAccountsPage() {
           <select
             value={period}
             onChange={(event) =>
-              pushSearch('/stats/accounts', { ...search, period: event.target.value, cursor: undefined })
+              pushSearch('/stats/accounts', {
+                ...search,
+                period: event.target.value,
+                cursor: undefined,
+              })
             }
           >
             <option value="24h">24 часа</option>
@@ -89,7 +97,10 @@ export function StatsAccountsPage() {
           rowKey={(row) => `${row.backend}:${row.installation_id}`}
           nextCursor={list.data.next_cursor}
           onNext={() =>
-            pushSearch('/stats/accounts', { ...search, cursor: list.data?.next_cursor ?? undefined })
+            pushSearch('/stats/accounts', {
+              ...search,
+              cursor: list.data?.next_cursor ?? undefined,
+            })
           }
           onReset={() => pushSearch('/stats/accounts', { ...search, cursor: undefined })}
           columns={[

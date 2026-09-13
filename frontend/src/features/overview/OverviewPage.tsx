@@ -54,12 +54,14 @@ export function OverviewPage() {
         ) : null}
         <div className={page.cards}>
           {(backends.data?.items ?? []).map((item) => (
-            <article key={item.source} className={page.card}>
-              <h3>{item.data?.backend ?? item.source}</h3>
-              <StatusBadge domain="freshness" state={item.freshness} />
-              <p className={page.muted}>версия: {formatNull(item.data?.revision)}</p>
-              <p className={page.muted}>контракт: {formatNull(item.data?.contract_version)}</p>
-              <time dateTime={item.observed_at}>{formatTime(item.observed_at)}</time>
+            <article key={item.backend} className={page.card}>
+              <h3>{formatNull(item.display_name)}</h3>
+              <StatusBadge domain="source" state={item.status} />
+              <p className={page.muted}>версия: {formatNull(item.revision)}</p>
+              <p className={page.muted}>контракт: {formatNull(item.contract_version)}</p>
+              <time dateTime={item.observed_at ?? undefined} title={item.observed_at ?? undefined}>
+                {formatTime(item.observed_at)}
+              </time>
               {item.error ? <p>{item.error.message}</p> : null}
             </article>
           ))}
@@ -74,7 +76,9 @@ export function OverviewPage() {
             </Link>
           ))}
         </div>
-        {stats.error ? <ErrorState error={stats.error} onRetry={() => void stats.refetch()} /> : null}
+        {stats.error ? (
+          <ErrorState error={stats.error} onRetry={() => void stats.refetch()} />
+        ) : null}
         {stats.isPending ? <div className={page.skeleton} /> : null}
         <div className={page.cards} data-testid="overview-stats">
           {(stats.data?.items ?? []).map((item) => {
@@ -154,13 +158,38 @@ function StatsMetrics({ snapshot, period }: { snapshot: StatsSnapshot; period: s
     metric?: string
     to?: '/stats/accounts' | '/operations'
   }> = [
-    { label: 'Новые подключения', value: snapshot.connected, metric: 'connected', to: '/stats/accounts' },
-    { label: 'Отключения', value: snapshot.disconnected, metric: 'disconnected', to: '/stats/accounts' },
-    { label: 'Активные аккаунты', value: snapshot.active_accounts, metric: 'active', to: '/stats/accounts' },
+    {
+      label: 'Новые подключения',
+      value: snapshot.connected,
+      metric: 'connected',
+      to: '/stats/accounts',
+    },
+    {
+      label: 'Отключения',
+      value: snapshot.disconnected,
+      metric: 'disconnected',
+      to: '/stats/accounts',
+    },
+    {
+      label: 'Активные аккаунты',
+      value: snapshot.active_accounts,
+      metric: 'active',
+      to: '/stats/accounts',
+    },
     { label: 'Ошибки задач', value: snapshot.job_errors, to: '/operations' },
     { label: 'Задержка p50, мс', value: snapshot.latency_p50_ms },
-    { label: 'Проблемы авторизации', value: snapshot.auth_problems, metric: 'auth_problems', to: '/stats/accounts' },
-    { label: 'Проблемы синхронизации', value: snapshot.sync_problems, metric: 'sync_problems', to: '/stats/accounts' },
+    {
+      label: 'Проблемы авторизации',
+      value: snapshot.auth_problems,
+      metric: 'auth_problems',
+      to: '/stats/accounts',
+    },
+    {
+      label: 'Проблемы синхронизации',
+      value: snapshot.sync_problems,
+      metric: 'sync_problems',
+      to: '/stats/accounts',
+    },
   ]
   return (
     <div className={page.stack}>
@@ -173,7 +202,11 @@ function StatsMetrics({ snapshot, period }: { snapshot: StatsSnapshot; period: s
         )
         if (metric.to === '/stats/accounts' && metric.metric) {
           return (
-            <Link key={metric.label} to="/stats/accounts" search={{ metric: metric.metric, period }}>
+            <Link
+              key={metric.label}
+              to="/stats/accounts"
+              search={{ metric: metric.metric, period }}
+            >
               {value}
             </Link>
           )

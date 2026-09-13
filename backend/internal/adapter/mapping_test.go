@@ -93,6 +93,30 @@ func TestMapKnownDictionaries(t *testing.T) {
 	}
 }
 
+func TestMapSubscriptionState(t *testing.T) {
+	tests := []struct {
+		name      string
+		raw       string
+		canonical string
+		stateRaw  string
+	}{
+		{name: "active", raw: "active", canonical: SubscriptionActive},
+		{name: "trial", raw: "trial", canonical: SubscriptionTrial},
+		{name: "expired", raw: "expired", canonical: SubscriptionExpired},
+		{name: "cancelled", raw: "cancelled", canonical: SubscriptionCancelled},
+		{name: "empty", raw: "", canonical: StateUnknown},
+		{name: "grace period keeps raw", raw: "grace_period", canonical: StateUnknown, stateRaw: "grace_period"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := MapSubscriptionState(test.raw)
+			if got.Canonical != test.canonical || got.Raw != test.stateRaw {
+				t.Fatalf("MapSubscriptionState(%q)=%+v", test.raw, got)
+			}
+		})
+	}
+}
+
 func TestMapSyncStateDoesNotInventActivity(t *testing.T) {
 	if got := MapSyncState("not_enabled"); got.Canonical != SyncNotEnabled || got.Raw != "" {
 		t.Fatalf("not_enabled: %+v", got)

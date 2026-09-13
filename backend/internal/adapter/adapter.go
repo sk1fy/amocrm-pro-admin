@@ -56,6 +56,11 @@ const (
 	GrantGranted    = "granted"
 	GrantNotGranted = "not_granted"
 
+	SubscriptionActive    = "active"
+	SubscriptionTrial     = "trial"
+	SubscriptionExpired   = "expired"
+	SubscriptionCancelled = "cancelled"
+
 	PilotEnabled       = "enabled"
 	PilotDisabled      = "disabled"
 	PilotNotConfigured = "not_configured"
@@ -89,7 +94,34 @@ type Descriptor struct {
 type Capabilities struct {
 	Accounts, Connections, Integrations, Jobs, Audit bool
 	Diagnostics, Commands, Settings, Stats           bool
-	ActivityDeliveries                               bool
+	ActivityDeliveries, Subscriptions                bool
+}
+
+// Names returns the enabled capability codes in a fixed order. The codes are
+// part of the v1 contract: adapters and the registry expose them verbatim.
+func (c Capabilities) Names() []string {
+	names := make([]string, 0, 11)
+	for _, item := range []struct {
+		name    string
+		enabled bool
+	}{
+		{"accounts", c.Accounts},
+		{"connections", c.Connections},
+		{"integrations", c.Integrations},
+		{"jobs", c.Jobs},
+		{"audit", c.Audit},
+		{"diagnostics", c.Diagnostics},
+		{"commands", c.Commands},
+		{"settings", c.Settings},
+		{"stats", c.Stats},
+		{"activity-deliveries", c.ActivityDeliveries},
+		{"subscriptions", c.Subscriptions},
+	} {
+		if item.enabled {
+			names = append(names, item.name)
+		}
+	}
+	return names
 }
 
 type Observation[T any] struct {

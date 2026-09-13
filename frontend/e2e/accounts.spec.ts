@@ -22,7 +22,7 @@ test('login next, two connection states and search formats', async ({ page }) =>
 
   await expect(page).toHaveURL(/\/accounts\/91000002/)
   const badges = page.getByTestId('connection-badge')
-  await expect(badges).toHaveCount(2)
+  await expect(badges).toHaveCount(3)
   const labels = await badges.allTextContents()
   expect(labels.some((text) => text.includes('повторн'))).toBeTruthy()
   expect(labels.some((text) => text.includes('Активно'))).toBeTruthy()

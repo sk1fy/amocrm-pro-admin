@@ -38,7 +38,7 @@ frontend использует `GET /api/v1/me` только для скрыти�
 | `activity:pilot` | — | ✓ | ✓ | этап 2 |
 | `leadstatus:rules:write` | — | ✓ | ✓ | этап 3 |
 | `stats:read` | ✓ | ✓ | ✓ | этап 3 |
-| `views:write` (сохранённые представления, общие) | — | ✓ | ✓ | этап 3 |
+| `views:write` (личные представления; общие — только admin) | — | ✓ | ✓ | этап 3 |
 
 Правила:
 
@@ -56,6 +56,14 @@ frontend использует `GET /api/v1/me` только для скрыти�
   `activity:panels:write`, `leadstatus:rules:write`, `stats:read`,
   `views:write`) проверяются на сервере для маршрутов и команд. Frontend
   только скрывает недоступные кнопки.
+- Общее представление (`shared=true`, `owner_employee_id` NULL) создаёт,
+  изменяет и удаляет только `admin`. `operator` создаёт и меняет только
+  личные представления; `viewer` не имеет `views:write`. Обход правила
+  сервер отклоняет с `403`; frontend лишь скрывает флажок «Общее» и
+  кнопку удаления общего представления.
+- Чтение подписки (`GET /api/v1/accounts/{id}/subscription`, этап 4)
+  использует `accounts:read`; отдельного права нет. Бекенд без capability
+  `subscriptions` даёт `unknown`, а не ошибку доступа.
 
 ## Actor в Core
 

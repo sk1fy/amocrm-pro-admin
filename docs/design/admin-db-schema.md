@@ -76,7 +76,7 @@ CREATE INDEX sessions_cleanup_idx ON sessions (expires_at)
 
 Простой (`SESSION_IDLE_TTL`) проверяется по `last_seen_at` в коде;
 `last_seen_at` обновляется не чаще раза в минуту, чтобы не писать на каждый
-запрос. Очистка: `revoked_at` старше 30 суток и истёкшие — порциями.
+запрос. Очистка — по политике [Retention и объём](#retention-и-объём-000006_retention_indexes).
 
 ## 000003_admin_audit_log
 
@@ -162,6 +162,45 @@ CREATE TABLE saved_views (
 Уникальность личных: `(owner_employee_id, section, name)` где owner
 задан; общих: `(section, name)` где owner IS NULL. `stats_snapshots` не
 добавлялись: живой запрос Core — источник (ADR-0010).
+
+## Retention и объём (000006_retention_indexes)
+
+Политика хранения — [ADR-0014](../adr/0014-admin-db-retention.md).
+Управляемое удаление выполняет только `admin-cli prune` из внешнего
+cron; Admin API сам лишь помечает и удаляет сессии по тому же
+предикату при фоновой очистке.
+
+| Таблица | Срок | Предикат удаления |
+| --- | --- | --- |
+| `admin_audit_log` | 365 суток | `created_at < $1` |
+| `operations` | 180 суток | `updated_at < $1`, терминальный state |
+| `sessions` | 30 суток | revoked/expired раньше `$1` |
+
+Индексы (миграция в скобках):
+
+- `admin_audit_created_id_idx (created_at DESC, id DESC)` (000003);
+- `operations_terminal_updated_idx (updated_at) WHERE state IN
+  ('succeeded','failed','partial','unknown_outcome')` (000006);
+- `sessions_cleanup_idx (expires_at) WHERE revoked_at IS NULL` (000002).
+
+Терминальные состояния операций: `succeeded`, `failed`, `partial`,
+`unknown_outcome`. Незавершённые (`accepted`, `pending`, `running`) не
+удаляются никогда. Аудит не зависит от наличия сотрудника: его строки
+самостоятельны. Миграция `000006_retention_indexes` добавляет только
+частичный индекс операций: ведущая колонка `created_at` в
+`admin_audit_log` уже есть, а `operations_state_created` не покрывает
+фильтр по `updated_at`.
+
+Команда по умолчанию работает в dry-run и только печатает счётчики;
+удаление включается `--confirm`:
+
+```sh
+admin-cli prune --audit-before 2025-09-13 --operations-before 2026-03-13
+admin-cli prune --sessions-before 2026-08-14 --confirm
+```
+
+Оценка объёма на год и допущения — в ADR-0014; фактические числа
+обязаны быть перемерены на пилотных данных.
 
 ## Роли PostgreSQL
 

@@ -80,12 +80,16 @@ func (h *api) createView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	emp, _ := rbac.EmployeeFromContext(r.Context())
+	if body.Shared && emp.Role != rbac.RoleAdmin {
+		httpx.WriteError(w, r, httpx.Forbidden("only admin can create shared views"))
+		return
+	}
 	var owner *uuid.UUID
 	if !body.Shared {
 		id := emp.ID
 		owner = &id
 	}
-	item, err := h.views.Create(r.Context(), views.CreateInput{
+	item, err := h.views.Create(r.Context(), views.Actor{EmployeeID: emp.ID, Role: emp.Role}, views.CreateInput{
 		OwnerEmployeeID: owner, Section: body.Section, Name: body.Name, Params: body.Params, Columns: body.Columns,
 	})
 	if err != nil {
@@ -108,14 +112,14 @@ func (h *api) patchView(w http.ResponseWriter, r *http.Request) {
 		if err := decodeJSON(r, &body); err != nil {
 			return err
 		}
-		_, err := h.views.Update(r.Context(), id, views.UpdateInput{Name: body.Name, Params: body.Params, Columns: body.Columns})
+		_, err := h.views.Update(r.Context(), views.Actor{EmployeeID: emp.ID, Role: emp.Role}, id, views.UpdateInput{Name: body.Name, Params: body.Params, Columns: body.Columns})
 		return err
 	}, "view.update")
 }
 
 func (h *api) deleteView(w http.ResponseWriter, r *http.Request) {
 	h.mutateView(w, r, func(id uuid.UUID, emp rbac.Employee) error {
-		return h.views.Delete(r.Context(), id)
+		return h.views.Delete(r.Context(), views.Actor{EmployeeID: emp.ID, Role: emp.Role}, id)
 	}, "view.delete")
 }
 
@@ -169,6 +173,8 @@ func writeViewError(w http.ResponseWriter, r *http.Request, err error) {
 		httpx.WriteError(w, r, httpx.Conflict("view already exists"))
 	case errors.Is(err, views.ErrInvalid):
 		httpx.WriteError(w, r, httpx.InvalidArgument("invalid view"))
+	case errors.Is(err, views.ErrForbidden):
+		httpx.WriteError(w, r, httpx.Forbidden("insufficient permissions"))
 	default:
 		var apiErr httpx.Error
 		if errors.As(err, &apiErr) {

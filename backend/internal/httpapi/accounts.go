@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -54,6 +55,38 @@ func (h *api) getAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, toAccountCard(card))
+}
+
+func (h *api) getAccountSubscription(w http.ResponseWriter, r *http.Request) {
+	accountID, err := parseAccountIDParam(chi.URLParam(r, "account_id"))
+	if err != nil {
+		httpx.WriteError(w, r, err)
+		return
+	}
+	backends := make([]adapter.Backend, 0)
+	for _, backend := range h.registry.Backends() {
+		if _, ok := adapter.AsSubscription(backend); ok {
+			backends = append(backends, backend)
+		}
+	}
+	items := make([]subscriptionObservationDTO, 0)
+	sources := make([]adapter.SourceStatus, 0)
+	if len(backends) > 0 {
+		actor := adminActor(r)
+		gathered := adapter.Gather(r.Context(), backends, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Subscription], error) {
+			subscription, _ := adapter.AsSubscription(backend)
+			return subscription.GetSubscription(ctx, actor, accountID)
+		})
+		if gathered.Invalid != nil {
+			writeAdapterError(w, r, gathered.Invalid)
+			return
+		}
+		sources = append(sources, gathered.Sources...)
+		for _, obs := range gathered.Items {
+			items = append(items, toSubscriptionObservationDTO(obs))
+		}
+	}
+	httpx.WriteJSON(w, http.StatusOK, subscriptionListResponse{Items: items, Sources: sources})
 }
 
 func (h *api) accountHistory(w http.ResponseWriter, r *http.Request) {
