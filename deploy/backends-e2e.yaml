@@ -1,0 +1,13 @@
+# Fixture backend for Playwright e2e. Admin API talks to Demo() under code
+# `core` so UI routes stay `/connections/core/…` like production.
+version: 1
+backends:
+  - code: core
+    kind: fixture
+    display_name: "Fixture Core"
+    timeout: 2s
+    products:
+      - code: lead-status
+        display_name: "Статусы сделок"
+      - code: activity
+        display_name: "Активность сотрудников"

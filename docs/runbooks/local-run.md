@@ -1,8 +1,8 @@
 # Локальный запуск
 
-Инструкция для разработчика/агента. Разделы «Core» работают уже сейчас;
-разделы «Admin» описывают целевые команды этапа 1 и помечены как ожидающие
-реализации. Все команды выполняются из корня соответствующего репозитория.
+Инструкция для разработчика/агента. Стек Admin API, frontend и
+fixture-адаптер для e2e работают. Все команды выполняются из корня
+соответствующего репозитория.
 
 ## Требования
 
@@ -70,10 +70,11 @@ make fixtures-core FIXTURES_CONFIRM=core-pilot # применить к пило�
 ```
 
 Fixture идемпотентен (фиксированные UUID, `ON CONFLICT DO NOTHING`) и падает с
-понятной ошибкой, если интеграции не созданы. Состояние на 2026-09-12: SQL
-сверен со всеми миграциями Core вручную; живой dry-run не выполнен из-за
-переполненного диска Docker VM — выполнить `make fixtures-core-dry-run`
-перед первым применением.
+понятной ошибкой, если интеграции не созданы. SQL передаётся в `psql` через
+stdin (`-f -`), поэтому путь к файлу не нужен внутри контейнера. Проверено на
+пилотном стеке 2026-09-12: `fixtures-core-dry-run` и `fixtures-core` применили
+8 установок, 6 задач, попытки и аудит; Admin API показал 6 аккаунтов с
+`origin=fixture` и `sources: core: available`.
 
 Удаление fixture (при необходимости, только dev-стек):
 
@@ -84,16 +85,23 @@ DELETE FROM jobs WHERE id::text LIKE 'f1b00000-%';
 DELETE FROM audit_log WHERE actor_type = 'fixture';
 ```
 
-## Admin: стек админки (после части 1.2)
+## Admin: стек админки
+
+`make up` поднимает PostgreSQL, мигратор, Admin API и frontend
+(nginx на `http://127.0.0.1:5173`, прокси `/api` на Admin API). Compose
+выставляет `TRUST_PROXY_HEADERS=true`, потому что перед API всегда стоит
+nginx и передаёт `X-Real-IP`/`X-Forwarded-For`; при прямом доступе к `:8090`
+без прокси переменная должна быть `false`
+([ADR-0006](../adr/0006-trusted-proxy-headers.md)).
 
 ```sh
-cp .env.example .env            # заполнить CORE_ADMIN_API_TOKEN = ADMIN_API_TOKEN пилота
+cp .env.example .env            # CORE_ADMIN_API_TOKEN нужен для core-http
 make config
 make up                          # admin-postgres, migrate, admin-api, frontend
 make migrate                     # при необходимости повторно
 ```
 
-Первый администратор:
+Первый администратор (пароль только через stdin):
 
 ```sh
 printf '%s' 'choose-a-strong-password' | \
@@ -101,8 +109,38 @@ printf '%s' 'choose-a-strong-password' | \
   employee create --email admin@example.invalid --name "Admin" --role admin --password-stdin
 ```
 
-Интерфейс: `http://127.0.0.1:5173` (dev) или порт nginx из compose.
-Admin API: `http://127.0.0.1:8090/api/v1`, management `127.0.0.1:8092`.
+Вход в интерфейс: открыть `http://127.0.0.1:5173`, email
+`admin@example.invalid`, пароль тот, что передан в CLI.
+
+Проверка входа прямым запросом к API (мутации требуют CSRF-заголовки):
+
+```sh
+curl -sS -D - -o /tmp/admin-login.json \
+  -H 'Content-Type: application/json' \
+  -H 'X-Requested-With: admin-ui' \
+  -H 'Origin: http://127.0.0.1:5173' \
+  -d '{"email":"admin@example.invalid","password":"choose-a-strong-password"}' \
+  http://127.0.0.1:8090/api/v1/auth/login
+curl --fail http://127.0.0.1:8092/live
+```
+
+Admin API: `http://127.0.0.1:8090/api/v1`, management `127.0.0.1:8092`,
+интерфейс `http://127.0.0.1:5173`. Для локальной разработки UI без
+сборки образа: `cd frontend && npm run dev` (Vite проксирует `/api` на
+`:8090`).
+
+Сквозные сценарии против fixture-адаптера (не входят в `make check`):
+
+```sh
+make e2e
+```
+
+Стек e2e изолирован портами (`E2E_POSTGRES_PORT=5434`,
+`E2E_FRONTEND_PORT=5174`, `E2E_HTTP_PORT=8094`, `E2E_MANAGEMENT_PORT=8095`)
+и может работать одновременно с dev-стеком.
+
+Демонстрационный сценарий экранов:
+[demo-stage-1.md](demo-stage-1.md).
 
 ## Проверки
 

@@ -1,0 +1,12 @@
+.banner {
+  background: var(--tone-attention-bg);
+  border: 1px solid color-mix(in srgb, var(--tone-attention) 30%, var(--color-surface));
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  font-size: 13.5px;
+}
+
+.list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}

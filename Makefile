@@ -3,12 +3,27 @@ SHELL := /bin/sh
 # Docker-first workflow, same as amocrm-pro. Host Go/Node are optional for
 # quick loops; the canonical checks run in containers.
 DOCKER ?= docker
-COMPOSE ?= docker compose
+COMPOSE ?= $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo docker-compose)
 COMPOSE_FILE ?= deploy/docker-compose.yml
 GO_VERSION ?= 1.25
 GO_IMAGE ?= golang:$(GO_VERSION)-alpine
+GOLANGCI_LINT_VERSION ?= v2.13.2
+GOLANGCI_LINT_IMAGE ?= golangci/golangci-lint:$(GOLANGCI_LINT_VERSION)-alpine
 NODE_IMAGE ?= node:24-alpine
 POSTGRES_IMAGE ?= postgres:17-alpine
+PLAYWRIGHT_IMAGE ?= mcr.microsoft.com/playwright:v1.63.0-jammy
+E2E_PROJECT ?= amocrm-pro-admin-e2e
+E2E_EMAIL ?= admin@example.invalid
+E2E_PASSWORD ?= correct-horse-battery
+# Isolated host ports so the e2e stack can run next to the dev stack.
+E2E_POSTGRES_PORT ?= 5434
+E2E_FRONTEND_PORT ?= 5174
+E2E_HTTP_PORT ?= 8094
+E2E_MANAGEMENT_PORT ?= 8095
+E2E_BASE_URL ?= http://host.docker.internal:$(E2E_FRONTEND_PORT)
+E2E_ENV = POSTGRES_PORT=$(E2E_POSTGRES_PORT) FRONTEND_PORT=$(E2E_FRONTEND_PORT) \
+	HTTP_PORT=$(E2E_HTTP_PORT) MANAGEMENT_PORT=$(E2E_MANAGEMENT_PORT) \
+	ADMIN_PUBLIC_ORIGIN='http://host.docker.internal:$(E2E_FRONTEND_PORT)'
 
 # Core pilot stack of amocrm-pro (docker-compose.activity.yml). Fixtures and
 # local runs target this stack only; production is never a fixture target.
@@ -21,9 +36,21 @@ UID := $(shell id -u)
 GID := $(shell id -g)
 DOCKER_GO := $(DOCKER) run --rm --user "$(UID):$(GID)" \
 	--env HOME=/tmp --env GOCACHE=/tmp/go-build --env GOMODCACHE=/tmp/go/pkg/mod \
-	--volume "$(CURDIR)/backend:/src" --workdir /src $(GO_IMAGE)
+	--volume "$(CURDIR)/backend:/src" --volume "$(CURDIR)/docs:/docs:ro" \
+	--workdir /src $(GO_IMAGE)
+DOCKER_GOLANGCI := $(DOCKER) run --rm --user "$(UID):$(GID)" \
+	--env HOME=/tmp --env GOCACHE=/tmp/go-build --env GOMODCACHE=/tmp/go/pkg/mod \
+	--env GOLANGCI_LINT_CACHE=/tmp/golangci \
+	--volume "$(CURDIR)/backend:/src" --volume "$(CURDIR)/docs:/docs:ro" \
+	--workdir /src $(GOLANGCI_LINT_IMAGE)
 DOCKER_NODE := $(DOCKER) run --rm --user "$(UID):$(GID)" \
 	--env HOME=/tmp --volume "$(CURDIR)/frontend:/src" --workdir /src $(NODE_IMAGE)
+
+# Content revision of the working tree. Docker's legacy builder does not always
+# invalidate COPY layers on file changes, so the value is used as a cache-bust
+# layer inside the images.
+BUILD_REVISION ?= $(shell { git rev-parse HEAD 2>/dev/null || echo unknown; git status --porcelain 2>/dev/null; git diff HEAD 2>/dev/null; } | { shasum 2>/dev/null || sha1sum; } | cut -c1-12)
+export BUILD_REVISION
 
 .DEFAULT_GOAL := help
 
@@ -83,14 +110,20 @@ migrate: ## Apply pending admin DB migrations
 # Checks (each target requires the corresponding source tree to exist)
 # ---------------------------------------------------------------------------
 
-lint: ## gofmt/vet in Docker; eslint + tsc in Docker
+lint: ## gofmt/vet/golangci-lint in Docker; eslint + tsc in Docker
 	@test -d backend || { echo "backend/ is not created yet (stage 1, part 1.2)" >&2; exit 1; }
 	$(DOCKER_GO) sh -ec 'files="$$(gofmt -l .)"; if [ -n "$$files" ]; then printf "%s\n" "$$files"; exit 1; fi; go vet ./...'
+	$(DOCKER_GOLANGCI) golangci-lint run --timeout 5m
 	@if [ -d frontend ]; then $(DOCKER_NODE) sh -ec 'npm ci --no-audit --no-fund && npm run lint && npx tsc --noEmit'; fi
 
 test: ## Race-enabled Go tests and Vitest in Docker
 	@test -d backend || { echo "backend/ is not created yet (stage 1, part 1.2)" >&2; exit 1; }
-	$(DOCKER_GO) go test -race -count=1 ./...
+	$(DOCKER) run --rm \
+		--env HOME=/tmp --env GOCACHE=/tmp/go-build --env GOMODCACHE=/tmp/go/pkg/mod \
+		--env CGO_ENABLED=1 \
+		--volume "$(CURDIR)/backend:/src" --volume "$(CURDIR)/docs:/docs:ro" \
+		--workdir /src $(GO_IMAGE) \
+		sh -ec 'apk add --no-cache build-base >/dev/null && go test -race -count=1 ./...'
 	@if [ -d frontend ]; then $(DOCKER_NODE) sh -ec 'npm ci --no-audit --no-fund && npm test -- --run'; fi
 
 integration-test: ## Migrations up/down and *_integration_test.go against disposable PostgreSQL
@@ -98,13 +131,31 @@ integration-test: ## Migrations up/down and *_integration_test.go against dispos
 	@set -eu; \
 	cleanup() { $(COMPOSE) -p amocrm-pro-admin-test -f deploy/docker-compose.test.yml down --volumes --remove-orphans >/dev/null 2>&1 || true; }; \
 	trap cleanup EXIT INT TERM; cleanup; \
+	$(COMPOSE) -p amocrm-pro-admin-test -f deploy/docker-compose.test.yml build migrate integration-test; \
 	$(COMPOSE) -p amocrm-pro-admin-test -f deploy/docker-compose.test.yml up --detach --wait postgres; \
 	$(COMPOSE) -p amocrm-pro-admin-test -f deploy/docker-compose.test.yml run --rm migrate up; \
 	$(COMPOSE) -p amocrm-pro-admin-test -f deploy/docker-compose.test.yml run --rm integration-test
 
 e2e: ## Playwright scenarios against the built stack with the fixture adapter
 	@test -d frontend/e2e || { echo "frontend/e2e is not created yet (stage 1, part 1.4)" >&2; exit 1; }
-	$(DOCKER_NODE) sh -ec 'npm ci --no-audit --no-fund && npx playwright test'
+	@set -eu; \
+	files="-f deploy/docker-compose.yml -f deploy/docker-compose.e2e.yml"; \
+	cleanup() { $(E2E_ENV) $(COMPOSE) -p $(E2E_PROJECT) $$files down --volumes --remove-orphans >/dev/null 2>&1 || true; }; \
+	trap cleanup EXIT INT TERM; \
+	$(E2E_ENV) $(COMPOSE) -p $(E2E_PROJECT) $$files up --build --detach --wait; \
+	printf '%s' '$(E2E_PASSWORD)' | $(E2E_ENV) $(COMPOSE) -p $(E2E_PROJECT) $$files --profile tools run --rm -T admin-cli \
+	  employee create --email '$(E2E_EMAIL)' --name Admin --role admin --password-stdin \
+	  >/dev/null 2>&1 || true; \
+	$(DOCKER) run --rm \
+	  --add-host=host.docker.internal:host-gateway \
+	  --env HOME=/tmp \
+	  --env E2E_BASE_URL='$(E2E_BASE_URL)' \
+	  --env E2E_EMAIL='$(E2E_EMAIL)' \
+	  --env E2E_PASSWORD='$(E2E_PASSWORD)' \
+	  --volume "$(CURDIR)/frontend:/src:ro" \
+	  --workdir /tmp/e2e \
+	  $(PLAYWRIGHT_IMAGE) \
+	  bash -ec 'cp -a /src/. . && rm -rf node_modules && npm ci --no-audit --no-fund && npx playwright test'
 
 check: docs-check lint test integration-test ## Everything required before merging
 
@@ -113,10 +164,12 @@ check: docs-check lint test integration-test ## Everything required before mergi
 # ---------------------------------------------------------------------------
 
 fixtures-core-dry-run: ## Validate deploy/fixtures/core-installations.sql inside a rolled-back transaction
+	@test -f deploy/fixtures/core-installations.sql || { echo "deploy/fixtures/core-installations.sql is missing" >&2; exit 1; }
 	@$(DOCKER) exec -i $(CORE_PILOT_DB_CONTAINER) psql -v ON_ERROR_STOP=1 -U $(CORE_PILOT_DB_USER) -d $(CORE_PILOT_DB_NAME) \
-		-c 'BEGIN;' -f deploy/fixtures/core-installations.sql -c 'ROLLBACK;' >/dev/null && echo "fixtures: dry run ok"
+		-c 'BEGIN;' -f - -c 'ROLLBACK;' < deploy/fixtures/core-installations.sql >/dev/null && echo "fixtures: dry run ok"
 
 fixtures-core: ## Apply labelled fixture installations to the Core pilot stack (requires FIXTURES_CONFIRM=core-pilot)
 	@test "$(FIXTURES_CONFIRM)" = "core-pilot" || { echo "Refusing: set FIXTURES_CONFIRM=core-pilot (development pilot stack only)" >&2; exit 1; }
+	@test -f deploy/fixtures/core-installations.sql || { echo "deploy/fixtures/core-installations.sql is missing" >&2; exit 1; }
 	$(DOCKER) exec -i $(CORE_PILOT_DB_CONTAINER) psql -v ON_ERROR_STOP=1 -U $(CORE_PILOT_DB_USER) -d $(CORE_PILOT_DB_NAME) \
-		--single-transaction -f deploy/fixtures/core-installations.sql
+		--single-transaction -f - < deploy/fixtures/core-installations.sql

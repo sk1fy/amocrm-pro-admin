@@ -1,0 +1,6 @@
+services:
+  admin-api:
+    environment:
+      BACKENDS_FILE: /etc/admin/backends-e2e.yaml
+    volumes:
+      - ./backends-e2e.yaml:/etc/admin/backends-e2e.yaml:ro

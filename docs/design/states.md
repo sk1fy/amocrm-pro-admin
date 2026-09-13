@@ -90,7 +90,8 @@
 `verified_ok`, `verified_auth_error`, `verified_network_error`,
 `verified_rate_limited`, `verified_internal_error` с `observed_at` проверки.
 
-Дополнительные факты: `token_version`, `refreshed_at`, `expires_at`,
+Дополнительные факты: `credential_version` (колонка Core
+`oauth_credentials.token_version`), `refreshed_at`, `expires_at`,
 `key_version` (только номер версии ключа).
 
 ## Webhook-подписка
@@ -167,23 +168,39 @@ Outcome попытки: `completed`, `retry`, `failed`, `dead`, `cancelled`,
 `unknown`. `unknown_outcome` — обрыв соединения при выполнении; интерфейс
 предлагает «Проверить состояние», а не сообщает об ошибке команды.
 
+## Сотрудник (admin DB)
+
+Источник: admin DB `employees`. Роли и права — [roles.md](roles.md).
+Роли показываются нейтральным текстом: `admin` → «Администратор»,
+`operator` → «Оператор», `viewer` → «Наблюдатель».
+
+| Канон | Из `employees.status` | Тон | Текст |
+| --- | --- | --- | --- |
+| `active` | `active` | `ok` | Активен |
+| `disabled` | `disabled` | `off` | Отключён |
+
 ## Аккаунт (агрегат)
 
 Аккаунт — `account_id` amoCRM. Агрегированное состояние вычисляется в Admin
 API только для сортировки/фильтра и всегда показывается вместе с разбивкой по
-подключениям:
+подключениям. Первое совпадение сверху побеждает:
 
 | Канон | Правило |
 | --- | --- |
+| `partial` | Хотя бы один участвующий бекенд `unavailable` (подключения всё равно перечисляются) |
 | `needs_action` | Хотя бы одно подключение `reauth_required` или авторизация `missing` при статусе `active`/`pending` |
 | `error` | Хотя бы одно подключение `error` или webhook `error` |
-| `attention` | Хотя бы одно `pending`/`authorizing`, либо есть `dead`/`failed` jobs за 24 ч |
-| `ok` | Все подключения `active` без проблем |
+| `attention` | Хотя бы одно `pending`/`authorizing`, либо `recent_failed_jobs > 0` (failed/dead за 24 ч) |
 | `inactive` | Все подключения `disabled`/`uninstalled` |
-| `partial` | Часть источников `unavailable` — агрегат не вычислен полностью |
+| `ok` | Все подключения `active` без проблем |
+| `attention` | Любой остальной набор состояний |
 
 Типы проблем для фильтра: `reauth_required`, `webhook_error`, `job_failures`,
-`missing_credentials`, `disabled`, `source_unavailable`.
+`missing_credentials`, `disabled`, `source_unavailable`. Проблемы считаются
+по фактам из списка аккаунтов (`webhook_status`, `authorization_state`,
+`recent_failed_jobs`); при недоступном источнике выводится
+`source_unavailable`, а счётчики «Требуют внимания» не показывают число
+(«—»), пока источник не ответит.
 
 ## Происхождение данных
 
@@ -194,3 +211,15 @@ API только для сортировки/фильтра и всегда по
 
 Метка `fixture` показывается бейджем на карточке и в списках; смешивать без
 метки запрещено.
+
+### Уточнения обработки неизвестных данных (2026-09-13)
+
+- Отсутствие фактов credentials в summary не означает их отсутствия:
+  неизвестные поля не подменяются `false`. До проверки к amoCRM признак
+  `unverified` сохраняется и в карточке аккаунта.
+- Раскрытые попытки задачи отображают `Observation`: `unavailable` —
+  недоступный источник с повтором; только доступный пустой массив означает
+  «Попыток нет».
+- При смене/истечении сессии отменяются запросы прежнего сотрудника,
+  очищается кеш. Ответ 403 не оставляет защищённые кешированные данные
+  на экране сотрудников.

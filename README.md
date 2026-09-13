@@ -16,11 +16,11 @@ amoCRM, проверка подключённых виджетов, диагно
 
 ## Состояние
 
-Репозиторий находится на этапе **подготовки основы**: зафиксированы архитектурные
-решения, план четырёх этапов, стайл-гайд, схема собственной БД, `Makefile`,
-конфигурация бекендов (`deploy/backends.yaml`, `.env.example`) и помеченный
-fixture для пилотного стека Core. Код Admin API и frontend ещё не создан.
-Следующий шаг — реализация [этапа 1](docs/plan/stage-1.md).
+Этап 1 выполнен на ветке `feature/stage-1-accounts` (Core —
+`feature/admin-read-api`): вход, роли, поиск аккаунтов, карточки
+подключений, чтение jobs/аудита, frontend. Команд в Core нет — это
+этап 2. Запуск: [local-run.md](docs/runbooks/local-run.md), демо:
+[demo-stage-1.md](docs/runbooks/demo-stage-1.md).
 
 ## С чего начать
 
@@ -38,6 +38,7 @@ fixture для пилотного стека Core. Код Admin API и frontend 
 | Контракт адаптера бекенда | [docs/design/backend-adapter.md](docs/design/backend-adapter.md) |
 | Схема собственной БД | [docs/design/admin-db-schema.md](docs/design/admin-db-schema.md) |
 | Локальный запуск и fixtures | [docs/runbooks/local-run.md](docs/runbooks/local-run.md) |
+| Демо этапа 1 | [docs/runbooks/demo-stage-1.md](docs/runbooks/demo-stage-1.md) |
 | Принятые решения | [docs/adr/](docs/adr/) |
 
 ## Целевая структура репозитория

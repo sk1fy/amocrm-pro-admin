@@ -18,6 +18,7 @@
 | Последняя активность | `max(installations.updated_at)` | там же | там же | новый |
 | Агрегированное состояние | вычисляется в Admin API по [states.md](states.md) | — | там же | новый |
 | Происхождение (`real`/`fixture`) | `installations.settings->>'origin'` = `fixture` | там же | там же | новый |
+| Проблемы аккаунта, фильтр `problem` и счётчики «Требуют внимания» | вычисляются в Admin API из подключений (статус, webhook, авторизация, failed/dead jobs за 24 ч) | `GET /admin/v1/accounts` отдаёт `webhook_status`, `authorization_state`, `recent_failed_jobs` и `total` | `GET /api/v1/accounts?problem=`, Обзор | новый |
 | Пользователи/контакты аккаунта | надёжного источника нет | — | — | не в этапах 1–4 без нового источника |
 
 ## Подключение (installation)
@@ -30,7 +31,7 @@
 | Даты создания/обновления | `installations.created_at/updated_at` | там же | там же | новый |
 | Webhook: состояние, события, `checked_at`, `last_error` | `installations.webhook_status`, `webhook_settings`, `webhook_checked_at`, `webhook_last_error` | там же | там же | новый |
 | Webhook: подтверждённые destinations (кол-во, без URL) | `installation_webhook_destinations` (миграция 000015) — только `count`, `created_at`; URL зашифрованы и не читаются | там же | там же | новый |
-| Авторизация: наличие, `expires_at`, `token_version`, `refreshed_at`, `key_version`, lease активна | `oauth_credentials` (без `*_ciphertext`) | там же | там же | новый |
+| Авторизация: наличие, `expires_at`, `credential_version` (колонка `token_version`), `refreshed_at`, `key_version`, lease активна | `oauth_credentials` (без `*_ciphertext`) | там же | там же | новый; JSON-ключ `credential_version`, чтобы не содержать подстроку `token` |
 | Авторизация: результат проверки к amoCRM | внешний вызов через `amocrm.Client` в worker/Gateway | `POST /admin/v1/installations/{id}/commands/check` | операция | этап 2 |
 | Гранты сервисов интеграции | `integration_services` | вложено в installation/integration | там же | новый |
 | Activity pilot | `activity_pilots.enabled` | вложено в `GET /admin/v1/installations/{id}` | там же | новый |
@@ -54,7 +55,7 @@
 
 | Поле | Источник | Core admin read | Admin API | Статус |
 | --- | --- | --- | --- | --- |
-| Job: `id`, `installation_id`, `type`, `status`, `priority`, `attempts`, `max_attempts`, `run_after`, `last_error_code`, `last_error_message`, даты | `jobs` (без `payload`, `result`, `locked_by`) | `GET /admin/v1/jobs`, `GET /admin/v1/installations/{id}/jobs` | `GET /api/v1/operations/jobs`, вкладка аккаунта | новый |
+| Job: `id`, `installation_id`, `account_id`, `type`, `status`, `priority`, `attempts`, `max_attempts`, `run_after`, `last_error_code`, `last_error_message`, даты | `jobs` (без `payload`, `result`, `locked_by`) | `GET /admin/v1/jobs`, `GET /admin/v1/installations/{id}/jobs` | `GET /api/v1/operations/jobs`, таблица задач, ссылка на подключение | новый |
 | Job: инициатор и ресурс (`actor_type`, `actor_id` — ID пользователя amoCRM, `resource_type`, `resource_id`) | `jobs` (миграция 000002) | там же | там же | новый |
 | Попытки: `attempt`, `worker_id`, `started_at`, `finished_at`, `outcome`, `error_code`, `error_message`, `duration_ms` | `job_attempts` | `GET /admin/v1/jobs/{id}` | `GET /api/v1/operations/jobs/core/{id}` | новый |
 | Размер очередей по состояниям | `jobs` GROUP BY `status` (или метрики backlog) | `GET /admin/v1/jobs/summary` | Обзор | новый; согласовать с `jobs.BacklogMetrics` |
@@ -85,3 +86,15 @@
 - Если источник — вычисление, указать формулу словами или SQL-агрегат.
 - Для каждого показателя статистики этапа 3 добавляются столбцы «формула»,
   «период», «свежесть».
+
+### Исправления после проверки этапа 1
+
+- Продукт аккаунта: `AccountInstallation.grants` Core, только `enabled=true`;
+  код сервиса каталога, а не код OAuth-интеграции.
+- Ошибки задач в карточке: `InstallationSummary.recent_failed_jobs` Core;
+  одинаковое окно 24 часа для списка и карточки.
+- Факты OAuth карточки: исходный `Authorization` Core, включая `unverified`,
+  наличие credentials, сроки и версии; не конструируются из одного state.
+- Задачи аккаунта: Admin `/accounts/{account_id}/jobs`, слияние списков
+  задач подключений; `backend` у каждой строки берётся из адаптера.
+- Подключения интеграции: список аккаунтов с `integration_id` и `backend`.

@@ -1,0 +1,63 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  justify-self: start;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  white-space: nowrap;
+  color: var(--color-muted);
+  background: var(--tone-off-bg);
+}
+
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+  opacity: 0.85;
+}
+
+.ok {
+  color: var(--tone-ok);
+  background: var(--tone-ok-bg);
+}
+
+.attention {
+  color: var(--tone-attention);
+  background: var(--tone-attention-bg);
+}
+
+.action {
+  color: var(--tone-action);
+  background: var(--tone-action-bg);
+}
+
+.error {
+  color: var(--tone-error);
+  background: var(--tone-error-bg);
+}
+
+.off {
+  color: var(--tone-off);
+  background: var(--tone-off-bg);
+}
+
+.unknown {
+  color: var(--tone-unknown);
+  background: var(--tone-unknown-bg);
+  font-style: italic;
+}
+
+.raw {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--color-muted);
+  font-style: normal;
+}

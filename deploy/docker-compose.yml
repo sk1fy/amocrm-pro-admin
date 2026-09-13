@@ -1,0 +1,149 @@
+services:
+  admin-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-admin}"
+      POSTGRES_USER: "${POSTGRES_USER:-admin}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-admin}"
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    restart: unless-stopped
+    volumes:
+      - admin-postgres-data:/var/lib/postgresql/data
+    networks:
+      - admin
+
+  migrate:
+    image: "${MIGRATE_IMAGE:-amocrm-admin-migrate:local}"
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: migrate
+      args:
+        BUILD_REVISION: "${BUILD_REVISION:-unknown}"
+        GO_VERSION: "${GO_VERSION:-1.25}"
+    environment:
+      DATABASE_URL: "${DATABASE_URL:-postgres://admin:admin@admin-postgres:5432/admin?sslmode=disable}"
+      MIGRATIONS_DIR: /migrations
+      MIGRATION_TIMEOUT: "${MIGRATION_TIMEOUT:-2m}"
+    depends_on:
+      admin-postgres:
+        condition: service_healthy
+    restart: "no"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - admin
+
+  admin-api:
+    image: "${ADMIN_API_IMAGE:-amocrm-admin-api:local}"
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: admin-api
+      args:
+        BUILD_REVISION: "${BUILD_REVISION:-unknown}"
+        GO_VERSION: "${GO_VERSION:-1.25}"
+    init: true
+    environment:
+      APP_ENV: "${APP_ENV:-development}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+      HTTP_ADDRESS: ":8090"
+      MANAGEMENT_HTTP_ADDRESS: ":8092"
+      SHUTDOWN_TIMEOUT: "${SHUTDOWN_TIMEOUT:-15s}"
+      DATABASE_URL: "${DATABASE_URL:-postgres://admin:admin@admin-postgres:5432/admin?sslmode=disable}"
+      DATABASE_TIMEOUT: "${DATABASE_TIMEOUT:-2s}"
+      DB_MAX_CONNS: "${DB_MAX_CONNS:-10}"
+      ADMIN_PUBLIC_ORIGIN: "${ADMIN_PUBLIC_ORIGIN:-http://127.0.0.1:5173}"
+      SESSION_ABSOLUTE_TTL: "${SESSION_ABSOLUTE_TTL:-12h}"
+      SESSION_IDLE_TTL: "${SESSION_IDLE_TTL:-2h}"
+      LOGIN_RATE_PER_MINUTE: "${LOGIN_RATE_PER_MINUTE:-10}"
+      TRUST_PROXY_HEADERS: "${TRUST_PROXY_HEADERS:-true}"
+      BACKENDS_FILE: "${BACKENDS_FILE:-/etc/admin/backends.yaml}"
+      CORE_ADMIN_API_TOKEN: "${CORE_ADMIN_API_TOKEN:-admin-dev-token-change-me}"
+      MIGRATIONS_DIR: /migrations
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-8090}:8090"
+      - "127.0.0.1:${MANAGEMENT_PORT:-8092}:8092"
+    volumes:
+      - ./backends.yaml:/etc/admin/backends.yaml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      admin-postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8092/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: "${CONTAINER_STOP_GRACE_PERIOD:-20s}"
+    restart: unless-stopped
+    networks:
+      - admin
+
+  admin-cli:
+    profiles: ["tools"]
+    image: "${ADMIN_CLI_IMAGE:-amocrm-admin-cli:local}"
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: admin-cli
+      args:
+        BUILD_REVISION: "${BUILD_REVISION:-unknown}"
+        GO_VERSION: "${GO_VERSION:-1.25}"
+    environment:
+      DATABASE_URL: "${DATABASE_URL:-postgres://admin:admin@admin-postgres:5432/admin?sslmode=disable}"
+      DATABASE_TIMEOUT: "${DATABASE_TIMEOUT:-30s}"
+    depends_on:
+      admin-postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - admin
+
+  frontend:
+    image: "${ADMIN_UI_IMAGE:-amocrm-admin-ui:local}"
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      admin-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - admin
+
+volumes:
+  admin-postgres-data:
+
+networks:
+  admin:
+    driver: bridge

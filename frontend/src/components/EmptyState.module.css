@@ -1,0 +1,8 @@
+.box {
+  padding: 1.5rem;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  font-size: 13.5px;
+}
