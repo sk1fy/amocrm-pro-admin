@@ -22,6 +22,7 @@
 | --- | --- | --- |
 | `/login` | Вход | 1 |
 | `/` | Обзор | 1 (минимум), 3 (статистика) |
+| `/stats/accounts?metric=&period=` | Аккаунты показателя статистики | 3 |
 | `/accounts?q=&product=&connection=&problem=&sort=&cursor=` | Список аккаунтов | 1 |
 | `/accounts/:accountId` | Карточка аккаунта → вкладка Обзор | 1 |
 | `/accounts/:accountId/widgets` | Вкладка Виджеты (подключения) | 1 |
@@ -172,3 +173,18 @@ Jobs всех аккаунтов: фильтр статуса/типа, сорт
 - Для постановки в очередь карточка операции отдельно подтверждает
   enqueue; «Проверить задачу» раскрывает Observation задачи и опрашивает
   её до завершения без повторного выполнения команды.
+
+## Этап 3
+
+- `/` — блок статистики `GET /stats?period=` (24h/7d/30d в URL). Ноль —
+  «0», отсутствие — «—». Показатели ведут на `/stats/accounts`.
+- `/stats/accounts?metric=&period=` — список аккаунтов показателя.
+- `/accounts/$accountId/widgets/$backend/$connectionId/settings` —
+  настройки Activity (CAS `expected_updated_at`), команды sync
+  (enable/sync/backfill/disable; «202 не означает завершение»), панели
+  (create/patch/rotate без секрета ссылки), правила и запуски
+  lead-status (`expected_revision`).
+- Карточка подключения: реальный `activity_sync` Observation (лаг,
+  диапазон, last_* , reauth). Ссылки Grafana/Loki, если заданы env.
+- Сохранённые представления: FilterBar аккаунтов и списка статистики;
+  личные и общие (`views:write` у operator+).

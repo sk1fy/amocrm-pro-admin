@@ -86,7 +86,7 @@ func (c *Client) Descriptor() adapter.Descriptor { return c.desc }
 func (c *Client) Capabilities() adapter.Capabilities {
 	return adapter.Capabilities{
 		Accounts: true, Connections: true, Integrations: true, Jobs: true, Audit: true, Commands: true, Diagnostics: true,
-		ActivityDeliveries: true,
+		ActivityDeliveries: true, Settings: true, Stats: true,
 	}
 }
 

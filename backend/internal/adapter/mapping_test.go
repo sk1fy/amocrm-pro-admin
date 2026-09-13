@@ -56,6 +56,19 @@ func TestMapKnownDictionaries(t *testing.T) {
 			mapFn: MapOrigin,
 			known: []string{"fixture", "real"},
 		},
+		{
+			name:  "sync",
+			mapFn: MapSyncState,
+			known: []string{
+				"pending", "idle", "running", "disabled", "paused",
+				"failed", "reauth_required", "not_enabled",
+			},
+		},
+		{
+			name:  "lead-status run",
+			mapFn: MapLeadStatusRun,
+			known: []string{"queued", "processing", "completed", "failed", "dead"},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -77,6 +90,21 @@ func TestMapKnownDictionaries(t *testing.T) {
 				t.Fatalf("empty: %+v", empty)
 			}
 		})
+	}
+}
+
+func TestMapSyncStateDoesNotInventActivity(t *testing.T) {
+	if got := MapSyncState("not_enabled"); got.Canonical != SyncNotEnabled || got.Raw != "" {
+		t.Fatalf("not_enabled: %+v", got)
+	}
+	if got := MapSyncState("partial"); got.Canonical != StateUnknown || got.Raw != "partial" {
+		t.Fatalf("partial: %+v", got)
+	}
+	if got := MapSyncState("stale"); got.Canonical != StateUnknown || got.Raw != "stale" {
+		t.Fatalf("stale: %+v", got)
+	}
+	if got := MapSyncState("idle"); got.Canonical != SyncIdle {
+		t.Fatalf("idle: %+v", got)
 	}
 }
 

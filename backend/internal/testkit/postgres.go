@@ -72,7 +72,7 @@ func Reset(t *testing.T, pool *pgxpool.Pool) {
 	defer cancel()
 	_, err := pool.Exec(ctx, `
 		TRUNCATE TABLE
-			admin_audit_log, sessions, employees
+			saved_views, operations, admin_audit_log, sessions, employees
 		RESTART IDENTITY CASCADE`)
 	if err != nil {
 		t.Fatalf("reset test database: %v", err)

@@ -26,9 +26,11 @@ import styles from './CommandAction.module.css'
 export type CommandField = {
   name: string
   label: string
-  type?: 'text' | 'password' | 'url' | 'textarea' | 'select' | 'checkbox'
+  type?: 'text' | 'password' | 'url' | 'textarea' | 'select' | 'checkbox' | 'date' | 'number'
   value?: string
   required?: boolean
+  min?: number
+  max?: number
   options?: { value: string; label: string }[]
 }
 type Props = {
@@ -56,6 +58,15 @@ const affectedQueries = new Set([
   'catalog',
   'backends',
   'admin-operations',
+  'connection-settings',
+  'connection-status',
+  'connection-panels',
+  'connection-employees',
+  'connection-rules',
+  'connection-runs',
+  'stats',
+  'stats-accounts',
+  'views',
 ])
 
 export function CommandAction(props: Props) {
@@ -260,6 +271,8 @@ function CommandControl({
                   type={field.type ?? 'text'}
                   defaultValue={field.type === 'password' ? undefined : field.value}
                   required={field.required}
+                  min={field.min}
+                  max={field.max}
                   autoComplete={field.type === 'password' ? 'new-password' : 'off'}
                 />
               )}

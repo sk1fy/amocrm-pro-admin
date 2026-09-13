@@ -1,13 +1,14 @@
 import { Link } from '@tanstack/react-router'
 import { useRouteParams } from '../../app/hooks'
 import { useQuery } from '@tanstack/react-query'
-import { fetchConnection, keys } from '../../api/queries'
+import { fetchBackends, fetchConnection, keys } from '../../api/queries'
 import { ErrorState } from '../../components/ErrorState'
 import { Observation } from '../../components/Observation'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
 import { parseActivity } from '../../lib/activity'
 import { formatNull, formatTime } from '../../lib/format'
+import { exploreURL } from '../../lib/observability'
 import { CommandAction } from '../operations/CommandAction'
 import { connectionCommand } from '../operations/commands'
 import { RetryDelivery } from '../operations/RetryActions'
@@ -22,6 +23,7 @@ export function ConnectionPage() {
     queryKey: keys.connection(backend, connectionId),
     queryFn: () => fetchConnection(backend, connectionId),
   })
+  const backends = useQuery({ queryKey: keys.backends, queryFn: fetchBackends })
 
   if (query.isPending) {
     return <div className={page.skeleton} />
@@ -66,12 +68,20 @@ export function ConnectionPage() {
           />
         ))}
       </div>
-      <Link
-        to="/operations/admin"
-        search={{ backend, target_type: 'installation', target_id: connectionId }}
-      >
-        История команд этого подключения
-      </Link>
+      <div className={page.row}>
+        <Link
+          to="/accounts/$accountId/widgets/$backend/$connectionId/settings"
+          params={{ accountId, backend, connectionId }}
+        >
+          Настройки Activity и lead-status
+        </Link>
+        <Link
+          to="/operations/admin"
+          search={{ backend, target_type: 'installation', target_id: connectionId }}
+        >
+          История команд этого подключения
+        </Link>
+      </div>
       <Observation
         title="Идентификация"
         observation={card.connection}
@@ -207,7 +217,35 @@ export function ConnectionPage() {
           )
         }}
       </Observation>
-      <Observation title="Синхронизация Activity" observation={card.activity_sync} />
+      <Observation
+        title="Синхронизация Activity"
+        observation={card.activity_sync}
+        onRetry={() => void query.refetch()}
+      >
+        {(sync) => (
+          <div className={page.stack}>
+            <StatusBadge domain="sync" state={sync.state} raw={sync.raw} />
+            <p className={page.muted}>
+              «Нет данных», устаревшие данные и «синхронизация не включена» — не то же самое, что
+              нулевая активность.
+            </p>
+            <p>Задержка, сек: {formatNull(sync.lag_seconds ?? null)}</p>
+            <p>Последний успех: {formatTime(sync.last_success_at)}</p>
+            <p>Последнее событие: {formatTime(sync.last_event_at)}</p>
+            <p>
+              Проверенный диапазон: {formatTime(sync.verified_from)} — {formatTime(sync.verified_through)}
+            </p>
+            <p>Ошибка: {formatNull(sync.error_code || null)}</p>
+            {sync.reauth_required ? <p>Требуется повторная авторизация клиента.</p> : null}
+            <ObservabilityLinks
+              grafana={backends.data?.observability?.grafana_base_url}
+              loki={backends.data?.observability?.loki_base_url}
+              accountId={identity?.account_id ?? accountId}
+              installationId={connectionId}
+            />
+          </div>
+        )}
+      </Observation>
       <Observation
         title="Последние задачи"
         observation={card.recent_jobs}
@@ -249,5 +287,36 @@ export function ConnectionPage() {
         }
       </Observation>
     </div>
+  )
+}
+
+function ObservabilityLinks({
+  grafana,
+  loki,
+  accountId,
+  installationId,
+}: {
+  grafana?: string
+  loki?: string
+  accountId: string
+  installationId: string
+}) {
+  const query = `account_id=${accountId} installation_id=${installationId}`
+  const grafanaURL = exploreURL(grafana, 'now-24h', 'now', query)
+  const lokiURL = exploreURL(loki, 'now-24h', 'now', query)
+  if (!grafanaURL && !lokiURL) return null
+  return (
+    <p className={page.row}>
+      {grafanaURL ? (
+        <a href={grafanaURL} rel="noreferrer">
+          Grafana
+        </a>
+      ) : null}
+      {lokiURL ? (
+        <a href={lokiURL} rel="noreferrer">
+          Loki
+        </a>
+      ) : null}
+    </p>
   )
 }

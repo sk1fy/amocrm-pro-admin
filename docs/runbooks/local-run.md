@@ -87,6 +87,11 @@ DELETE FROM audit_log WHERE actor_type = 'fixture';
 
 ## Admin: стек админки
 
+Необязательные `GRAFANA_BASE_URL` и `LOKI_BASE_URL` (абсолютные URL).
+Пустые значения допустимы: ссылок в UI не будет. Идентификаторы
+аккаунта/установки попадают только в query ссылки, не в labels
+Prometheus.
+
 `make up` поднимает PostgreSQL, мигратор, Admin API и frontend
 (nginx на `http://127.0.0.1:5173`, прокси `/api` на Admin API). Compose
 выставляет `TRUST_PROXY_HEADERS=true`, потому что перед API всегда стоит

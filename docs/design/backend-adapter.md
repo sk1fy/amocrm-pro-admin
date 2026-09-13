@@ -152,3 +152,18 @@ CommandResult: id, state, outcome, result, error, observed_at, job_id.
 Fixture-адаптер имеет отмеченные тестовые команды с mutex и копиями read
 snapshot; параллельное чтение и изменения не гоняются за общей памятью.
 Он не выполняет OAuth и не хранит переданные секреты.
+
+## Settings и Stats (этап 3)
+
+Опциональные `SettingsBackend` и `StatsBackend`. Capabilities.Settings и
+Stats включены у `core-http` и fixture.
+
+- Settings: Activity settings/status/panels/employees, lead-status
+  rules/runs. Неизвестный sync state → `unknown` + `Raw`.
+- Stats: `GetStats(period)`, `ListStatsAccounts(metric, period, …)`.
+- Core GET: `/admin/v1/installations/{id}/activity/*`,
+  `/lead-status/*`, `/admin/v1/stats`, `/admin/v1/stats/accounts`.
+- Команды — существующий `POST /admin/v1/commands`. 409 разбирает
+  текущие settings/rule в `ConflictError.Current`.
+- Fixture: idle+lag 12 на установке с грантом Activity; unknown sync на
+  другой; CAS conflict; sync kind=sync pending → succeeded на GetCommand.

@@ -52,6 +52,10 @@ frontend использует `GET /api/v1/me` только для скрыти�
   сессии сотрудника.
 - Каждое действие с правом `*:write`, `*:check`, `*:retry`, `*:enable/disable`,
   `*:revoke`, `*:uninstall`, `*:rotate_secret`, `*:sync`, `*:pilot` — аудируется.
+- Права этапа 3 (`activity:settings:write`, `activity:sync`,
+  `activity:panels:write`, `leadstatus:rules:write`, `stats:read`,
+  `views:write`) проверяются на сервере для маршрутов и команд. Frontend
+  только скрывает недоступные кнопки.
 
 ## Actor в Core
 

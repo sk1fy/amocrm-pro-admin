@@ -10,6 +10,10 @@ import page from '../../components/page.module.css'
 import { formatNull, formatTime } from '../../lib/format'
 import { jobPending, operationPending, safeOperationURL } from './commands'
 
+function numberField(value: unknown): number | null {
+  return typeof value === 'number' ? value : null
+}
+
 function JobObservation({
   backend,
   jobId,
@@ -132,7 +136,10 @@ export function OperationView({
         )}
       </div>
       {operationPending(operation.state) ? (
-        <p role="status">Команда выполняется. Результат обновляется автоматически.</p>
+        <p role="status">
+          Команда выполняется. Ответ 202 не означает завершение. Результат обновляется
+          автоматически.
+        </p>
       ) : null}
       {operation.outcome === 'queued' ? (
         <p role="status">
@@ -143,6 +150,13 @@ export function OperationView({
         <p>Исход команды неизвестен. Проверьте объект и историю операции перед новой командой.</p>
       ) : null}
       {operation.error ? <p role="alert">{operation.error.message}</p> : null}
+      {operation.error?.code === 'conflict' ? (
+        <p>
+          Текущие значения: retention_days={formatNull(numberField(result.retention_days))},
+          initial_days={formatNull(numberField(result.initial_days))}, revision=
+          {formatNull(numberField(result.revision))}
+        </p>
+      ) : null}
       {typeof result.webhook_error === 'string' && result.webhook_error !== '' ? (
         <p>Ошибка webhook: {result.webhook_error}</p>
       ) : null}

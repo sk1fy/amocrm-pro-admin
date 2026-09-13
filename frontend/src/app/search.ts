@@ -51,6 +51,30 @@ export type CursorSearch = {
   command?: string
 }
 
+export type OverviewSearch = {
+  period?: string
+}
+
+export function overviewSearch(search: Record<string, unknown>): OverviewSearch {
+  return { period: stringParam(search.period) }
+}
+
+export type StatsAccountsSearch = {
+  metric?: string
+  period?: string
+  product?: string
+  cursor?: string
+}
+
+export function statsAccountsSearch(search: Record<string, unknown>): StatsAccountsSearch {
+  return {
+    metric: stringParam(search.metric),
+    period: stringParam(search.period),
+    product: stringParam(search.product),
+    cursor: stringParam(search.cursor),
+  }
+}
+
 export function cursorSearch(search: Record<string, unknown>): CursorSearch {
   return {
     cursor: stringParam(search.cursor),

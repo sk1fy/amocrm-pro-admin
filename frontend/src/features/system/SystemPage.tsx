@@ -6,6 +6,7 @@ import { Observation } from '../../components/Observation'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
 import { formatNull } from '../../lib/format'
+import { exploreURL } from '../../lib/observability'
 
 export function SystemNav() {
   const me = useQuery({ queryKey: keys.me, queryFn: fetchMe })
@@ -44,6 +45,20 @@ export function SystemPage() {
       {backends.isPending ? <div className={page.skeleton} /> : null}
       {backends.error ? (
         <ErrorState error={backends.error} onRetry={() => void backends.refetch()} />
+      ) : null}
+      {backends.data?.observability?.grafana_base_url || backends.data?.observability?.loki_base_url ? (
+        <p className={page.row}>
+          {exploreURL(backends.data.observability.grafana_base_url, 'now-6h', 'now', '') ? (
+            <a href={exploreURL(backends.data.observability.grafana_base_url, 'now-6h', 'now', '')}>
+              Grafana
+            </a>
+          ) : null}
+          {exploreURL(backends.data.observability.loki_base_url, 'now-6h', 'now', '') ? (
+            <a href={exploreURL(backends.data.observability.loki_base_url, 'now-6h', 'now', '')}>
+              Loki
+            </a>
+          ) : null}
+        </p>
       ) : null}
       {(backends.data?.items ?? []).map((item) => (
         <Observation

@@ -19,33 +19,40 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/operations"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
 	"github.com/sk1fy/amocrm-pro-admin/internal/rbac"
+	"github.com/sk1fy/amocrm-pro-admin/internal/views"
 )
 
 const maxBodyBytes = 1 << 20
 
 type Dependencies struct {
-	Operations   *operations.Service
-	Employees    *employees.Store
-	Sessions     *auth.Service
-	Audit        *audit.Store
-	Limiter      *auth.Limiter
-	PublicOrigin string
-	TrustProxy   bool
-	Logger       *slog.Logger
-	Timeout      time.Duration
-	Registry     *catalog.Registry
-	Accounts     *accounts.Service
+	Operations     *operations.Service
+	Employees      *employees.Store
+	Sessions       *auth.Service
+	Audit          *audit.Store
+	Views          *views.Store
+	Limiter        *auth.Limiter
+	PublicOrigin   string
+	GrafanaBaseURL string
+	LokiBaseURL    string
+	TrustProxy     bool
+	Logger         *slog.Logger
+	Timeout        time.Duration
+	Registry       *catalog.Registry
+	Accounts       *accounts.Service
 }
 
 type api struct {
-	operations *operations.Service
-	employees  *employees.Store
-	sessions   *auth.Service
-	audit      *audit.Store
-	limiter    *auth.Limiter
-	registry   *catalog.Registry
-	accounts   *accounts.Service
-	trustProxy bool
+	operations     *operations.Service
+	employees      *employees.Store
+	sessions       *auth.Service
+	audit          *audit.Store
+	views          *views.Store
+	limiter        *auth.Limiter
+	registry       *catalog.Registry
+	accounts       *accounts.Service
+	grafanaBaseURL string
+	lokiBaseURL    string
+	trustProxy     bool
 }
 
 func New(deps Dependencies) http.Handler {
@@ -58,14 +65,17 @@ func New(deps Dependencies) http.Handler {
 		accountSvc = accounts.New(registry.Backends(), deps.Audit)
 	}
 	h := &api{
-		operations: deps.Operations,
-		employees:  deps.Employees,
-		sessions:   deps.Sessions,
-		audit:      deps.Audit,
-		limiter:    deps.Limiter,
-		registry:   registry,
-		accounts:   accountSvc,
-		trustProxy: deps.TrustProxy,
+		operations:     deps.Operations,
+		employees:      deps.Employees,
+		sessions:       deps.Sessions,
+		audit:          deps.Audit,
+		views:          deps.Views,
+		limiter:        deps.Limiter,
+		registry:       registry,
+		accounts:       accountSvc,
+		grafanaBaseURL: deps.GrafanaBaseURL,
+		lokiBaseURL:    deps.LokiBaseURL,
+		trustProxy:     deps.TrustProxy,
 	}
 	router := chi.NewRouter()
 	router.Use(httpx.RequestID)
@@ -118,6 +128,12 @@ func New(deps Dependencies) http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(rbac.Require(rbac.ConnectionsRead, deps.Employees))
 			r.Method(apicontract.Connection.Method, apicontract.Connection.Path, http.HandlerFunc(h.getConnection))
+			r.Method(apicontract.ActivitySettings.Method, apicontract.ActivitySettings.Path, http.HandlerFunc(h.getActivitySettings))
+			r.Method(apicontract.ActivityStatus.Method, apicontract.ActivityStatus.Path, http.HandlerFunc(h.getActivityStatus))
+			r.Method(apicontract.ActivityPanels.Method, apicontract.ActivityPanels.Path, http.HandlerFunc(h.listActivityPanels))
+			r.Method(apicontract.ActivityPanel.Method, apicontract.ActivityPanel.Path, http.HandlerFunc(h.getActivityPanel))
+			r.Method(apicontract.ActivityEmployees.Method, apicontract.ActivityEmployees.Path, http.HandlerFunc(h.listActivityEmployees))
+			r.Method(apicontract.LeadStatusRules.Method, apicontract.LeadStatusRules.Path, http.HandlerFunc(h.listLeadStatusRules))
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(rbac.Require(rbac.OperationsRead, deps.Employees))
@@ -127,6 +143,7 @@ func New(deps Dependencies) http.Handler {
 			r.Method(apicontract.ConnectionJobs.Method, apicontract.ConnectionJobs.Path, http.HandlerFunc(h.listConnectionJobs))
 			r.Method(apicontract.OperationsJobs.Method, apicontract.OperationsJobs.Path, http.HandlerFunc(h.listJobs))
 			r.Method(apicontract.OperationsJob.Method, apicontract.OperationsJob.Path, http.HandlerFunc(h.getJob))
+			r.Method(apicontract.LeadStatusRuns.Method, apicontract.LeadStatusRuns.Path, http.HandlerFunc(h.listLeadStatusRuns))
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(rbac.Require(rbac.IntegrationsRead, deps.Employees))
@@ -137,6 +154,21 @@ func New(deps Dependencies) http.Handler {
 			r.Use(rbac.Require(rbac.SystemRead, deps.Employees))
 			r.Method(apicontract.Catalog.Method, apicontract.Catalog.Path, http.HandlerFunc(h.catalog))
 			r.Method(apicontract.SystemBackends.Method, apicontract.SystemBackends.Path, http.HandlerFunc(h.listBackends))
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(rbac.Require(rbac.StatsRead, deps.Employees))
+			r.Method(apicontract.Stats.Method, apicontract.Stats.Path, http.HandlerFunc(h.getStats))
+			r.Method(apicontract.StatsAccounts.Method, apicontract.StatsAccounts.Path, http.HandlerFunc(h.listStatsAccounts))
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(rbac.Require(rbac.AccountsRead, deps.Employees))
+			r.Method(apicontract.Views.Method, apicontract.Views.Path, http.HandlerFunc(h.listViews))
+		})
+		r.Group(func(r chi.Router) {
+			r.Use(rbac.Require(rbac.ViewsWrite, deps.Employees))
+			r.Method(apicontract.ViewsCreate.Method, apicontract.ViewsCreate.Path, http.HandlerFunc(h.createView))
+			r.Method(apicontract.ViewPatch.Method, apicontract.ViewPatch.Path, http.HandlerFunc(h.patchView))
+			r.Method(apicontract.ViewDelete.Method, apicontract.ViewDelete.Path, http.HandlerFunc(h.deleteView))
 		})
 	})
 	return router

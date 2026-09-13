@@ -236,6 +236,98 @@ type catalogProductDTO struct {
 	DisplayName string `json:"display_name"`
 }
 
+type activitySettingsDTO struct {
+	UpdatedAt     *time.Time `json:"updated_at"`
+	InitialDays   int        `json:"initial_days"`
+	RetentionDays int        `json:"retention_days"`
+}
+
+type activitySyncDTO struct {
+	Enabled         *bool      `json:"enabled"`
+	VerifiedFrom    *time.Time `json:"verified_from"`
+	VerifiedThrough *time.Time `json:"verified_through"`
+	LastSuccessAt   *time.Time `json:"last_success_at"`
+	LastEventAt     *time.Time `json:"last_event_at"`
+	LagSeconds      *int64     `json:"lag_seconds"`
+	State           string     `json:"state"`
+	Raw             string     `json:"raw,omitempty"`
+	Verification    string     `json:"verification,omitempty"`
+	ErrorCode       string     `json:"error_code,omitempty"`
+	ReauthRequired  bool       `json:"reauth_required"`
+}
+
+type activityPanelDTO struct {
+	ID             string                `json:"id"`
+	Name           string                `json:"name"`
+	EmployeeIDs    []int64               `json:"employee_ids"`
+	DisplayWindow  adapter.DisplayWindow `json:"display_window"`
+	Timezone       string                `json:"timezone"`
+	Enabled        bool                  `json:"enabled"`
+	Revision       int64                 `json:"revision"`
+	UpdatedAt      time.Time             `json:"updated_at"`
+	ShareURLIssued bool                  `json:"share_url_issued"`
+}
+
+type activityEmployeeDTO struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	GroupID   int64  `json:"group_id"`
+	GroupName string `json:"group_name"`
+}
+
+type leadStatusRuleDTO struct {
+	ID               string    `json:"id"`
+	SourcePipelineID int64     `json:"source_pipeline_id"`
+	SourceStatusID   int64     `json:"source_status_id"`
+	TargetPipelineID int64     `json:"target_pipeline_id"`
+	TargetStatusID   int64     `json:"target_status_id"`
+	Enabled          bool      `json:"enabled"`
+	Revision         int64     `json:"revision"`
+	UpdatedAt        time.Time `json:"updated_at"`
+}
+
+type leadStatusRunDTO struct {
+	FinishedAt   *time.Time `json:"finished_at"`
+	ID           string     `json:"id"`
+	Status       string     `json:"status"`
+	Raw          string     `json:"raw,omitempty"`
+	WorkflowType string     `json:"workflow_type"`
+	SkipReason   string     `json:"skip_reason,omitempty"`
+	ErrorReason  string     `json:"error_reason,omitempty"`
+	EffectState  string     `json:"effect_state,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+}
+
+type statsSnapshotDTO struct {
+	Connected      *int                           `json:"connected"`
+	Disconnected   *int                           `json:"disconnected"`
+	ActiveAccounts *int                           `json:"active_accounts"`
+	LastUseAt      *time.Time                     `json:"last_use_at"`
+	JobErrors      *int                           `json:"job_errors"`
+	LatencyP50Ms   *int64                         `json:"latency_p50_ms"`
+	AuthProblems   *int                           `json:"auth_problems"`
+	SyncProblems   *int                           `json:"sync_problems"`
+	Period         string                         `json:"period"`
+	PeriodStart    time.Time                      `json:"period_start"`
+	PeriodEnd      time.Time                      `json:"period_end"`
+	Connections    []adapter.StatsConnectionCount `json:"connections"`
+	Queues         []adapter.StatsQueueCount      `json:"queues"`
+}
+
+type statsAccountDTO struct {
+	AccountID       string `json:"account_id"`
+	Domain          string `json:"domain"`
+	Backend         string `json:"backend"`
+	InstallationID  string `json:"installation_id"`
+	IntegrationCode string `json:"integration_code"`
+	Reason          string `json:"reason"`
+}
+
+type observabilityDTO struct {
+	GrafanaBaseURL string `json:"grafana_base_url,omitempty"`
+	LokiBaseURL    string `json:"loki_base_url,omitempty"`
+}
+
 func toAccountListItem(item accounts.Aggregated) accountListItemDTO {
 	connections := make([]accountConnectionDTO, 0, len(item.Connections))
 	for _, conn := range item.Connections {
@@ -469,4 +561,71 @@ func retryReason(allowed bool) string {
 		return ""
 	}
 	return "Повтор недоступен для этого типа, состояния или срока хранения"
+}
+
+func toActivitySettingsDTO(item adapter.ActivitySettings) activitySettingsDTO {
+	return activitySettingsDTO{InitialDays: item.InitialDays, RetentionDays: item.RetentionDays, UpdatedAt: item.UpdatedAt}
+}
+
+func toActivitySyncDTO(item adapter.ActivitySyncStatus) activitySyncDTO {
+	return activitySyncDTO{
+		State: item.State.Canonical, Raw: item.State.Raw, Verification: item.Verification, Enabled: item.Enabled,
+		VerifiedFrom: item.VerifiedFrom, VerifiedThrough: item.VerifiedThrough, LastSuccessAt: item.LastSuccessAt,
+		LastEventAt: item.LastEventAt, LagSeconds: item.LagSeconds, ErrorCode: item.ErrorCode, ReauthRequired: item.ReauthRequired,
+	}
+}
+
+func toActivityPanelDTO(item adapter.ActivityPanel) activityPanelDTO {
+	ids := item.EmployeeIDs
+	if ids == nil {
+		ids = []int64{}
+	}
+	return activityPanelDTO{
+		ID: item.ID, Name: item.Name, EmployeeIDs: ids, DisplayWindow: item.DisplayWindow, Timezone: item.Timezone,
+		Enabled: item.Enabled, Revision: item.Revision, UpdatedAt: item.UpdatedAt.UTC(), ShareURLIssued: item.ShareURLIssued,
+	}
+}
+
+func toActivityEmployeeDTO(item adapter.ActivityEmployee) activityEmployeeDTO {
+	return activityEmployeeDTO{ID: item.ID, Name: item.Name, GroupID: item.GroupID, GroupName: item.GroupName}
+}
+
+func toLeadStatusRuleDTO(item adapter.LeadStatusRule) leadStatusRuleDTO {
+	return leadStatusRuleDTO{
+		ID: item.ID, SourcePipelineID: item.SourcePipelineID, SourceStatusID: item.SourceStatusID,
+		TargetPipelineID: item.TargetPipelineID, TargetStatusID: item.TargetStatusID,
+		Enabled: item.Enabled, Revision: item.Revision, UpdatedAt: item.UpdatedAt.UTC(),
+	}
+}
+
+func toLeadStatusRunDTO(item adapter.LeadStatusRun) leadStatusRunDTO {
+	return leadStatusRunDTO{
+		ID: item.ID, Status: item.Status.Canonical, Raw: item.Status.Raw, WorkflowType: item.WorkflowType,
+		SkipReason: item.SkipReason, ErrorReason: item.ErrorReason, EffectState: item.EffectState,
+		CreatedAt: item.CreatedAt.UTC(), FinishedAt: item.FinishedAt,
+	}
+}
+
+func toStatsSnapshotDTO(item adapter.StatsSnapshot) statsSnapshotDTO {
+	connections := item.Connections
+	if connections == nil {
+		connections = []adapter.StatsConnectionCount{}
+	}
+	queues := item.Queues
+	if queues == nil {
+		queues = []adapter.StatsQueueCount{}
+	}
+	return statsSnapshotDTO{
+		Period: item.Period, PeriodStart: item.PeriodStart.UTC(), PeriodEnd: item.PeriodEnd.UTC(),
+		Connections: connections, Connected: item.Connected, Disconnected: item.Disconnected,
+		ActiveAccounts: item.ActiveAccounts, LastUseAt: item.LastUseAt, JobErrors: item.JobErrors,
+		LatencyP50Ms: item.LatencyP50Ms, Queues: queues, AuthProblems: item.AuthProblems, SyncProblems: item.SyncProblems,
+	}
+}
+
+func toStatsAccountDTO(backend string, item adapter.StatsAccount) statsAccountDTO {
+	return statsAccountDTO{
+		AccountID: formatAccountID(item.AccountID), Domain: item.Domain, Backend: backend,
+		InstallationID: item.InstallationID, IntegrationCode: item.IntegrationCode, Reason: item.Reason,
+	}
 }

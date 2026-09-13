@@ -33,6 +33,8 @@ func (h *api) getConnection(w http.ResponseWriter, r *http.Request) {
 		auditErr      error
 		deliveriesObs adapter.Observation[[]adapter.Delivery]
 		deliveriesErr error
+		syncObs       adapter.Observation[adapter.ActivitySyncStatus]
+		syncErr       error
 	)
 	var group errgroup.Group
 	group.Go(func() error {
@@ -49,6 +51,15 @@ func (h *api) getConnection(w http.ResponseWriter, r *http.Request) {
 	})
 	group.Go(func() error {
 		deliveriesObs, deliveriesErr = backend.ListConnectionDeliveries(ctx, actor, id, adapter.PageFilter{Limit: 10})
+		return nil
+	})
+	group.Go(func() error {
+		settings, ok := adapter.AsSettings(backend)
+		if !ok {
+			syncObs = adapter.UnknownObs[adapter.ActivitySyncStatus](backend.Descriptor().Code, time.Now().UTC(), adapter.ErrorCodeUnsupported, "Activity sync is not declared by this backend")
+			return nil
+		}
+		syncObs, syncErr = settings.GetActivitySyncStatus(ctx, actor, id)
 		return nil
 	})
 	_ = group.Wait()
@@ -116,9 +127,12 @@ func (h *api) getConnection(w http.ResponseWriter, r *http.Request) {
 		}
 		card.RecentAudit = observationFrom(auditObs, items)
 	}
-	card.ActivitySync = observationDTO{
-		Source: source, ObservedAt: now, Freshness: adapter.FreshnessUnknown,
-		Error: &adapter.ObsError{Code: adapter.ErrorCodeUnsupported, Message: "Activity sync is connected in stage 3"},
+	if syncErr != nil {
+		card.ActivitySync = unavailableObservation(source, syncErr)
+	} else if syncObs.Data != nil {
+		card.ActivitySync = observationFrom(syncObs, toActivitySyncDTO(*syncObs.Data))
+	} else {
+		card.ActivitySync = observationFrom(syncObs, nil)
 	}
 	httpx.WriteJSON(w, http.StatusOK, card)
 }

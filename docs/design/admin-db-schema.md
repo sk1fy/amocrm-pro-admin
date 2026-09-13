@@ -141,14 +141,27 @@ CREATE INDEX operations_active_idx ON operations (updated_at) WHERE state IN ('a
 Повтор с тем же ключом и другим `request_hash` → `conflict`. Ключ общий для
 всех сотрудников: два оператора с одним ключом получают одну операцию.
 
-## Зарезервировано: этап 3
+## 000005_saved_views (этап 3)
 
-- `saved_views(id, owner_employee_id NULL=общее, section, name, params JSONB,
-  columns JSONB, created_at, updated_at)`.
-- `stats_snapshots(id BIGSERIAL, metric, period_start, period_end, dimensions
-  JSONB, value NUMERIC, source, observed_at, created_at)` — агрегаты,
-  собираемые с момента включения; история до начала сбора не
-  реконструируется.
+```sql
+CREATE TABLE saved_views (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_employee_id UUID REFERENCES employees(id), -- NULL = общее
+    section TEXT NOT NULL,
+    name TEXT NOT NULL,
+    params JSONB NOT NULL DEFAULT '{}'::jsonb,
+    columns JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT statement_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT statement_timestamp(),
+    CONSTRAINT saved_views_section_check
+        CHECK (section IN ('accounts', 'operations', 'stats')),
+    CONSTRAINT saved_views_name_not_blank CHECK (btrim(name) <> '')
+);
+```
+
+Уникальность личных: `(owner_employee_id, section, name)` где owner
+задан; общих: `(section, name)` где owner IS NULL. `stats_snapshots` не
+добавлялись: живой запрос Core — источник (ADR-0010).
 
 ## Роли PostgreSQL
 

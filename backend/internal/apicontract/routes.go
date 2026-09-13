@@ -38,6 +38,19 @@ var (
 	OperationsJobs           = Route{Method: http.MethodGet, Path: "/api/v1/operations/jobs"}
 	OperationsJob            = Route{Method: http.MethodGet, Path: "/api/v1/operations/jobs/{backend}/{job_id}"}
 	SystemBackends           = Route{Method: http.MethodGet, Path: "/api/v1/system/backends"}
+	ActivitySettings         = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/activity/settings"}
+	ActivityStatus           = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/activity/status"}
+	ActivityPanels           = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/activity/panels"}
+	ActivityPanel            = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/activity/panels/{panel_id}"}
+	ActivityEmployees        = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/activity/employees"}
+	LeadStatusRules          = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/lead-status/rules"}
+	LeadStatusRuns           = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/lead-status/runs"}
+	Stats                    = Route{Method: http.MethodGet, Path: "/api/v1/stats"}
+	StatsAccounts            = Route{Method: http.MethodGet, Path: "/api/v1/stats/accounts"}
+	Views                    = Route{Method: http.MethodGet, Path: "/api/v1/views"}
+	ViewsCreate              = Route{Method: http.MethodPost, Path: "/api/v1/views"}
+	ViewPatch                = Route{Method: http.MethodPatch, Path: "/api/v1/views/{id}"}
+	ViewDelete               = Route{Method: http.MethodDelete, Path: "/api/v1/views/{id}"}
 
 	Routes = []Route{
 		ConnectionCommand, IntegrationCreateCommand, IntegrationCommand, JobRetry, DeliveryRetry, AdminOperations, AdminOperation,
@@ -64,5 +77,18 @@ var (
 		OperationsJobs,
 		OperationsJob,
 		SystemBackends,
+		ActivitySettings,
+		ActivityStatus,
+		ActivityPanels,
+		ActivityPanel,
+		ActivityEmployees,
+		LeadStatusRules,
+		LeadStatusRuns,
+		Stats,
+		StatsAccounts,
+		Views,
+		ViewsCreate,
+		ViewPatch,
+		ViewDelete,
 	}
 )

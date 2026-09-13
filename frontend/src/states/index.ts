@@ -96,6 +96,14 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     expired: { tone: 'error', label: 'Истекла' },
   },
   sync: {
+    pending: { tone: 'attention', label: 'Ожидает синхронизации' },
+    idle: { tone: 'ok', label: 'Синхронизация простаивает' },
+    running: { tone: 'attention', label: 'Синхронизация выполняется' },
+    disabled: { tone: 'off', label: 'Синхронизация отключена' },
+    paused: { tone: 'attention', label: 'Синхронизация приостановлена' },
+    failed: { tone: 'error', label: 'Ошибка синхронизации' },
+    reauth_required: { tone: 'action', label: 'Нужна повторная авторизация для синка' },
+    not_enabled: { tone: 'off', label: 'Синхронизация не включена' },
     unknown: { tone: 'unknown', label: 'Нет данных' },
   },
   job: {

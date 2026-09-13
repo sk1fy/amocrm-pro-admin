@@ -37,6 +37,8 @@ type API struct {
 	TrustProxy            bool
 	BackendsFile          string
 	MigrationsDir         string
+	GrafanaBaseURL        string
+	LokiBaseURL           string
 	CookieSecure          bool
 }
 
@@ -126,6 +128,14 @@ func LoadAPI() (API, error) {
 	if migrationsDir == "" {
 		migrationsDir = defaultMigrationsDir
 	}
+	grafanaURL, err := optionalAbsoluteURL("GRAFANA_BASE_URL")
+	if err != nil {
+		return API{}, err
+	}
+	lokiURL, err := optionalAbsoluteURL("LOKI_BASE_URL")
+	if err != nil {
+		return API{}, err
+	}
 
 	return API{
 		ServiceName:           "admin-api",
@@ -144,6 +154,8 @@ func LoadAPI() (API, error) {
 		TrustProxy:            trustProxy,
 		BackendsFile:          strings.TrimSpace(os.Getenv("BACKENDS_FILE")),
 		MigrationsDir:         migrationsDir,
+		GrafanaBaseURL:        grafanaURL,
+		LokiBaseURL:           lokiURL,
 		CookieSecure:          environment != envDevelopment,
 	}, nil
 }
@@ -274,4 +286,16 @@ func validateListenAddress(address string) error {
 
 func wildcardHost(host string) bool {
 	return host == "" || host == "0.0.0.0" || host == "::"
+}
+
+func optionalAbsoluteURL(name string) (string, error) {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return "", nil
+	}
+	parsed, err := url.ParseRequestURI(raw)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return "", fmt.Errorf("%s must be an absolute URL", name)
+	}
+	return strings.TrimRight(raw, "/"), nil
 }
