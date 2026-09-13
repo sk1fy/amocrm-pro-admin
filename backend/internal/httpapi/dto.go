@@ -236,6 +236,49 @@ type catalogProductDTO struct {
 	DisplayName string `json:"display_name"`
 }
 
+type backendRegistryEntryDTO struct {
+	Backend             string              `json:"backend"`
+	Kind                string              `json:"kind"`
+	DisplayName         string              `json:"display_name"`
+	Products            []catalogProductDTO `json:"products"`
+	Status              string              `json:"status"`
+	ContractVersion     string              `json:"contract_version"`
+	Revision            string              `json:"revision"`
+	AdapterCapabilities []string            `json:"adapter_capabilities"`
+	BackendCapabilities []string            `json:"backend_capabilities"`
+	Components          any                 `json:"components,omitempty"`
+	ObservedAt          *time.Time          `json:"observed_at"`
+	CheckedAt           time.Time           `json:"checked_at"`
+	Error               *adapter.ObsError   `json:"error,omitempty"`
+}
+
+type backendRegistryResponse struct {
+	Items         []backendRegistryEntryDTO `json:"items"`
+	Observability observabilityDTO          `json:"observability"`
+}
+
+type subscriptionDTO struct {
+	Plan         string     `json:"plan"`
+	State        string     `json:"state"`
+	Raw          string     `json:"raw,omitempty"`
+	ExpiresAt    *time.Time `json:"expires_at"`
+	Capabilities []string   `json:"capabilities"`
+}
+
+type subscriptionObservationDTO struct {
+	Source     string            `json:"source"`
+	ObservedAt time.Time         `json:"observed_at"`
+	Freshness  string            `json:"freshness"`
+	Error      *adapter.ObsError `json:"error,omitempty"`
+	Data       *subscriptionDTO  `json:"data,omitempty"`
+	Raw        string            `json:"raw,omitempty"`
+}
+
+type subscriptionListResponse struct {
+	Items   []subscriptionObservationDTO `json:"items"`
+	Sources []adapter.SourceStatus       `json:"sources"`
+}
+
 type activitySettingsDTO struct {
 	UpdatedAt     *time.Time `json:"updated_at"`
 	InitialDays   int        `json:"initial_days"`
@@ -628,4 +671,23 @@ func toStatsAccountDTO(backend string, item adapter.StatsAccount) statsAccountDT
 		AccountID: formatAccountID(item.AccountID), Domain: item.Domain, Backend: backend,
 		InstallationID: item.InstallationID, IntegrationCode: item.IntegrationCode, Reason: item.Reason,
 	}
+}
+
+func toSubscriptionDTO(item adapter.Subscription) subscriptionDTO {
+	return subscriptionDTO{
+		Plan: item.Plan, State: item.State.Canonical, Raw: item.State.Raw,
+		ExpiresAt: item.ExpiresAt, Capabilities: nonNilStrings(item.Capabilities),
+	}
+}
+
+func toSubscriptionObservationDTO(obs adapter.Observation[adapter.Subscription]) subscriptionObservationDTO {
+	dto := subscriptionObservationDTO{
+		Source: obs.Source, ObservedAt: obs.ObservedAt.UTC(), Freshness: obs.Freshness,
+		Error: obs.Error, Raw: obs.Raw,
+	}
+	if obs.Data != nil {
+		data := toSubscriptionDTO(*obs.Data)
+		dto.Data = &data
+	}
+	return dto
 }

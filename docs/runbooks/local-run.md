@@ -147,6 +147,40 @@ make e2e
 Демонстрационный сценарий экранов:
 [demo-stage-1.md](demo-stage-1.md).
 
+## Этап 4: второй бекенд, метрики, эксплуатация
+
+Второй бекенд уже в dev-стеке: `deploy/backends.yaml`, код `fixture`
+(`kind: fixture`, `profile: module`) — тестовые данные с
+`origin=fixture`, свои аккаунты и подключение на `91000002`. Отключить:
+удалить блок `fixture` из `deploy/backends.yaml` и перезапустить
+admin-api (`docker compose -f deploy/docker-compose.yml restart
+admin-api`) — `core` при этом не затрагивается. Подключение своего
+модуля — [new-module.md](new-module.md).
+
+Метрики на management listener (только внутренняя сеть):
+
+```sh
+curl -s http://127.0.0.1:8092/metrics | grep '^admin_'
+```
+
+Семейства и labels — [operator.md](operator.md), раздел 11.
+
+Эксплуатационные команды; детали и prod-процедуры — в
+[operator.md](operator.md):
+
+```sh
+make backup-db                                    # дамп в backups/
+make restore-check RESTORE_CONFIRM=restore-check  # новая БД
+docker compose -f deploy/docker-compose.yml --profile tools run --rm \
+  -T admin-cli prune --audit-before 2025-09-13    # dry-run
+make bench-admin                                  # 10^4/10^5
+```
+
+Нагрузочные данные — `deploy/fixtures/load-core-installations.sql`
+(scratch-БД пилота), результаты и EXPLAIN —
+[../reviews/stage-4-load-2026-09-13.md](../reviews/stage-4-load-2026-09-13.md).
+Демонстрация этапа 4 — [demo-stage-4.md](demo-stage-4.md).
+
 ## Проверки
 
 ```sh

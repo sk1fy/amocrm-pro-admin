@@ -2,5 +2,8 @@ services:
   admin-api:
     environment:
       BACKENDS_FILE: /etc/admin/backends-e2e.yaml
+      # The whole Playwright suite logs in from one IP well above the
+      # production default of 10/min; keep the limiter active but high.
+      LOGIN_RATE_PER_MINUTE: "1000"
     volumes:
       - ./backends-e2e.yaml:/etc/admin/backends-e2e.yaml:ro

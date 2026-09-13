@@ -135,6 +135,31 @@ func record(ctx context.Context, db executor, event Event) error {
 	return nil
 }
 
+// PruneBefore deletes audit entries created before the cutoff and returns the
+// number of deleted rows. Audit entries are independent of the employees they
+// reference and are pruned by age only.
+func (s *Store) PruneBefore(ctx context.Context, before time.Time) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	tag, err := s.pool.Exec(ctx, `DELETE FROM admin_audit_log WHERE created_at < $1`, before.UTC())
+	if err != nil {
+		return 0, fmt.Errorf("prune audit log: %w", err)
+	}
+	return tag.RowsAffected(), nil
+}
+
+// CountBefore reports how many audit entries PruneBefore would delete without
+// touching them (dry run).
+func (s *Store) CountBefore(ctx context.Context, before time.Time) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	var count int64
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM admin_audit_log WHERE created_at < $1`, before.UTC()).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count audit log for prune: %w", err)
+	}
+	return count, nil
+}
+
 func (s *Store) List(ctx context.Context, filter ListFilter) ([]Entry, *string, int, error) {
 	limit := filter.Limit
 	if limit <= 0 {

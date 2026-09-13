@@ -22,6 +22,7 @@ import type {
   SourcedList,
   StatsAccount,
   StatsResponse,
+  SubscriptionResponse,
   ActivityEmployee,
   ActivityPanel,
   ActivitySettings,
@@ -38,6 +39,7 @@ export const keys = {
     ['account-history', id, params] as const,
   accountJobs: (id: string, params: Record<string, string | number | undefined>) =>
     ['account-jobs', id, params] as const,
+  subscription: (accountId: string) => ['account-subscription', accountId] as const,
   connection: (backend: string, id: string) => ['connection', backend, id] as const,
   connectionJobs: (
     backend: string,
@@ -60,7 +62,8 @@ export const keys = {
   activitySettings: (backend: string, id: string) => ['connection-settings', backend, id] as const,
   activityStatus: (backend: string, id: string) => ['connection-status', backend, id] as const,
   activityPanels: (backend: string, id: string) => ['connection-panels', backend, id] as const,
-  activityEmployees: (backend: string, id: string) => ['connection-employees', backend, id] as const,
+  activityEmployees: (backend: string, id: string) =>
+    ['connection-employees', backend, id] as const,
   leadStatusRules: (backend: string, id: string) => ['connection-rules', backend, id] as const,
   leadStatusRuns: (backend: string, id: string) => ['connection-runs', backend, id] as const,
   stats: (period: string) => ['stats', period] as const,
@@ -103,6 +106,10 @@ export function fetchAccountJobs(
   params: Record<string, string | number | undefined>,
 ): Promise<SourcedList<AccountJob>> {
   return apiGet(`/api/v1/accounts/${encodeURIComponent(id)}/jobs${queryString(params)}`)
+}
+
+export function fetchSubscription(accountId: string): Promise<SubscriptionResponse> {
+  return apiGet(`/api/v1/accounts/${encodeURIComponent(accountId)}/subscription`)
 }
 
 export function fetchConnection(backend: string, id: string): Promise<ConnectionCard> {

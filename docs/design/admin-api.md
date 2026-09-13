@@ -49,6 +49,7 @@
 | --- | --- | --- |
 | `GET /api/v1/accounts?q=&product=&connection=&problem=&origin=&limit=&cursor=` | `accounts:read` | Поиск и список. `q` — ID, поддомен, домен или ссылка; Admin API нормализует и передаёт в Core уже id/domain/subdomain. Пост-фильтры (`product`, `connection`, `problem`, `origin`) применяются до пагинации ограниченным сканом (ADR-0007): `total` точен, пока скан завершён и все источники доступны, иначе `null` |
 | `GET /api/v1/accounts/{account_id}` | `accounts:read` | Карточка: домены, агрегат, `connections[]` (каждое — Observation) |
+| `GET /api/v1/accounts/{account_id}/subscription` | `accounts:read` | Блок подписки: `{items: Observation<Subscription>[], sources[]}`; `Subscription{plan,state,expires_at,capabilities}`; опрашиваются только бекенды с capability `subscriptions`; пустой `items` — «данные подписки недоступны» (`unknown`), не «нет подписки» и не ошибка ([ADR-0012](../adr/0012-subscriptions-source.md)) |
 | `GET /api/v1/accounts/{account_id}/history?cursor=` | `audit:read` | Объединённая лента: Core audit по установкам аккаунта + admin audit |
 | `GET /api/v1/connections/{backend}/{connection_id}` | `connections:read` | Карточка подключения: `connection`, `authorization`, `webhook`, `grants[]`, `activity`, `recent_jobs[]`, `recent_audit[]` — каждое отдельным Observation |
 | `GET /api/v1/connections/{backend}/{connection_id}/jobs?status=&type=&cursor=` | `operations:read` | Jobs подключения |
@@ -87,12 +88,27 @@
 | `GET /api/v1/integrations/{backend}/{integration_id}` | `integrations:read` | Карточка интеграции с грантами и счётчиками подключений |
 | `GET /api/v1/operations/jobs?backend=&status=&type=&since=&cursor=` | `operations:read` | Jobs всех аккаунтов; `since` — RFC 3339, старше 7 суток обрезается до окна retention. Сортировка — по `updated_at` (новые первыми). В каждом job есть `account_id` |
 | `GET /api/v1/operations/jobs/{backend}/{job_id}` | `operations:read` | Job с попытками |
-| `GET /api/v1/system/backends` | `system:read` | Состояние каждого бекенда (Observation) |
+| `GET /api/v1/system/backends` | `system:read` | Реестр `{items: BackendRegistryEntry[], observability}`. Entry: `backend`, `kind`, `display_name`, `products`, `status` (`available`/`unavailable`/`unknown`), `contract_version`, `revision`, `adapter_capabilities[]`, `backend_capabilities[]`, `components`, `observed_at` (последний успешный ответ, может быть `null`), `checked_at`, `error{code,message}`; проба кешируется 10 с |
 | `GET /api/v1/system/audit?employee_id=&action=&cursor=` | `audit:read` | Аудит админки |
 | `GET /api/v1/system/employees` | `employees:read` | Сотрудники |
 | `POST /api/v1/system/employees` `{email, name, role, password}` | `employees:write` | Создание |
 | `PATCH /api/v1/system/employees/{id}` `{name?, role?, status?}` | `employees:write` | Изменение; смена роли/блокировка отзывает сессии |
 | `POST /api/v1/system/employees/{id}/sessions/revoke` | `employees:write` | Отзыв всех сессий сотрудника |
+
+### Наблюдаемость
+
+`GET /metrics` на management listener (`/live`, `/ready`; только
+loopback/внутренняя сеть, без аутентификации). Семейства:
+`admin_http_requests_total{route,method,status}`,
+`admin_http_request_duration_seconds{route,method}`,
+`admin_backend_probes_total{backend,outcome}`, `admin_backend_up{backend}`,
+`admin_backend_last_response_timestamp_seconds{backend}`. В labels только
+конечные значения: `route` — шаблон chi, `method` — HTTP-метод,
+`status` — числовой код, `backend` — код из `deploy/backends.yaml`,
+`outcome` — закрытый набор (`available`, `backend_unavailable`,
+`backend_timeout`, `capability_unavailable`, `unknown`). ID аккаунтов,
+установок, сотрудников, job и сессий, email, домены и request id в
+labels запрещены — [ADR-0013](../adr/0013-admin-metrics.md).
 
 ### Этап 2 (зарезервировано)
 
@@ -237,10 +253,13 @@ classification, observed_at, retry_after (если задан). Jobs/deliveries
 | `GET /api/v1/connections/{backend}/{id}/activity/employees` | `connections:read` |
 | `GET /api/v1/connections/{backend}/{id}/lead-status/rules` | `connections:read` |
 | `GET /api/v1/connections/{backend}/{id}/lead-status/runs` | `operations:read` |
-| `GET /api/v1/stats?period=24h\|7d\|30d` | `stats:read` |
-| `GET /api/v1/stats/accounts?metric=&period=&product=&cursor=` | `stats:read` |
+| `GET /api/v1/stats?period=24h\|7d\|30d` | `stats:read` (по умолчанию `7d`) |
+| `GET /api/v1/stats/accounts?metric=&period=&product=&cursor=` | `stats:read` (по умолчанию `7d`) |
+
+UI всегда передаёт `period` явно, окно по умолчанию — `24h`; `7d` —
+умолчание Admin API при отсутствии параметра, как в Core.
 | `GET /api/v1/views?section=` | `accounts:read` |
-| `POST /api/v1/views` | `views:write` |
+| `POST /api/v1/views` | `views:write` (личные; общие — только admin) |
 | `PATCH /api/v1/views/{id}` | `views:write` (владелец; общие — admin) |
 | `DELETE /api/v1/views/{id}` | `views:write` (владелец; общие — admin) |
 

@@ -96,29 +96,32 @@ func (h *api) getJob(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *api) listBackends(w http.ResponseWriter, r *http.Request) {
-	actor := adminActor(r)
-	items := make([]observationDTO, 0)
-	for _, backend := range h.registry.Backends() {
-		obs, err := backend.Health(r.Context(), actor)
-		if err != nil {
-			items = append(items, unavailableObservation(backend.Descriptor().Code, err))
-			continue
+	results := h.registry.Probe(r.Context(), adminActor(r))
+	items := make([]backendRegistryEntryDTO, 0, len(results))
+	for _, result := range results {
+		products := make([]catalogProductDTO, 0, len(result.Products))
+		for _, product := range result.Products {
+			products = append(products, catalogProductDTO{Code: product.Code, DisplayName: product.DisplayName})
 		}
-		var data any
-		if obs.Data != nil {
-			data = map[string]any{
-				"backend":          obs.Data.Backend,
-				"revision":         obs.Data.Revision,
-				"contract_version": obs.Data.ContractVersion,
-				"capabilities":     obs.Data.Capabilities,
-				"components":       obs.Data.Components,
-			}
-		}
-		items = append(items, observationFrom(obs, data))
+		items = append(items, backendRegistryEntryDTO{
+			Backend:             result.Backend,
+			Kind:                result.Kind,
+			DisplayName:         result.DisplayName,
+			Products:            products,
+			Status:              result.Status,
+			ContractVersion:     result.ContractVersion,
+			Revision:            result.Revision,
+			AdapterCapabilities: nonNilStrings(result.AdapterCapabilities),
+			BackendCapabilities: nonNilStrings(result.BackendCapabilities),
+			Components:          result.Components,
+			ObservedAt:          result.ObservedAt,
+			CheckedAt:           result.CheckedAt,
+			Error:               result.Error,
+		})
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{
-		"items":         items,
-		"observability": observabilityDTO{GrafanaBaseURL: h.grafanaBaseURL, LokiBaseURL: h.lokiBaseURL},
+	httpx.WriteJSON(w, http.StatusOK, backendRegistryResponse{
+		Items:         items,
+		Observability: observabilityDTO{GrafanaBaseURL: h.grafanaBaseURL, LokiBaseURL: h.lokiBaseURL},
 	})
 }
 

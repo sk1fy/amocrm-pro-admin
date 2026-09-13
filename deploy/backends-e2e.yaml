@@ -1,9 +1,12 @@
-# Fixture backend for Playwright e2e. Admin API talks to Demo() under code
-# `core` so UI routes stay `/connections/core/…` like production.
+# Fixture backends for Playwright e2e. Admin API talks to Demo() under code
+# `core` so UI routes stay `/connections/core/…` like production. The second
+# entry is the labelled test backend (origin=fixture): removing it must not
+# affect the `/connections/core/...` routes.
 version: 1
 backends:
   - code: core
     kind: fixture
+    profile: demo
     display_name: "Fixture Core"
     timeout: 2s
     products:
@@ -11,3 +14,11 @@ backends:
         display_name: "Статусы сделок"
       - code: activity
         display_name: "Активность сотрудников"
+  - code: fixture
+    kind: fixture
+    profile: module
+    display_name: "Fixture module (тестовые данные)"
+    timeout: 2s
+    products:
+      - code: fixture-module
+        display_name: "Демонстрационный модуль"

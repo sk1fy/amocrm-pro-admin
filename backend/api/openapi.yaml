@@ -402,6 +402,32 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/v1/accounts/{account_id}/subscription:
+    get:
+      tags: [Accounts]
+      operationId: getAccountSubscription
+      summary: Subscription observations for an account across capable backends.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/AccountID'
+      responses:
+        '200':
+          description: Subscription observations; empty when no source knows the fact.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/v1/accounts/{account_id}/history:
     get:
       tags: [Accounts]
@@ -723,12 +749,17 @@ paths:
     get:
       tags: [System]
       operationId: listBackends
-      summary: Health observation of each backend.
+      summary: Registry of configured backends with availability and contract facts.
+      description: |
+        Each entry reports the adapter kind, catalog products, the adapter
+        capability set, the capabilities the backend answered with, the last
+        successful response time (`observed_at`, null when the backend never
+        answered) and the current error when the backend is unavailable.
       parameters:
         - $ref: '#/components/parameters/RequestID'
       responses:
         '200':
-          description: Backend health observations.
+          description: Backend registry entries.
           headers:
             X-Request-ID:
               $ref: '#/components/headers/RequestID'
@@ -879,7 +910,7 @@ paths:
         - $ref: '#/components/parameters/RequestID'
         - name: period
           in: query
-          schema: {type: string, enum: [24h, 7d, 30d]}
+          schema: {type: string, enum: [24h, 7d, 30d], default: 7d}
       responses:
         '200':
           description: Stats observations per backend.
@@ -902,7 +933,7 @@ paths:
           schema: {type: string}
         - name: period
           in: query
-          schema: {type: string, enum: [24h, 7d, 30d]}
+          schema: {type: string, enum: [24h, 7d, 30d], default: 7d}
         - name: product
           in: query
           schema: {type: string}
@@ -1662,6 +1693,45 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SourceStatus'
+    Subscription:
+      type: object
+      required: [plan, state, expires_at, capabilities]
+      properties:
+        plan: {type: string}
+        state: {type: string}
+        raw: {type: string}
+        expires_at:
+          type: [string, 'null']
+          format: date-time
+        capabilities:
+          type: array
+          items: {type: string}
+    AccountSubscription:
+      type: object
+      required: [source, observed_at, freshness]
+      properties:
+        source: {type: string}
+        observed_at: {type: string, format: date-time}
+        freshness:
+          type: string
+          enum: [fresh, stale, unavailable, unknown]
+        data:
+          $ref: '#/components/schemas/Subscription'
+        error:
+          $ref: '#/components/schemas/ObservationError'
+        raw: {type: string}
+    SubscriptionList:
+      type: object
+      required: [items, sources]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountSubscription'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceStatus'
     ConnectionCard:
       type: object
       required: [backend, connection, authorization, webhook, grants, activity, activity_sync, recent_jobs, recent_audit]
@@ -1712,14 +1782,55 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CatalogProduct'
+    BackendRegistryError:
+      type: object
+      required: [code, message]
+      properties:
+        code: {type: string, enum: [backend_unavailable, backend_timeout, capability_unavailable]}
+        message: {type: string}
+    BackendRegistryEntry:
+      type: object
+      required: [backend, kind, display_name, products, status, contract_version, revision,
+                 adapter_capabilities, backend_capabilities, observed_at, checked_at]
+      properties:
+        backend: {type: string}
+        kind: {type: string, enum: [core-http, fixture]}
+        display_name: {type: string}
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogProduct'
+        status:
+          type: string
+          enum: [available, degraded, unavailable, unknown]
+        contract_version: {type: string}
+        revision: {type: string}
+        adapter_capabilities:
+          type: array
+          description: Capabilities declared by the adapter implementation.
+          items: {type: string}
+        backend_capabilities:
+          type: array
+          description: Capabilities reported by the backend in its last successful response.
+          items: {type: string}
+        components:
+          type: object
+          additionalProperties: true
+        observed_at:
+          type: [string, 'null']
+          format: date-time
+          description: Last successful backend response; null when it has never answered.
+        checked_at: {type: string, format: date-time}
+        error:
+          $ref: '#/components/schemas/BackendRegistryError'
     BackendList:
       type: object
-      required: [items]
+      required: [items, observability]
       properties:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/Observation'
+            $ref: '#/components/schemas/BackendRegistryEntry'
         observability:
           type: object
           properties:

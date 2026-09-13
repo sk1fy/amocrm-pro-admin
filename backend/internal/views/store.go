@@ -38,6 +38,11 @@ type View struct {
 	UpdatedAt       time.Time
 }
 
+type Actor struct {
+	EmployeeID uuid.UUID
+	Role       string
+}
+
 type CreateInput struct {
 	OwnerEmployeeID *uuid.UUID
 	Section         string
@@ -96,10 +101,13 @@ func (s *Store) List(ctx context.Context, employeeID uuid.UUID, section string) 
 	return items, rows.Err()
 }
 
-func (s *Store) Create(ctx context.Context, in CreateInput) (View, error) {
+func (s *Store) Create(ctx context.Context, actor Actor, in CreateInput) (View, error) {
 	name := strings.TrimSpace(in.Name)
 	if !ValidSection(in.Section) || name == "" {
 		return View{}, ErrInvalid
+	}
+	if !CanCreate(actor, in.OwnerEmployeeID) {
+		return View{}, ErrForbidden
 	}
 	params := normalizeObject(in.Params)
 	columns := normalizeArray(in.Columns)
@@ -133,10 +141,13 @@ func (s *Store) Get(ctx context.Context, id uuid.UUID) (View, error) {
 	return item, err
 }
 
-func (s *Store) Update(ctx context.Context, id uuid.UUID, in UpdateInput) (View, error) {
+func (s *Store) Update(ctx context.Context, actor Actor, id uuid.UUID, in UpdateInput) (View, error) {
 	current, err := s.Get(ctx, id)
 	if err != nil {
 		return View{}, err
+	}
+	if !CanWrite(current, actor.EmployeeID, actor.Role) {
+		return View{}, ErrForbidden
 	}
 	name := current.Name
 	if in.Name != nil {
@@ -168,7 +179,14 @@ func (s *Store) Update(ctx context.Context, id uuid.UUID, in UpdateInput) (View,
 	return item, err
 }
 
-func (s *Store) Delete(ctx context.Context, id uuid.UUID) error {
+func (s *Store) Delete(ctx context.Context, actor Actor, id uuid.UUID) error {
+	current, err := s.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if !CanWrite(current, actor.EmployeeID, actor.Role) {
+		return ErrForbidden
+	}
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 	tag, err := s.pool.Exec(ctx, `DELETE FROM saved_views WHERE id=$1`, id)
@@ -186,6 +204,13 @@ func CanWrite(view View, employeeID uuid.UUID, role string) bool {
 		return true
 	}
 	return view.OwnerEmployeeID == nil && role == "admin"
+}
+
+func CanCreate(actor Actor, owner *uuid.UUID) bool {
+	if actor.Role == "admin" {
+		return true
+	}
+	return owner != nil && *owner == actor.EmployeeID
 }
 
 type scanner interface {

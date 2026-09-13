@@ -18,7 +18,7 @@ test('operator settings, sync polling, stats null vs zero, saved view, viewer hi
 }) => {
   await login(page)
   await expect(page.getByRole('heading', { name: /Настройки Activity/ })).toBeVisible()
-  await expect(page.getByText('retention_days=7')).toBeVisible()
+  await expect(page.getByTestId('retention-days')).toHaveText('7')
 
   await page.getByRole('button', { name: 'Сохранить настройки Activity', exact: true }).click()
   const dialog = page.getByRole('dialog')
@@ -26,7 +26,7 @@ test('operator settings, sync polling, stats null vs zero, saved view, viewer hi
   await dialog.getByRole('button', { name: 'Подтвердить', exact: true }).click()
   await expect(page.getByText('Успех').first()).toBeVisible()
   await page.reload()
-  await expect(page.getByText('retention_days=14')).toBeVisible()
+  await expect(page.getByTestId('retention-days')).toHaveText('14')
 
   const conflictResponse = await page.request.post(
     `/api/v1/connections/core/${connection}/commands/activity-configure`,

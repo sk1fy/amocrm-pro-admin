@@ -25,6 +25,11 @@ E2E_ENV = POSTGRES_PORT=$(E2E_POSTGRES_PORT) FRONTEND_PORT=$(E2E_FRONTEND_PORT) 
 	HTTP_PORT=$(E2E_HTTP_PORT) MANAGEMENT_PORT=$(E2E_MANAGEMENT_PORT) \
 	ADMIN_PUBLIC_ORIGIN='http://host.docker.internal:$(E2E_FRONTEND_PORT)'
 
+# Admin DB backups (stage 4.3). restore-check resolves the newest dump inside
+# its recipe unless BACKUP_FILE is overridden.
+BACKUP_DIR ?= backups
+BACKUP_FILE ?=
+
 # Core pilot stack of amocrm-pro (docker-compose.activity.yml). Fixtures and
 # local runs target this stack only; production is never a fixture target.
 CORE_PILOT_PROJECT ?= amocrm-activity
@@ -55,7 +60,7 @@ export BUILD_REVISION
 .DEFAULT_GOAL := help
 
 .PHONY: help docs-check config build up down logs migrate lint test integration-test e2e check \
-	fixtures-core fixtures-core-dry-run
+	backup-db restore-check fixtures-core fixtures-core-dry-run bench-admin
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target>\n\nTargets:\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-22s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -126,6 +131,10 @@ test: ## Race-enabled Go tests and Vitest in Docker
 		sh -ec 'apk add --no-cache build-base >/dev/null && go test -race -count=1 ./...'
 	@if [ -d frontend ]; then $(DOCKER_NODE) sh -ec 'npm ci --no-audit --no-fund && npm test -- --run'; fi
 
+bench-admin: ## Run the large-list account benchmarks (10^4/10^5, no DB, not in check)
+	@test -d backend || { echo "backend/ is not created yet (stage 1, part 1.2)" >&2; exit 1; }
+	$(DOCKER_GO) go test -run '^$$' -bench 'BenchmarkListAccountsLarge' -benchtime=3x -count=1 ./internal/accounts/
+
 integration-test: ## Migrations up/down and *_integration_test.go against disposable PostgreSQL
 	@test -f deploy/docker-compose.test.yml || { echo "deploy/docker-compose.test.yml is not created yet (stage 1, part 1.2)" >&2; exit 1; }
 	@set -eu; \
@@ -158,6 +167,30 @@ e2e: ## Playwright scenarios against the built stack with the fixture adapter
 	  bash -ec 'cp -a /src/. . && rm -rf node_modules && npm ci --no-audit --no-fund && npx playwright test'
 
 check: docs-check lint test integration-test ## Everything required before merging
+
+# ---------------------------------------------------------------------------
+# Admin DB backup and restore verification (stage 4.3)
+# ---------------------------------------------------------------------------
+
+backup-db: ## Dump the admin DB to the backup directory (default backups/)
+	$(require_compose)
+	COMPOSE='$(COMPOSE)' COMPOSE_FILE='$(COMPOSE_FILE)' BACKUP_DIR='$(BACKUP_DIR)' \
+		deploy/scripts/backup.sh
+
+restore-check: ## Verify the newest backup against a scratch DB (requires RESTORE_CONFIRM=restore-check)
+	@test "$(RESTORE_CONFIRM)" = "restore-check" || { echo "Refusing: set RESTORE_CONFIRM=restore-check (scratch database only)" >&2; exit 1; }
+	$(require_compose)
+	@backup_file='$(BACKUP_FILE)'; \
+	if [ -z "$$backup_file" ]; then \
+		backup_file=$$(ls -t "$(BACKUP_DIR)"/*.dump 2>/dev/null | head -n1); \
+	fi; \
+	if [ -z "$$backup_file" ]; then \
+		echo "restore-check: no .dump in $(BACKUP_DIR); pass BACKUP_FILE=<path>" >&2; \
+		exit 1; \
+	fi; \
+	echo "restore-check: using $$backup_file"; \
+	COMPOSE='$(COMPOSE)' COMPOSE_FILE='$(COMPOSE_FILE)' RESTORE_CONFIRM='$(RESTORE_CONFIRM)' \
+		BACKUP_FILE="$$backup_file" deploy/scripts/restore-check.sh
 
 # ---------------------------------------------------------------------------
 # Fixtures for the Core pilot stack (development only, explicitly labelled)

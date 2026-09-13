@@ -13,7 +13,7 @@ import (
 func (h *api) getStats(w http.ResponseWriter, r *http.Request) {
 	period := strings.TrimSpace(r.URL.Query().Get("period"))
 	if period == "" {
-		period = adapter.StatsPeriod24h
+		period = adapter.StatsPeriod7d
 	}
 	if !adapter.ValidStatsPeriod(period) {
 		httpx.WriteError(w, r, httpx.InvalidArgument("period must be 24h, 7d, or 30d"))
@@ -44,7 +44,7 @@ func (h *api) getStats(w http.ResponseWriter, r *http.Request) {
 func (h *api) listStatsAccounts(w http.ResponseWriter, r *http.Request) {
 	period := strings.TrimSpace(r.URL.Query().Get("period"))
 	if period == "" {
-		period = adapter.StatsPeriod24h
+		period = adapter.StatsPeriod7d
 	}
 	if !adapter.ValidStatsPeriod(period) {
 		httpx.WriteError(w, r, httpx.InvalidArgument("period must be 24h, 7d, or 30d"))

@@ -58,6 +58,15 @@ func cloneData(source Data) Data {
 	for i := range out.Accounts {
 		out.Accounts[i].Connections = append([]adapter.ConnectionSummary{}, source.Accounts[i].Connections...)
 	}
+	out.Subscriptions = map[int64]adapter.Subscription{}
+	for id, subscription := range source.Subscriptions {
+		if subscription.ExpiresAt != nil {
+			expires := *subscription.ExpiresAt
+			subscription.ExpiresAt = &expires
+		}
+		subscription.Capabilities = append([]string{}, subscription.Capabilities...)
+		out.Subscriptions[id] = subscription
+	}
 	out.ConnectionDetails = map[string]adapter.ConnectionDetail{}
 	for id, v := range source.ConnectionDetails {
 		out.ConnectionDetails[id] = v

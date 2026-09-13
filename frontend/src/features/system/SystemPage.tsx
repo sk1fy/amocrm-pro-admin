@@ -2,11 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { fetchBackends, fetchMe, keys } from '../../api/queries'
 import { ErrorState } from '../../components/ErrorState'
-import { Observation } from '../../components/Observation'
-import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
-import { formatNull } from '../../lib/format'
 import { exploreURL } from '../../lib/observability'
+import { BackendRegistry } from './BackendRegistry'
 
 export function SystemNav() {
   const me = useQuery({ queryKey: keys.me, queryFn: fetchMe })
@@ -46,7 +44,8 @@ export function SystemPage() {
       {backends.error ? (
         <ErrorState error={backends.error} onRetry={() => void backends.refetch()} />
       ) : null}
-      {backends.data?.observability?.grafana_base_url || backends.data?.observability?.loki_base_url ? (
+      {backends.data?.observability.grafana_base_url ||
+      backends.data?.observability.loki_base_url ? (
         <p className={page.row}>
           {exploreURL(backends.data.observability.grafana_base_url, 'now-6h', 'now', '') ? (
             <a href={exploreURL(backends.data.observability.grafana_base_url, 'now-6h', 'now', '')}>
@@ -60,33 +59,7 @@ export function SystemPage() {
           ) : null}
         </p>
       ) : null}
-      {(backends.data?.items ?? []).map((item) => (
-        <Observation
-          key={item.source}
-          title={item.source}
-          observation={item}
-          onRetry={() => void backends.refetch()}
-        >
-          {(health) => (
-            <dl className={page.dl}>
-              <dt>Состояние</dt>
-              <dd>
-                <StatusBadge domain="freshness" state={item.freshness} />
-              </dd>
-              <dt>Ревизия</dt>
-              <dd>{formatNull(health.revision)}</dd>
-              <dt>Контракт</dt>
-              <dd>{formatNull(health.contract_version)}</dd>
-              <dt>Возможности</dt>
-              <dd>
-                {health.capabilities && health.capabilities.length > 0
-                  ? health.capabilities.join(', ')
-                  : formatNull(null)}
-              </dd>
-            </dl>
-          )}
-        </Observation>
-      ))}
+      {backends.data ? <BackendRegistry items={backends.data.items} /> : null}
     </div>
   )
 }

@@ -126,6 +126,33 @@ func (s *Store) Get(ctx context.Context, id uuid.UUID) (Operation, error) {
 	return scan(s.pool.QueryRow(ctx, `SELECT `+operationColumns+` FROM operations WHERE id=$1`, id))
 }
 
+const terminalStatePredicate = `state IN ('succeeded','failed','partial','unknown_outcome')`
+
+// PruneTerminalBefore deletes operations in terminal states last updated before
+// the cutoff and returns the number of deleted rows. Non-terminal operations
+// (accepted, pending, running) are never deleted, regardless of age.
+func (s *Store) PruneTerminalBefore(ctx context.Context, before time.Time) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	tag, err := s.pool.Exec(ctx, `DELETE FROM operations WHERE updated_at < $1 AND `+terminalStatePredicate, before.UTC())
+	if err != nil {
+		return 0, fmt.Errorf("prune terminal operations: %w", err)
+	}
+	return tag.RowsAffected(), nil
+}
+
+// CountTerminalBefore reports how many operations PruneTerminalBefore would
+// delete without touching them (dry run).
+func (s *Store) CountTerminalBefore(ctx context.Context, before time.Time) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	var count int64
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM operations WHERE updated_at < $1 AND `+terminalStatePredicate, before.UTC()).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count terminal operations for prune: %w", err)
+	}
+	return count, nil
+}
+
 func (s *Store) Finish(ctx context.Context, previous Operation, result adapter.CommandResult) (Operation, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()

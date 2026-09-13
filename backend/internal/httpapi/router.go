@@ -18,6 +18,7 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/employees"
 	"github.com/sk1fy/amocrm-pro-admin/internal/operations"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
+	"github.com/sk1fy/amocrm-pro-admin/internal/platform/metrics"
 	"github.com/sk1fy/amocrm-pro-admin/internal/rbac"
 	"github.com/sk1fy/amocrm-pro-admin/internal/views"
 )
@@ -79,6 +80,7 @@ func New(deps Dependencies) http.Handler {
 	}
 	router := chi.NewRouter()
 	router.Use(httpx.RequestID)
+	router.Use(metrics.HTTPMiddleware)
 	router.Use(httpx.Recover(deps.Logger))
 	router.Use(httpx.AccessLog(deps.Logger))
 	router.Use(auth.CSRF(deps.PublicOrigin))
@@ -124,6 +126,7 @@ func New(deps Dependencies) http.Handler {
 			r.Use(rbac.Require(rbac.AccountsRead, deps.Employees))
 			r.Method(apicontract.Accounts.Method, apicontract.Accounts.Path, http.HandlerFunc(h.listAccounts))
 			r.Method(apicontract.Account.Method, apicontract.Account.Path, http.HandlerFunc(h.getAccount))
+			r.Method(apicontract.AccountSubscription.Method, apicontract.AccountSubscription.Path, http.HandlerFunc(h.getAccountSubscription))
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(rbac.Require(rbac.ConnectionsRead, deps.Employees))
@@ -191,6 +194,7 @@ func Management(pool *pgxpool.Pool, timeout time.Duration, logger *slog.Logger) 
 		}
 		httpx.WriteJSON(w, http.StatusOK, map[string]string{"status": "ready"})
 	})
+	router.Handle("/metrics", metrics.Handler())
 	return router
 }
 

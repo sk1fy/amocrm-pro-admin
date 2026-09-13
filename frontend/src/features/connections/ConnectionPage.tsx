@@ -12,6 +12,7 @@ import { exploreURL } from '../../lib/observability'
 import { CommandAction } from '../operations/CommandAction'
 import { connectionCommand } from '../operations/commands'
 import { RetryDelivery } from '../operations/RetryActions'
+import { resolveConnectionModule } from './modules/registry'
 
 export function ConnectionPage() {
   const { accountId, backend, connectionId } = useRouteParams<{
@@ -24,6 +25,8 @@ export function ConnectionPage() {
     queryFn: () => fetchConnection(backend, connectionId),
   })
   const backends = useQuery({ queryKey: keys.backends, queryFn: fetchBackends })
+  const settingsAvailable =
+    resolveConnectionModule(backend, backends.data?.items).kind === 'activity'
 
   if (query.isPending) {
     return <div className={page.skeleton} />
@@ -69,12 +72,14 @@ export function ConnectionPage() {
         ))}
       </div>
       <div className={page.row}>
-        <Link
-          to="/accounts/$accountId/widgets/$backend/$connectionId/settings"
-          params={{ accountId, backend, connectionId }}
-        >
-          Настройки Activity и lead-status
-        </Link>
+        {settingsAvailable ? (
+          <Link
+            to="/accounts/$accountId/widgets/$backend/$connectionId/settings"
+            params={{ accountId, backend, connectionId }}
+          >
+            Настройки Activity и lead-status
+          </Link>
+        ) : null}
         <Link
           to="/operations/admin"
           search={{ backend, target_type: 'installation', target_id: connectionId }}
@@ -233,13 +238,14 @@ export function ConnectionPage() {
             <p>Последний успех: {formatTime(sync.last_success_at)}</p>
             <p>Последнее событие: {formatTime(sync.last_event_at)}</p>
             <p>
-              Проверенный диапазон: {formatTime(sync.verified_from)} — {formatTime(sync.verified_through)}
+              Проверенный диапазон: {formatTime(sync.verified_from)} —{' '}
+              {formatTime(sync.verified_through)}
             </p>
             <p>Ошибка: {formatNull(sync.error_code || null)}</p>
             {sync.reauth_required ? <p>Требуется повторная авторизация клиента.</p> : null}
             <ObservabilityLinks
-              grafana={backends.data?.observability?.grafana_base_url}
-              loki={backends.data?.observability?.loki_base_url}
+              grafana={backends.data?.observability.grafana_base_url}
+              loki={backends.data?.observability.loki_base_url}
               accountId={identity?.account_id ?? accountId}
               installationId={connectionId}
             />

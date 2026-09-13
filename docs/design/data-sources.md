@@ -19,6 +19,8 @@
 | Агрегированное состояние | вычисляется в Admin API по [states.md](states.md) | — | там же | новый |
 | Происхождение (`real`/`fixture`) | `installations.settings->>'origin'` = `fixture` | там же | там же | новый |
 | Проблемы аккаунта, фильтр `problem` и счётчики «Требуют внимания» | вычисляются в Admin API из подключений (статус, webhook, авторизация, failed/dead jobs за 24 ч) | `GET /admin/v1/accounts` отдаёт `webhook_status`, `authorization_state`, `recent_failed_jobs` и `total` | `GET /api/v1/accounts?problem=`, Обзор | новый |
+| Подписка: `plan`, `state`, `expires_at`, `capabilities` | адаптер `SubscriptionBackend.GetSubscription`; fixture — `Subscriptions` для 91000001/91000002/91000003/91000005 (у 91000004/91000006 факта нет) | Core capability `subscriptions` не объявляет | `GET /api/v1/accounts/{account_id}/subscription` | новый (этап 4); ADR-0012 |
+| Подписка: правило unknown и границы | опрашиваются только бекенды с capability `subscriptions`; пустой `items` — «данные подписки недоступны», не «нет подписки»; `Subscription` не `Grant` | — | там же | новый (этап 4); ADR-0012 |
 | Пользователи/контакты аккаунта | надёжного источника нет | — | — | не в этапах 1–4 без нового источника |
 
 ## Подключение (installation)
@@ -74,8 +76,12 @@
 
 | Поле | Источник | Core admin read | Admin API | Статус |
 | --- | --- | --- | --- | --- |
-| Доступность бекенда, версия, `observed_at` | `GET /admin/v1/backend` (Core: `buildinfo.Revision`, contract version, capabilities) | новый | `GET /api/v1/system/backends` | новый |
-| Компоненты Activity/CRM Events (режим, readiness) | management `GET /components`, `GET /components/activity/ready` — другой listener | проксировать через `GET /admin/v1/backend` поле `components` | там же | новый; management порт наружу не открывать |
+| Реестр: `backend`, `kind`, `display_name`, `products` | конфигурация `deploy/backends.yaml` + `Descriptor`/продукты адаптера | `GET /admin/v1/backend` даёт `backend` | `GET /api/v1/system/backends`, `items[]` | новый (этап 4) |
+| Реестр: `status` (`available`/`unavailable`/`unknown`) | `catalog.Registry.Probe`: кеш 10 с, персональный таймаут `Descriptor().Timeout` (запас 5 с) | — | там же | новый (этап 4); `degraded` зарезервирован, [states.md](states.md) |
+| Реестр: `contract_version`, `revision` | `Descriptor().ContractVersion`; после успешного `Health` — `health.revision` | `GET /admin/v1/backend` (`contract_version`, `revision`) | там же | новый (этап 4); ADR-0011 |
+| Реестр: `adapter_capabilities[]`, `backend_capabilities[]` | `Capabilities().Names()`; `health.capabilities` последнего успешного ответа | `GET /admin/v1/backend` (`capabilities`) | там же | новый (этап 4); ADR-0011 |
+| Реестр: `observed_at`, `checked_at`, `error{code,message}` | `observed_at` — последний успешный ответ (переживает отказ, может быть `null`), `checked_at` — последняя проба, `error` — безопасная ошибка | — | там же | новый (этап 4) |
+| Компоненты Activity/CRM Events (режим, readiness) | management `GET /components`, `GET /components/activity/ready` — другой listener | `health.components` из `GET /admin/v1/backend` | там же | новый; management порт наружу не открывать |
 | Сотрудники, роли, статусы | admin DB `employees` | — | `GET/POST/PATCH /api/v1/system/employees` | новый |
 | Сессии | admin DB `sessions` | — | `GET /api/v1/me/sessions`, `DELETE …/{id}` | новый |
 | Каталог продуктов | конфигурация `deploy/backends.yaml` + `services.Components()` Core | `GET /admin/v1/backend` | `GET /api/v1/catalog` | новый |
@@ -125,22 +131,45 @@
 
 ## Этап 3: Activity, статистика, представления
 
-Все агрегаты статистики — один snapshot на период (`24h`/`7d`/`30d`) с
-одним `observed_at`. `null` и `0` различны. История подключений до
-включения сбора не реконструируется: `connected`/`disconnected` только
-по `audit_log` с момента появления Core admin.
+Все агрегаты статистики — один snapshot с общим `observed_at`. Окно
+выбранного `period` (`24h`/`7d`/`30d`; по умолчанию `7d`, как в Core)
+применяется к показателям периода; `queues` и `sync_problems` считаются
+по фиксированным 7 суткам независимо от `period` (см. таблицу). `null`
+и `0` различны. Интерфейс (Обзор, «Аккаунты показателя») по умолчанию
+использует `24h` и всегда передаёт `period` явно; `7d` — умолчание
+Admin API при отсутствии параметра, совпадающее с Core.
+История подключений до включения сбора не реконструируется:
+`connected`/`disconnected` только по `audit_log` с момента появления
+Core admin.
 
 | Поле | Формула | Период | Свежесть | Источник | Admin API |
 | --- | --- | --- | --- | --- | --- |
-| Подключения по продукту/состоянию | `COUNT(*)` snapshot `installations` × грант сервиса | текущий снимок | `observed_at` запроса | `GET /admin/v1/stats` | `GET /api/v1/stats` |
+| Подключения по коду интеграции и состоянию | `COUNT(*)` snapshot `installations` GROUP BY `integrations.code`, `installations.status`; продукт — код интеграции, без гранта сервиса | текущий снимок | `observed_at` запроса | `GET /admin/v1/stats` | `GET /api/v1/stats` |
 | Новые подключения | `COUNT(DISTINCT installation_id)` audit `installation.authorized` в окне | 24h/7d/30d | там же | там же `connected` | там же |
 | Отключения | `COUNT(DISTINCT installation_id)` disable/uninstall/revoke в окне | 24h/7d/30d | там же | `disconnected` | там же |
 | Активные аккаунты | distinct `account_id` с job или updated_at в окне | 24h/7d/30d | там же | `active_accounts` | там же |
 | Последнее использование | `max(installations.updated_at, jobs.updated_at)` в окне; не `used_widget_tokens` | 24h/7d/30d | там же | `last_use_at` | там же |
 | Ошибки задач | `COUNT` jobs failed/dead в окне | 24h/7d/30d | там же | `job_errors` | там же |
 | Задержка p50 | percentile `job_attempts.duration_ms`; нет попыток → `null` | 24h/7d/30d | там же | `latency_p50_ms` | там же |
-| Очереди | `jobs` GROUP BY type, status | текущий снимок | там же | `queues[]` | там же |
-| Проблемы авторизации | установки `reauth_required` / auth missing | текущий снимок | там же | `auth_problems` | список `/stats/accounts?metric=` |
-| Проблемы синхронизации | distinct installation из `activity_command_outbox.status='failed'` за 7 суток (Core-видимый сбой доставки, не полный CRM Events Status) | 7 суток | там же | `sync_problems` | там же |
+| Очереди | `COUNT(*)` jobs за `updated_at > now() - interval '7 days'` GROUP BY type, status | фиксированные 7 суток | там же | `queues[]` | там же |
+| Проблемы авторизации | `COUNT(*)` installations `status='reauth_required'` только; `missing_credentials` не входит | текущий снимок | там же | `auth_problems` | список `/stats/accounts?metric=` |
+| Проблемы синхронизации | `COUNT(DISTINCT installation_id)` по `activity_command_outbox.status='failed'` × receipts; Core-видимый сбой доставки (не полный CRM Events Status) | фиксированные 7 суток, выбранный `period` не влияет | там же | `sync_problems` | там же |
 | Сохранённые представления | admin DB `saved_views` | — | запись | — | `GET/POST/PATCH/DELETE /api/v1/views` |
 | Grafana/Loki | env `GRAFANA_BASE_URL`/`LOKI_BASE_URL`; id только в query URL | интервал UI | конфиг процесса | — | поле `observability` в `/system/backends` |
+
+## Этап 4: реестр, подписки, наблюдаемость, retention
+
+Реестр бекендов и подписки описаны в таблицах выше; эксплуатационные
+артефакты этапа:
+
+| Поле / артефакт | Источник | Admin API / команда | Статус |
+| --- | --- | --- | --- |
+| Метрики HTTP | `platform/metrics`: `route` (шаблон chi), `method`, `status` | `/metrics` на management listener (только внутренняя сеть) | ADR-0013 |
+| Метрики бекендов | `ObserveBackendProbe`: `outcome`, `up`, время последнего ответа | там же | ADR-0013 |
+| Retention/prune | аудит 365 суток, терминальные операции 180, истёкшие/отозванные сессии 30 | `admin-cli prune` (dry-run по умолчанию, `--confirm`); миграция `000006_retention_indexes` | ADR-0014 |
+| Backup/restore | `pg_dump --format=custom`; проверка в черновую БД | `make backup-db`, `make restore-check RESTORE_CONFIRM=restore-check` | [operator.md](../runbooks/operator.md) |
+| Нагрузка больших списков | fixture 10⁴/10⁵ аккаунтов, EXPLAIN Core admin read | `make bench-admin` | [stage-4-load-2026-09-13.md](../reviews/stage-4-load-2026-09-13.md) |
+
+Политика labels: только конечные значения; ID аккаунтов, установок,
+сотрудников, job и сессий, email, домены и request id запрещены
+([ADR-0013](../adr/0013-admin-metrics.md)).

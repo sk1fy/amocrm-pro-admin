@@ -39,6 +39,9 @@ var (
 	leadRunStatuses = newSet(
 		LeadRunQueued, LeadRunProcessing, LeadRunCompleted, LeadRunFailed, LeadRunDead,
 	)
+	subscriptionStates = newSet(
+		SubscriptionActive, SubscriptionTrial, SubscriptionExpired, SubscriptionCancelled,
+	)
 )
 
 func MapConnectionStatus(raw string) State  { return mapKnown(raw, connectionStatuses) }
@@ -52,6 +55,7 @@ func MapPilot(raw string) State             { return mapKnown(raw, pilotStates) 
 func MapOrigin(raw string) State            { return mapKnown(raw, origins) }
 func MapSyncState(raw string) State         { return mapKnown(raw, syncStates) }
 func MapLeadStatusRun(raw string) State     { return mapKnown(raw, leadRunStatuses) }
+func MapSubscriptionState(raw string) State { return mapKnown(raw, subscriptionStates) }
 
 func MapGrant(enabled bool) State {
 	if enabled {

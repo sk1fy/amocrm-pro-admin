@@ -4,7 +4,6 @@ import { createView, deleteView, fetchMe, fetchViews, keys } from '../../api/que
 import type { SavedView } from '../../api/types'
 import { FilterField } from '../../components/FilterBar'
 
-
 type Props = {
   section: 'accounts' | 'operations' | 'stats'
   current: Record<string, string | number | undefined>
@@ -22,6 +21,7 @@ export function SavedViews({ section, current, columns, onLoad }: Props) {
   const [name, setName] = useState('')
   const [shared, setShared] = useState(false)
   const canWrite = Boolean(me.data?.permissions.includes('views:write'))
+  const isAdmin = me.data?.role === 'admin'
 
   async function save(event: FormEvent) {
     event.preventDefault()
@@ -32,7 +32,13 @@ export function SavedViews({ section, current, columns, onLoad }: Props) {
         params[key] = value
       }
     }
-    await createView({ section, name: name.trim(), params, columns, shared })
+    await createView({
+      section,
+      name: name.trim(),
+      params,
+      columns,
+      shared: isAdmin && shared,
+    })
     setName('')
     void queryClient.invalidateQueries({ queryKey: keys.views(section) })
   }
@@ -67,14 +73,16 @@ export function SavedViews({ section, current, columns, onLoad }: Props) {
               aria-label="Имя представления"
             />
           </FilterField>
-          <label>
-            <input
-              type="checkbox"
-              checked={shared}
-              onChange={(event) => setShared(event.target.checked)}
-            />{' '}
-            Общее
-          </label>
+          {isAdmin ? (
+            <label>
+              <input
+                type="checkbox"
+                checked={shared}
+                onChange={(event) => setShared(event.target.checked)}
+              />{' '}
+              Общее
+            </label>
+          ) : null}
           <button type="submit">Сохранить представление</button>
         </form>
       ) : null}
@@ -83,20 +91,11 @@ export function SavedViews({ section, current, columns, onLoad }: Props) {
             <ViewDelete key={item.id} item={item} role={me.data?.role} section={section} />
           ))
         : null}
-
     </div>
   )
 }
 
-function ViewDelete({
-  item,
-  role,
-  section,
-}: {
-  item: SavedView
-  role?: string
-  section: string
-}) {
+function ViewDelete({ item, role, section }: { item: SavedView; role?: string; section: string }) {
   const queryClient = useQueryClient()
   const canDelete = item.shared ? role === 'admin' : true
   if (!canDelete) return null
