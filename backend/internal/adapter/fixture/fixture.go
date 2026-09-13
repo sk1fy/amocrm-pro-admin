@@ -2,6 +2,7 @@ package fixture
 
 import (
 	"context"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -203,6 +204,15 @@ func (a *Adapter) ListConnectionAudit(ctx context.Context, _ adapter.Actor, id s
 		return adapter.Observation[adapter.Page[adapter.AuditEntry]]{}, err
 	}
 	items := append([]adapter.AuditEntry{}, a.data.ConnectionAudit[id]...)
+	sort.Slice(items, func(i, j int) bool {
+		if !items[i].CreatedAt.Equal(items[j].CreatedAt) {
+			return items[i].CreatedAt.After(items[j].CreatedAt)
+		}
+		return items[i].ID > items[j].ID
+	})
+	for i := range items {
+		items[i].Cursor = strconv.FormatInt(items[i].ID, 10)
+	}
 	page, err := paginate(items, f.Limit, f.Cursor, func(item adapter.AuditEntry) string {
 		return strconv.FormatInt(item.ID, 10)
 	})
@@ -403,8 +413,15 @@ func filterJobs(items []adapter.Job, f adapter.JobFilter) []adapter.Job {
 		if f.Since != nil && item.CreatedAt.Before(*f.Since) {
 			continue
 		}
+		item.Cursor = item.ID
 		out = append(out, item)
 	}
+	sort.Slice(out, func(i, j int) bool {
+		if !out[i].UpdatedAt.Equal(out[j].UpdatedAt) {
+			return out[i].UpdatedAt.After(out[j].UpdatedAt)
+		}
+		return out[i].ID > out[j].ID
+	})
 	return out
 }
 

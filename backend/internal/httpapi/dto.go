@@ -269,8 +269,8 @@ func toAccountCard(card accounts.AccountCard) accountCardDTO {
 				"raw":              omitEmpty(conn.State.Raw),
 				"account_domain":   conn.AccountDomain,
 				"origin":           conn.Origin,
-				"authorization":    toAuthorizationDTO(adapter.Authorization{State: conn.Authorization}),
-				"webhook":          toWebhookDTO(adapter.Webhook{Status: conn.Webhook}),
+				"authorization":    accountAuthorization(conn),
+				"webhook":          accountWebhook(conn),
 				"grants":           toGrantDTOs(conn.Grants),
 				"activity":         activityDTO{Pilot: conn.Pilot.Canonical, PilotRaw: conn.Pilot.Raw},
 			},
@@ -440,4 +440,18 @@ func nonNilStrings(items []string) []string {
 		return []string{}
 	}
 	return items
+}
+
+func accountAuthorization(conn accounts.Connection) any {
+	if conn.AuthorizationDetails != nil {
+		return toAuthorizationDTO(*conn.AuthorizationDetails)
+	}
+	// A summary without credential facts cannot assert their absence or validity.
+	return map[string]any{"state": conn.Authorization.Canonical, "raw": omitEmpty(conn.Authorization.Raw), "unverified": true}
+}
+func accountWebhook(conn accounts.Connection) any {
+	if conn.WebhookDetails != nil {
+		return toWebhookDTO(*conn.WebhookDetails)
+	}
+	return map[string]any{"status": conn.Webhook.Canonical, "raw": omitEmpty(conn.Webhook.Raw)}
 }

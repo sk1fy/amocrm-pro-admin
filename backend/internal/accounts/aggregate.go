@@ -17,23 +17,25 @@ type Aggregated struct {
 }
 
 type Connection struct {
-	Backend          string
-	ConnectionID     string
-	IntegrationID    string
-	IntegrationCode  string
-	State            adapter.State
-	Webhook          adapter.State
-	Authorization    adapter.State
-	Origin           string
-	AccountDomain    string
-	InstalledBy      *int64
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Grants           []adapter.Grant
-	Pilot            adapter.State
-	RecentFailedJobs int
-	ObservedAt       time.Time
-	Freshness        string
+	AuthorizationDetails *adapter.Authorization
+	WebhookDetails       *adapter.Webhook
+	Backend              string
+	ConnectionID         string
+	IntegrationID        string
+	IntegrationCode      string
+	State                adapter.State
+	Webhook              adapter.State
+	Authorization        adapter.State
+	Origin               string
+	AccountDomain        string
+	InstalledBy          *int64
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	Grants               []adapter.Grant
+	Pilot                adapter.State
+	RecentFailedJobs     int
+	ObservedAt           time.Time
+	Freshness            string
 }
 
 func Aggregate(account adapter.Account, backend string, sourceUnavailable bool) Aggregated {
@@ -50,21 +52,23 @@ func ConnectionFromSummary(backend string, conn adapter.ConnectionSummary) Conne
 		origin = adapter.OriginReal
 	}
 	return Connection{
-		Backend:          backend,
-		ConnectionID:     conn.ID,
-		IntegrationID:    conn.IntegrationID,
-		IntegrationCode:  conn.IntegrationCode,
-		State:            conn.Status,
-		Webhook:          conn.WebhookStatus,
-		Authorization:    conn.Authorization,
-		Origin:           origin,
-		AccountDomain:    conn.AccountDomain,
-		InstalledBy:      conn.InstalledBy,
-		CreatedAt:        conn.CreatedAt,
-		UpdatedAt:        conn.UpdatedAt,
-		Grants:           conn.Grants,
-		Pilot:            conn.Pilot,
-		RecentFailedJobs: conn.RecentFailedJobs,
+		AuthorizationDetails: conn.AuthorizationDetails,
+		WebhookDetails:       conn.WebhookDetails,
+		Backend:              backend,
+		ConnectionID:         conn.ID,
+		IntegrationID:        conn.IntegrationID,
+		IntegrationCode:      conn.IntegrationCode,
+		State:                conn.Status,
+		Webhook:              conn.WebhookStatus,
+		Authorization:        conn.Authorization,
+		Origin:               origin,
+		AccountDomain:        conn.AccountDomain,
+		InstalledBy:          conn.InstalledBy,
+		CreatedAt:            conn.CreatedAt,
+		UpdatedAt:            conn.UpdatedAt,
+		Grants:               conn.Grants,
+		Pilot:                conn.Pilot,
+		RecentFailedJobs:     conn.RecentFailedJobs,
 	}
 }
 

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchMe, keys, logout } from '../api/queries'
 import type { Me } from '../api/types'
 import { employeeRoleLabels } from '../states'
+import { clearSession } from './session'
 import styles from './layout.module.css'
 
 type NavIconName = 'overview' | 'accounts' | 'widgets' | 'operations' | 'system'
@@ -115,7 +116,7 @@ export function AppLayout() {
 
   async function onLogout() {
     await logout()
-    queryClient.clear()
+    clearSession(queryClient)
     router.history.push('/login?next=/')
   }
 

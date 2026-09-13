@@ -17,6 +17,12 @@ export class ApiError extends Error {
 type UnauthorizedHandler = (next: string) => void
 
 let unauthorizedHandler: UnauthorizedHandler | null = null
+let sessionController = new AbortController()
+
+export function resetApiSession(): void {
+  sessionController.abort()
+  sessionController = new AbortController()
+}
 
 export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): void {
   unauthorizedHandler = handler
@@ -57,6 +63,9 @@ async function parseError(response: Response): Promise<ApiError> {
 }
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, sessionController.signal])
+    : sessionController.signal
   const headers = new Headers(init.headers)
   const method = (init.method ?? 'GET').toUpperCase()
   if (method !== 'GET' && method !== 'HEAD') {
@@ -67,11 +76,14 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   }
   const response = await fetch(path, {
     ...init,
+    signal,
     headers,
     credentials: 'include',
   })
+  signal.throwIfAborted()
   if (response.status === 401) {
     const error = await parseError(response)
+    signal.throwIfAborted()
     if (!path.startsWith('/api/v1/auth/login')) {
       unauthorizedHandler?.(currentPath())
     }
@@ -83,7 +95,9 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   if (response.status === 204) {
     return undefined as T
   }
-  return (await response.json()) as T
+  const data = (await response.json()) as T
+  signal.throwIfAborted()
+  return data
 }
 
 export function apiGet<T>(path: string): Promise<T> {

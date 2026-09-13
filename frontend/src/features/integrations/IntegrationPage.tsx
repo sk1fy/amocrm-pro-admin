@@ -16,11 +16,11 @@ export function IntegrationPage() {
     queryKey: keys.integration(backend, integrationId),
     queryFn: () => fetchIntegration(backend, integrationId),
   })
-  const code = query.data?.data?.code ?? ''
+  const accountParams = { integration_id: integrationId, backend, limit: 100 }
   const accounts = useQuery({
-    queryKey: keys.accounts({ product: code, limit: 100 }),
-    queryFn: () => fetchAccounts({ product: code, limit: 100 }),
-    enabled: code !== '',
+    queryKey: keys.accounts(accountParams),
+    queryFn: () => fetchAccounts(accountParams),
+    enabled: query.data?.data != null,
   })
   if (query.isPending) {
     return <div className={page.skeleton} />
@@ -42,8 +42,7 @@ export function IntegrationPage() {
             account.connections
               .filter(
                 (connection) =>
-                  connection.integration_code === item.code ||
-                  connection.integration_id === item.id,
+                  connection.backend === backend && connection.integration_id === item.id,
               )
               .map((connection) => ({ accountId: account.account_id, connection })),
           )

@@ -7,7 +7,7 @@ import {
   redirect,
   useRouter,
 } from '@tanstack/react-router'
-import type { QueryClient } from '@tanstack/react-query'
+import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { isUnauthorized, setUnauthorizedHandler } from '../api/client'
 import { fetchMe, keys } from '../api/queries'
 import { AppLayout } from './layout'
@@ -28,6 +28,7 @@ import { EmployeesPage } from '../features/system/EmployeesPage'
 import { SessionsPage } from '../features/system/SessionsPage'
 import { AuditPage } from '../features/system/AuditPage'
 import { accountsSearch, cursorSearch } from './search'
+import { clearSession } from './session'
 
 export type RouterContext = {
   queryClient: QueryClient
@@ -35,15 +36,17 @@ export type RouterContext = {
 
 function RootComponent() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   useEffect(() => {
     setUnauthorizedHandler((next) => {
       if (router.state.location.pathname === '/login') {
         return
       }
+      clearSession(queryClient)
       void router.navigate({ to: '/login', search: { next } })
     })
     return () => setUnauthorizedHandler(null)
-  }, [router])
+  }, [router, queryClient])
   return <Outlet />
 }
 
@@ -64,6 +67,7 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
       await context.queryClient.ensureQueryData({ queryKey: keys.me, queryFn: fetchMe })
     } catch (error) {
       if (isUnauthorized(error)) {
+        clearSession(context.queryClient)
         return redirect({ to: '/login', search: { next } })
       }
       throw error

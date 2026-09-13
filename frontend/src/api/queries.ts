@@ -2,6 +2,7 @@ import { apiGet, apiSend, queryString } from './client'
 import type {
   AccountCard,
   AccountListItem,
+  AccountJob,
   AdminAudit,
   BackendsResponse,
   Catalog,
@@ -13,6 +14,7 @@ import type {
   JobDetail,
   ListResponse,
   Me,
+  Observation,
   Session,
   SourcedList,
 } from './types'
@@ -23,6 +25,8 @@ export const keys = {
   account: (id: string) => ['account', id] as const,
   accountHistory: (id: string, params: Record<string, string | number | undefined>) =>
     ['account-history', id, params] as const,
+  accountJobs: (id: string, params: Record<string, string | number | undefined>) =>
+    ['account-jobs', id, params] as const,
   connection: (backend: string, id: string) => ['connection', backend, id] as const,
   connectionJobs: (
     backend: string,
@@ -70,6 +74,13 @@ export function fetchAccountHistory(
   return apiGet(`/api/v1/accounts/${encodeURIComponent(id)}/history${queryString(params)}`)
 }
 
+export function fetchAccountJobs(
+  id: string,
+  params: Record<string, string | number | undefined>,
+): Promise<SourcedList<AccountJob>> {
+  return apiGet(`/api/v1/accounts/${encodeURIComponent(id)}/jobs${queryString(params)}`)
+}
+
 export function fetchConnection(backend: string, id: string): Promise<ConnectionCard> {
   return apiGet(`/api/v1/connections/${encodeURIComponent(backend)}/${encodeURIComponent(id)}`)
 }
@@ -109,15 +120,7 @@ export function fetchJobs(
   return apiGet(`/api/v1/operations/jobs${queryString(params)}`)
 }
 
-export function fetchJob(
-  backend: string,
-  id: string,
-): Promise<{
-  source: string
-  observed_at: string
-  freshness: string
-  data?: JobDetail | null
-}> {
+export function fetchJob(backend: string, id: string): Promise<Observation<JobDetail>> {
   return apiGet(`/api/v1/operations/jobs/${encodeURIComponent(backend)}/${encodeURIComponent(id)}`)
 }
 

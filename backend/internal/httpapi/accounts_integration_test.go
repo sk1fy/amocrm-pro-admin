@@ -3,9 +3,12 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -229,4 +232,74 @@ func testRouterWithRegistry(t *testing.T, pool *pgxpool.Pool, loginRate int, reg
 		Registry:     registry,
 		Accounts:     accounts.New(registry.Backends(), auditStore),
 	})
+}
+
+func TestAccountHistoryIncludesOlderAdminAuditAndJobsPages(t *testing.T) {
+	pool := testkit.Postgres(t)
+	testkit.Reset(t, pool)
+	ctx := t.Context()
+	store := employees.NewStore(pool, 2*time.Second)
+	viewer := createEmployee(t, ctx, store, "paging@example.invalid", "Paging", rbac.RoleViewer)
+	data := fixture.Data{Accounts: []adapter.Account{{AccountID: 1, Connections: []adapter.ConnectionSummary{{ID: "c", AccountID: 1, IntegrationID: "11111111-1111-4111-8111-111111111111"}}}}, ConnectionJobs: map[string][]adapter.Job{}}
+	for i := 0; i < 27; i++ {
+		data.ConnectionJobs["c"] = append(data.ConnectionJobs["c"], adapter.Job{ID: fmt.Sprintf("job-%03d", i), UpdatedAt: time.Now().Add(-time.Duration(i) * time.Minute), Type: "example", Status: adapter.MapJobStatus("failed")})
+	}
+	auditStore := audit.NewStore(pool, 2*time.Second)
+	for i := 0; i < 27; i++ {
+		if err := auditStore.Record(ctx, audit.Event{Action: fmt.Sprintf("test.%02d", i), ObjectRef: "account:1"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	router := testRouterWithRegistry(t, pool, 10, catalog.FromBackends(fixture.New(fixture.Options{Code: "core", Data: data})))
+	loginRec := doJSON(t, router, http.MethodPost, "/api/v1/auth/login", loginBody(viewer.Email, testPassword), "")
+	cookie := sessionCookie(t, loginRec)
+	for _, kind := range []string{"history", "jobs"} {
+		t.Run(kind, func(t *testing.T) {
+			cursor := ""
+			seen := map[string]bool{}
+			for page := 0; page < 8; page++ {
+				rec := doJSON(t, router, http.MethodGet, "/api/v1/accounts/1/"+kind+"?limit=7&cursor="+url.QueryEscape(cursor), "", cookie)
+				if rec.Code != 200 {
+					t.Fatalf("%s: %d %s", kind, rec.Code, rec.Body.String())
+				}
+				assertNoSecretJSONKeys(t, rec.Body.Bytes())
+				var body struct {
+					Items []struct {
+						ID      string `json:"id"`
+						Action  string `json:"action"`
+						Backend string `json:"backend"`
+					} `json:"items"`
+					Next *string `json:"next_cursor"`
+				}
+				decodeBody(t, rec, &body)
+				if len(body.Items) > 7 {
+					t.Fatal("too many rows")
+				}
+				for _, item := range body.Items {
+					key := item.Action
+					if kind == "jobs" {
+						key = item.ID
+						if item.Backend != "core" {
+							t.Fatal("missing backend")
+						}
+					}
+					if seen[key] {
+						t.Fatalf("duplicate %s", key)
+					}
+					seen[key] = true
+				}
+				if body.Next == nil {
+					break
+				}
+				cursor = *body.Next
+			}
+			if len(seen) != 27 {
+				t.Fatalf("%s lost records: %d", kind, len(seen))
+			}
+		})
+	}
+	rec := doJSON(t, router, http.MethodGet, "/api/v1/accounts?backend=core&integration_id=11111111-1111-4111-8111-111111111111", "", cookie)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `"account_id":"1"`) {
+		t.Fatalf("integration filter: %s", rec.Body.String())
+	}
 }

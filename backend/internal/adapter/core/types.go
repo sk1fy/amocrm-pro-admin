@@ -39,13 +39,14 @@ type accountListItem struct {
 }
 
 type accountInstallation struct {
-	ID               string `json:"id"`
-	IntegrationID    string `json:"integration_id"`
-	IntegrationCode  string `json:"integration_code"`
-	Status           string `json:"status"`
-	WebhookStatus    string `json:"webhook_status"`
-	Authorization    string `json:"authorization_state"`
-	RecentFailedJobs int    `json:"recent_failed_jobs"`
+	Grants           []grant `json:"grants"`
+	ID               string  `json:"id"`
+	IntegrationID    string  `json:"integration_id"`
+	IntegrationCode  string  `json:"integration_code"`
+	Status           string  `json:"status"`
+	WebhookStatus    string  `json:"webhook_status"`
+	Authorization    string  `json:"authorization_state"`
+	RecentFailedJobs int     `json:"recent_failed_jobs"`
 }
 
 type accountResponse struct {
@@ -58,17 +59,18 @@ type accountResponse struct {
 }
 
 type installationSummary struct {
-	ID              string    `json:"id"`
-	IntegrationID   string    `json:"integration_id"`
-	IntegrationCode string    `json:"integration_code"`
-	AccountID       int64     `json:"account_id"`
-	AccountDomain   string    `json:"account_domain"`
-	Status          string    `json:"status"`
-	InstalledBy     *int64    `json:"installed_by"`
-	Origin          string    `json:"origin"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
-	WebhookStatus   string    `json:"webhook_status"`
+	RecentFailedJobs int       `json:"recent_failed_jobs"`
+	ID               string    `json:"id"`
+	IntegrationID    string    `json:"integration_id"`
+	IntegrationCode  string    `json:"integration_code"`
+	AccountID        int64     `json:"account_id"`
+	AccountDomain    string    `json:"account_domain"`
+	Status           string    `json:"status"`
+	InstalledBy      *int64    `json:"installed_by"`
+	Origin           string    `json:"origin"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
+	WebhookStatus    string    `json:"webhook_status"`
 }
 
 type installationCard struct {

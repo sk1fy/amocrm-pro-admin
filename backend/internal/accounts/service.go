@@ -2,7 +2,6 @@ package accounts
 
 import (
 	"context"
-	"errors"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,14 +17,15 @@ type Service struct {
 }
 
 type ListFilter struct {
-	Q          string
-	Product    string
-	Connection string
-	Problem    string
-	Origin     string
-	Backend    string
-	Limit      int
-	Cursor     string
+	IntegrationID string
+	Q             string
+	Product       string
+	Connection    string
+	Problem       string
+	Origin        string
+	Backend       string
+	Limit         int
+	Cursor        string
 }
 
 type ListResult struct {
@@ -110,16 +110,17 @@ func (s *Service) ListAccounts(ctx context.Context, actor adapter.Actor, filter 
 	}
 	gathered := adapter.Gather(ctx, backends, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Account]], error) {
 		return backend.ListAccounts(ctx, actor, adapter.AccountFilter{
-			Query:  query.CoreQ(),
-			Limit:  limit,
-			Cursor: cursors[backend.Descriptor().Code],
+			Query:         query.CoreQ(),
+			IntegrationID: filter.IntegrationID,
+			Limit:         limit,
+			Cursor:        cursors[backend.Descriptor().Code],
 		})
 	})
 	if gathered.Invalid != nil {
 		return ListResult{}, adapter.ErrInvalidArgument
 	}
 
-	totalKnown := true
+	totalKnown := !sourceUnavailable(gathered.Sources)
 	total := 0
 	unavailable := sourceUnavailable(gathered.Sources)
 	merged := map[int64]*Aggregated{}
@@ -198,9 +199,10 @@ func (s *Service) scanAccounts(
 	for page := 0; page < maxScanAccounts/scanPageSize; page++ {
 		gathered := adapter.Gather(ctx, backends, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Account]], error) {
 			return backend.ListAccounts(ctx, actor, adapter.AccountFilter{
-				Query:  query.CoreQ(),
-				Limit:  scanPageSize,
-				Cursor: pageCursors[backend.Descriptor().Code],
+				Query:         query.CoreQ(),
+				IntegrationID: filter.IntegrationID,
+				Limit:         scanPageSize,
+				Cursor:        pageCursors[backend.Descriptor().Code],
 			})
 		})
 		if gathered.Invalid != nil {
@@ -342,108 +344,6 @@ func (s *Service) GetAccount(ctx context.Context, actor adapter.Actor, accountID
 	return AccountCard{Aggregated: aggregated, Sources: gathered.Sources}, nil
 }
 
-func (s *Service) History(ctx context.Context, actor adapter.Actor, accountID int64, limit int, cursor string) (HistoryResult, error) {
-	if limit <= 0 {
-		limit = 25
-	}
-	if limit > 100 {
-		limit = 100
-	}
-	card, err := s.GetAccount(ctx, actor, accountID)
-	if err != nil && !errors.Is(err, adapter.ErrNotFound) {
-		return HistoryResult{}, err
-	}
-	if errors.Is(err, adapter.ErrNotFound) {
-		return HistoryResult{}, adapter.ErrNotFound
-	}
-
-	items := make([]HistoryItem, 0)
-	sources := append([]adapter.SourceStatus{}, card.Sources...)
-	for _, conn := range card.Connections {
-		backend, ok := s.backend(conn.Backend)
-		if !ok || !backend.Capabilities().Audit {
-			continue
-		}
-		obs, listErr := backend.ListConnectionAudit(ctx, actor, conn.ConnectionID, adapter.PageFilter{Limit: limit})
-		if listErr != nil {
-			sources = upsertSource(sources, adapter.SourceFromErr(conn.Backend, time.Now().UTC(), listErr))
-			continue
-		}
-		if obs.Data == nil {
-			continue
-		}
-		for _, entry := range obs.Data.Items {
-			connID := conn.ConnectionID
-			items = append(items, HistoryItem{
-				Source:       conn.Backend,
-				Backend:      conn.Backend,
-				OccurredAt:   entry.CreatedAt,
-				Action:       entry.Action,
-				ActorType:    strPtr(entry.ActorType),
-				ActorID:      entry.ActorID,
-				ObjectType:   entry.ObjectType,
-				ObjectID:     entry.ObjectID,
-				ConnectionID: &connID,
-				Metadata:     entry.Metadata,
-			})
-		}
-	}
-
-	if s.audit != nil {
-		refs := []string{"account:" + strconv.FormatInt(accountID, 10)}
-		for _, conn := range card.Connections {
-			refs = append(refs, "connection:"+conn.Backend+":"+conn.ConnectionID)
-		}
-		adminItems, _, _, adminErr := s.audit.List(ctx, audit.ListFilter{ObjectRefs: refs, Limit: limit})
-		if adminErr == nil {
-			for _, entry := range adminItems {
-				items = append(items, HistoryItem{
-					Source:     "admin",
-					OccurredAt: entry.CreatedAt,
-					Action:     entry.Action,
-					ActorEmail: entry.ActorEmail,
-					ObjectType: entry.ObjectType,
-					ObjectRef:  entry.ObjectRef,
-					Outcome:    strPtr(entry.Outcome),
-					Metadata:   entry.Metadata,
-				})
-			}
-		}
-	}
-
-	sort.SliceStable(items, func(i, j int) bool {
-		if !items[i].OccurredAt.Equal(items[j].OccurredAt) {
-			return items[i].OccurredAt.After(items[j].OccurredAt)
-		}
-		return items[i].Action > items[j].Action
-	})
-	if cursor != "" {
-		filtered := items[:0]
-		skip := true
-		for _, item := range items {
-			key := historyKey(item)
-			if skip {
-				if key == cursor {
-					skip = false
-				}
-				continue
-			}
-			filtered = append(filtered, item)
-		}
-		if skip {
-			return HistoryResult{}, adapter.ErrInvalidArgument
-		}
-		items = filtered
-	}
-	var next *string
-	if len(items) > limit {
-		key := historyKey(items[limit-1])
-		next = &key
-		items = items[:limit]
-	}
-	return HistoryResult{Items: items, NextCursor: next, Sources: sources}, nil
-}
-
 func (s *Service) accountBackends(code string) []adapter.Backend {
 	backends := adapter.Capable(s.backends, func(c adapter.Capabilities) bool { return c.Accounts })
 	if strings.TrimSpace(code) == "" {
@@ -497,9 +397,11 @@ func matchAggregated(item Aggregated, filter ListFilter) bool {
 	if filter.Product != "" {
 		found := false
 		for _, conn := range item.Connections {
-			if conn.IntegrationCode == filter.Product {
-				found = true
-				break
+			for _, grant := range conn.Grants {
+				if grant.Service == filter.Product && grant.State.Canonical == adapter.GrantGranted {
+					found = true
+					break
+				}
 			}
 		}
 		if !found {
@@ -526,10 +428,6 @@ func upsertSource(sources []adapter.SourceStatus, next adapter.SourceStatus) []a
 		}
 	}
 	return append(sources, next)
-}
-
-func historyKey(item HistoryItem) string {
-	return item.OccurredAt.UTC().Format(time.RFC3339Nano) + "|" + item.Source + "|" + item.Action
 }
 
 func strPtr(value string) *string {

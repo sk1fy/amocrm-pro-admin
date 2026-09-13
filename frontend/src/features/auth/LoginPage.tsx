@@ -6,6 +6,7 @@ import { isApiError } from '../../api/client'
 import { keys, login } from '../../api/queries'
 import { safeNextPath } from '../../lib/format'
 import { LoginShell } from '../../app/layout'
+import { clearSession } from '../../app/session'
 import styles from './LoginPage.module.css'
 
 export function LoginPage() {
@@ -23,6 +24,7 @@ export function LoginPage() {
     setPending(true)
     try {
       const me = await login(email, password)
+      clearSession(queryClient)
       queryClient.setQueryData(keys.me, me)
       router.history.push(safeNextPath(next))
     } catch (caught) {

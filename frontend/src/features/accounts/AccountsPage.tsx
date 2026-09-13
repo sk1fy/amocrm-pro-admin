@@ -85,8 +85,6 @@ export function AccountsPage() {
                 {product.display_name}
               </option>
             ))}
-            <option value="fixture-widget-a">fixture-widget-a</option>
-            <option value="fixture-widget-b">fixture-widget-b</option>
           </select>
         </FilterField>
         <FilterField label="Состояние подключения">

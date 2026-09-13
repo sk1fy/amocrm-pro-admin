@@ -1,11 +1,11 @@
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { usePushSearch, useRouteParams, useRouteSearch } from '../../app/hooks'
 import type { CursorSearch } from '../../app/search'
-import { fetchAccount, fetchConnectionJobs, keys } from '../../api/queries'
+import { fetchAccountJobs, keys } from '../../api/queries'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { FilterBar, FilterField } from '../../components/FilterBar'
-import { SourcesBanner } from '../../components/SourcesBanner'
+import { SourcesBanner, allSourcesUnavailable } from '../../components/SourcesBanner'
 import { SourcesCaption } from '../../components/SourcesCaption'
 import { JobsTable } from './JobsTable'
 import { jobStatuses } from './OperationsPage'
@@ -20,39 +20,18 @@ export function AccountOperationsPage() {
     pushSearch(`/accounts/${accountId}/operations`, { ...search, ...patch })
   }
   const limit = search.limit ?? 50
-  const account = useQuery({
-    queryKey: keys.account(accountId),
-    queryFn: () => fetchAccount(accountId),
+  const params = {
+    status: search.status,
+    type: search.type,
+    limit,
+    cursor: search.cursor,
+  }
+  const jobs = useQuery({
+    queryKey: keys.accountJobs(accountId, params),
+    queryFn: () => fetchAccountJobs(accountId, params),
   })
-  const connections = (account.data?.connections ?? [])
-    .map((obs) => obs.data)
-    .filter((item): item is NonNullable<typeof item> => item !== null && item !== undefined)
-  const jobQueries = useQueries({
-    queries: connections.map((conn) => ({
-      queryKey: keys.connectionJobs(conn.backend, conn.connection_id, {
-        status: search.status,
-        type: search.type,
-        limit,
-      }),
-      queryFn: () =>
-        fetchConnectionJobs(conn.backend, conn.connection_id, {
-          status: search.status,
-          type: search.type,
-          limit,
-        }),
-      enabled: account.isSuccess,
-    })),
-  })
-  const rows = jobQueries.flatMap((query, index) =>
-    (query.data?.items ?? []).map((job) => ({
-      job,
-      backend: connections[index]?.backend ?? '',
-    })),
-  )
-  rows.sort((a, b) => (a.job.updated_at < b.job.updated_at ? 1 : -1))
-  const firstPending = account.isPending || jobQueries.some((query) => query.isPending)
-  const error = jobQueries.find((query) => query.error)?.error
-  const sources = jobQueries.flatMap((query) => query.data?.sources ?? [])
+  const rows = (jobs.data?.items ?? []).map((job) => ({ job, backend: job.backend }))
+  const sources = jobs.data?.sources ?? []
 
   return (
     <div className={page.page}>
@@ -98,20 +77,25 @@ export function AccountOperationsPage() {
         </FilterField>
       </FilterBar>
       <SourcesBanner sources={sources} />
-      {firstPending ? <div className={page.skeleton} /> : null}
-      {error ? (
-        <ErrorState
-          error={error}
-          onRetry={() => jobQueries.forEach((query) => void query.refetch())}
-        />
+      {jobs.isPending ? <div className={page.skeleton} /> : null}
+      {jobs.error ? <ErrorState error={jobs.error} onRetry={() => void jobs.refetch()} /> : null}
+      {jobs.data && rows.length === 0 ? (
+        allSourcesUnavailable(sources) ? (
+          <EmptyState title="Источник недоступен" />
+        ) : (
+          <EmptyState title="Нет задач по этому аккаунту" />
+        )
       ) : null}
-      {!firstPending && !error && rows.length === 0 ? (
-        <EmptyState title="Нет задач по этому аккаунту" />
-      ) : null}
-      {!firstPending && rows.length > 0 ? (
+      {jobs.data ? (
         <>
           <SourcesCaption sources={sources} />
-          <JobsTable rows={rows} accountId={accountId} />
+          <JobsTable
+            rows={rows}
+            accountId={accountId}
+            nextCursor={jobs.data.next_cursor}
+            onNext={() => setSearch({ cursor: jobs.data?.next_cursor ?? undefined })}
+            onReset={() => setSearch({ cursor: undefined })}
+          />
         </>
       ) : null}
     </div>

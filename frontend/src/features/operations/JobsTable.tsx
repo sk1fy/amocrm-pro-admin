@@ -3,6 +3,8 @@ import { Link } from '@tanstack/react-router'
 import { fetchJob, keys } from '../../api/queries'
 import type { Job } from '../../api/types'
 import { DataTable } from '../../components/DataTable'
+import { ErrorState } from '../../components/ErrorState'
+import { Observation } from '../../components/Observation'
 import { StatusBadge } from '../../components/StatusBadge'
 import { formatNull, formatTime } from '../../lib/format'
 import styles from './JobsTable.module.css'
@@ -36,43 +38,46 @@ function JobAttempts({ backend, jobId }: { backend: string; jobId: string }) {
     return <p className={styles.muted}>Загрузка…</p>
   }
   if (query.error) {
-    return (
-      <p className={styles.muted}>
-        {query.error instanceof Error ? query.error.message : 'Не удалось загрузить попытки'}
-      </p>
-    )
+    return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
   }
-  const attempts = query.data?.data?.attempts ?? []
-  if (attempts.length === 0) {
-    return <p className={styles.muted}>Попыток нет</p>
+  if (!query.data) {
+    return null
   }
   return (
-    <table className={styles.attempts}>
-      <thead>
-        <tr>
-          <th scope="col">№</th>
-          <th scope="col">Исход</th>
-          <th scope="col">Начало</th>
-          <th scope="col">Завершение</th>
-          <th scope="col">Длительность</th>
-          <th scope="col">Ошибка</th>
-        </tr>
-      </thead>
-      <tbody>
-        {attempts.map((attempt) => (
-          <tr key={attempt.id}>
-            <td>{formatNull(attempt.attempt)}</td>
-            <td>
-              <StatusBadge domain="job_outcome" state={attempt.outcome} raw={attempt.raw} />
-            </td>
-            <td>{formatTime(attempt.started_at)}</td>
-            <td>{formatTime(attempt.finished_at)}</td>
-            <td>{formatDuration(attempt.duration_ms)}</td>
-            <td>{formatNull(attempt.error_message)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <Observation observation={query.data} onRetry={() => void query.refetch()}>
+      {({ attempts }) =>
+        attempts.length === 0 ? (
+          <p className={styles.muted}>Попыток нет</p>
+        ) : (
+          <table className={styles.attempts}>
+            <thead>
+              <tr>
+                <th scope="col">№</th>
+                <th scope="col">Исход</th>
+                <th scope="col">Начало</th>
+                <th scope="col">Завершение</th>
+                <th scope="col">Длительность</th>
+                <th scope="col">Ошибка</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attempts.map((attempt) => (
+                <tr key={attempt.id}>
+                  <td>{formatNull(attempt.attempt)}</td>
+                  <td>
+                    <StatusBadge domain="job_outcome" state={attempt.outcome} raw={attempt.raw} />
+                  </td>
+                  <td>{formatTime(attempt.started_at)}</td>
+                  <td>{formatTime(attempt.finished_at)}</td>
+                  <td>{formatDuration(attempt.duration_ms)}</td>
+                  <td>{formatNull(attempt.error_message)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
+      }
+    </Observation>
   )
 }
 
@@ -80,7 +85,7 @@ export function JobsTable({ rows, accountId, nextCursor, onNext, onReset }: Prop
   return (
     <DataTable
       rows={rows}
-      rowKey={(row) => row.job.id}
+      rowKey={(row) => `${row.backend}:${row.job.id}`}
       nextCursor={nextCursor}
       onNext={onNext}
       onReset={onReset}

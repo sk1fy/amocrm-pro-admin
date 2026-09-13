@@ -1,6 +1,8 @@
 package core
 
 import (
+	"encoding/base64"
+	"strconv"
 	"time"
 
 	"github.com/sk1fy/amocrm-pro-admin/internal/adapter"
@@ -17,6 +19,7 @@ func mapAccountListItem(item accountListItem) adapter.Account {
 			Status:           adapter.MapConnectionStatus(inst.Status),
 			Origin:           mapOriginValue(item.Origin),
 			RecentFailedJobs: inst.RecentFailedJobs,
+			Grants:           mapGrants(inst.Grants),
 		}
 		if inst.Authorization != "" {
 			summary.Authorization = adapter.MapAuthState(inst.Authorization)
@@ -58,6 +61,10 @@ func mapAccount(resp accountResponse) adapter.Account {
 func mapCardSummary(card installationCard) adapter.ConnectionSummary {
 	summary := mapInstallation(card.Installation)
 	summary.Authorization = adapter.MapAuthState(card.Authorization.State)
+	authorization := mapAuthorization(card.Authorization)
+	summary.AuthorizationDetails = &authorization
+	webhook := mapWebhook(card.Webhook)
+	summary.WebhookDetails = &webhook
 	summary.WebhookStatus = adapter.MapWebhookStatus(card.Webhook.Status)
 	summary.Grants = mapGrants(card.Grants)
 	summary.Pilot = adapter.MapPilot(card.Activity.Pilot)
@@ -67,18 +74,19 @@ func mapCardSummary(card installationCard) adapter.ConnectionSummary {
 func mapInstallation(item installationSummary) adapter.ConnectionSummary {
 	origin := adapter.MapOrigin(item.Origin)
 	return adapter.ConnectionSummary{
-		ID:              item.ID,
-		IntegrationID:   item.IntegrationID,
-		IntegrationCode: item.IntegrationCode,
-		AccountID:       item.AccountID,
-		AccountDomain:   item.AccountDomain,
-		Status:          adapter.MapConnectionStatus(item.Status),
-		WebhookStatus:   optionalWebhook(item.WebhookStatus),
-		Origin:          origin.Canonical,
-		OriginRaw:       origin.Raw,
-		InstalledBy:     item.InstalledBy,
-		CreatedAt:       item.CreatedAt.UTC(),
-		UpdatedAt:       item.UpdatedAt.UTC(),
+		RecentFailedJobs: item.RecentFailedJobs,
+		ID:               item.ID,
+		IntegrationID:    item.IntegrationID,
+		IntegrationCode:  item.IntegrationCode,
+		AccountID:        item.AccountID,
+		AccountDomain:    item.AccountDomain,
+		Status:           adapter.MapConnectionStatus(item.Status),
+		WebhookStatus:    optionalWebhook(item.WebhookStatus),
+		Origin:           origin.Canonical,
+		OriginRaw:        origin.Raw,
+		InstalledBy:      item.InstalledBy,
+		CreatedAt:        item.CreatedAt.UTC(),
+		UpdatedAt:        item.UpdatedAt.UTC(),
 	}
 }
 
@@ -142,6 +150,7 @@ func mapJob(item job) adapter.Job {
 		message = &redacted
 	}
 	return adapter.Job{
+		Cursor:           rowCursor(item.UpdatedAt, item.ID),
 		ID:               item.ID,
 		InstallationID:   item.InstallationID,
 		AccountID:        item.AccountID,
@@ -189,6 +198,7 @@ func mapJobAttempt(item jobAttempt) adapter.JobAttempt {
 
 func mapAudit(item auditEntry) adapter.AuditEntry {
 	return adapter.AuditEntry{
+		Cursor:           rowCursor(item.CreatedAt, strconv.FormatInt(item.ID, 10)),
 		ID:               item.ID,
 		InstallationID:   item.InstallationID,
 		ActorType:        item.ActorType,
@@ -264,4 +274,10 @@ func nonNil[T any](items []T) []T {
 		return []T{}
 	}
 	return items
+}
+
+// rowCursor is Core admin v1's timestamp/id keyset encoding. Keeping it in
+// the adapter lets aggregation advance a partially consumed backend page.
+func rowCursor(at time.Time, id string) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(at.UTC().Format(time.RFC3339Nano) + "|" + id))
 }

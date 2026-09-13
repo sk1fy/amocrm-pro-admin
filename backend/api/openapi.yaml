@@ -331,8 +331,16 @@ paths:
         - name: q
           in: query
           schema: {type: string}
+        - name: integration_id
+          in: query
+          description: OAuth integration ID; distinct from a product service code.
+          schema: {type: string, format: uuid}
+        - name: backend
+          in: query
+          schema: {type: string}
         - name: product
           in: query
+          description: Catalog service code with an enabled grant.
           schema: {type: string}
         - name: connection
           in: query
@@ -407,6 +415,42 @@ paths:
       responses:
         '200':
           description: History list.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourcedList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/accounts/{account_id}/jobs:
+    get:
+      tags: [Accounts]
+      operationId: getAccountJobs
+      summary: Jobs for all account connections, newest first, with per-source keyset pagination.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/AccountID'
+        - name: status
+          in: query
+          schema: {type: string}
+        - name: type
+          in: query
+          schema: {type: string}
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Job list; every item includes its backend code.
           headers:
             X-Request-ID:
               $ref: '#/components/headers/RequestID'

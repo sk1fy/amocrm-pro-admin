@@ -225,13 +225,13 @@ func TestServicePostFilterScanTotal(t *testing.T) {
 			Origin:         adapter.OriginFixture,
 			LastActivityAt: time.Unix(int64(i), 0).UTC(),
 			Connections: []adapter.ConnectionSummary{
-				{ID: formatInt(i), IntegrationCode: code, Status: adapter.State{Canonical: adapter.StatusActive}, Origin: adapter.OriginFixture},
+				{ID: formatInt(i), IntegrationCode: code, Grants: []adapter.Grant{{Service: "lead-status", State: adapter.MapGrant(i%2 != 0)}}, Status: adapter.State{Canonical: adapter.StatusActive}, Origin: adapter.OriginFixture},
 			},
 		})
 	}
 	svc := New([]adapter.Backend{fixture.New(fixture.Options{Code: "core", Data: fixture.Data{Accounts: accounts}})}, nil)
 	first, err := svc.ListAccounts(t.Context(), adapter.Actor{Value: "employee:test"}, ListFilter{
-		Product: "fixture-widget-a", Limit: 10,
+		Product: "lead-status", Limit: 10,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -243,7 +243,7 @@ func TestServicePostFilterScanTotal(t *testing.T) {
 		t.Fatalf("total=%v", first.Total)
 	}
 	second, err := svc.ListAccounts(t.Context(), adapter.Actor{Value: "employee:test"}, ListFilter{
-		Product: "fixture-widget-a", Limit: 10, Cursor: *first.NextCursor,
+		Product: "lead-status", Limit: 10, Cursor: *first.NextCursor,
 	})
 	if err != nil {
 		t.Fatal(err)

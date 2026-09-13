@@ -133,8 +133,8 @@ export type AccountConnectionCard = {
   raw?: string
   account_domain?: string
   origin?: string
-  authorization?: Authorization
-  webhook?: Webhook
+  authorization?: Partial<Authorization> & Pick<Authorization, 'state' | 'unverified'>
+  webhook?: Partial<Webhook> & Pick<Webhook, 'status'>
   grants?: Grant[]
   activity?: { pilot?: string; pilot_raw?: string }
 }
@@ -213,6 +213,8 @@ export type JobAttempt = {
   error_message?: string | null
   duration_ms?: number | null
 }
+
+export type AccountJob = Job & { backend: string }
 
 export type JobDetail = {
   job: Job

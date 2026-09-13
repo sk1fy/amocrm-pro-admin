@@ -20,6 +20,7 @@ var (
 	SystemAudit           = Route{Method: http.MethodGet, Path: "/api/v1/system/audit"}
 	Accounts              = Route{Method: http.MethodGet, Path: "/api/v1/accounts"}
 	Account               = Route{Method: http.MethodGet, Path: "/api/v1/accounts/{account_id}"}
+	AccountJobs           = Route{Method: http.MethodGet, Path: "/api/v1/accounts/{account_id}/jobs"}
 	AccountHistory        = Route{Method: http.MethodGet, Path: "/api/v1/accounts/{account_id}/history"}
 	Connection            = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}"}
 	ConnectionJobs        = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/jobs"}
@@ -45,6 +46,7 @@ var (
 		Accounts,
 		Account,
 		AccountHistory,
+		AccountJobs,
 		Connection,
 		ConnectionJobs,
 		ConnectionAudit,

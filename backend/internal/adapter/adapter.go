@@ -198,22 +198,24 @@ type Account struct {
 }
 
 type ConnectionSummary struct {
-	ID               string
-	IntegrationID    string
-	IntegrationCode  string
-	AccountID        int64
-	AccountDomain    string
-	Status           State
-	WebhookStatus    State
-	Authorization    State
-	Origin           string
-	OriginRaw        string
-	InstalledBy      *int64
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	Grants           []Grant
-	Pilot            State
-	RecentFailedJobs int
+	AuthorizationDetails *Authorization
+	WebhookDetails       *Webhook
+	ID                   string
+	IntegrationID        string
+	IntegrationCode      string
+	AccountID            int64
+	AccountDomain        string
+	Status               State
+	WebhookStatus        State
+	Authorization        State
+	Origin               string
+	OriginRaw            string
+	InstalledBy          *int64
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+	Grants               []Grant
+	Pilot                State
+	RecentFailedJobs     int
 }
 
 type ConnectionDetail struct {
@@ -253,6 +255,7 @@ type ActivityFacts struct {
 }
 
 type Job struct {
+	Cursor           string // Backend keyset position after this row; never serialized by HTTP DTOs.
 	ID               string
 	InstallationID   *string
 	AccountID        *int64
@@ -296,6 +299,7 @@ type JobsSummary struct {
 }
 
 type AuditEntry struct {
+	Cursor           string // Backend keyset position after this row.
 	ID               int64
 	InstallationID   *string
 	ActorType        string

@@ -172,3 +172,19 @@
   только `FindActiveBy*`, `jobs.Store` — `GetForInstallation*`,
   `integrations.Store` — `Apply`). Запросы чтения пишутся заново в
   `internal/adminread` и не дублируют SQL мутаций.
+
+### Уточнения после проверки этапа 1
+
+`GET /api/v1/accounts/{account_id}/jobs` — объединённые задачи подключений
+аккаунта, право `operations:read`. Параметры: `status`, `type`, `limit`,
+`cursor`. Ответ — `items`, `next_cursor`, `total: null`, `sources`;
+каждая задача дополнена обязательным `backend`.
+
+История и задачи используют независимые keyset-позиции источников,
+описанные в [ADR-0008](../adr/0008-account-stream-pagination.md).
+Курсор привязан к аккаунту и фильтрам. Неправильный курсор — 400.
+
+Фильтр `product` списка аккаунтов означает код сервиса каталога с выданным
+грантом, например `activity`. Отдельный `integration_id` означает UUID
+OAuth-интеграции; вместе с `backend` используется карточкой интеграции.
+Недоступный источник делает `total` неизвестным (`null`) и без фильтров.

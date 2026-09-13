@@ -283,3 +283,6 @@ func inetArg(ip string) any {
 	}
 	return addr
 }
+
+// EntryCursor resumes an audit list strictly after the given entry.
+func EntryCursor(entry Entry) string { return encodeCursor(entry.CreatedAt, entry.ID) }

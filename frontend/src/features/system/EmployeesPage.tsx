@@ -23,7 +23,7 @@ export function EmployeesPage() {
           <ErrorState error={list.error} onRetry={() => void list.refetch()} />
         )
       ) : null}
-      {list.data ? (
+      {list.data && !isForbidden(list.error) ? (
         <DataTable
           rows={list.data.items}
           rowKey={(row) => row.id}
