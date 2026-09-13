@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { usePushSearch, useRouteParams, useRouteSearch } from '../../app/hooks'
 import type { CursorSearch } from '../../app/search'
-import { fetchAccountJobs, keys } from '../../api/queries'
+import { fetchAccount, fetchAccountJobs, keys } from '../../api/queries'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { FilterBar, FilterField } from '../../components/FilterBar'
@@ -20,6 +21,10 @@ export function AccountOperationsPage() {
     pushSearch(`/accounts/${accountId}/operations`, { ...search, ...patch })
   }
   const limit = search.limit ?? 50
+  const account = useQuery({
+    queryKey: keys.account(accountId),
+    queryFn: () => fetchAccount(accountId),
+  })
   const params = {
     status: search.status,
     type: search.type,
@@ -35,6 +40,26 @@ export function AccountOperationsPage() {
 
   return (
     <div className={page.page}>
+      {account.data?.connections.some((item) => item.data) ? (
+        <section className={page.stack} aria-label="Команды подключений аккаунта">
+          <h2>Команды подключений</h2>
+          {account.data.connections.map((item) =>
+            item.data ? (
+              <Link
+                key={`${item.source}:${item.data.connection_id}`}
+                to="/operations/admin"
+                search={{
+                  backend: item.data.backend,
+                  target_type: 'installation',
+                  target_id: item.data.connection_id,
+                }}
+              >
+                {item.data.integration_code} · {item.data.backend} · история команд
+              </Link>
+            ) : null,
+          )}
+        </section>
+      ) : null}
       <FilterBar
         onSubmit={(event) => {
           event.preventDefault()

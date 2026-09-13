@@ -255,6 +255,7 @@ type ActivityFacts struct {
 }
 
 type Job struct {
+	RetryAllowed     *bool
 	Cursor           string // Backend keyset position after this row; never serialized by HTTP DTOs.
 	ID               string
 	InstallationID   *string

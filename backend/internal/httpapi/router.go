@@ -16,6 +16,7 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/auth"
 	"github.com/sk1fy/amocrm-pro-admin/internal/catalog"
 	"github.com/sk1fy/amocrm-pro-admin/internal/employees"
+	"github.com/sk1fy/amocrm-pro-admin/internal/operations"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
 	"github.com/sk1fy/amocrm-pro-admin/internal/rbac"
 )
@@ -23,6 +24,7 @@ import (
 const maxBodyBytes = 1 << 20
 
 type Dependencies struct {
+	Operations   *operations.Service
 	Employees    *employees.Store
 	Sessions     *auth.Service
 	Audit        *audit.Store
@@ -36,6 +38,7 @@ type Dependencies struct {
 }
 
 type api struct {
+	operations *operations.Service
 	employees  *employees.Store
 	sessions   *auth.Service
 	audit      *audit.Store
@@ -55,6 +58,7 @@ func New(deps Dependencies) http.Handler {
 		accountSvc = accounts.New(registry.Backends(), deps.Audit)
 	}
 	h := &api{
+		operations: deps.Operations,
 		employees:  deps.Employees,
 		sessions:   deps.Sessions,
 		audit:      deps.Audit,
@@ -79,6 +83,9 @@ func New(deps Dependencies) http.Handler {
 
 	router.Group(func(r chi.Router) {
 		r.Use(deps.Sessions.Middleware)
+		for _, route := range []apicontract.Route{apicontract.ConnectionCommand, apicontract.IntegrationCreateCommand, apicontract.IntegrationCommand, apicontract.JobRetry, apicontract.DeliveryRetry} {
+			r.Method(route.Method, route.Path, http.HandlerFunc(h.submitCommand))
+		}
 		r.Method(apicontract.AuthLogout.Method, apicontract.AuthLogout.Path, http.HandlerFunc(h.logout))
 		r.Method(apicontract.Me.Method, apicontract.Me.Path, http.HandlerFunc(h.me))
 
@@ -114,6 +121,8 @@ func New(deps Dependencies) http.Handler {
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(rbac.Require(rbac.OperationsRead, deps.Employees))
+			r.Method(apicontract.AdminOperations.Method, apicontract.AdminOperations.Path, http.HandlerFunc(h.listAdminOperations))
+			r.Method(apicontract.AdminOperation.Method, apicontract.AdminOperation.Path, http.HandlerFunc(h.getAdminOperation))
 			r.Method(apicontract.AccountJobs.Method, apicontract.AccountJobs.Path, http.HandlerFunc(h.accountJobs))
 			r.Method(apicontract.ConnectionJobs.Method, apicontract.ConnectionJobs.Path, http.HandlerFunc(h.listConnectionJobs))
 			r.Method(apicontract.OperationsJobs.Method, apicontract.OperationsJobs.Path, http.HandlerFunc(h.listJobs))

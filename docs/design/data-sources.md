@@ -98,3 +98,25 @@
 - Задачи аккаунта: Admin `/accounts/{account_id}/jobs`, слияние списков
   задач подключений; `backend` у каждой строки берётся из адаптера.
 - Подключения интеграции: список аккаунтов с `integration_id` и `backend`.
+
+## Этап 2: управление
+
+| Поле | Источник |
+| --- | --- |
+| Операции, инициатор, команда, state/result | admin DB operations, через /operations/admin |
+| Результат Core-команды | Core command receipt, без повторной отправки |
+| authorization_check.classification/observed_at | Подтверждённый результат последней check-квитанции; внешний вызов worker |
+| authorization_check.freshness | Admin: stale после 15 минут, unknown до результата |
+| job.retry_allowed | Core policy: allowlist + состояние job/установки/интеграции |
+| delivery.retry_allowed | failed и возраст менее 7 суток; Core дополнительно сверяет owner |
+| oauth_start_url после revoke | Ответ Core, публичная OAuth start ссылка |
+| webhook_error при partial uninstall | Редактированный результат worker Core |
+| request_key lookup | Индекс идемпотентности Admin; тело команды не требуется |
+
+Секрет интеграции передаётся только при create/rotate-secret. Его текущее
+значение не читается, не показывается и не сохраняется в истории операций.
+
+Состояние задачи после команды с `outcome=queued` — отдельный Observation
+из `GET /api/v1/operations/jobs/{backend}/{job_id}`. `job_id` берётся из
+безопасного результата операции; подтверждение постановки не означает
+успешного выполнения.

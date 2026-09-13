@@ -134,3 +134,21 @@ backends:
 `Job.Cursor` и `AuditEntry.Cursor` — внутренние позиции сразу после
 соответствующей строки; DTO не сериализуют их. См.
 [ADR-0008](../adr/0008-account-stream-pagination.md).
+
+## Команды v1 (этап 2)
+
+Опциональный `CommandBackend` дополняет read-only Backend:
+`ExecuteCommand(ctx,actor,key,CommandRequest)` и `GetCommand(ctx,actor,id)`.
+CommandRequest содержит target_type, target_id, command, payload.
+Core HTTP использует POST /admin/v1/commands и GET /admin/v1/commands/{id}.
+Admin UUID передаётся как Idempotency-Key; он же Core receipt ID.
+Мутации не следуют HTTP-redirect, включая перенаправление тела 307/308.
+
+CommandResult: id, state, outcome, result, error, observed_at, job_id.
+В Admin сохраняются только известные безопасные поля result; неизвестные
+вложенные структуры отбрасываются. Транспортная ошибка после dispatch
+означает unknown_outcome, а не разрешение повторить отправку.
+
+Fixture-адаптер имеет отмеченные тестовые команды с mutex и копиями read
+snapshot; параллельное чтение и изменения не гоняются за общей памятью.
+Он не выполняет OAuth и не хранит переданные секреты.

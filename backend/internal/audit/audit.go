@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -90,7 +92,19 @@ func ValidateMetadata(metadata map[string]any) error {
 	return walkMetadata(metadata)
 }
 
+type executor interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+}
+
 func (s *Store) Record(ctx context.Context, event Event) error {
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	return record(ctx, s.pool, event)
+}
+func (s *Store) RecordTx(ctx context.Context, tx pgx.Tx, event Event) error {
+	return record(ctx, tx, event)
+}
+func record(ctx context.Context, db executor, event Event) error {
 	if event.Outcome == "" {
 		event.Outcome = OutcomeOK
 	}
@@ -104,13 +118,11 @@ func (s *Store) Record(ctx context.Context, event Event) error {
 	if err != nil {
 		return fmt.Errorf("marshal audit metadata: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(ctx, s.timeout)
-	defer cancel()
 	var requestID any
 	if event.RequestID != uuid.Nil {
 		requestID = event.RequestID
 	}
-	if _, err := s.pool.Exec(ctx, `
+	if _, err := db.Exec(ctx, `
 		INSERT INTO admin_audit_log (
 			employee_id, actor_email, action, object_type, object_ref, outcome, request_id, ip, metadata
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,

@@ -150,6 +150,7 @@ func mapJob(item job) adapter.Job {
 		message = &redacted
 	}
 	return adapter.Job{
+		RetryAllowed:     item.RetryAllowed,
 		Cursor:           rowCursor(item.UpdatedAt, item.ID),
 		ID:               item.ID,
 		InstallationID:   item.InstallationID,

@@ -11,6 +11,7 @@ import { SourcesCaption } from '../../components/SourcesCaption'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
 import { formatNull, hostFromRedirect } from '../../lib/format'
+import { CreateIntegration } from './IntegrationCommands'
 
 export function WidgetsPage() {
   const search = useRouteSearch<CursorSearch>()
@@ -23,6 +24,7 @@ export function WidgetsPage() {
   return (
     <div className={page.page}>
       <h1>Виджеты</h1>
+      <CreateIntegration />
       <SourcesBanner sources={list.data?.sources} />
       {list.isPending ? <div className={page.skeleton} /> : null}
       {list.error ? <ErrorState error={list.error} onRetry={() => void list.refetch()} /> : null}

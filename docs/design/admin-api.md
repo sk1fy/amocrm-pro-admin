@@ -188,3 +188,38 @@
 грантом, например `activity`. Отдельный `integration_id` означает UUID
 OAuth-интеграции; вместе с `backend` используется карточкой интеграции.
 Недоступный источник делает `total` неизвестным (`null`) и без фильтров.
+
+## Реализованные команды этапа 2
+
+Мутации требуют сессию, Origin, X-Requested-With и Idempotency-Key.
+Ответ: `202 {operation:{id,employee_id,backend,target_type,target_id,command,
+state,outcome,result,error?,created_at,updated_at,finished_at,observed_at}}`.
+Тело команды и ключ идемпотентности в ответ не попадают.
+
+- `POST /connections/{backend}/{connection_id}/commands/{command}`:
+  enable, disable, revoke, uninstall, reconcile, check, pilot-enable,
+  pilot-disable. target_type в JSON/фильтрах — `installation`.
+- `POST /integrations/{backend}/commands/create`: code, client_id,
+  client_secret, redirect_uri, webhook_events, services. target_id=`new`.
+- `POST /integrations/{backend}/{integration_id}/commands/{command}`:
+  update, rotate-secret, enable, disable, set-service.
+- `POST /operations/jobs/{backend}/{job_id}/retry` (target_type=job).
+- `POST /connections/{backend}/{connection_id}/deliveries/{delivery_id}/retry`
+  (target_type=delivery). Admin сам устанавливает payload.installation_id.
+- `GET /operations/admin/{id}`: persisted operation envelope, polling Core
+  только для неподтверждённых результатов.
+- `GET /operations/admin`: список с backend, target_type, target_id,
+  command, state, request_key, limit, cursor. request_key нужен для поиска
+  после потери ответа POST. Порядок created_at DESC/id DESC, total=null.
+
+Все пути выше имеют префикс `/api/v1`. Детали —
+[ADR-0009](../adr/0009-durable-admin-operations.md) и OpenAPI.
+
+Карточка подключения дополнена `authorization_check` Observation с
+classification, observed_at, retry_after (если задан). Jobs/deliveries
+дополнены retry_allowed и retry_reason. HTTP 202 может содержать уже
+терминальное состояние; success HTTP не означает успешность команды.
+
+`state=succeeded`, `outcome=queued` подтверждает только постановку задачи
+для reconcile/retry. Дальнейший результат читается отдельно по `job_id`
+через существующий маршрут просмотра задачи.

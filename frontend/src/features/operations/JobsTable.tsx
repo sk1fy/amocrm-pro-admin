@@ -8,6 +8,7 @@ import { Observation } from '../../components/Observation'
 import { StatusBadge } from '../../components/StatusBadge'
 import { formatNull, formatTime } from '../../lib/format'
 import styles from './JobsTable.module.css'
+import { RetryJob } from './RetryActions'
 
 export type JobRow = {
   job: Job
@@ -97,6 +98,11 @@ export function JobsTable({ rows, accountId, nextCursor, onNext, onReset }: Prop
         )
       }
       columns={[
+        {
+          id: 'actions',
+          header: 'Действия',
+          cell: (row) => <RetryJob backend={row.backend} job={row.job} />,
+        },
         {
           id: 'type',
           header: 'Тип',

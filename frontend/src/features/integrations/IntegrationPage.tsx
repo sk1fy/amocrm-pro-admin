@@ -9,6 +9,7 @@ import { SourcesBanner } from '../../components/SourcesBanner'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
 import { formatNull, formatTime, hostFromRedirect } from '../../lib/format'
+import { IntegrationCommands } from './IntegrationCommands'
 
 export function IntegrationPage() {
   const { backend, integrationId } = useRouteParams<{ backend: string; integrationId: string }>()
@@ -49,6 +50,7 @@ export function IntegrationPage() {
           return (
             <div className={page.stack}>
               <h1>{item.code}</h1>
+              <IntegrationCommands item={item} onInspect={() => void query.refetch()} />
               <StatusBadge domain="integration" state={item.state} raw={item.raw} />
               <dl className={page.dl}>
                 <dt>Бекенд</dt>

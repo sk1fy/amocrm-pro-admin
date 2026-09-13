@@ -176,6 +176,8 @@ export type Delivery = {
   max_attempts: number
   created_at: string
   updated_at: string
+  retry_allowed?: boolean
+  retry_reason?: string
 }
 
 export type Job = {
@@ -198,6 +200,8 @@ export type Job = {
   created_at: string
   updated_at: string
   finished_at?: string | null
+  retry_allowed?: boolean
+  retry_reason?: string
 }
 
 export type JobAttempt = {
@@ -260,7 +264,33 @@ export type ConnectionCard = {
   activity_sync: Observation<unknown>
   recent_jobs: Observation<Job[]>
   recent_audit: Observation<CoreAudit[]>
+  authorization_check?: Observation<ConnectionCheck>
 }
+
+export type ConnectionCheck = {
+  classification: string
+  observed_at?: string
+  retry_after?: number
+}
+
+export type AdminOperation = {
+  id: string
+  employee_id: string
+  backend: string
+  target_type: string
+  target_id: string
+  command: string
+  state: string
+  outcome?: string | null
+  result: Record<string, unknown>
+  error?: ObsError | null
+  created_at: string
+  updated_at: string
+  finished_at?: string | null
+  observed_at?: string | null
+}
+
+export type OperationResponse = { operation: AdminOperation }
 
 export type Integration = {
   backend: string

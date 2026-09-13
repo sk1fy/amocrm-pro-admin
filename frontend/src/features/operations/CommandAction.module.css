@@ -1,0 +1,40 @@
+.dialog {
+  width: min(38rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 3rem);
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-pop);
+}
+.dialog::backdrop {
+  background: rgb(0 0 0 / 35%);
+}
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+.form h2 {
+  margin: 0;
+}
+.field {
+  display: grid;
+  gap: var(--space-2);
+}
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.warning {
+  padding: var(--space-3);
+  border-left: 3px solid var(--tone-attention);
+  background: var(--tone-attention-bg);
+}

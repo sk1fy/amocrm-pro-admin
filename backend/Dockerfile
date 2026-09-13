@@ -39,7 +39,7 @@ COPY . .
 FROM test-base AS integration-test
 
 ENTRYPOINT ["go", "test"]
-CMD ["-race", "-count=1", "-v", "./internal/platform/migrations", "./internal/auth", "./internal/employees", "./internal/audit", "./internal/httpapi"]
+CMD ["-race", "-count=1", "-v", "./internal/platform/migrations", "./internal/auth", "./internal/employees", "./internal/audit", "./internal/httpapi", "./internal/operations"]
 
 FROM alpine:${ALPINE_VERSION} AS runtime
 

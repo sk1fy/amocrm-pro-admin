@@ -14,6 +14,7 @@ export type StateDomain =
   | 'grant'
   | 'connection'
   | 'authorization'
+  | 'verification'
   | 'webhook'
   | 'pilot'
   | 'delivery'
@@ -67,6 +68,13 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
       label: 'Access token истёк, обновится при следующем вызове',
     },
     valid: { tone: 'ok', label: 'Действует' },
+  },
+  verification: {
+    verified_ok: { tone: 'ok', label: 'Проверка amoCRM успешна' },
+    auth_error: { tone: 'action', label: 'Ошибка авторизации amoCRM' },
+    network_error: { tone: 'unknown', label: 'Ошибка сети при проверке' },
+    rate_limited: { tone: 'attention', label: 'amoCRM ограничила частоту запросов' },
+    internal_error: { tone: 'error', label: 'Внутренняя ошибка проверки' },
   },
   webhook: {
     pending: { tone: 'attention', label: 'Ожидает регистрации (reconcile)' },

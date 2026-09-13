@@ -7,6 +7,7 @@ import (
 
 	"github.com/sk1fy/amocrm-pro-admin/internal/accounts"
 	"github.com/sk1fy/amocrm-pro-admin/internal/adapter"
+	"github.com/sk1fy/amocrm-pro-admin/internal/operations"
 )
 
 type sourcedListResponse struct {
@@ -56,15 +57,16 @@ type accountCardDTO struct {
 }
 
 type connectionCardDTO struct {
-	Backend       string         `json:"backend"`
-	Connection    observationDTO `json:"connection"`
-	Authorization observationDTO `json:"authorization"`
-	Webhook       observationDTO `json:"webhook"`
-	Grants        observationDTO `json:"grants"`
-	Activity      observationDTO `json:"activity"`
-	ActivitySync  observationDTO `json:"activity_sync"`
-	RecentJobs    observationDTO `json:"recent_jobs"`
-	RecentAudit   observationDTO `json:"recent_audit"`
+	AuthorizationCheck observationDTO `json:"authorization_check"`
+	Backend            string         `json:"backend"`
+	Connection         observationDTO `json:"connection"`
+	Authorization      observationDTO `json:"authorization"`
+	Webhook            observationDTO `json:"webhook"`
+	Grants             observationDTO `json:"grants"`
+	Activity           observationDTO `json:"activity"`
+	ActivitySync       observationDTO `json:"activity_sync"`
+	RecentJobs         observationDTO `json:"recent_jobs"`
+	RecentAudit        observationDTO `json:"recent_audit"`
 }
 
 type connectionDTO struct {
@@ -114,6 +116,8 @@ type activityDTO struct {
 }
 
 type jobDTO struct {
+	RetryAllowed     bool       `json:"retry_allowed"`
+	RetryReason      string     `json:"retry_reason,omitempty"`
 	ID               string     `json:"id"`
 	InstallationID   *string    `json:"installation_id"`
 	AccountID        *string    `json:"account_id,omitempty"`
@@ -200,6 +204,8 @@ type historyItemDTO struct {
 }
 
 type deliveryDTO struct {
+	RetryAllowed   bool      `json:"retry_allowed"`
+	RetryReason    string    `json:"retry_reason,omitempty"`
 	CommandID      string    `json:"command_id"`
 	InstallationID string    `json:"installation_id"`
 	Target         string    `json:"target"`
@@ -330,6 +336,7 @@ func toGrantDTOs(items []adapter.Grant) []grantDTO {
 
 func toJobDTO(item adapter.Job) jobDTO {
 	return jobDTO{
+		RetryAllowed: operations.RetryJobAllowed(item), RetryReason: retryReason(operations.RetryJobAllowed(item)),
 		ID: item.ID, InstallationID: item.InstallationID, AccountID: formatAccountIDPtr(item.AccountID),
 		Type:      item.Type,
 		ActorType: item.ActorType, ActorID: item.ActorID, ResourceType: item.ResourceType, ResourceID: item.ResourceID,
@@ -389,6 +396,7 @@ func toHistoryDTO(item accounts.HistoryItem) historyItemDTO {
 
 func toDeliveryDTO(item adapter.Delivery) deliveryDTO {
 	return deliveryDTO{
+		RetryAllowed: operations.RetryDeliveryAllowed(item), RetryReason: retryReason(operations.RetryDeliveryAllowed(item)),
 		CommandID: item.CommandID, InstallationID: item.InstallationID, Target: item.Target, Action: item.Action,
 		Status: item.Status.Canonical, Raw: item.Status.Raw, ErrorCode: item.ErrorCode,
 		Attempts: item.Attempts, MaxAttempts: item.MaxAttempts,
@@ -454,4 +462,11 @@ func accountWebhook(conn accounts.Connection) any {
 		return toWebhookDTO(*conn.WebhookDetails)
 	}
 	return map[string]any{"status": conn.Webhook.Canonical, "raw": omitEmpty(conn.Webhook.Raw)}
+}
+
+func retryReason(allowed bool) string {
+	if allowed {
+		return ""
+	}
+	return "Повтор недоступен для этого типа, состояния или срока хранения"
 }

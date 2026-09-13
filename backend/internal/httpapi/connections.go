@@ -61,6 +61,11 @@ func (h *api) getConnection(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	source := backend.Descriptor().Code
 	card := connectionCardDTO{Backend: source}
+	check := adapter.UnknownObs[map[string]any](source, now, "not_checked", "Connection has not been checked")
+	if h.operations != nil {
+		check = h.operations.LatestCheck(r.Context(), source, id)
+	}
+	card.AuthorizationCheck = observationFrom(check, check.Data)
 	if connErr != nil {
 		unavail := unavailableObservation(source, connErr)
 		card.Connection = unavail
