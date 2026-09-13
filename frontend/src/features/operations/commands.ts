@@ -106,6 +106,47 @@ export function connectionCommand(
       scope: 'Настройка пилота Activity в Core для этой установки.',
       consequence: 'Пилот будет выключен. Настройка обратима.',
     },
+    'activity-configure': {
+      label: 'Сохранить настройки Activity',
+      permission: 'activity:settings:write',
+      scope: 'Настройки хранения Activity этой установки.',
+      consequence:
+        'Будут сохранены initial_days и retention_days. При конфликте текущие значения покажутся без тихой перезаписи.',
+    },
+    'activity-sync': {
+      label: 'Синхронизация Activity',
+      permission: 'activity:sync',
+      scope: 'Синхронизация CRM Events этой установки.',
+      consequence:
+        'Команда будет поставлена в очередь. Ответ 202 не означает завершение: дождитесь succeeded или failed.',
+    },
+    'activity-panel-create': {
+      label: 'Создать панель Activity',
+      permission: 'activity:panels:write',
+      scope: 'Панели Activity этой установки.',
+      consequence: 'Будет создана новая панель. Секрет ссылки в админке не показывается.',
+    },
+    'activity-panel-patch': {
+      label: 'Изменить панель Activity',
+      permission: 'activity:panels:write',
+      scope: 'Одна панель Activity этой установки.',
+      consequence: 'Панель будет изменена по revision. Конфликт вернёт актуальное значение.',
+    },
+    'activity-panel-rotate': {
+      label: 'Ротировать ссылку панели',
+      permission: 'activity:panels:write',
+      scope: 'Публичная ссылка этой панели.',
+      consequence:
+        'Старая ссылка перестанет работать. Новая секретная ссылка в админке не показывается.',
+      nextStep: 'Передайте клиенту новую ссылку из Core/панели, не из этой админки.',
+    },
+    'lead-status-configure': {
+      label: 'Сохранить правило lead-status',
+      permission: 'leadstatus:rules:write',
+      scope: 'Правило lead-status этой установки.',
+      consequence:
+        'Правило будет сохранено с проверкой revision. Конфликт не перезапишет чужие изменения.',
+    },
   }
   const definition = definitions[command]
   if (!definition) throw new Error('Unknown connection command')

@@ -19,6 +19,14 @@ type Data struct {
 	ConnectionJobs    map[string][]adapter.Job
 	ConnectionAudit   map[string][]adapter.AuditEntry
 	Deliveries        map[string][]adapter.Delivery
+	ActivitySettings  map[string]adapter.ActivitySettings
+	ActivitySync      map[string]adapter.ActivitySyncStatus
+	ActivityPanels    map[string][]adapter.ActivityPanel
+	ActivityEmployees map[string][]adapter.ActivityEmployee
+	LeadStatusRules   map[string][]adapter.LeadStatusRule
+	LeadStatusRuns    map[string][]adapter.LeadStatusRun
+	Stats             map[string]adapter.StatsSnapshot
+	StatsAccounts     map[string][]adapter.StatsAccount
 	Health            adapter.Health
 }
 
@@ -51,7 +59,7 @@ func New(opts Options) *Adapter {
 	}
 	caps := adapter.Capabilities{
 		Accounts: true, Connections: true, Integrations: true, Jobs: true, Audit: true, Commands: true, Diagnostics: true,
-		ActivityDeliveries: true,
+		ActivityDeliveries: true, Settings: true, Stats: true,
 	}
 	if opts.Caps != nil {
 		caps = *opts.Caps
@@ -76,6 +84,30 @@ func New(opts Options) *Adapter {
 	}
 	if data.Deliveries == nil {
 		data.Deliveries = map[string][]adapter.Delivery{}
+	}
+	if data.ActivitySettings == nil {
+		data.ActivitySettings = map[string]adapter.ActivitySettings{}
+	}
+	if data.ActivitySync == nil {
+		data.ActivitySync = map[string]adapter.ActivitySyncStatus{}
+	}
+	if data.ActivityPanels == nil {
+		data.ActivityPanels = map[string][]adapter.ActivityPanel{}
+	}
+	if data.ActivityEmployees == nil {
+		data.ActivityEmployees = map[string][]adapter.ActivityEmployee{}
+	}
+	if data.LeadStatusRules == nil {
+		data.LeadStatusRules = map[string][]adapter.LeadStatusRule{}
+	}
+	if data.LeadStatusRuns == nil {
+		data.LeadStatusRuns = map[string][]adapter.LeadStatusRun{}
+	}
+	if data.Stats == nil {
+		data.Stats = map[string]adapter.StatsSnapshot{}
+	}
+	if data.StatsAccounts == nil {
+		data.StatsAccounts = map[string][]adapter.StatsAccount{}
 	}
 	return &Adapter{
 		desc: adapter.Descriptor{

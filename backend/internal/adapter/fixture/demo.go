@@ -318,6 +318,134 @@ func demoData() Data {
 				Attempts: 1, MaxAttempts: 5, CreatedAt: now.Add(-2 * time.Hour), UpdatedAt: now.Add(-2 * time.Hour),
 			}},
 		},
+		ActivitySettings: demoActivitySettings(c1.ID, now),
+		ActivitySync:     demoActivitySync(c1.ID, c8.ID, now),
+		ActivityPanels:   demoActivityPanels(c1.ID, now),
+		ActivityEmployees: map[string][]adapter.ActivityEmployee{
+			c1.ID: {
+				{ID: 501, Name: "Fixture User A", GroupID: 1, GroupName: "Sales"},
+				{ID: 502, Name: "Fixture User B", GroupID: 1, GroupName: "Sales"},
+			},
+		},
+		LeadStatusRules: demoLeadStatusRules(c1.ID, now),
+		LeadStatusRuns:  demoLeadStatusRuns(c1.ID, now),
+		Stats:           demoStats(now),
+		StatsAccounts:   demoStatsAccounts(),
+	}
+}
+
+func demoActivitySettings(id string, now time.Time) map[string]adapter.ActivitySettings {
+	updated := now.Add(-24 * time.Hour)
+	return map[string]adapter.ActivitySettings{
+		id: {InitialDays: 2, RetentionDays: 7, UpdatedAt: &updated},
+	}
+}
+
+func demoActivitySync(idleID, unknownID string, now time.Time) map[string]adapter.ActivitySyncStatus {
+	enabled := true
+	lag := int64(12)
+	from := now.Add(-7 * 24 * time.Hour)
+	through := now.Add(-12 * time.Second)
+	success := now.Add(-2 * time.Minute)
+	event := now.Add(-12 * time.Second)
+	return map[string]adapter.ActivitySyncStatus{
+		idleID: {
+			State: adapter.MapSyncState(adapter.SyncIdle), Verification: "stabilized_api_scan",
+			Enabled: &enabled, VerifiedFrom: &from, VerifiedThrough: &through,
+			LastSuccessAt: &success, LastEventAt: &event, LagSeconds: &lag,
+		},
+		unknownID: {
+			State: adapter.MapSyncState("crm_events_unreachable"),
+		},
+	}
+}
+
+func demoActivityPanels(id string, now time.Time) map[string][]adapter.ActivityPanel {
+	return map[string][]adapter.ActivityPanel{
+		id: {{
+			ID: "f1d00000-0000-4000-8000-000000000001", Name: "fixture-panel",
+			EmployeeIDs: []int64{501, 502}, DisplayWindow: adapter.DisplayWindow{From: "09:00", To: "18:00"},
+			Timezone: "Europe/Moscow", Enabled: true, Revision: 1, UpdatedAt: now.Add(-time.Hour), ShareURLIssued: true,
+		}},
+	}
+}
+
+func demoLeadStatusRules(id string, now time.Time) map[string][]adapter.LeadStatusRule {
+	return map[string][]adapter.LeadStatusRule{
+		id: {{
+			ID:               "f1e00000-0000-4000-8000-000000000001",
+			SourcePipelineID: 100, SourceStatusID: 101, TargetPipelineID: 200, TargetStatusID: 201,
+			Enabled: true, Revision: 1, UpdatedAt: now.Add(-2 * time.Hour),
+		}},
+	}
+}
+
+func demoLeadStatusRuns(id string, now time.Time) map[string][]adapter.LeadStatusRun {
+	finished := now.Add(-30 * time.Minute)
+	return map[string][]adapter.LeadStatusRun{
+		id: {
+			{
+				ID: "f1f00000-0000-4000-8000-000000000001", Status: adapter.MapLeadStatusRun(adapter.LeadRunCompleted),
+				WorkflowType: "lead_status", EffectState: "applied", CreatedAt: now.Add(-40 * time.Minute), FinishedAt: &finished,
+			},
+			{
+				ID: "f1f00000-0000-4000-8000-000000000002", Status: adapter.MapLeadStatusRun(adapter.LeadRunCompleted),
+				WorkflowType: "lead_status", SkipReason: "status already matches target", CreatedAt: now.Add(-20 * time.Minute),
+				FinishedAt: timePtr(now.Add(-19 * time.Minute)),
+			},
+		},
+	}
+}
+
+func demoStats(now time.Time) map[string]adapter.StatsSnapshot {
+	connected, disconnected, active, errors, auth, sync := 1, 0, 5, 2, 1, 0
+	snapshot := adapter.StatsSnapshot{
+		Period: adapter.StatsPeriod24h, PeriodStart: now.Add(-24 * time.Hour), PeriodEnd: now,
+		Connections: []adapter.StatsConnectionCount{
+			{Product: "activity", Status: adapter.StatusActive, Count: 1},
+			{Product: "lead-status", Status: adapter.StatusActive, Count: 4},
+			{Product: "lead-status", Status: adapter.StatusDisabled, Count: 1},
+		},
+		Connected: &connected, Disconnected: &disconnected, ActiveAccounts: &active,
+		LastUseAt: timePtr(now.Add(-10 * time.Minute)), JobErrors: &errors, LatencyP50Ms: nil,
+		Queues: []adapter.StatsQueueCount{
+			{Type: "webhook.parse", Status: adapter.StatusQueued, Count: 1},
+			{Type: "webhook.reconcile", Status: adapter.StatusFailed, Count: 1},
+		},
+		AuthProblems: &auth, SyncProblems: &sync,
+	}
+	week := snapshot
+	week.Period = adapter.StatsPeriod7d
+	week.PeriodStart = now.Add(-7 * 24 * time.Hour)
+	month := snapshot
+	month.Period = adapter.StatsPeriod30d
+	month.PeriodStart = now.Add(-30 * 24 * time.Hour)
+	return map[string]adapter.StatsSnapshot{
+		adapter.StatsPeriod24h: snapshot,
+		adapter.StatsPeriod7d:  week,
+		adapter.StatsPeriod30d: month,
+	}
+}
+
+func demoStatsAccounts() map[string][]adapter.StatsAccount {
+	return map[string][]adapter.StatsAccount{
+		"connected": {{
+			AccountID: 91000001, Domain: "fixture-one.amocrm.test",
+			InstallationID: installationID(1), IntegrationCode: integrationACode, Reason: "connected",
+		}},
+		"disconnected": {},
+		"auth_problems": {{
+			AccountID: 91000002, Domain: "fixture-two.amocrm.test",
+			InstallationID: installationID(3), IntegrationCode: integrationACode, Reason: "reauth_required",
+		}},
+		"sync_problems": {{
+			AccountID: 91000006, Domain: "fixture-six.amocrm.test",
+			InstallationID: installationID(8), IntegrationCode: integrationACode, Reason: "unknown",
+		}},
+		"job_errors": {{
+			AccountID: 91000002, Domain: "fixture-two.amocrm.test",
+			InstallationID: installationID(3), IntegrationCode: integrationACode, Reason: "job_failures",
+		}},
 	}
 }
 

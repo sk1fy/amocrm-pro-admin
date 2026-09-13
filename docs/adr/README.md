@@ -21,3 +21,4 @@
 - [ADR-0008: курсоры истории и операций аккаунта](0008-account-stream-pagination.md).
 
 - [ADR-0009: устойчивые операции и диагностика](0009-durable-admin-operations.md).
+- [ADR-0010: Activity, lead-status и статистика этапа 3](0010-stage-3-activity-stats.md).

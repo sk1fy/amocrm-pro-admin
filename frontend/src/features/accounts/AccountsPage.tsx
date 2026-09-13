@@ -18,6 +18,7 @@ import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
 import { formatNull, formatTime } from '../../lib/format'
 import { lookupState, problemCodes } from '../../states'
+import { SavedViews } from '../overview/SavedViews'
 
 const connectionStates = [
   'pending',
@@ -143,6 +144,22 @@ export function AccountsPage() {
         </FilterField>
         <button type="submit">Найти</button>
       </FilterBar>
+      <SavedViews
+        section="accounts"
+        current={params}
+        columns={['account', 'connections', 'state']}
+        onLoad={(loaded) =>
+          setSearch({
+            q: typeof loaded.q === 'string' ? loaded.q : undefined,
+            product: typeof loaded.product === 'string' ? loaded.product : undefined,
+            connection: typeof loaded.connection === 'string' ? loaded.connection : undefined,
+            problem: typeof loaded.problem === 'string' ? loaded.problem : undefined,
+            origin: typeof loaded.origin === 'string' ? loaded.origin : undefined,
+            limit: typeof loaded.limit === 'number' ? loaded.limit : search.limit,
+            cursor: undefined,
+          })
+        }
+      />
       {partial ? <SourcesBanner sources={list.data?.sources} /> : null}
       {list.isPending ? <div className={page.skeleton} /> : null}
       {list.error ? <ErrorState error={list.error} onRetry={() => void list.refetch()} /> : null}

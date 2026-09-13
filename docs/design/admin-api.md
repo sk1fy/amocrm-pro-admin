@@ -223,3 +223,31 @@ classification, observed_at, retry_after (если задан). Jobs/deliveries
 `state=succeeded`, `outcome=queued` подтверждает только постановку задачи
 для reconcile/retry. Дальнейший результат читается отдельно по `job_id`
 через существующий маршрут просмотра задачи.
+
+## Этап 3
+
+Чтения (сессия + RBAC). Все данные бекенда — Observation.
+
+| Метод и путь | Право |
+| --- | --- |
+| `GET /api/v1/connections/{backend}/{id}/activity/settings` | `connections:read` |
+| `GET /api/v1/connections/{backend}/{id}/activity/status` | `connections:read` |
+| `GET /api/v1/connections/{backend}/{id}/activity/panels` | `connections:read` |
+| `GET /api/v1/connections/{backend}/{id}/activity/panels/{panel_id}` | `connections:read` |
+| `GET /api/v1/connections/{backend}/{id}/activity/employees` | `connections:read` |
+| `GET /api/v1/connections/{backend}/{id}/lead-status/rules` | `connections:read` |
+| `GET /api/v1/connections/{backend}/{id}/lead-status/runs` | `operations:read` |
+| `GET /api/v1/stats?period=24h\|7d\|30d` | `stats:read` |
+| `GET /api/v1/stats/accounts?metric=&period=&product=&cursor=` | `stats:read` |
+| `GET /api/v1/views?section=` | `accounts:read` |
+| `POST /api/v1/views` | `views:write` |
+| `PATCH /api/v1/views/{id}` | `views:write` (владелец; общие — admin) |
+| `DELETE /api/v1/views/{id}` | `views:write` (владелец; общие — admin) |
+
+Мутации идут существующим
+`POST /connections/{backend}/{id}/commands/{command}`:
+`activity-configure`, `activity-sync`, `activity-panel-create`,
+`activity-panel-patch`, `activity-panel-rotate`,
+`lead-status-configure`. HTTP 409 Core → операция `failed`/`conflict` с
+текущими значениями в `result`. `GET /system/backends` добавляет
+`observability.grafana_base_url` / `loki_base_url` без секретов.

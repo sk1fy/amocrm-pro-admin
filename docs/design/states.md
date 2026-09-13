@@ -133,14 +133,24 @@ amocrm-pro).
 
 **Синхронизация (владелец CRM Events, `SyncStatus`)**: `state`,
 `verification`, `reauth_required`, `last_success_at`, `last_event_at`,
-`lag_seconds`, `verified_from/through`, `error_code`. Значения `state`
-источника (`event_sources.state`, без SQL CHECK, из кода CRM Events):
-`pending`, `idle`, `running`, `disabled`, `paused`, `failed`,
-`reauth_required`; при реализации этапа 3 сверить с актуальным кодом. На
-этапе 1 этот факт отдаётся как `unknown` с причиной «источник подключается на
-этапе 3». Правило
-из runbook Activity: `unknown`, `partial` и `stale` **нельзя** показывать как
-доказанное отсутствие активности.
+`lag_seconds`, `verified_from/through`, `error_code`. Сверено с
+`serviceapi.SyncStatus` и ADR-0028 (Core `feature/admin-activity`).
+
+| Канон | Тон | Когда |
+| --- | --- | --- |
+| `pending` | `attention` | Источник ещё не стабилизирован |
+| `idle` | `ok` | Коллекция включена, сейчас не бежит |
+| `running` | `attention` | Идёт sync/backfill |
+| `disabled` | `off` | Выключено командой disable |
+| `paused` | `attention` | Приостановлено источником |
+| `failed` | `error` | Ошибка коллекции |
+| `reauth_required` | `action` | Нужен повторный OAuth для синка |
+| `not_enabled` | `off` | Источника нет / грант не выдан |
+| `unknown` | `unknown` | Неизвестное значение или нет факта |
+
+Unix-поля источника со значением 0 отдаются как `null` (`—`), лаг `0`
+показывается как `0`. `unknown`, `partial`, `stale` и `not_enabled`
+**нельзя** показывать как доказанное отсутствие активности.
 
 ## Job (Core queue)
 

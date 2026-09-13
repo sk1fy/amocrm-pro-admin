@@ -3,6 +3,8 @@ package core
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/sk1fy/amocrm-pro-admin/internal/adapter"
 )
 
 type listEnvelope struct {
@@ -217,4 +219,139 @@ type delivery struct {
 	MaxAttempts    int       `json:"max_attempts"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+type activitySettingsResponse struct {
+	Source        string    `json:"source"`
+	ObservedAt    time.Time `json:"observed_at"`
+	InitialDays   int       `json:"initial_days"`
+	RetentionDays int       `json:"retention_days"`
+	UpdatedAt     int64     `json:"updated_at"`
+}
+
+type activityStatusResponse struct {
+	Enabled         *bool      `json:"enabled"`
+	VerifiedFrom    *time.Time `json:"verified_from"`
+	VerifiedThrough *time.Time `json:"verified_through"`
+	LastSuccessAt   *time.Time `json:"last_success_at"`
+	LastEventAt     *time.Time `json:"last_event_at"`
+	LagSeconds      *int64     `json:"lag_seconds"`
+	Source          string     `json:"source"`
+	ObservedAt      time.Time  `json:"observed_at"`
+	State           string     `json:"state"`
+	Verification    string     `json:"verification"`
+	ErrorCode       string     `json:"error_code"`
+	ReauthRequired  bool       `json:"reauth_required"`
+}
+
+type activityPanel struct {
+	ID             string                `json:"id"`
+	Name           string                `json:"name"`
+	EmployeeIDs    []int64               `json:"employee_ids"`
+	DisplayWindow  adapter.DisplayWindow `json:"display_window"`
+	Timezone       string                `json:"timezone"`
+	Enabled        bool                  `json:"enabled"`
+	Revision       int64                 `json:"revision"`
+	UpdatedAt      time.Time             `json:"updated_at"`
+	ShareURLIssued bool                  `json:"share_url_issued"`
+}
+
+type activityPanelsResponse struct {
+	Source     string          `json:"source"`
+	ObservedAt time.Time       `json:"observed_at"`
+	Items      []activityPanel `json:"items"`
+}
+
+type activityPanelResponse struct {
+	activityPanel
+	Source     string         `json:"source"`
+	ObservedAt time.Time      `json:"observed_at"`
+	Panel      *activityPanel `json:"panel"`
+}
+
+type activityEmployee struct {
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	GroupID   int64  `json:"group_id"`
+	GroupName string `json:"group_name"`
+}
+
+type activityEmployeesResponse struct {
+	Source     string             `json:"source"`
+	ObservedAt time.Time          `json:"observed_at"`
+	Items      []activityEmployee `json:"items"`
+	Users      []activityEmployee `json:"users"`
+}
+
+type leadStatusRule struct {
+	ID               string    `json:"id"`
+	SourcePipelineID int64     `json:"source_pipeline_id"`
+	SourceStatusID   int64     `json:"source_status_id"`
+	TargetPipelineID int64     `json:"target_pipeline_id"`
+	TargetStatusID   int64     `json:"target_status_id"`
+	Enabled          bool      `json:"enabled"`
+	Revision         int64     `json:"revision"`
+	UpdatedAt        time.Time `json:"updated_at"`
+}
+
+type leadStatusRulesResponse struct {
+	Source     string           `json:"source"`
+	ObservedAt time.Time        `json:"observed_at"`
+	Items      []leadStatusRule `json:"items"`
+}
+
+type leadStatusRun struct {
+	FinishedAt   *time.Time `json:"finished_at"`
+	EffectError  *string    `json:"effect_error"`
+	ID           string     `json:"id"`
+	Status       string     `json:"status"`
+	WorkflowType string     `json:"workflow_type"`
+	SkipReason   string     `json:"skip_reason"`
+	ErrorReason  string     `json:"error_reason"`
+	EffectState  string     `json:"effect_state"`
+	CreatedAt    time.Time  `json:"created_at"`
+}
+
+type statsResponse struct {
+	Connected         *int                      `json:"connected"`
+	Disconnected      *int                      `json:"disconnected"`
+	ActiveAccounts    *int                      `json:"active_accounts"`
+	LastUseAt         *time.Time                `json:"last_use_at"`
+	JobErrors         *int                      `json:"job_errors"`
+	LatencyP50Ms      *int64                    `json:"latency_p50_ms"`
+	AuthProblems      *int                      `json:"auth_problems"`
+	SyncProblems      *int                      `json:"sync_problems"`
+	AuthProblemsCount *int64                    `json:"auth_problems_count"`
+	SyncProblemsCount *int64                    `json:"sync_problems_count"`
+	Source            string                    `json:"source"`
+	ObservedAt        time.Time                 `json:"observed_at"`
+	Period            string                    `json:"period"`
+	PeriodStart       time.Time                 `json:"period_start"`
+	PeriodEnd         time.Time                 `json:"period_end"`
+	From              time.Time                 `json:"from"`
+	To                time.Time                 `json:"to"`
+	Connections       []statsConnection         `json:"connections"`
+	Queues            []adapter.StatsQueueCount `json:"queues"`
+	PeriodEvents      struct {
+		Connected    *int64 `json:"connected"`
+		Disconnected *int64 `json:"disconnected"`
+	} `json:"period_events"`
+	Latency struct {
+		P50MS *float64 `json:"p50_ms"`
+	} `json:"latency"`
+}
+
+type statsConnection struct {
+	Product         string `json:"product"`
+	IntegrationCode string `json:"integration_code"`
+	Status          string `json:"status"`
+	Count           int    `json:"count"`
+}
+
+type statsAccount struct {
+	AccountID       int64  `json:"account_id"`
+	Domain          string `json:"domain"`
+	InstallationID  string `json:"installation_id"`
+	IntegrationCode string `json:"integration_code"`
+	Reason          string `json:"reason"`
 }

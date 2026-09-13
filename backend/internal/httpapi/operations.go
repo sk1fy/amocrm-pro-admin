@@ -116,7 +116,10 @@ func (h *api) listBackends(w http.ResponseWriter, r *http.Request) {
 		}
 		items = append(items, observationFrom(obs, data))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"items": items})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"items":         items,
+		"observability": observabilityDTO{GrafanaBaseURL: h.grafanaBaseURL, LokiBaseURL: h.lokiBaseURL},
+	})
 }
 
 func (h *api) catalog(w http.ResponseWriter, r *http.Request) {

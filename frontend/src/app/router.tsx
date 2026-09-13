@@ -13,11 +13,13 @@ import { fetchMe, keys } from '../api/queries'
 import { AppLayout } from './layout'
 import { LoginPage } from '../features/auth/LoginPage'
 import { OverviewPage } from '../features/overview/OverviewPage'
+import { StatsAccountsPage } from '../features/overview/StatsAccountsPage'
 import { AccountsPage } from '../features/accounts/AccountsPage'
 import { AccountLayout } from '../features/accounts/AccountLayout'
 import { AccountOverview } from '../features/accounts/AccountOverview'
 import { AccountWidgets } from '../features/accounts/AccountWidgets'
 import { ConnectionPage } from '../features/connections/ConnectionPage'
+import { SettingsPage } from '../features/connections/SettingsPage'
 import { AccountOperationsPage } from '../features/operations/AccountOperationsPage'
 import { AccountHistoryPage } from '../features/operations/AccountHistoryPage'
 import { OperationsPage } from '../features/operations/OperationsPage'
@@ -29,7 +31,7 @@ import { SystemPage } from '../features/system/SystemPage'
 import { EmployeesPage } from '../features/system/EmployeesPage'
 import { SessionsPage } from '../features/system/SessionsPage'
 import { AuditPage } from '../features/system/AuditPage'
-import { accountsSearch, cursorSearch } from './search'
+import { accountsSearch, cursorSearch, overviewSearch, statsAccountsSearch } from './search'
 import { clearSession } from './session'
 
 export type RouterContext = {
@@ -95,6 +97,7 @@ const appRoute = createRoute({
 const indexRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/',
+  validateSearch: overviewSearch,
   component: OverviewPage,
 })
 
@@ -127,6 +130,19 @@ const connectionRoute = createRoute({
   getParentRoute: () => accountRoute,
   path: 'widgets/$backend/$connectionId',
   component: ConnectionPage,
+})
+
+const connectionSettingsRoute = createRoute({
+  getParentRoute: () => accountRoute,
+  path: 'widgets/$backend/$connectionId/settings',
+  component: SettingsPage,
+})
+
+const statsAccountsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/stats/accounts',
+  validateSearch: statsAccountsSearch,
+  component: StatsAccountsPage,
 })
 
 const accountOperationsRoute = createRoute({
@@ -208,10 +224,12 @@ const routeTree = rootRoute.addChildren([
     accountRoute.addChildren([
       accountIndexRoute,
       accountWidgetsRoute,
+      connectionSettingsRoute,
       connectionRoute,
       accountOperationsRoute,
       accountHistoryRoute,
     ]),
+    statsAccountsRoute,
     widgetsRoute,
     integrationRoute,
     operationsRoute,

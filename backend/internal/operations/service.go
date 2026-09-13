@@ -49,6 +49,14 @@ func Permission(target, command string) string {
 			return rbac.ConnectionsCheck
 		case "pilot-enable", "pilot-disable":
 			return rbac.ActivityPilot
+		case "activity-configure":
+			return rbac.ActivitySettingsWrite
+		case "activity-sync":
+			return rbac.ActivitySync
+		case "activity-panel-create", "activity-panel-patch", "activity-panel-rotate":
+			return rbac.ActivityPanelsWrite
+		case "lead-status-configure":
+			return rbac.LeadStatusRulesWrite
 		}
 	case "integration":
 		switch command {
@@ -148,7 +156,19 @@ func (s *Service) Execute(ctx context.Context, input Submit) (Operation, error) 
 		if errors.Is(err, adapter.ErrRejected) || errors.Is(err, adapter.ErrInvalidArgument) || errors.Is(err, adapter.ErrNotFound) || errors.Is(err, adapter.ErrConflict) || errors.Is(err, adapter.ErrUnsupported) {
 			state = "failed"
 		}
-		result = adapter.CommandResult{State: state, Error: commandError(err)}
+		preserved := result.Result
+		if preserved == nil {
+			preserved = map[string]any{}
+		}
+		var conflict adapter.ConflictError
+		if errors.As(err, &conflict) {
+			for key, value := range conflict.Current {
+				if _, exists := preserved[key]; !exists {
+					preserved[key] = value
+				}
+			}
+		}
+		result = adapter.CommandResult{ID: result.ID, State: state, Outcome: result.Outcome, Result: preserved, Error: commandError(err), ObservedAt: result.ObservedAt, JobID: result.JobID}
 	}
 	if result.ID != "" && result.ID != operation.ID.String() {
 		result = adapter.CommandResult{State: "unknown_outcome", Error: commandError(adapter.ErrUnavailable)}
@@ -202,6 +222,11 @@ func preflight(ctx context.Context, b adapter.Backend, actor adapter.Actor, c ad
 		if c.Command == "revoke" && (state == adapter.StatusDisabled || state == adapter.StatusUninstalled) {
 			return adapter.ErrConflict
 		}
+		if strings.HasPrefix(c.Command, "activity-") || c.Command == "lead-status-configure" {
+			if err := preflightActivity(c); err != nil {
+				return err
+			}
+		}
 	case "integration":
 		if c.Command != "create" {
 			obs, err := b.GetIntegration(ctx, actor, c.TargetID)
@@ -238,6 +263,28 @@ func preflight(ctx context.Context, b adapter.Backend, actor adapter.Actor, c ad
 	}
 	return nil
 }
+func preflightActivity(c adapter.CommandRequest) error {
+	var payload struct {
+		Kind string `json:"kind"`
+		From *int64 `json:"from"`
+		To   *int64 `json:"to"`
+	}
+	if len(c.Payload) > 0 && json.Unmarshal(c.Payload, &payload) != nil {
+		return ErrInvalid
+	}
+	if c.Command == "activity-sync" {
+		switch payload.Kind {
+		case "enable", "sync", "backfill", "disable":
+		default:
+			return adapter.ErrInvalidArgument
+		}
+		if payload.Kind == "backfill" && (payload.From == nil || payload.To == nil || *payload.To <= *payload.From) {
+			return adapter.ErrInvalidArgument
+		}
+	}
+	return nil
+}
+
 func RetryJobAllowed(job adapter.Job) bool {
 	return (job.RetryAllowed == nil || *job.RetryAllowed) && (job.Type == "webhook.reconcile" || job.Type == "widget.ping") && (job.Status.Canonical == adapter.StatusFailed || job.Status.Canonical == adapter.StatusDead)
 }

@@ -18,7 +18,16 @@ import type {
   Observation,
   OperationResponse,
   Session,
+  SavedView,
   SourcedList,
+  StatsAccount,
+  StatsResponse,
+  ActivityEmployee,
+  ActivityPanel,
+  ActivitySettings,
+  ActivitySync,
+  LeadStatusRule,
+  LeadStatusRun,
 } from './types'
 
 export const keys = {
@@ -48,6 +57,16 @@ export const keys = {
   adminOperations: (params: Record<string, string | number | undefined>) =>
     ['admin-operations', params] as const,
   adminOperation: (id: string) => ['admin-operation', id] as const,
+  activitySettings: (backend: string, id: string) => ['connection-settings', backend, id] as const,
+  activityStatus: (backend: string, id: string) => ['connection-status', backend, id] as const,
+  activityPanels: (backend: string, id: string) => ['connection-panels', backend, id] as const,
+  activityEmployees: (backend: string, id: string) => ['connection-employees', backend, id] as const,
+  leadStatusRules: (backend: string, id: string) => ['connection-rules', backend, id] as const,
+  leadStatusRuns: (backend: string, id: string) => ['connection-runs', backend, id] as const,
+  stats: (period: string) => ['stats', period] as const,
+  statsAccounts: (params: Record<string, string | number | undefined>) =>
+    ['stats-accounts', params] as const,
+  views: (section: string) => ['views', section] as const,
 }
 
 export function fetchMe(): Promise<Me> {
@@ -175,4 +194,86 @@ export function fetchAdminOperations(
   params: Record<string, string | number | undefined>,
 ): Promise<ListResponse<AdminOperation>> {
   return apiGet(`/api/v1/operations/admin${queryString(params)}`)
+}
+
+export function fetchActivitySettings(
+  backend: string,
+  id: string,
+): Promise<Observation<ActivitySettings>> {
+  return apiGet(
+    `/api/v1/connections/${encodeURIComponent(backend)}/${encodeURIComponent(id)}/activity/settings`,
+  )
+}
+
+export function fetchActivityStatus(
+  backend: string,
+  id: string,
+): Promise<Observation<ActivitySync>> {
+  return apiGet(
+    `/api/v1/connections/${encodeURIComponent(backend)}/${encodeURIComponent(id)}/activity/status`,
+  )
+}
+
+export function fetchActivityPanels(
+  backend: string,
+  id: string,
+): Promise<Observation<ActivityPanel[]>> {
+  return apiGet(
+    `/api/v1/connections/${encodeURIComponent(backend)}/${encodeURIComponent(id)}/activity/panels`,
+  )
+}
+
+export function fetchActivityEmployees(
+  backend: string,
+  id: string,
+): Promise<Observation<ActivityEmployee[]>> {
+  return apiGet(
+    `/api/v1/connections/${encodeURIComponent(backend)}/${encodeURIComponent(id)}/activity/employees`,
+  )
+}
+
+export function fetchLeadStatusRules(
+  backend: string,
+  id: string,
+): Promise<Observation<LeadStatusRule[]>> {
+  return apiGet(
+    `/api/v1/connections/${encodeURIComponent(backend)}/${encodeURIComponent(id)}/lead-status/rules`,
+  )
+}
+
+export function fetchLeadStatusRuns(
+  backend: string,
+  id: string,
+): Promise<Observation<{ items: LeadStatusRun[]; next_cursor?: string | null }>> {
+  return apiGet(
+    `/api/v1/connections/${encodeURIComponent(backend)}/${encodeURIComponent(id)}/lead-status/runs`,
+  )
+}
+
+export function fetchStats(period: string): Promise<StatsResponse> {
+  return apiGet(`/api/v1/stats${queryString({ period })}`)
+}
+
+export function fetchStatsAccounts(
+  params: Record<string, string | number | undefined>,
+): Promise<SourcedList<StatsAccount>> {
+  return apiGet(`/api/v1/stats/accounts${queryString(params)}`)
+}
+
+export function fetchViews(section: string): Promise<ListResponse<SavedView>> {
+  return apiGet(`/api/v1/views${queryString({ section })}`)
+}
+
+export function createView(body: {
+  section: string
+  name: string
+  params: Record<string, unknown>
+  columns: string[]
+  shared?: boolean
+}): Promise<SavedView> {
+  return apiSend('/api/v1/views', 'POST', body)
+}
+
+export function deleteView(id: string): Promise<{ ok: boolean }> {
+  return apiSend(`/api/v1/views/${encodeURIComponent(id)}`, 'DELETE')
 }

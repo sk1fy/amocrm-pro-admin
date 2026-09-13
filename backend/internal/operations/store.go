@@ -179,25 +179,54 @@ func (s *Store) Finish(ctx context.Context, previous Operation, result adapter.C
 	}
 	return got, tx.Commit(ctx)
 }
+func copySafeResultValue(key string, value any) (any, bool) {
+	switch v := value.(type) {
+	case nil:
+		return nil, true
+	case string:
+		if key == "webhook_error" {
+			v = adapter.RedactError(v)
+		}
+		return v, true
+	case bool, float64, int, int64, json.Number:
+		return v, true
+	case []any:
+		if key != "employee_ids" {
+			return nil, false
+		}
+		out := make([]any, 0, len(v))
+		for _, item := range v {
+			switch item.(type) {
+			case float64, int, int64, json.Number, string:
+				out = append(out, item)
+			}
+		}
+		return out, true
+	default:
+		return nil, false
+	}
+}
+
 func terminal(state string) bool {
 	return state == "succeeded" || state == "failed" || state == "partial" || state == "unknown_outcome"
 }
 
 func safeResult(result adapter.CommandResult) map[string]any {
 	out := map[string]any{}
-	for _, key := range []string{"integration_id", "installation_id", "code", "status", "action", "webhook_error", "job_id", "classification", "verification", "observed_at", "retry_after", "oauth_start_url", "enabled", "service", "pilot", "command_id"} {
+	for _, key := range []string{
+		"integration_id", "installation_id", "code", "status", "action", "webhook_error", "job_id",
+		"classification", "verification", "observed_at", "retry_after", "oauth_start_url", "enabled",
+		"service", "pilot", "command_id", "initial_days", "retention_days", "updated_at", "kind",
+		"from", "to", "operation_id", "delivery_state", "state", "revision", "panel_id", "name",
+		"employee_ids", "lag_seconds", "expected_revision", "rule_id", "source_pipeline_id",
+		"source_status_id", "target_pipeline_id", "target_status_id",
+	} {
 		value, ok := result.Result[key]
 		if !ok {
 			continue
 		}
-		switch v := value.(type) {
-		case string:
-			if key == "webhook_error" {
-				v = adapter.RedactError(v)
-			}
-			out[key] = v
-		case bool, float64, int, int64, json.Number:
-			out[key] = v
+		if copied, ok := copySafeResultValue(key, value); ok {
+			out[key] = copied
 		}
 	}
 	if result.JobID != "" {

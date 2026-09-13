@@ -75,6 +75,20 @@ func TestLoadAPIRejectsListenerConflict(t *testing.T) {
 	}
 }
 
+func TestLoadAPIAllowsEmptyObservabilityURLs(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://admin:admin@example.invalid:5432/admin")
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("GRAFANA_BASE_URL", "")
+	t.Setenv("LOKI_BASE_URL", "https://loki.example.invalid")
+	cfg, err := LoadAPI()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.GrafanaBaseURL != "" || cfg.LokiBaseURL != "https://loki.example.invalid" {
+		t.Fatalf("observability=%q %q", cfg.GrafanaBaseURL, cfg.LokiBaseURL)
+	}
+}
+
 func TestNormalizeOriginTrimsTrailingSlash(t *testing.T) {
 	if got := NormalizeOrigin(" http://127.0.0.1:5173/ "); got != "http://127.0.0.1:5173" {
 		t.Fatalf("got %q", got)

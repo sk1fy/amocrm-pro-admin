@@ -32,6 +32,13 @@ var (
 	)
 	pilotStates = newSet(PilotEnabled, PilotDisabled, PilotNotConfigured)
 	origins     = newSet(OriginFixture, OriginReal)
+	syncStates  = newSet(
+		SyncPending, SyncIdle, SyncRunning, SyncDisabled, SyncPaused,
+		SyncFailed, SyncReauthRequired, SyncNotEnabled,
+	)
+	leadRunStatuses = newSet(
+		LeadRunQueued, LeadRunProcessing, LeadRunCompleted, LeadRunFailed, LeadRunDead,
+	)
 )
 
 func MapConnectionStatus(raw string) State  { return mapKnown(raw, connectionStatuses) }
@@ -43,6 +50,8 @@ func MapOutboxStatus(raw string) State      { return mapKnown(raw, outboxStatuse
 func MapAuthState(raw string) State         { return mapKnown(raw, authStates) }
 func MapPilot(raw string) State             { return mapKnown(raw, pilotStates) }
 func MapOrigin(raw string) State            { return mapKnown(raw, origins) }
+func MapSyncState(raw string) State         { return mapKnown(raw, syncStates) }
+func MapLeadStatusRun(raw string) State     { return mapKnown(raw, leadRunStatuses) }
 
 func MapGrant(enabled bool) State {
 	if enabled {

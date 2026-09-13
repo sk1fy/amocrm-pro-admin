@@ -61,5 +61,14 @@ describe('operation safety', () => {
     expect(connectionCommand('core', 'installation-one', 'uninstall').permission).toBe(
       'connections:uninstall',
     )
+    expect(connectionCommand('core', 'installation-one', 'activity-configure').permission).toBe(
+      'activity:settings:write',
+    )
+    expect(connectionCommand('core', 'installation-one', 'activity-sync').consequence).toContain(
+      '202',
+    )
+    expect(connectionCommand('core', 'installation-one', 'activity-panel-rotate').nextStep).toContain(
+      'не из этой админки',
+    )
   })
 })

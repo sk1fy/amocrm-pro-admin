@@ -54,6 +54,27 @@ func InvalidArgument(backend, message string) Error {
 	return Error{Kind: ErrInvalidArgument, Backend: backend, Message: message}
 }
 
+type ConflictError struct {
+	Current map[string]any
+	backend string
+	message string
+}
+
+func (e ConflictError) Error() string {
+	if e.message != "" {
+		return e.message
+	}
+	return ErrConflict.Error()
+}
+
+func (e ConflictError) Unwrap() error {
+	return ErrConflict
+}
+
+func Conflict(backend, message string, current map[string]any) ConflictError {
+	return ConflictError{Current: current, backend: backend, message: message}
+}
+
 func SafeMessage(err error) string {
 	var api Error
 	if errors.As(err, &api) && api.Message != "" {

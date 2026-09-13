@@ -36,9 +36,11 @@
 | Гранты сервисов интеграции | `integration_services` | вложено в installation/integration | там же | новый |
 | Activity pilot | `activity_pilots.enabled` | вложено в `GET /admin/v1/installations/{id}` | там же | новый |
 | Activity доставка команд | `activity_command_receipts` ⋈ `activity_command_outbox` (`action`, `target`, `status`, `attempts`, `error_code`, `created_at`) — то же, что `activitybridge.ListDeliveries` | `GET /admin/v1/installations/{id}/activity/deliveries` | там же | новый (переиспользовать `ListDeliveries`/`InspectDelivery`) |
-| Activity синхронизация (`SyncStatus`) | владелец CRM Events через порт `serviceapi.CRMEvents.Status` — требует actor/Issue (ADR-0011) | — | `unknown` | этап 3: нужен административный контекст авторизации |
-| Activity настройки, панели | владелец Activity | — | — | этап 3 |
-| Lead-status правила | `lead_status_workflow_rules`, `…_configurations` (модуль `leadstatus`) | — | — | этап 3 |
+| Activity синхронизация (`SyncStatus`) | CRM Events `Status`; unix 0 → `null`; неизвестный state → `unknown`+`raw`. `not_enabled` — отдельное состояние, не «нулевая активность» | `GET /admin/v1/installations/{id}/activity/status` | `GET …/activity/status`, карточка `activity_sync` | этап 3 |
+| Activity настройки | Activity `Settings` + `updated_at` unix (0 = defaults never saved) | `GET /admin/v1/installations/{id}/activity/settings` | `GET …/activity/settings`; команда `activity-configure` | этап 3 |
+| Activity панели и сотрудники | Activity `ManagedPanel` / users; без `view_key`/`share_url` | `GET …/activity/panels`, `…/panels/{id}`, `…/employees` | те же пути Admin API | этап 3 |
+| Lead-status правила | `lead_status_workflow_rules`, CAS revision | `GET …/lead-status/rules` | `GET …/lead-status/rules`; команда `lead-status-configure` | этап 3 |
+| Lead-status запуски | `workflow_runs`, skip/error reason, effect | `GET …/lead-status/runs` | `GET …/lead-status/runs` (`operations:read`) | этап 3 |
 | Настройки установки `settings` | `installations.settings` | не выводить целиком; только `origin` | — | решение о редакции отдельно |
 
 ## Интеграция
@@ -59,7 +61,7 @@
 | Job: инициатор и ресурс (`actor_type`, `actor_id` — ID пользователя amoCRM, `resource_type`, `resource_id`) | `jobs` (миграция 000002) | там же | там же | новый |
 | Попытки: `attempt`, `worker_id`, `started_at`, `finished_at`, `outcome`, `error_code`, `error_message`, `duration_ms` | `job_attempts` | `GET /admin/v1/jobs/{id}` | `GET /api/v1/operations/jobs/core/{id}` | новый |
 | Размер очередей по состояниям | `jobs` GROUP BY `status` (или метрики backlog) | `GET /admin/v1/jobs/summary` | Обзор | новый; согласовать с `jobs.BacklogMetrics` |
-| Workflow/эффекты lead-status | `workflow_runs`, `outbound_effects` | — | — | этап 3 |
+| Workflow/эффекты lead-status | `workflow_runs`, `outbound_effects` | `GET …/lead-status/runs` | история на экране настроек | этап 3 |
 
 ## История
 
@@ -120,3 +122,25 @@
 из `GET /api/v1/operations/jobs/{backend}/{job_id}`. `job_id` берётся из
 безопасного результата операции; подтверждение постановки не означает
 успешного выполнения.
+
+## Этап 3: Activity, статистика, представления
+
+Все агрегаты статистики — один snapshot на период (`24h`/`7d`/`30d`) с
+одним `observed_at`. `null` и `0` различны. История подключений до
+включения сбора не реконструируется: `connected`/`disconnected` только
+по `audit_log` с момента появления Core admin.
+
+| Поле | Формула | Период | Свежесть | Источник | Admin API |
+| --- | --- | --- | --- | --- | --- |
+| Подключения по продукту/состоянию | `COUNT(*)` snapshot `installations` × грант сервиса | текущий снимок | `observed_at` запроса | `GET /admin/v1/stats` | `GET /api/v1/stats` |
+| Новые подключения | `COUNT(DISTINCT installation_id)` audit `installation.authorized` в окне | 24h/7d/30d | там же | там же `connected` | там же |
+| Отключения | `COUNT(DISTINCT installation_id)` disable/uninstall/revoke в окне | 24h/7d/30d | там же | `disconnected` | там же |
+| Активные аккаунты | distinct `account_id` с job или updated_at в окне | 24h/7d/30d | там же | `active_accounts` | там же |
+| Последнее использование | `max(installations.updated_at, jobs.updated_at)` в окне; не `used_widget_tokens` | 24h/7d/30d | там же | `last_use_at` | там же |
+| Ошибки задач | `COUNT` jobs failed/dead в окне | 24h/7d/30d | там же | `job_errors` | там же |
+| Задержка p50 | percentile `job_attempts.duration_ms`; нет попыток → `null` | 24h/7d/30d | там же | `latency_p50_ms` | там же |
+| Очереди | `jobs` GROUP BY type, status | текущий снимок | там же | `queues[]` | там же |
+| Проблемы авторизации | установки `reauth_required` / auth missing | текущий снимок | там же | `auth_problems` | список `/stats/accounts?metric=` |
+| Проблемы синхронизации | distinct installation из `activity_command_outbox.status='failed'` за 7 суток (Core-видимый сбой доставки, не полный CRM Events Status) | 7 суток | там же | `sync_problems` | там же |
+| Сохранённые представления | admin DB `saved_views` | — | запись | — | `GET/POST/PATCH/DELETE /api/v1/views` |
+| Grafana/Loki | env `GRAFANA_BASE_URL`/`LOKI_BASE_URL`; id только в query URL | интервал UI | конфиг процесса | — | поле `observability` в `/system/backends` |

@@ -54,7 +54,12 @@ func (c *Client) ExecuteCommand(ctx context.Context, actor adapter.Actor, key st
 		return adapter.CommandResult{}, adapter.Error{Kind: adapter.ErrRejected, Backend: c.desc.Code, Message: "core admin authentication failed"}
 	}
 	if response.StatusCode == http.StatusConflict {
-		return adapter.CommandResult{}, adapter.Error{Kind: adapter.ErrConflict, Backend: c.desc.Code, Message: "command conflicts with current state"}
+		current := conflictCurrent(body)
+		message := "command conflicts with current state"
+		if extracted := coreMessage(body); extracted != "" {
+			message = extracted
+		}
+		return adapter.CommandResult{Result: current}, adapter.Conflict(c.desc.Code, message, current)
 	}
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusAccepted {
 		return adapter.CommandResult{}, c.mapStatus(response.StatusCode, body)
@@ -64,6 +69,43 @@ func (c *Client) ExecuteCommand(ctx context.Context, actor adapter.Actor, key st
 		return result, adapter.ErrUnavailable
 	}
 	return result, nil
+}
+
+func conflictCurrent(body []byte) map[string]any {
+	var envelope struct {
+		Result  map[string]any `json:"result"`
+		Current map[string]any `json:"current"`
+		Error   struct {
+			Details map[string]any `json:"details"`
+		} `json:"error"`
+	}
+	if json.Unmarshal(body, &envelope) != nil {
+		return map[string]any{}
+	}
+	if len(envelope.Result) > 0 {
+		return envelope.Result
+	}
+	if len(envelope.Current) > 0 {
+		return envelope.Current
+	}
+	if len(envelope.Error.Details) > 0 {
+		return envelope.Error.Details
+	}
+	var raw map[string]any
+	if json.Unmarshal(body, &raw) != nil {
+		return map[string]any{}
+	}
+	out := map[string]any{}
+	for _, key := range []string{
+		"initial_days", "retention_days", "updated_at", "revision", "panel_id",
+		"enabled", "name", "employee_ids", "rule_id", "source_pipeline_id",
+		"source_status_id", "target_pipeline_id", "target_status_id", "expected_revision",
+	} {
+		if value, ok := raw[key]; ok {
+			out[key] = value
+		}
+	}
+	return out
 }
 
 func (c *Client) GetCommand(ctx context.Context, actor adapter.Actor, id string) (adapter.CommandResult, error) {

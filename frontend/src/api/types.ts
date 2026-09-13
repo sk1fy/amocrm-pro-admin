@@ -254,6 +254,105 @@ export type HistoryItem = {
   metadata: unknown
 }
 
+export type ActivitySync = {
+  state: string
+  raw?: string
+  verification?: string
+  enabled?: boolean | null
+  verified_from?: string | null
+  verified_through?: string | null
+  last_success_at?: string | null
+  last_event_at?: string | null
+  lag_seconds?: number | null
+  error_code?: string
+  reauth_required: boolean
+}
+
+export type ActivitySettings = {
+  initial_days: number
+  retention_days: number
+  updated_at?: string | null
+}
+
+export type ActivityPanel = {
+  id: string
+  name: string
+  employee_ids: number[]
+  display_window: { from: string; to: string }
+  timezone: string
+  enabled: boolean
+  revision: number
+  updated_at: string
+  share_url_issued: boolean
+}
+
+export type ActivityEmployee = {
+  id: number
+  name: string
+  group_id: number
+  group_name: string
+}
+
+export type LeadStatusRule = {
+  id: string
+  source_pipeline_id: number
+  source_status_id: number
+  target_pipeline_id: number
+  target_status_id: number
+  enabled: boolean
+  revision: number
+  updated_at: string
+}
+
+export type LeadStatusRun = {
+  id: string
+  status: string
+  raw?: string
+  workflow_type: string
+  skip_reason?: string
+  error_reason?: string
+  effect_state?: string
+  created_at: string
+  finished_at?: string | null
+}
+
+export type StatsSnapshot = {
+  period: string
+  period_start: string
+  period_end: string
+  connections: Array<{ product: string; status: string; count: number }>
+  connected?: number | null
+  disconnected?: number | null
+  active_accounts?: number | null
+  last_use_at?: string | null
+  job_errors?: number | null
+  latency_p50_ms?: number | null
+  queues: Array<{ type: string; status: string; count: number }>
+  auth_problems?: number | null
+  sync_problems?: number | null
+}
+
+export type StatsAccount = {
+  account_id: string
+  domain: string
+  backend: string
+  installation_id: string
+  integration_code: string
+  reason: string
+}
+
+export type SavedView = {
+  id: string
+  owner_employee_id?: string | null
+  section: 'accounts' | 'operations' | 'stats'
+  name: string
+  params: Record<string, unknown>
+  columns: string[]
+  created_at: string
+  updated_at: string
+  shared: boolean
+}
+
 export type ConnectionCard = {
   backend: string
   connection: Observation<ConnectionIdentity>
@@ -261,7 +360,7 @@ export type ConnectionCard = {
   webhook: Observation<Webhook>
   grants: Observation<Grant[]>
   activity: Observation<unknown>
-  activity_sync: Observation<unknown>
+  activity_sync: Observation<ActivitySync>
   recent_jobs: Observation<Job[]>
   recent_audit: Observation<CoreAudit[]>
   authorization_check?: Observation<ConnectionCheck>
@@ -335,6 +434,15 @@ export type BackendHealth = {
 
 export type BackendsResponse = {
   items: Observation<BackendHealth>[]
+  observability?: {
+    grafana_base_url?: string
+    loki_base_url?: string
+  }
+}
+
+export type StatsResponse = {
+  items: Observation<StatsSnapshot>[]
+  period: string
 }
 
 export type ListResponse<T> = {

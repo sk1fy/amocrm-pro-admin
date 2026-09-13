@@ -742,6 +742,269 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/v1/connections/{backend}/{connection_id}/activity/settings:
+    get:
+      tags: [Connections]
+      operationId: getActivitySettings
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+      responses:
+        '200':
+          description: Activity settings observation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Observation'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/connections/{backend}/{connection_id}/activity/status:
+    get:
+      tags: [Connections]
+      operationId: getActivityStatus
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+      responses:
+        '200':
+          description: Activity sync status observation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Observation'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/connections/{backend}/{connection_id}/activity/panels:
+    get:
+      tags: [Connections]
+      operationId: listActivityPanels
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+      responses:
+        '200':
+          description: Activity panels observation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Observation'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/connections/{backend}/{connection_id}/activity/panels/{panel_id}:
+    get:
+      tags: [Connections]
+      operationId: getActivityPanel
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+        - $ref: '#/components/parameters/PanelID'
+      responses:
+        '200':
+          description: Activity panel observation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Observation'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/connections/{backend}/{connection_id}/activity/employees:
+    get:
+      tags: [Connections]
+      operationId: listActivityEmployees
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+      responses:
+        '200':
+          description: Activity employees observation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Observation'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/connections/{backend}/{connection_id}/lead-status/rules:
+    get:
+      tags: [Connections]
+      operationId: listLeadStatusRules
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+      responses:
+        '200':
+          description: Lead-status rules observation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Observation'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/connections/{backend}/{connection_id}/lead-status/runs:
+    get:
+      tags: [Connections]
+      operationId: listLeadStatusRuns
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Lead-status runs observation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Observation'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/stats:
+    get:
+      tags: [System]
+      operationId: getStats
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - name: period
+          in: query
+          schema: {type: string, enum: [24h, 7d, 30d]}
+      responses:
+        '200':
+          description: Stats observations per backend.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StatsList'}
+        '400': {$ref: '#/components/responses/InvalidArgument'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/stats/accounts:
+    get:
+      tags: [System]
+      operationId: listStatsAccounts
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - name: metric
+          in: query
+          required: true
+          schema: {type: string}
+        - name: period
+          in: query
+          schema: {type: string, enum: [24h, 7d, 30d]}
+        - name: product
+          in: query
+          schema: {type: string}
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Accounts for a stats metric.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SourcedList'}
+        '400': {$ref: '#/components/responses/InvalidArgument'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/views:
+    get:
+      tags: [System]
+      operationId: listViews
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - name: section
+          in: query
+          required: true
+          schema: {type: string, enum: [accounts, operations, stats]}
+      responses:
+        '200':
+          description: Saved views for the section.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ViewList'}
+        '400': {$ref: '#/components/responses/InvalidArgument'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    post:
+      tags: [System]
+      operationId: createView
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/Origin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateViewRequest'}
+      responses:
+        '201':
+          description: View created.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SavedView'}
+        '400': {$ref: '#/components/responses/InvalidArgument'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/views/{id}:
+    patch:
+      tags: [System]
+      operationId: patchView
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/ID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PatchViewRequest'}
+      responses:
+        '200':
+          description: View updated.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SavedView'}
+        '400': {$ref: '#/components/responses/InvalidArgument'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '500': {$ref: '#/components/responses/InternalError'}
+    delete:
+      tags: [System]
+      operationId: deleteView
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/Origin'
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '200':
+          description: View deleted.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/OK'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
   /api/v1/connections/{backend}/{connection_id}/commands/{command}:
     post:
       tags: [Operations]
@@ -1056,6 +1319,12 @@ components:
         type: string
     JobID:
       name: job_id
+      in: path
+      required: true
+      schema:
+        type: string
+    PanelID:
+      name: panel_id
       in: path
       required: true
       schema:
@@ -1451,6 +1720,57 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Observation'
+        observability:
+          type: object
+          properties:
+            grafana_base_url: {type: string}
+            loki_base_url: {type: string}
+    StatsList:
+      type: object
+      required: [items, period]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Observation'
+        period: {type: string}
+    SavedView:
+      type: object
+      required: [id, section, name, params, columns, created_at, updated_at, shared]
+      properties:
+        id: {type: string, format: uuid}
+        owner_employee_id: {type: string, format: uuid, nullable: true}
+        section: {type: string, enum: [accounts, operations, stats]}
+        name: {type: string}
+        params: {type: object, additionalProperties: true}
+        columns: {type: array, items: {type: string}}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        shared: {type: boolean}
+    ViewList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/SavedView'}
+        next_cursor: {type: string, nullable: true}
+        total: {type: integer, nullable: true}
+    CreateViewRequest:
+      type: object
+      required: [section, name]
+      properties:
+        section: {type: string, enum: [accounts, operations, stats]}
+        name: {type: string}
+        params: {type: object, additionalProperties: true}
+        columns: {type: array, items: {type: string}}
+        shared: {type: boolean}
+    PatchViewRequest:
+      type: object
+      properties:
+        name: {type: string}
+        params: {type: object, additionalProperties: true}
+        columns: {type: array, items: {type: string}}
     ErrorEnvelope:
       type: object
       required: [error]

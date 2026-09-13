@@ -21,6 +21,7 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/migrations"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/postgres"
 	"github.com/sk1fy/amocrm-pro-admin/internal/transport/httpserver"
+	"github.com/sk1fy/amocrm-pro-admin/internal/views"
 )
 
 func main() {
@@ -98,17 +99,20 @@ func run() error {
 	}()
 
 	public := httpapi.New(httpapi.Dependencies{
-		Operations:   operationService,
-		Employees:    employeeStore,
-		Sessions:     sessionService,
-		Audit:        auditStore,
-		Limiter:      limiter,
-		PublicOrigin: cfg.AdminPublicOrigin,
-		TrustProxy:   cfg.TrustProxy,
-		Logger:       logger,
-		Timeout:      cfg.DatabaseTimeout,
-		Registry:     registry,
-		Accounts:     accountService,
+		Operations:     operationService,
+		Employees:      employeeStore,
+		Sessions:       sessionService,
+		Audit:          auditStore,
+		Views:          views.NewStore(pool, cfg.DatabaseTimeout),
+		Limiter:        limiter,
+		PublicOrigin:   cfg.AdminPublicOrigin,
+		GrafanaBaseURL: cfg.GrafanaBaseURL,
+		LokiBaseURL:    cfg.LokiBaseURL,
+		TrustProxy:     cfg.TrustProxy,
+		Logger:         logger,
+		Timeout:        cfg.DatabaseTimeout,
+		Registry:       registry,
+		Accounts:       accountService,
 	})
 	management := httpapi.Management(pool, cfg.DatabaseTimeout, logger)
 

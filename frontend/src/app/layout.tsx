@@ -39,6 +39,8 @@ const crumbLabels: Record<string, string> = {
   employees: 'Сотрудники',
   sessions: 'Сессии',
   audit: 'Аудит',
+  settings: 'Настройки',
+  stats: 'Статистика',
 }
 
 function NavIcon({ name }: { name: NavIconName }) {
