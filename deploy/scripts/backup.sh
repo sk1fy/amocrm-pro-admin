@@ -10,6 +10,7 @@
 # Credentials come from the postgres container environment and are never
 # printed.
 set -eu
+umask 077
 
 COMPOSE_FILE="${COMPOSE_FILE:-deploy/docker-compose.yml}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
@@ -52,13 +53,17 @@ db_user=$(compose_exec sh -c 'printf "%s" "${POSTGRES_USER:-postgres}"')
 mkdir -p "$BACKUP_DIR"
 
 timestamp=$(date +%Y%m%d-%H%M%S)
-output="$BACKUP_DIR/admin-$timestamp.dump"
-partial="$output.part"
+# A private, unique temporary file prevents same-second backup collisions.
+partial=$(mktemp "$BACKUP_DIR/admin-$timestamp-XXXXXX.dump.part")
+output="${partial%.part}"
 
 cleanup() {
     rm -f "$partial"
 }
-trap cleanup EXIT HUP INT TERM
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 echo "backup: dumping database '$db_name' from service '$POSTGRES_SERVICE'"
 compose_exec pg_dump --format=custom --no-owner --no-privileges \

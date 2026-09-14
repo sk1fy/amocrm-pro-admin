@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
 	"sort"
 	"strings"
 	"time"
@@ -15,6 +14,8 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/adapter"
 	"github.com/sk1fy/amocrm-pro-admin/internal/auth"
 	"github.com/sk1fy/amocrm-pro-admin/internal/catalog"
+	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
+	"github.com/sk1fy/amocrm-pro-admin/internal/platform/jsonbody"
 	"github.com/sk1fy/amocrm-pro-admin/internal/rbac"
 )
 
@@ -114,7 +115,8 @@ func (s *Service) Execute(ctx context.Context, input Submit) (Operation, error) 
 	if json.Unmarshal(input.Request.Payload, &payload) != nil || payload == nil {
 		return Operation{}, ErrInvalid
 	}
-	input.Request.Payload, err = json.Marshal(payload)
+	// Normalize nested objects too, without rounding integer IDs or revisions.
+	input.Request.Payload, err = jsonbody.CanonicalObject(input.Request.Payload)
 	if err != nil {
 		return Operation{}, ErrInvalid
 	}
@@ -122,6 +124,7 @@ func (s *Service) Execute(ctx context.Context, input Submit) (Operation, error) 
 	if err != nil {
 		return Operation{}, ErrInvalid
 	}
+	defer clear(encoded)
 	hash := sha256.Sum256(encoded)
 	timeout := backend.Descriptor().Timeout
 	if timeout <= 0 {
@@ -387,7 +390,14 @@ func (s *Service) LatestCheck(ctx context.Context, backend, id string) adapter.O
 
 func changedFields(payload map[string]json.RawMessage) []string {
 	fields := []string{}
-	for _, key := range []string{"code", "client_id", "client_secret", "redirect_uri", "webhook_events", "services", "service", "enabled", "installation_id"} {
+	for _, key := range []string{
+		"code", "client_id", "client_secret", "redirect_uri", "webhook_events",
+		"services", "service", "enabled", "installation_id",
+		"initial_days", "retention_days", "expected_updated_at", "kind", "from", "to",
+		"name", "employee_ids", "display_window", "panel_id", "revision",
+		"source_pipeline_id", "source_status_id", "target_pipeline_id",
+		"target_status_id", "expected_revision",
+	} {
 		if _, ok := payload[key]; ok {
 			fields = append(fields, key)
 		}

@@ -131,7 +131,7 @@ HTTP-обработчики вызывают те же прикладные фу
   защитой lease/attempt; исходящие запросы используют общий бюджет.
   Существующие команды CLI и публичные маршруты сохраняются.
 - Архитектура: Admin [ADR-0009](../adr/0009-durable-admin-operations.md),
-  Core [ADR-0027](../../../amocrm-pro/docs/adr/0027-admin-command-receipts.md).
+  Core [ADR-0027](https://github.com/sk1fy/amocrm-pro/blob/dd2a4a5b3baa8d64ba678d2b6bf12005d24b1365/docs/adr/0027-admin-command-receipts.md).
 
 ### Результаты проверок
 
@@ -165,7 +165,7 @@ uninstall, shared outbound budget и отсутствие повторного �
 
 - [Локальный запуск](../runbooks/local-run.md).
 - [Демонстрация этапа 2](../runbooks/demo-stage-2.md).
-- Core [runbook команд](../../../amocrm-pro/docs/runbooks/admin-commands.md).
+- Core [runbook команд](https://github.com/sk1fy/amocrm-pro/blob/dd2a4a5b3baa8d64ba678d2b6bf12005d24b1365/docs/runbooks/admin-commands.md).
 
 ### Происхождение данных демонстрации
 

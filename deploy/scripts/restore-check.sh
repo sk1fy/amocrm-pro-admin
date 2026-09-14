@@ -10,7 +10,7 @@
 #   RESTORE_CONFIRM   must be exactly "restore-check"
 #   COMPOSE_FILE      compose file (default: deploy/docker-compose.yml)
 #   POSTGRES_SERVICE  compose service with PostgreSQL (default: admin-postgres)
-#   SCRATCH_DB        scratch database name (default: admin_restore_check)
+#   SCRATCH_DB        new scratch database name (default: admin_restore_check)
 #   EMPLOYEE_EMAIL    known employee to select (default: first active employee)
 #   COMPOSE           compose command (default: autodetected)
 #
@@ -42,6 +42,11 @@ esac
 [ -f "$COMPOSE_FILE" ] || fail "compose file not found: $COMPOSE_FILE"
 case "$SCRATCH_DB" in
     '' | *[!A-Za-z0-9_]*) fail "SCRATCH_DB must contain only letters, digits and underscores" ;;
+esac
+# PostgreSQL identifiers longer than 63 bytes are silently truncated.
+[ "${#SCRATCH_DB}" -le 63 ] || fail "SCRATCH_DB must be at most 63 ASCII characters"
+case "$SCRATCH_DB" in
+    postgres | template0 | template1) fail "SCRATCH_DB must not be a system database" ;;
 esac
 
 if [ -z "${COMPOSE:-}" ]; then
@@ -93,12 +98,15 @@ cleanup() {
         echo "restore-check: dropped scratch database '$SCRATCH_DB'"
     fi
 }
-trap cleanup EXIT HUP INT TERM
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
+# CREATE must fail if the database exists. Never pre-drop an unowned DB.
 echo "restore-check: creating scratch database '$SCRATCH_DB'"
 compose_exec psql --quiet --set=ON_ERROR_STOP=1 --username="$db_user" \
     --dbname=postgres \
-    -c "DROP DATABASE IF EXISTS \"$SCRATCH_DB\" WITH (FORCE);" \
     -c "CREATE DATABASE \"$SCRATCH_DB\";" >/dev/null
 scratch_created=1
 
@@ -166,6 +174,5 @@ found=$(psql_scratch -c \
 [ "$found" = "1" ] || fail \
     "employee email found $found time(s) in the restored database, expected 1"
 
-safe_email=$(printf '%s' "$EMPLOYEE_EMAIL" | tr -d '\r\n')
-echo "restore-check: employee $safe_email present in the restored database"
+echo "restore-check: sample employee present in the restored database"
 echo "restore-check: ok"

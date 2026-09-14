@@ -32,5 +32,5 @@ amoCRM. Настоящие OAuth credentials нужны только для от
 
 Решение о хранении результата и восстановлении описано в
 [ADR-0009](../adr/0009-durable-admin-operations.md). На стороне Core:
-[ADR-0027](../../../amocrm-pro/docs/adr/0027-admin-command-receipts.md) и
-[runbook команд](../../../amocrm-pro/docs/runbooks/admin-commands.md).
+[ADR-0027](https://github.com/sk1fy/amocrm-pro/blob/dd2a4a5b3baa8d64ba678d2b6bf12005d24b1365/docs/adr/0027-admin-command-receipts.md) и
+[runbook команд](https://github.com/sk1fy/amocrm-pro/blob/dd2a4a5b3baa8d64ba678d2b6bf12005d24b1365/docs/runbooks/admin-commands.md).

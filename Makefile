@@ -20,10 +20,12 @@ E2E_POSTGRES_PORT ?= 5434
 E2E_FRONTEND_PORT ?= 5174
 E2E_HTTP_PORT ?= 8094
 E2E_MANAGEMENT_PORT ?= 8095
-E2E_BASE_URL ?= http://host.docker.internal:$(E2E_FRONTEND_PORT)
+# The browser joins the Compose network. Loopback-only published ports are
+# intentionally not reachable through the Docker host's gateway address.
+E2E_BASE_URL ?= http://frontend
 E2E_ENV = POSTGRES_PORT=$(E2E_POSTGRES_PORT) FRONTEND_PORT=$(E2E_FRONTEND_PORT) \
 	HTTP_PORT=$(E2E_HTTP_PORT) MANAGEMENT_PORT=$(E2E_MANAGEMENT_PORT) \
-	ADMIN_PUBLIC_ORIGIN='http://host.docker.internal:$(E2E_FRONTEND_PORT)'
+	ADMIN_PUBLIC_ORIGIN='$(E2E_BASE_URL)'
 
 # Admin DB backups (stage 4.3). restore-check resolves the newest dump inside
 # its recipe unless BACKUP_FILE is overridden.
@@ -59,7 +61,7 @@ export BUILD_REVISION
 
 .DEFAULT_GOAL := help
 
-.PHONY: help docs-check config build up down logs migrate lint test integration-test e2e check \
+.PHONY: help docs-check config build up down logs migrate lint test integration-test e2e scripts-test check \
 	backup-db restore-check fixtures-core fixtures-core-dry-run bench-admin
 
 help: ## Show available commands
@@ -156,6 +158,7 @@ e2e: ## Playwright scenarios against the built stack with the fixture adapter
 	  employee create --email '$(E2E_EMAIL)' --name Admin --role admin --password-stdin \
 	  >/dev/null 2>&1 || true; \
 	$(DOCKER) run --rm \
+	  --network '$(E2E_PROJECT)_admin' \
 	  --add-host=host.docker.internal:host-gateway \
 	  --env HOME=/tmp \
 	  --env E2E_BASE_URL='$(E2E_BASE_URL)' \
@@ -166,7 +169,10 @@ e2e: ## Playwright scenarios against the built stack with the fixture adapter
 	  $(PLAYWRIGHT_IMAGE) \
 	  bash -ec 'cp -a /src/. . && rm -rf node_modules && npm ci --no-audit --no-fund && npx playwright test'
 
-check: docs-check lint test integration-test ## Everything required before merging
+scripts-test: ## Safety tests for backup/restore using command doubles, no database
+	sh deploy/scripts/test-backup-restore.sh
+
+check: docs-check lint test integration-test e2e scripts-test ## Everything required before merging
 
 # ---------------------------------------------------------------------------
 # Admin DB backup and restore verification (stage 4.3)
