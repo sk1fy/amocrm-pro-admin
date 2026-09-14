@@ -7,7 +7,7 @@
 Этап 2 дал durable operations и команды Core. Этап 3 требует
 настроек/синка/панелей Activity, правил lead-status и сводной
 аналитики. Порты Activity требуют `serviceapi.Auth`; решение
-принципала — в Core [ADR-0028](../../../amocrm-pro/docs/adr/0028-admin-activity-principal.md).
+принципала — в Core [ADR-0028](https://github.com/sk1fy/amocrm-pro/blob/dd2a4a5b3baa8d64ba678d2b6bf12005d24b1365/docs/adr/0028-admin-activity-principal.md).
 `used_widget_tokens` не подходит для «последнего использования»:
 это replay JWT без индекса по аккаунту.
 
