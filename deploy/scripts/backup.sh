@@ -53,9 +53,10 @@ db_user=$(compose_exec sh -c 'printf "%s" "${POSTGRES_USER:-postgres}"')
 mkdir -p "$BACKUP_DIR"
 
 timestamp=$(date +%Y%m%d-%H%M%S)
-# A private, unique temporary file prevents same-second backup collisions.
-partial=$(mktemp "$BACKUP_DIR/admin-$timestamp-XXXXXX.dump.part")
-output="${partial%.part}"
+# Keep the X template at the end for both BSD and GNU mktemp. Appending the
+# archive extension only after allocation preserves uniqueness in one second.
+partial=$(mktemp "$BACKUP_DIR/admin-$timestamp-XXXXXX")
+output="$partial.dump"
 
 cleanup() {
     rm -f "$partial"

@@ -349,6 +349,13 @@ dc --profile tools run --rm -T admin-cli prune \
 `make restore-check` работают из checkout, им можно передать prod-файлы
 (как в разделе 7). Бэкап:
 
+Для приёмочной проверки с точным сравнением числа строк остановите
+`admin-api` и другие writers до `backup-db` и не запускайте их до окончания
+`restore-check`. Сам `pg_dump` даёт согласованный snapshot и без остановки,
+но сравнение восстановленного snapshot с уже изменившейся live-БД не имеет
+смысла. Плановый online backup разрешён; точную сверку выполнять в отдельном
+окне без записей.
+
 ```sh
 make backup-db BACKUP_DIR=/var/backups/amocrm-admin \
   COMPOSE="docker-compose -p amocrm-admin \
@@ -376,6 +383,9 @@ make restore-check RESTORE_CONFIRM=restore-check \
     -f deploy/docker-compose.yml" \
   COMPOSE_FILE=deploy/docker-compose.prod.yml
 ```
+
+После успешной проверки и автоматического удаления scratch DB снова запустите
+`admin-api` и проверьте `/ready`.
 
 Расписание: бэкап ежедневно, копия дампов на другой хост/в объектное
 хранилище; учебный restore — раз в месяц, после ротации пароля БД и
