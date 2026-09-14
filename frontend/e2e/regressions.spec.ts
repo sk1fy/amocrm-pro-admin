@@ -250,8 +250,8 @@ test('integration card requests its connections separately from product grants',
     return route.fulfill({ json: { items: [] } })
   })
   await page.goto('/widgets/core/integration-one')
-  await expect(page.getByText('connection-target', { exact: true })).toBeVisible()
-  await expect(page.getByText('connection-unrelated', { exact: true })).toHaveCount(0)
+  await expect(page.locator('code[title="connection-target"]')).toBeVisible()
+  await expect(page.locator('code[title="connection-unrelated"]')).toHaveCount(0)
   expect(Object.fromEntries(accountRequest!.searchParams)).toEqual({
     integration_id: 'integration-one',
     backend: 'core',

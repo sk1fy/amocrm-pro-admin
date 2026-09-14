@@ -15,7 +15,10 @@ test('fixture command persists a diagnostic result through Admin API and reload'
   await expect(page.getByRole('dialog').getByText(new RegExp(connection))).toBeVisible()
   await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить', exact: true }).click()
   await expect(page.getByText('Ошибка авторизации amoCRM', { exact: true }).first()).toBeVisible()
-  await page.getByRole('link', { name: /^Операция [0-9a-f-]{36}$/ }).click()
+  await page
+    .getByRole('link', { name: /^Операция [0-9a-f-]{36}$/ })
+    .first()
+    .click()
   await expect(page).toHaveURL(/\/operations\/admin\/[0-9a-f-]{36}$/)
   await page.reload()
   await expect(page.getByText('Ошибка авторизации amoCRM', { exact: true })).toBeVisible()

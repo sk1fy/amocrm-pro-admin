@@ -101,7 +101,7 @@ async function mockReadAPI(page: Page, permissions: string[] = operatorPermissio
             credentials_present: true,
           }),
           authorization_check: { ...observation(null), freshness: 'unknown' },
-          webhook: observation({ status: 'active', events: [] }),
+          webhook: observation({ status: 'error', events: [] }),
           grants: observation([]),
           activity: observation({ pilot: 'enabled', deliveries: [] }),
           activity_sync: { ...observation(null), freshness: 'unknown' },
@@ -218,6 +218,7 @@ test('partial uninstall shows webhook error and explicit repeat creates a new op
     })
   })
   await page.goto(connectionPath)
+  await page.getByText('Ещё', { exact: true }).click()
   await page.getByRole('button', { name: 'Удалить подключение', exact: true }).click()
   await expect(
     page.getByRole('dialog').getByText(/Для восстановления клиент должен заново пройти OAuth/),
@@ -293,8 +294,8 @@ test('server retry eligibility leaves unsafe jobs read-only', async ({ page }) =
     }),
   )
   await page.goto('/operations')
-  await expect(page.getByRole('button', { name: 'Повторить задачу', exact: true })).toBeDisabled()
-  await expect(page.getByText('Тип задачи не поддерживает безопасный повтор')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Повторить задачу', exact: true })).toHaveCount(0)
+  await expect(page.getByText('unsafe.fixture', { exact: true })).toBeVisible()
 })
 
 test('unknown operation outcome offers inspection without blind resubmission', async ({ page }) => {
@@ -308,6 +309,7 @@ test('unknown operation outcome offers inspection without blind resubmission', a
     })
   })
   await page.goto(connectionPath)
+  await page.getByText('Ещё', { exact: true }).click()
   await page.getByRole('button', { name: 'Сбросить авторизацию', exact: true }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить' }).click()
   await expect(page.getByText('Исход неизвестен', { exact: true })).toBeVisible()

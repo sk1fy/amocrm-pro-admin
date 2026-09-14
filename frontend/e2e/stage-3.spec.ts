@@ -57,8 +57,11 @@ test('operator settings, sync polling, stats null vs zero, saved view, viewer hi
   await page.goto('/accounts')
   await page.getByLabel('Имя представления').fill('fixture-reauth')
   await page.getByRole('button', { name: 'Сохранить представление', exact: true }).click()
+  const savedViews = page.getByLabel('Сохранённые представления')
+  const savedOption = savedViews.locator('option').filter({ hasText: 'fixture-reauth' })
+  await expect(savedOption).toHaveCount(1)
+  await savedViews.selectOption((await savedOption.getAttribute('value')) ?? '')
   await expect(page.getByRole('button', { name: 'Удалить fixture-reauth' })).toBeVisible()
-  await page.getByLabel('Сохранённые представления').selectOption({ label: 'fixture-reauth' })
 
   const created = await page.request.post('/api/v1/system/employees', {
     data: {
