@@ -7,6 +7,29 @@
 > кода, исправления и незакрытая приёмка зафиксированы в
 > [аудите 2026-09-14](audit-2026-09-14.md).
 
+## Объём завершения — 2026-09-14
+
+Актуальная база Admin — `main` / `a61063f`; этапы 4.1–4.3 и исправления
+Admin-аудита уже слиты. Актуальная backend-работа объединяется в
+`amocrm-pro/feature/admin-stage-4-completion`: исправления audit-hardening и
+durable replay `PatchPanel` должны находиться на одном head и проходить полный
+Core CI.
+
+Для завершения инженерной части этапа требуется:
+
+- подтвердить `make check` Admin и полный Core CI на объединённых heads;
+- выполнить настоящий backup/restore Admin DB и сверить восстановленный
+  snapshot, не сравнивая его с изменяемой live-БД;
+- повторно подтвердить зафиксированный нагрузочный/EXPLAIN-прогон и fixture
+  E2E-пилот;
+- обновить отчёт, отделив выполненную инженерную приёмку от действий, которым
+  нужны production OAuth, сотрудники, TLS-прокси и боевые credentials.
+
+Полный перенос Activity-вызовов Core в outbox остаётся отдельной
+межсервисной задачей, как и было определено исходным объёмом этапа ниже. В
+текущем backend head durable replay закрывает `PatchPanel`, но не объявляется
+универсальным recovery всех Activity-команд.
+
 ## Объём
 
 Сверка 2026-09-13. Admin `3bd48f4` (ветка `feature/stage-4-release` от
@@ -136,8 +159,74 @@ Prettier в 8 файлах frontend; форматирование исправл
 полноты `make check` и CI. Подробности, приоритеты и совместимость —
 в [отчёте аудита](audit-2026-09-14.md).
 
-Изолированные JSON unit-тесты с race detector и 11 сценариев скриптов
-с подставными командами пройдены. Полный Docker/Go/PostgreSQL/Playwright
-прогон, настоящий restore, SQL EXPLAIN, нагрузка и пилот в этой среде
-не выполнялись. Этап не помечается полностью принятым. Риск внешнего
-эффекта Activity до commit квитанции Core остаётся открытым.
+Историческое состояние проверки выше заменено итоговым отчётом ниже.
+
+## Отчёт
+
+Дата: 2026-09-14. Коммиты: amocrm-pro-admin `0bb216d` и этот отчёт;
+amocrm-pro `190b09f`.
+
+Статус: инженерная реализация и воспроизводимая локальная приёмка этапа 4
+завершены. Production rollout остаётся отдельным эксплуатационным gate,
+поскольку требует целевого хоста, реальных credentials и участников пилота.
+
+### Реализованные экраны и операции
+
+- реестр нескольких бекендов, их capabilities, состояние и частичная
+  доступность;
+- подписки fixture с честным `unknown` при отсутствии источника;
+- специализированные страницы модулей, метрики, retention/prune;
+- production overlay, backup/restore и инструкции оператора/нового модуля;
+- сквозные роли, отзыв сессии, аудит и 22 браузерных сценария.
+
+### Изменения контрактов и миграции
+
+- Admin API: новых маршрутов в completion-патче нет;
+- Core admin: объединены integer-safe canonicalization, CAS/409 hardening,
+  транзакционная запись lead-status и durable replay `PatchPanel`;
+- миграции Admin DB: без новых; Activity DB:
+  `000004_panel_patch_results`;
+- backup использует переносимый BSD/GNU `mktemp`, уникальные имена и приватные
+  права даже для двух запусков в одну секунду.
+
+### Результаты проверок
+
+| Команда | Репозиторий | Результат |
+| --- | --- | --- |
+| `make check` | amocrm-pro-admin | ok после исправления portable `mktemp`; 22 Playwright E2E |
+| `make bench-admin` | amocrm-pro-admin | ok; 10k/100k fixture accounts |
+| настоящий `backup-db` + `restore-check` | amocrm-pro-admin | ok; 2 employees и 16 audit rows, scratch удалена |
+| `make fmt-check vet test openapi-check` | amocrm-pro | ok |
+| `make integration-test` | amocrm-pro | ok, PostgreSQL tests выполнены |
+| `make activity-ci` | amocrm-pro | ok, owner restore и process fault tests выполнены |
+
+Нагрузочный Core EXPLAIN на 100 тысячах installations и результаты 26 запросов
+зафиксированы в
+[отчёте нагрузки](../reviews/stage-4-load-2026-09-13.md). Повторный Admin
+benchmark подтвердил выполнение всех шести сценариев; наиболее дорогой
+fixture scan на 100 тысячах аккаунтов занял около 365 мс и 1,25 GB/op.
+
+### Инструкция запуска и демонстрационный сценарий
+
+- [local-run.md](../runbooks/local-run.md);
+- [demo-stage-4.md](../runbooks/demo-stage-4.md);
+- [operator.md](../runbooks/operator.md);
+- [new-module.md](../runbooks/new-module.md).
+
+### Происхождение данных демонстрации
+
+- `fixture`: все автоматические браузерные, нагрузочные и restore acceptance
+  данные явно помечены и используют домены `*.example.invalid`/`*.amocrm.test`;
+- `real`: production OAuth и реальные аккаунты в этой приёмке не использовались.
+
+### Ограничения и production gate
+
+- Полный outbox/read-only recovery всех Activity-команд остаётся отдельной
+  межсервисной задачей вне исходного объёма этапа 4. Для `PatchPanel` durable
+  replay реализован; универсальная гарантия для configure/create/rotate не
+  заявляется.
+- Перед production запуском оператор должен настроить TLS reverse proxy,
+  реальные credentials и PostgreSQL-роли, затем провести OAuth smoke и пилот
+  с сотрудниками. Эти действия нельзя достоверно заменить fixture CI.
+- Приёмочный restore с точным сравнением выполняется в окне без writers;
+  порядок явно добавлен в `operator.md`.
