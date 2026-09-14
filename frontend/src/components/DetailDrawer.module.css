@@ -1,0 +1,36 @@
+.drawer {
+  width: min(36rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 3rem);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-pop);
+}
+
+.drawer::backdrop {
+  background: rgb(0 0 0 / 35%);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.body {
+  display: grid;
+  gap: var(--space-3);
+  padding: 1rem 1.25rem 1.25rem;
+  overflow: auto;
+}

@@ -37,6 +37,13 @@ vi.mock('../../api/queries', async (importOriginal) => {
         updated_at: '2026-09-13T10:00:00Z',
       }),
     ),
+    fetchActivityStatus: vi.fn().mockResolvedValue(
+      observation({
+        state: 'idle',
+        reauth_required: false,
+        last_success_at: '2026-09-13T10:00:00Z',
+      }),
+    ),
     fetchActivityPanels: vi.fn().mockResolvedValue(observation([])),
     fetchActivityEmployees: vi.fn().mockResolvedValue(observation([])),
     fetchLeadStatusRules: vi.fn().mockResolvedValue(observation([])),
@@ -91,6 +98,7 @@ describe('SettingsPage dispatcher', () => {
       await screen.findByRole('heading', { name: 'Настройки Activity и lead-status' }),
     ).toBeInTheDocument()
     expect(await screen.findByTestId('retention-days')).toHaveTextContent('7')
+    expect(await screen.findByText('Нет сотрудников')).toBeInTheDocument()
   })
 
   it('does not dispatch to the activity module without the settings capability', async () => {

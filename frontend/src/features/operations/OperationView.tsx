@@ -137,10 +137,10 @@ export function OperationView({
       </div>
       {operationPending(operation.state) ? (
         <p role="status">
-          Команда выполняется. Ответ 202 не означает завершение. Результат обновляется
-          автоматически.
+          Команда выполняется. Операция продолжит выполняться в фоне. Результат появится в истории.
         </p>
       ) : null}
+      {operation.state === 'succeeded' ? <p role="status">Команда завершена.</p> : null}
       {operation.outcome === 'queued' ? (
         <p role="status">
           Задача поставлена в очередь. Результат выполнения проверяйте по задаче и объекту.

@@ -2,6 +2,7 @@ import { Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { useRouteParams } from '../../app/hooks'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAccount, keys } from '../../api/queries'
+import type { AccountCard } from '../../api/types'
 import { ErrorState } from '../../components/ErrorState'
 import { SourcesBanner } from '../../components/SourcesBanner'
 import { StatusBadge } from '../../components/StatusBadge'
@@ -41,6 +42,12 @@ export function AccountLayout() {
               <StatusBadge domain="account" state={account.data.state} />
               <StatusBadge domain="origin" state={account.data.origin} />
             </div>
+            {account.data.state === 'ok' && !accountLooksFine(account.data) ? (
+              <p className={page.muted}>
+                Нельзя считать аккаунт исправным: есть устаревшие данные, недоступный источник или
+                непроверенная авторизация. Смотрите разбивку по подключениям.
+              </p>
+            ) : null}
             {account.data.problems.length > 0 ? (
               <div className={page.row}>
                 {account.data.problems.map((problem) => (
@@ -74,4 +81,16 @@ export function AccountLayout() {
       <Outlet />
     </div>
   )
+}
+
+function accountLooksFine(account: AccountCard): boolean {
+  if (account.problems.length > 0) {
+    return false
+  }
+  return !account.connections.some((obs) => {
+    if (obs.freshness === 'stale' || obs.freshness === 'unavailable') {
+      return true
+    }
+    return Boolean(obs.data?.authorization?.unverified)
+  })
 }

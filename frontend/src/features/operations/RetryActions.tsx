@@ -3,6 +3,9 @@ import { CommandAction } from './CommandAction'
 
 export function RetryJob({ backend, job }: { backend: string; job: Job }) {
   if (!backend) return null
+  if (job.retry_allowed !== true) {
+    return null
+  }
   return (
     <CommandAction
       spec={{
@@ -18,8 +21,8 @@ export function RetryJob({ backend, job }: { backend: string; job: Job }) {
         consequence:
           'Будет запланирована новая попытка. Сервер разрешает повтор только для безопасных типов задач и подходящих состояний.',
       }}
-      disabled={job.retry_allowed !== true}
-      disabledReason={job.retry_allowed === false ? job.retry_reason : undefined}
+      layout="inline"
+      reasonAsTooltip
     />
   )
 }
@@ -35,6 +38,9 @@ export function RetryDelivery({
   delivery: Delivery
   onInspect: () => void
 }) {
+  if (delivery.retry_allowed !== true) {
+    return null
+  }
   return (
     <CommandAction
       spec={{
@@ -50,8 +56,8 @@ export function RetryDelivery({
         consequence:
           'Будет запланирована повторная доставка. Команды старше семи суток не повторяются.',
       }}
-      disabled={delivery.retry_allowed !== true}
-      disabledReason={delivery.retry_allowed === false ? delivery.retry_reason : undefined}
+      layout="inline"
+      reasonAsTooltip
       onInspect={onInspect}
     />
   )

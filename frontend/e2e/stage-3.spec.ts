@@ -47,7 +47,7 @@ test('operator settings, sync polling, stats null vs zero, saved view, viewer hi
   await page.getByRole('button', { name: 'Синхронизировать сейчас', exact: true }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить', exact: true }).click()
   await expect(page.getByText('Команда выполняется').first()).toBeVisible()
-  await expect(page.getByText('Ответ 202 не означает завершение').first()).toBeVisible()
+  await expect(page.getByText('Результат появится в истории').first()).toBeVisible()
   await expect(page.getByText('Успех').first()).toBeVisible()
 
   await page.goto('/')

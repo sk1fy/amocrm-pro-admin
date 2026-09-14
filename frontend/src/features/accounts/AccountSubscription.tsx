@@ -16,7 +16,7 @@ import styles from './AccountSubscription.module.css'
 
 export function SubscriptionCard({ data }: { data: Subscription }) {
   return (
-    <div className={page.card}>
+    <div className={page.stack}>
       <div className={page.row}>
         <h3>{formatNull(data.plan)}</h3>
         <StatusBadge

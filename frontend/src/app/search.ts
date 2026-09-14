@@ -1,3 +1,5 @@
+import { connectionSections } from '../lib/connectionHealth'
+
 export function stringParam(value: unknown): string | undefined {
   return typeof value === 'string' && value !== '' ? value : undefined
 }
@@ -89,4 +91,20 @@ export function cursorSearch(search: Record<string, unknown>): CursorSearch {
     target_id: stringParam(search.target_id),
     command: stringParam(search.command),
   }
+}
+
+export const connectionSectionValues = connectionSections
+
+export type ConnectionSectionSearch = (typeof connectionSectionValues)[number]
+
+export type ConnectionSearch = {
+  section?: ConnectionSectionSearch
+}
+
+export function connectionSearch(search: Record<string, unknown>): ConnectionSearch {
+  const section = stringParam(search.section)
+  if (section && (connectionSectionValues as readonly string[]).includes(section)) {
+    return { section: section as ConnectionSectionSearch }
+  }
+  return {}
 }

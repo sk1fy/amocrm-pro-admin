@@ -151,17 +151,19 @@
 
 **Доставка команд (Core, `activity_command_outbox.status`)**:
 
-| Канон | Из Core | Тон |
-| --- | --- | --- |
-| `pending_delivery` | `pending_delivery` | `attention` |
-| `delivering` | `delivering` | `attention` |
-| `accepted` | `accepted` | `ok` |
-| `failed` | `failed` | `error` |
-| `expired` | `expired` | `error` |
+| Канон | Из Core | Тон | Текст |
+| --- | --- | --- | --- |
+| `pending_delivery` | `pending_delivery` | `attention` | Ожидает |
+| `delivering` | `delivering` | `attention` | Выполняется |
+| `accepted` | `accepted` | `ok` | Доставлена |
+| `failed` | `failed` | `error` | Отклонена |
+| `expired` | `expired` | `error` | Исчерпаны попытки |
 
-Показывать вместе с `action` (`settings`/`sync`), `target`, `attempts`,
-`error_code`, `created_at`. Команды старше 7 суток не повторяются (ADR-0016
-amocrm-pro).
+Показывать вместе с `action` (`settings`/`sync`), `target`, `attempts`
+как «N из M попыток», `error_code`, `created_at`, `updated_at`. Повтор —
+только если `retry_allowed`; причина недоступности в подсказке, не
+кнопкой на всю ширину. Команды старше 7 суток не повторяются
+(ADR-0016 amocrm-pro).
 
 **Синхронизация (владелец CRM Events, `SyncStatus`)**: `state`,
 `verification`, `reauth_required`, `last_success_at`, `last_event_at`,
@@ -171,7 +173,9 @@ amocrm-pro).
 | Канон | Тон | Когда |
 | --- | --- | --- |
 | `pending` | `attention` | Источник ещё не стабилизирован |
-| `idle` | `ok` | Коллекция включена, сейчас не бежит |
+| `idle` | `ok` | Коллекция включена, сейчас не бежит.
+  UI уточняет причину: нет новых событий / ожидает следующий
+  запуск / источник недоступен |
 | `running` | `attention` | Идёт sync/backfill |
 | `disabled` | `off` | Выключено командой disable |
 | `paused` | `attention` | Приостановлено источником |
@@ -229,12 +233,20 @@ API только для сортировки/фильтра и всегда по
 
 | Канон | Правило |
 | --- | --- |
-| `partial` | Хотя бы один участвующий бекенд `unavailable` (подключения всё равно перечисляются) |
-| `needs_action` | Хотя бы одно подключение `reauth_required` или авторизация `missing` при статусе `active`/`pending` |
+| `partial` | Хотя бы один участвующий бекенд `unavailable`, либо
+  свежесть хотя бы одного подключения `unavailable`
+  (подключения всё равно перечисляются) |
+| `needs_action` | Хотя бы одно подключение `reauth_required` или авторизация
+  `missing` при статусе `active`/`pending` |
 | `error` | Хотя бы одно подключение `error` или webhook `error` |
-| `attention` | Хотя бы одно `pending`/`authorizing`, либо `recent_failed_jobs > 0` (failed/dead за 24 ч) |
+| `attention` | Хотя бы одно `pending`/`authorizing`, либо
+  `recent_failed_jobs > 0` (failed/dead за 24 ч), либо свежесть
+  подключения `stale`, либо `authorization.unverified` на
+  `active`/`pending` (факт из `AuthorizationDetails`, без
+  подстановки, если деталей нет) |
 | `inactive` | Все подключения `disabled`/`uninstalled` |
-| `ok` | Все подключения `active` без проблем |
+| `ok` | Все подключения `active`, свежие, без ошибок webhook,
+  без missing/reauth и без `unverified` |
 | `attention` | Любой остальной набор состояний |
 
 Типы проблем для фильтра: `reauth_required`, `webhook_error`, `job_failures`,
@@ -243,6 +255,29 @@ API только для сортировки/фильтра и всегда по
 `recent_failed_jobs`); при недоступном источнике выводится
 `source_unavailable`, а счётчики «Требуют внимания» не показывают число
 («—»), пока источник не ответит.
+
+## Итог подключения (карточка, UI)
+
+Считается в frontend из Observation карточки, не заменяет
+`installations.status` и не сортирует списки
+([ADR-0015](../adr/0015-connection-diagnostics-ux.md)). Первое совпадение
+сверху побеждает:
+
+| Канон | Тон | Текст | Когда |
+| --- | --- | --- | --- |
+| `unavailable` | `error` | Недоступно | Observation установки `unavailable` |
+| `needs_action` | `action` | Требует действия | `reauth_required`, нет credentials,
+  `auth_error`, webhook `error`, установка `error`/`disabled` при
+  ожидании включения, инцидент авторизации Core admin |
+| `working_with_warnings` | `attention` | Работает с предупреждениями | Установка
+  `active`, но проверка stale/unknown, 0 адресов webhook, failed jobs,
+  sync idle с лагом, unverified |
+| `working` | `ok` | Работает | `active`, локальная авторизация допустима,
+  свежая проверка `verified_ok`, webhook не в ошибке |
+
+Рядом 1–3 причины. Связанные `unavailable` Activity/панелей/сотрудников
+с текстом `core admin authentication failed` — один инцидент, не три
+независимых ошибки. Зависимые секции ссылаются на инцидент.
 
 ## Происхождение данных
 
@@ -292,3 +327,14 @@ unknown; старше 15 минут — stale. Отрицательный рез
 что Core подтвердил постановку задачи. Итог выполнения отслеживается
 отдельно по `job_id`: карточка показывает «Задача поставлена в очередь»,
 а «Проверить задачу» читает её Observation и опрашивает до завершения.
+
+## Исход записи аудита
+
+Источник: `admin_audit_log.outcome` и действие журнала. Тон задаёт
+подсветку неуспешного входа и отклонённой операции.
+
+| Канон | Когда | Тон | Текст |
+| --- | --- | --- | --- |
+| `ok` | `outcome=ok` | `ok` | Успех |
+| `denied` | `outcome=denied` | `action` | Отклонено |
+| `failed` | `outcome=failed` или `auth.login_failed` | `error` | Ошибка |

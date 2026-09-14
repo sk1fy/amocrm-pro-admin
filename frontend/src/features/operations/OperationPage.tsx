@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { useRouteParams } from '../../app/hooks'
 import { fetchAdminOperation, fetchConnection, keys } from '../../api/queries'
 import type { AdminOperation } from '../../api/types'
+import { CopyableId } from '../../components/CopyableId'
 import { ErrorState } from '../../components/ErrorState'
 import page from '../../components/page.module.css'
 import { CommandAction } from './CommandAction'
@@ -68,9 +69,12 @@ export function OperationPage() {
       {query.error ? <ErrorState error={query.error} onRetry={() => void query.refetch()} /> : null}
       {operation ? (
         <>
-          <p>
+          <p className={page.row}>
             {operation.command} · {operation.backend} · {operation.target_type}{' '}
-            {operation.target_id}
+            <CopyableId value={operation.target_id} label="объекта" />
+          </p>
+          <p>
+            <CopyableId value={operation.id} label="операции" />
           </p>
           <OperationView operation={operation} link={false} />
           <OperationTarget operation={operation} />

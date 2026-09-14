@@ -65,7 +65,7 @@ describe('operation safety', () => {
       'activity:settings:write',
     )
     expect(connectionCommand('core', 'installation-one', 'activity-sync').consequence).toContain(
-      '202',
+      'фоне',
     )
     expect(
       connectionCommand('core', 'installation-one', 'activity-panel-rotate').nextStep,

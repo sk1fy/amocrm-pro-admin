@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useRouteParams } from '../../../../app/hooks'
@@ -5,18 +6,39 @@ import {
   fetchActivityEmployees,
   fetchActivityPanels,
   fetchActivitySettings,
+  fetchActivityStatus,
   fetchLeadStatusRules,
   fetchLeadStatusRuns,
   keys,
 } from '../../../../api/queries'
+import type {
+  ActivityEmployee,
+  LeadStatusRule,
+  LeadStatusRun,
+  Observation as ObservationType,
+} from '../../../../api/types'
+import { BackToTop } from '../../../../components/BackToTop'
+import { EmptyState } from '../../../../components/EmptyState'
 import { ErrorState } from '../../../../components/ErrorState'
+import { IncidentBanner } from '../../../../components/IncidentBanner'
 import { Observation } from '../../../../components/Observation'
+import { PageSkeleton } from '../../../../components/PageSkeleton'
 import { StatusBadge } from '../../../../components/StatusBadge'
+import { TechnicalDetails } from '../../../../components/TechnicalDetails'
 import page from '../../../../components/page.module.css'
-import { formatNull, formatTime } from '../../../../lib/format'
+import { collectCoreAuthIncident, observationDependsOnIncident } from '../../../../lib/incidents'
+import {
+  formatDateLong,
+  formatDurationSeconds,
+  formatNull,
+  formatRelativeTime,
+  formatTime,
+} from '../../../../lib/format'
+import { lastSyncDurationSeconds } from '../../../../lib/connectionHealth'
 import { unixFromDateInput, unixFromRFC3339 } from '../../../../lib/observability'
 import { CommandAction } from '../../../operations/CommandAction'
 import { connectionCommand } from '../../../operations/commands'
+import styles from '../../connection.module.css'
 
 export function ActivitySettingsPage() {
   const { accountId, backend, connectionId } = useRouteParams<{
@@ -27,6 +49,10 @@ export function ActivitySettingsPage() {
   const settings = useQuery({
     queryKey: keys.activitySettings(backend, connectionId),
     queryFn: () => fetchActivitySettings(backend, connectionId),
+  })
+  const status = useQuery({
+    queryKey: keys.activityStatus(backend, connectionId),
+    queryFn: () => fetchActivityStatus(backend, connectionId),
   })
   const panels = useQuery({
     queryKey: keys.activityPanels(backend, connectionId),
@@ -45,31 +71,67 @@ export function ActivitySettingsPage() {
     queryFn: () => fetchLeadStatusRuns(backend, connectionId),
   })
 
+  const [dirtyRules, setDirtyRules] = useState<Record<string, boolean>>({})
+  const rulesDirty = Object.values(dirtyRules).some(Boolean)
+  useUnsavedChangesGuard(rulesDirty)
+  const incident = collectCoreAuthIncident([
+    { scope: 'settings', observation: asObservation(settings.data, backend) },
+    { scope: 'sync', observation: asObservation(status.data, backend) },
+    { scope: 'panels', observation: asObservation(panels.data, backend) },
+    { scope: 'employees', observation: asObservation(employees.data, backend) },
+  ])
+  const refetchAll = () => {
+    void settings.refetch()
+    void status.refetch()
+    void panels.refetch()
+    void employees.refetch()
+    void rules.refetch()
+    void runs.refetch()
+  }
+  const sourceBlocked = Boolean(incident) || status.data?.freshness === 'unavailable'
+  const dependentHint = incident ? (
+    <p>
+      Раздел недоступен из-за <a href="#core-incident-title">ошибки авторизации Core</a>.
+    </p>
+  ) : undefined
+  const loading = settings.isPending || panels.isPending
+
   return (
     <div className={page.page}>
       <p>
         <Link
           to="/accounts/$accountId/widgets/$backend/$connectionId"
           params={{ accountId, backend, connectionId }}
+          onClick={(event) => {
+            if (rulesDirty && !window.confirm(unsavedLeaveMessage)) {
+              event.preventDefault()
+            }
+          }}
         >
           Назад к подключению
         </Link>
       </p>
       <h2>Настройки Activity и lead-status</h2>
-      {settings.isPending || panels.isPending ? <div className={page.skeleton} /> : null}
+      {loading ? <PageSkeleton label="Загрузка настроек…" /> : null}
       {settings.error ? (
         <ErrorState error={settings.error} onRetry={() => void settings.refetch()} />
       ) : null}
+      {incident ? <IncidentBanner incident={incident} onRetry={refetchAll} /> : null}
+      {sourceBlocked ? (
+        <p className={page.muted}>
+          Пока Core не ответит, сохранение настроек, синхронизация и изменения панелей недоступны.
+          Безопасны повтор запроса и просмотр истории.
+        </p>
+      ) : null}
       <Observation
         title="Настройки Activity"
-        observation={
-          settings.data ?? {
-            source: backend,
-            observed_at: new Date(0).toISOString(),
-            freshness: 'unknown',
-          }
-        }
+        observation={asObservation(settings.data, backend)}
         onRetry={() => void settings.refetch()}
+        dependentHint={
+          settings.data && observationDependsOnIncident(settings.data, incident)
+            ? dependentHint
+            : undefined
+        }
       >
         {(data) => (
           <div className={page.stack}>
@@ -81,6 +143,9 @@ export function ActivitySettingsPage() {
             </dl>
             <CommandAction
               spec={connectionCommand(backend, connectionId, 'activity-configure', accountId)}
+              layout="inline"
+              disabled={sourceBlocked}
+              disabledReason={sourceBlocked ? 'Сначала восстановите доступ к Core.' : undefined}
               fields={[
                 {
                   name: 'initial_days',
@@ -111,52 +176,28 @@ export function ActivitySettingsPage() {
           </div>
         )}
       </Observation>
-      <section className={page.stack}>
-        <h3>Синхронизация</h3>
-        <p className={page.muted}>
-          Ответ 202 не означает завершение. Дождитесь результата операции.
-        </p>
-        {(['enable', 'sync', 'disable'] as const).map((kind) => (
-          <CommandAction
-            key={kind}
-            spec={{
-              ...connectionCommand(backend, connectionId, 'activity-sync', accountId),
-              label:
-                kind === 'enable'
-                  ? 'Включить синхронизацию'
-                  : kind === 'disable'
-                    ? 'Выключить синхронизацию'
-                    : 'Синхронизировать сейчас',
-            }}
-            payload={{ kind }}
-          />
-        ))}
-        <CommandAction
-          spec={{
-            ...connectionCommand(backend, connectionId, 'activity-sync', accountId),
-            label: 'Догрузить период',
-          }}
-          fields={[
-            { name: 'from', label: 'С даты', type: 'date', required: true },
-            { name: 'to', label: 'По дату', type: 'date', required: true },
-          ]}
-          buildPayload={(form) => ({
-            kind: 'backfill',
-            from: unixFromDateInput(String(form.get('from') ?? ''), false),
-            to: unixFromDateInput(String(form.get('to') ?? ''), true),
-          })}
-        />
-      </section>
+      <SyncCommands
+        accountId={accountId}
+        backend={backend}
+        connectionId={connectionId}
+        status={status.data}
+        blocked={sourceBlocked}
+        onRetry={() => void status.refetch()}
+        dependentHint={
+          status.data && observationDependsOnIncident(status.data, incident)
+            ? dependentHint
+            : undefined
+        }
+      />
       <Observation
         title="Панели"
-        observation={
-          panels.data ?? {
-            source: backend,
-            observed_at: new Date(0).toISOString(),
-            freshness: 'unknown',
-          }
-        }
+        observation={asObservation(panels.data, backend)}
         onRetry={() => void panels.refetch()}
+        dependentHint={
+          panels.data && observationDependsOnIncident(panels.data, incident)
+            ? dependentHint
+            : undefined
+        }
       >
         {(items) => (
           <div className={page.stack}>
@@ -168,10 +209,15 @@ export function ActivitySettingsPage() {
                 <p>
                   Окно: {panel.display_window.from}–{panel.display_window.to}
                 </p>
-                <p>Версия панели: {formatNull(panel.revision)}</p>
                 <StatusBadge domain="grant" state={panel.enabled ? 'granted' : 'not_granted'} />
+                <TechnicalDetails>
+                  <p>Версия панели: {formatNull(panel.revision)}</p>
+                </TechnicalDetails>
                 <CommandAction
                   spec={connectionCommand(backend, connectionId, 'activity-panel-patch', accountId)}
+                  layout="inline"
+                  disabled={sourceBlocked}
+                  disabledReason={sourceBlocked ? 'Источник панелей недоступен.' : undefined}
                   fields={[
                     { name: 'name', label: 'Имя', value: panel.name, required: true },
                     {
@@ -199,12 +245,17 @@ export function ActivitySettingsPage() {
                     'activity-panel-rotate',
                     accountId,
                   )}
+                  layout="inline"
+                  disabled={sourceBlocked}
                   payload={{ panel_id: panel.id }}
                 />
               </article>
             ))}
             <CommandAction
               spec={connectionCommand(backend, connectionId, 'activity-panel-create', accountId)}
+              layout="inline"
+              disabled={sourceBlocked}
+              disabledReason={sourceBlocked ? 'Источник панелей недоступен.' : undefined}
               fields={[
                 { name: 'name', label: 'Имя', required: true },
                 { name: 'employee_ids', label: 'ID сотрудников через запятую', required: true },
@@ -224,39 +275,18 @@ export function ActivitySettingsPage() {
           </div>
         )}
       </Observation>
-      <Observation
-        title="Сотрудники amoCRM"
-        observation={
-          employees.data ?? {
-            source: backend,
-            observed_at: new Date(0).toISOString(),
-            freshness: 'unknown',
-          }
+      <EmployeesBlock
+        backend={backend}
+        employees={employees}
+        dependentHint={
+          employees.data && observationDependsOnIncident(employees.data, incident)
+            ? dependentHint
+            : undefined
         }
-      >
-        {(items) =>
-          items.length === 0 ? (
-            <p className={page.muted}>Нет сотрудников</p>
-          ) : (
-            <ul>
-              {items.map((item) => (
-                <li key={item.id}>
-                  {item.name} · {formatNull(item.id)} · {item.group_name}
-                </li>
-              ))}
-            </ul>
-          )
-        }
-      </Observation>
+      />
       <Observation
         title="Правила lead-status"
-        observation={
-          rules.data ?? {
-            source: backend,
-            observed_at: new Date(0).toISOString(),
-            freshness: 'unknown',
-          }
-        }
+        observation={asObservation(rules.data, backend)}
         onRetry={() => void rules.refetch()}
       >
         {(items) =>
@@ -264,101 +294,403 @@ export function ActivitySettingsPage() {
             <p className={page.muted}>Нет правил</p>
           ) : (
             items.map((rule) => (
-              <article key={rule.id} className={page.card}>
-                <p>
-                  {formatNull(rule.source_pipeline_id)}/{formatNull(rule.source_status_id)} →{' '}
-                  {formatNull(rule.target_pipeline_id)}/{formatNull(rule.target_status_id)}
-                </p>
-                <p>Версия правила: {formatNull(rule.revision)}</p>
-                <CommandAction
-                  spec={connectionCommand(
-                    backend,
-                    connectionId,
-                    'lead-status-configure',
-                    accountId,
-                  )}
-                  fields={[
-                    {
-                      name: 'source_pipeline_id',
-                      label: 'Исходный pipeline',
-                      type: 'number',
-                      value: String(rule.source_pipeline_id),
-                      required: true,
-                    },
-                    {
-                      name: 'source_status_id',
-                      label: 'Исходный статус',
-                      type: 'number',
-                      value: String(rule.source_status_id),
-                      required: true,
-                    },
-                    {
-                      name: 'target_pipeline_id',
-                      label: 'Целевой pipeline',
-                      type: 'number',
-                      value: String(rule.target_pipeline_id),
-                      required: true,
-                    },
-                    {
-                      name: 'target_status_id',
-                      label: 'Целевой статус',
-                      type: 'number',
-                      value: String(rule.target_status_id),
-                      required: true,
-                    },
-                    {
-                      name: 'enabled',
-                      label: 'Включено',
-                      type: 'select',
-                      value: rule.enabled ? 'true' : 'false',
-                      options: [
-                        { value: 'true', label: 'Да' },
-                        { value: 'false', label: 'Нет' },
-                      ],
-                    },
-                  ]}
-                  buildPayload={(form) => ({
-                    source_pipeline_id: Number(form.get('source_pipeline_id')),
-                    source_status_id: Number(form.get('source_status_id')),
-                    target_pipeline_id: Number(form.get('target_pipeline_id')),
-                    target_status_id: Number(form.get('target_status_id')),
-                    enabled: form.get('enabled') === 'true',
-                    expected_revision: rule.revision,
-                  })}
-                />
-              </article>
+              <LeadStatusRuleForm
+                key={rule.id}
+                rule={rule}
+                backend={backend}
+                connectionId={connectionId}
+                accountId={accountId}
+                blocked={sourceBlocked}
+                onDirtyChange={(dirty) =>
+                  setDirtyRules((current) => ({ ...current, [rule.id]: dirty }))
+                }
+              />
             ))
           )
         }
       </Observation>
       <Observation
         title="История lead-status"
-        observation={
-          runs.data ?? {
-            source: backend,
-            observed_at: new Date(0).toISOString(),
-            freshness: 'unknown',
-          }
-        }
+        observation={asObservation(runs.data, backend)}
         onRetry={() => void runs.refetch()}
       >
         {(pageData) =>
           pageData.items.length === 0 ? (
-            <p className={page.muted}>Нет запусков</p>
+            <EmptyState
+              title="Нет запусков"
+              description="Здесь появится история после первого выполнения правила lead-status."
+            />
           ) : (
-            <ul>
-              {pageData.items.map((run) => (
-                <li key={run.id}>
-                  <StatusBadge domain="job" state={run.status} raw={run.raw} /> {run.workflow_type}{' '}
-                  {formatTime(run.created_at)}
-                  {run.skip_reason ? ` · пропуск: ${run.skip_reason}` : ''}
-                  {run.error_reason ? ` · ошибка: ${run.error_reason}` : ''}
-                </li>
-              ))}
-            </ul>
+            <LeadStatusRunsList items={pageData.items} />
           )
         }
       </Observation>
+      <BackToTop />
+    </div>
+  )
+}
+
+function asObservation<T>(
+  value: ObservationType<T> | undefined,
+  backend: string,
+): ObservationType<T> {
+  return (
+    value ?? {
+      source: backend,
+      observed_at: new Date(0).toISOString(),
+      freshness: 'unknown',
+    }
+  )
+}
+
+function SyncCommands({
+  accountId,
+  backend,
+  connectionId,
+  status,
+  blocked,
+  onRetry,
+  dependentHint,
+}: {
+  accountId: string
+  backend: string
+  connectionId: string
+  status: ObservationType<import('../../../../api/types').ActivitySync> | undefined
+  blocked: boolean
+  onRetry: () => void
+  dependentHint?: ReactNode
+}) {
+  const sync = status?.data
+  const state = sync?.state
+  const disabledLike = state === 'disabled' || state === 'not_enabled'
+  const spec = connectionCommand(backend, connectionId, 'activity-sync', accountId)
+  const reason = blocked
+    ? 'Состояние синхронизации неизвестно. Сначала восстановите доступ к Core.'
+    : undefined
+  return (
+    <section className={page.stack}>
+      <Observation
+        title="Синхронизация"
+        observation={asObservation(status, backend)}
+        onRetry={onRetry}
+        dependentHint={dependentHint}
+        status={sync ? <StatusBadge domain="sync" state={sync.state} raw={sync.raw} /> : undefined}
+      >
+        {(data) => (
+          <div className={page.stack}>
+            <p className={page.muted}>
+              После запуска операция продолжит выполняться в фоне. Результат появится в истории.
+            </p>
+            <p>
+              Предыдущий запуск: <StatusBadge domain="sync" state={data.state} raw={data.raw} /> ·{' '}
+              <time
+                dateTime={data.last_success_at ?? undefined}
+                title={formatTime(data.last_success_at)}
+              >
+                {formatRelativeTime(data.last_success_at)}
+              </time>
+            </p>
+            {lastSyncDurationSeconds(data) !== null ? (
+              <p>
+                Длительность последнего синка:{' '}
+                {formatDurationSeconds(lastSyncDurationSeconds(data))}
+              </p>
+            ) : null}
+          </div>
+        )}
+      </Observation>
+      {blocked ? (
+        <p className={page.muted}>Команды синхронизации заблокированы, пока источник недоступен.</p>
+      ) : null}
+      <div className={styles.toolbar}>
+        {disabledLike ? (
+          <CommandAction
+            spec={{ ...spec, label: 'Включить синхронизацию' }}
+            layout="inline"
+            disabled={blocked}
+            disabledReason={reason}
+            payload={{ kind: 'enable' }}
+          />
+        ) : (
+          <>
+            <CommandAction
+              spec={{ ...spec, label: 'Синхронизировать сейчас' }}
+              layout="inline"
+              disabled={blocked}
+              disabledReason={reason}
+              payload={{ kind: 'sync' }}
+            />
+            <CommandAction
+              spec={{
+                ...spec,
+                label: 'Догрузить период',
+                consequence:
+                  'Будет поставлена догрузка выбранного периода. Операция идёт в фоне. Большой интервал увеличит нагрузку на amoCRM и очередь. Уже сверенные события не удаляются.',
+              }}
+              layout="inline"
+              disabled={blocked}
+              disabledReason={reason}
+              fields={[
+                { name: 'from', label: 'С даты', type: 'date', required: true },
+                { name: 'to', label: 'По дату', type: 'date', required: true },
+              ]}
+              buildPayload={(form) => ({
+                kind: 'backfill',
+                from: unixFromDateInput(String(form.get('from') ?? ''), false),
+                to: unixFromDateInput(String(form.get('to') ?? ''), true),
+              })}
+            />
+            <CommandAction
+              spec={{
+                ...spec,
+                label: 'Выключить синхронизацию',
+                consequence:
+                  'Сбор событий остановится. Новые данные Activity перестанут поступать, пока синхронизацию не включат снова. Уже сохранённые события не удаляются.',
+              }}
+              layout="inline"
+              disabled={blocked}
+              disabledReason={reason}
+              payload={{ kind: 'disable' }}
+            />
+          </>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function LeadStatusRuleForm({
+  rule,
+  backend,
+  connectionId,
+  accountId,
+  blocked,
+  onDirtyChange,
+}: {
+  rule: LeadStatusRule
+  backend: string
+  connectionId: string
+  accountId: string
+  blocked: boolean
+  onDirtyChange: (dirty: boolean) => void
+}) {
+  const [draft, setDraft] = useState({
+    source_pipeline_id: String(rule.source_pipeline_id),
+    source_status_id: String(rule.source_status_id),
+    target_pipeline_id: String(rule.target_pipeline_id),
+    target_status_id: String(rule.target_status_id),
+    enabled: rule.enabled ? 'true' : 'false',
+  })
+  const dirty = useMemo(
+    () =>
+      draft.source_pipeline_id !== String(rule.source_pipeline_id) ||
+      draft.source_status_id !== String(rule.source_status_id) ||
+      draft.target_pipeline_id !== String(rule.target_pipeline_id) ||
+      draft.target_status_id !== String(rule.target_status_id) ||
+      draft.enabled !== (rule.enabled ? 'true' : 'false'),
+    [draft, rule],
+  )
+  const onDirtyChangeRef = useRef(onDirtyChange)
+  onDirtyChangeRef.current = onDirtyChange
+  useEffect(() => {
+    onDirtyChangeRef.current(dirty)
+    return () => onDirtyChangeRef.current(false)
+  }, [dirty])
+  return (
+    <article className={page.card}>
+      <p>
+        Воронка {formatNull(rule.source_pipeline_id)}: из статуса{' '}
+        {formatNull(rule.source_status_id)} → в статус {formatNull(rule.target_status_id)}
+        {rule.target_pipeline_id !== rule.source_pipeline_id
+          ? ` воронки ${formatNull(rule.target_pipeline_id)}`
+          : ''}
+      </p>
+      <p>
+        <strong>Обновлено</strong>{' '}
+        <time dateTime={rule.updated_at} title={formatTime(rule.updated_at)}>
+          {formatDateLong(rule.updated_at)}
+        </time>
+        {' · '}
+        {formatRelativeTime(rule.updated_at)}
+      </p>
+      {dirty ? (
+        <p className={styles.unsaved} role="status">
+          Есть несохранённые изменения. Сохраните правило или уйдите с подтверждением.
+        </p>
+      ) : null}
+      <div className={page.stack}>
+        <label className={page.stack}>
+          Исходная воронка
+          <input
+            name="source_pipeline_id"
+            type="number"
+            value={draft.source_pipeline_id}
+            onChange={(event) => setDraft({ ...draft, source_pipeline_id: event.target.value })}
+          />
+        </label>
+        <label className={page.stack}>
+          Исходный статус
+          <input
+            name="source_status_id"
+            type="number"
+            value={draft.source_status_id}
+            onChange={(event) => setDraft({ ...draft, source_status_id: event.target.value })}
+          />
+        </label>
+        <label className={page.stack}>
+          Целевая воронка
+          <input
+            name="target_pipeline_id"
+            type="number"
+            value={draft.target_pipeline_id}
+            onChange={(event) => setDraft({ ...draft, target_pipeline_id: event.target.value })}
+          />
+        </label>
+        <label className={page.stack}>
+          Целевой статус
+          <input
+            name="target_status_id"
+            type="number"
+            value={draft.target_status_id}
+            onChange={(event) => setDraft({ ...draft, target_status_id: event.target.value })}
+          />
+        </label>
+        <label className={page.stack}>
+          Включено
+          <select
+            name="enabled"
+            value={draft.enabled}
+            onChange={(event) => setDraft({ ...draft, enabled: event.target.value })}
+          >
+            <option value="true">Да</option>
+            <option value="false">Нет</option>
+          </select>
+        </label>
+      </div>
+      <CommandAction
+        spec={connectionCommand(backend, connectionId, 'lead-status-configure', accountId)}
+        layout="inline"
+        disabled={blocked || !dirty}
+        disabledReason={
+          blocked ? 'Источник недоступен.' : dirty ? undefined : 'Нет несохранённых изменений'
+        }
+        payload={{
+          source_pipeline_id: Number(draft.source_pipeline_id),
+          source_status_id: Number(draft.source_status_id),
+          target_pipeline_id: Number(draft.target_pipeline_id),
+          target_status_id: Number(draft.target_status_id),
+          enabled: draft.enabled === 'true',
+          expected_revision: rule.revision,
+        }}
+      />
+      <TechnicalDetails>
+        <p>Версия правила: {formatNull(rule.revision)}</p>
+        <p>
+          {formatNull(rule.source_pipeline_id)}/{formatNull(rule.source_status_id)} →{' '}
+          {formatNull(rule.target_pipeline_id)}/{formatNull(rule.target_status_id)}
+        </p>
+      </TechnicalDetails>
+    </article>
+  )
+}
+
+const unsavedLeaveMessage = 'Есть несохранённые изменения правила lead-status. Уйти без сохранения?'
+
+function useUnsavedChangesGuard(dirty: boolean) {
+  useEffect(() => {
+    if (!dirty) {
+      return
+    }
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = unsavedLeaveMessage
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [dirty])
+}
+
+function EmployeesBlock({
+  backend,
+  employees,
+  dependentHint,
+}: {
+  backend: string
+  employees: {
+    isPending: boolean
+    error: unknown
+    data?: ObservationType<ActivityEmployee[]>
+    refetch: () => Promise<unknown>
+  }
+  dependentHint?: ReactNode
+}) {
+  if (employees.isPending) {
+    return (
+      <div className={page.stack} role="status" aria-live="polite">
+        <p className={page.muted}>Загрузка сотрудников amoCRM…</p>
+        <div className={styles.listSkeleton}>
+          <div className={styles.listSkeletonItem} />
+          <div className={styles.listSkeletonItem} />
+          <div className={styles.listSkeletonItem} />
+        </div>
+      </div>
+    )
+  }
+  if (employees.error) {
+    return <ErrorState error={employees.error} onRetry={() => void employees.refetch()} />
+  }
+  return (
+    <Observation
+      title="Сотрудники amoCRM"
+      observation={asObservation(employees.data, backend)}
+      onRetry={() => void employees.refetch()}
+      dependentHint={dependentHint}
+    >
+      {(items) =>
+        items.length === 0 ? (
+          <EmptyState
+            title="Нет сотрудников"
+            description="В amoCRM нет сотрудников, доступных для панелей этой установки. Это не ошибка источника."
+          />
+        ) : (
+          <ul>
+            {items.map((item) => (
+              <li key={item.id}>
+                {item.name} · {formatNull(item.id)} · {item.group_name}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </Observation>
+  )
+}
+
+function LeadStatusRunsList({ items }: { items: LeadStatusRun[] }) {
+  return (
+    <div className={page.stack}>
+      {items.map((run) => (
+        <article key={run.id} className={page.card}>
+          <dl className={page.dl}>
+            <dt>Вход</dt>
+            <dd>{formatNull(run.workflow_type)}</dd>
+            <dt>Статус</dt>
+            <dd>
+              <StatusBadge domain="job" state={run.status} raw={run.raw} />
+            </dd>
+            <dt>Результат</dt>
+            <dd>{formatNull(run.effect_state || null)}</dd>
+            <dt>Ошибка</dt>
+            <dd>{formatNull(run.error_reason || null)}</dd>
+            <dt>Пропуск</dt>
+            <dd>{formatNull(run.skip_reason || null)}</dd>
+            <dt>Создан</dt>
+            <dd>{formatTime(run.created_at)}</dd>
+            <dt>Завершён</dt>
+            <dd>{formatTime(run.finished_at)}</dd>
+          </dl>
+        </article>
+      ))}
     </div>
   )
 }

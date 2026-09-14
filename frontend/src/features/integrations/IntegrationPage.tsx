@@ -2,14 +2,18 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useRouteParams } from '../../app/hooks'
 import { fetchAccounts, fetchIntegration, keys } from '../../api/queries'
+import { CopyableId } from '../../components/CopyableId'
 import { DataTable } from '../../components/DataTable'
+import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { Observation } from '../../components/Observation'
+import { PageSkeleton } from '../../components/PageSkeleton'
 import { SourcesBanner } from '../../components/SourcesBanner'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
-import { formatNull, formatTime, hostFromRedirect } from '../../lib/format'
+import { formatNull, formatRelativeTime, formatTime, hostFromRedirect } from '../../lib/format'
 import { IntegrationCommands } from './IntegrationCommands'
+import { WebhookEvents } from './WebhookEvents'
 
 export function IntegrationPage() {
   const { backend, integrationId } = useRouteParams<{ backend: string; integrationId: string }>()
@@ -24,7 +28,7 @@ export function IntegrationPage() {
     enabled: query.data?.data != null,
   })
   if (query.isPending) {
-    return <div className={page.skeleton} />
+    return <PageSkeleton label="Загрузка интеграции…" variant="detail" />
   }
   if (query.error) {
     return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
@@ -34,9 +38,6 @@ export function IntegrationPage() {
   }
   return (
     <div className={page.page}>
-      <p>
-        <Link to="/widgets">Виджеты</Link>
-      </p>
       <Observation title="Интеграция" observation={query.data} onRetry={() => void query.refetch()}>
         {(item) => {
           const connections = (accounts.data?.items ?? []).flatMap((account) =>
@@ -49,25 +50,34 @@ export function IntegrationPage() {
           )
           return (
             <div className={page.stack}>
-              <h1>{item.code}</h1>
+              <header className={page.header}>
+                <div className={page.heading}>
+                  <h1 className={page.title}>{item.code}</h1>
+                  <p className={page.description}>Параметры интеграции, сервисы и подключения.</p>
+                </div>
+              </header>
               <IntegrationCommands item={item} onInspect={() => void query.refetch()} />
               <StatusBadge domain="integration" state={item.state} raw={item.raw} />
               <dl className={page.dl}>
                 <dt>Бекенд</dt>
                 <dd>{item.backend}</dd>
                 <dt>client_id</dt>
-                <dd>{item.client_id}</dd>
-                <dt>Redirect host</dt>
-                <dd>{hostFromRedirect(item.redirect_uri)}</dd>
+                <dd>
+                  <CopyableId value={item.client_id} label="client_id" />
+                </dd>
+                <dt>Хост редиректа</dt>
+                <dd title={item.redirect_uri}>{hostFromRedirect(item.redirect_uri)}</dd>
                 <dt>key_version</dt>
                 <dd>{formatNull(item.key_version)}</dd>
                 <dt>Обновлено</dt>
-                <dd>{formatTime(item.updated_at)}</dd>
+                <dd>
+                  <time dateTime={item.updated_at} title={formatTime(item.updated_at)}>
+                    {formatRelativeTime(item.updated_at)}
+                  </time>
+                </dd>
                 <dt>События webhook</dt>
                 <dd>
-                  {item.webhook_events.length > 0
-                    ? item.webhook_events.join(', ')
-                    : formatNull(null)}
+                  <WebhookEvents events={item.webhook_events} />
                 </dd>
               </dl>
               <h2>Сервисы</h2>
@@ -89,66 +99,78 @@ export function IntegrationPage() {
               </ul>
               <h2>Подключения</h2>
               <SourcesBanner sources={accounts.data?.sources} />
-              {accounts.isPending ? <div className={page.skeleton} /> : null}
+              {accounts.isPending ? (
+                <PageSkeleton label="Загрузка подключений…" variant="list" />
+              ) : null}
               {accounts.error ? (
                 <ErrorState error={accounts.error} onRetry={() => void accounts.refetch()} />
               ) : null}
               {!accounts.isPending && !accounts.error && connections.length === 0 ? (
-                <p className={page.muted}>Нет подключений</p>
+                <EmptyState
+                  title="Нет подключений"
+                  description="У этой интеграции нет установок в ответивших источниках. Это пустой список, а не отказ бекенда."
+                />
               ) : null}
               {connections.length > 0 ? (
-                <DataTable
-                  rows={connections}
-                  rowKey={(row) => `${row.connection.backend}:${row.connection.connection_id}`}
-                  columns={[
-                    {
-                      id: 'account',
-                      header: 'Аккаунт',
-                      cell: (row) => (
-                        <Link to="/accounts/$accountId" params={{ accountId: row.accountId }}>
-                          {row.accountId}
-                        </Link>
-                      ),
-                    },
-                    {
-                      id: 'backend',
-                      header: 'Бекенд',
-                      cell: (row) => row.connection.backend,
-                    },
-                    {
-                      id: 'connection',
-                      header: 'Подключение',
-                      cell: (row) => row.connection.connection_id,
-                    },
-                    {
-                      id: 'state',
-                      header: 'Состояние',
-                      cell: (row) => (
-                        <StatusBadge
-                          domain="connection"
-                          state={row.connection.state}
-                          raw={row.connection.raw}
-                        />
-                      ),
-                    },
-                    {
-                      id: 'card',
-                      header: 'Карточка',
-                      cell: (row) => (
-                        <Link
-                          to="/accounts/$accountId/widgets/$backend/$connectionId"
-                          params={{
-                            accountId: row.accountId,
-                            backend: row.connection.backend,
-                            connectionId: row.connection.connection_id,
-                          }}
-                        >
-                          открыть
-                        </Link>
-                      ),
-                    },
-                  ]}
-                />
+                <div className={page.content}>
+                  <DataTable
+                    rows={connections}
+                    rowKey={(row) => `${row.connection.backend}:${row.connection.connection_id}`}
+                    columns={[
+                      {
+                        id: 'account',
+                        header: 'Аккаунт',
+                        cell: (row) => (
+                          <Link to="/accounts/$accountId" params={{ accountId: row.accountId }}>
+                            {row.accountId}
+                          </Link>
+                        ),
+                      },
+                      {
+                        id: 'backend',
+                        header: 'Бекенд',
+                        cell: (row) => row.connection.backend,
+                      },
+                      {
+                        id: 'connection',
+                        header: 'Подключение',
+                        cell: (row) => (
+                          <CopyableId
+                            value={row.connection.connection_id}
+                            label="идентификатор подключения"
+                          />
+                        ),
+                      },
+                      {
+                        id: 'state',
+                        header: 'Состояние',
+                        cell: (row) => (
+                          <StatusBadge
+                            domain="connection"
+                            state={row.connection.state}
+                            raw={row.connection.raw}
+                          />
+                        ),
+                      },
+                      {
+                        id: 'card',
+                        header: 'Карточка',
+                        cell: (row) => (
+                          <Link
+                            to="/accounts/$accountId/widgets/$backend/$connectionId"
+                            params={{
+                              accountId: row.accountId,
+                              backend: row.connection.backend,
+                              connectionId: row.connection.connection_id,
+                            }}
+                          >
+                            открыть
+                          </Link>
+                        ),
+                      },
+                    ]}
+                  />
+                </div>
               ) : null}
             </div>
           )

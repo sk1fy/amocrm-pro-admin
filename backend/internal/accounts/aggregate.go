@@ -51,6 +51,8 @@ func ConnectionFromSummary(backend string, conn adapter.ConnectionSummary) Conne
 	if origin == "" {
 		origin = adapter.OriginReal
 	}
+	// ConnectionSummary has no Freshness/ObservedAt. GetAccount copies them
+	// from the account Observation; list items stay empty until then.
 	return Connection{
 		AuthorizationDetails: conn.AuthorizationDetails,
 		WebhookDetails:       conn.WebhookDetails,
@@ -97,6 +99,9 @@ func stateOf(connections []Connection) string {
 	if len(connections) == 0 {
 		return adapter.AccountInactive
 	}
+	if anyConnection(connections, connectionSourceUnavailable) {
+		return adapter.AccountPartial
+	}
 	if anyConnection(connections, func(c Connection) bool {
 		return c.State.Canonical == adapter.StatusReauthRequired ||
 			(c.Authorization.Canonical == adapter.AuthMissing &&
@@ -113,7 +118,13 @@ func stateOf(connections []Connection) string {
 		if c.State.Canonical == adapter.StatusPending || c.State.Canonical == adapter.StatusAuthorizing {
 			return true
 		}
-		return c.RecentFailedJobs > 0
+		if c.RecentFailedJobs > 0 {
+			return true
+		}
+		if c.Freshness == adapter.FreshnessStale {
+			return true
+		}
+		return authUnverifiedOnLive(c)
 	}) {
 		return adapter.AccountAttention
 	}
@@ -122,15 +133,40 @@ func stateOf(connections []Connection) string {
 	}) {
 		return adapter.AccountInactive
 	}
-	if allConnections(connections, func(c Connection) bool {
-		return c.State.Canonical == adapter.StatusActive &&
-			c.Webhook.Canonical != adapter.StatusError &&
-			c.Authorization.Canonical != adapter.AuthMissing &&
-			c.Authorization.Canonical != adapter.AuthReauthRequired
-	}) {
+	if allConnections(connections, connectionLooksOK) {
 		return adapter.AccountOK
 	}
 	return adapter.AccountAttention
+}
+
+func connectionSourceUnavailable(c Connection) bool {
+	return c.Freshness == adapter.FreshnessUnavailable
+}
+
+func authUnverifiedOnLive(c Connection) bool {
+	if c.State.Canonical != adapter.StatusActive && c.State.Canonical != adapter.StatusPending {
+		return false
+	}
+	if c.AuthorizationDetails != nil {
+		return c.AuthorizationDetails.Unverified
+	}
+	return false
+}
+
+func connectionLooksOK(c Connection) bool {
+	if c.State.Canonical != adapter.StatusActive {
+		return false
+	}
+	if c.Webhook.Canonical == adapter.StatusError {
+		return false
+	}
+	if c.Authorization.Canonical == adapter.AuthMissing || c.Authorization.Canonical == adapter.AuthReauthRequired {
+		return false
+	}
+	if c.Freshness == adapter.FreshnessStale || c.Freshness == adapter.FreshnessUnavailable {
+		return false
+	}
+	return !authUnverifiedOnLive(c)
 }
 
 func problemsOf(connections []Connection, sourceUnavailable bool) []string {
@@ -147,6 +183,9 @@ func problemsOf(connections []Connection, sourceUnavailable bool) []string {
 		add(adapter.ProblemSourceUnavailable)
 	}
 	for _, conn := range connections {
+		if connectionSourceUnavailable(conn) {
+			add(adapter.ProblemSourceUnavailable)
+		}
 		if conn.State.Canonical == adapter.StatusReauthRequired {
 			add(adapter.ProblemReauthRequired)
 		}
