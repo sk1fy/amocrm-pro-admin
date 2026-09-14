@@ -59,7 +59,7 @@ export BUILD_REVISION
 
 .DEFAULT_GOAL := help
 
-.PHONY: help docs-check config build up down logs migrate lint test integration-test e2e check \
+.PHONY: help docs-check config build up down logs migrate lint test integration-test e2e scripts-test check \
 	backup-db restore-check fixtures-core fixtures-core-dry-run bench-admin
 
 help: ## Show available commands
@@ -166,7 +166,10 @@ e2e: ## Playwright scenarios against the built stack with the fixture adapter
 	  $(PLAYWRIGHT_IMAGE) \
 	  bash -ec 'cp -a /src/. . && rm -rf node_modules && npm ci --no-audit --no-fund && npx playwright test'
 
-check: docs-check lint test integration-test ## Everything required before merging
+scripts-test: ## Safety tests for backup/restore using command doubles, no database
+	sh deploy/scripts/test-backup-restore.sh
+
+check: docs-check lint test integration-test e2e scripts-test ## Everything required before merging
 
 # ---------------------------------------------------------------------------
 # Admin DB backup and restore verification (stage 4.3)

@@ -1,8 +1,6 @@
 package httpapi
 
 import (
-	"encoding/json"
-	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -18,6 +16,7 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/employees"
 	"github.com/sk1fy/amocrm-pro-admin/internal/operations"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
+	"github.com/sk1fy/amocrm-pro-admin/internal/platform/jsonbody"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/metrics"
 	"github.com/sk1fy/amocrm-pro-admin/internal/rbac"
 	"github.com/sk1fy/amocrm-pro-admin/internal/views"
@@ -200,9 +199,7 @@ func Management(pool *pgxpool.Pool, timeout time.Duration, logger *slog.Logger) 
 
 func decodeJSON(r *http.Request, dest any) error {
 	defer func() { _ = r.Body.Close() }()
-	decoder := json.NewDecoder(io.LimitReader(r.Body, maxBodyBytes))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(dest); err != nil {
+	if err := jsonbody.DecodeObject(r.Body, maxBodyBytes, dest); err != nil {
 		return httpx.InvalidArgument("invalid request body")
 	}
 	return nil
