@@ -16,19 +16,23 @@ amoCRM, проверка подключённых виджетов, диагно
 
 ## Состояние
 
-Этап 1 выполнен на ветке `feature/stage-1-accounts` (Core —
-`feature/admin-read-api`): вход, роли, поиск аккаунтов, карточки
-подключений, чтение jobs/аудита, frontend. Команд в Core нет — это
-этап 2. Запуск: [local-run.md](docs/runbooks/local-run.md), демо:
-[demo-stage-1.md](docs/runbooks/demo-stage-1.md).
+Этапы 1–4 завершены и находятся в `main`: вход и роли, чтение и управление
+подключениями, Activity/lead-status, статистика, несколько backend-адаптеров и
+эксплуатационные инструменты. Связка с Core и server observability проверены на
+целевом сервере 14 сентября 2026 года.
+
+Текущая следующая работа — устранение неоднозначности и устаревания состояния
+подключений: [connection-state-freshness.md](docs/plan/connection-state-freshness.md).
+Запуск: [local-run.md](docs/runbooks/local-run.md), эксплуатация:
+[operator.md](docs/runbooks/operator.md).
 
 ## С чего начать
 
 | Кому | Читать |
 | --- | --- |
 | Агент-разработчик любого этапа | [AGENTS.md](AGENTS.md) → [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) |
-| Обзор решений и порядок этапов | [docs/plan/README.md](docs/plan/README.md) |
-| Ближайшая работа | [docs/plan/stage-1.md](docs/plan/stage-1.md) |
+| Обзор решений, завершённые этапы и patch-планы | [docs/plan/README.md](docs/plan/README.md) |
+| Ближайшая работа | [docs/plan/connection-state-freshness.md](docs/plan/connection-state-freshness.md) |
 | Как устроено размещение и границы | [docs/design/architecture.md](docs/design/architecture.md) |
 | Экраны и переходы | [docs/design/screens.md](docs/design/screens.md) |
 | Словарь состояний | [docs/design/states.md](docs/design/states.md) |
@@ -38,7 +42,7 @@ amoCRM, проверка подключённых виджетов, диагно
 | Контракт адаптера бекенда | [docs/design/backend-adapter.md](docs/design/backend-adapter.md) |
 | Схема собственной БД | [docs/design/admin-db-schema.md](docs/design/admin-db-schema.md) |
 | Локальный запуск и fixtures | [docs/runbooks/local-run.md](docs/runbooks/local-run.md) |
-| Демо этапа 1 | [docs/runbooks/demo-stage-1.md](docs/runbooks/demo-stage-1.md) |
+| Полный операторский сценарий | [docs/runbooks/operator.md](docs/runbooks/operator.md) |
 | Принятые решения | [docs/adr/](docs/adr/) |
 
 ## Целевая структура репозитория
