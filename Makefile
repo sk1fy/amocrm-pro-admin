@@ -151,8 +151,12 @@ e2e: ## Playwright scenarios against the built stack with the fixture adapter
 	@test -d frontend/e2e || { echo "frontend/e2e is not created yet (stage 1, part 1.4)" >&2; exit 1; }
 	@set -eu; \
 	files="-f deploy/docker-compose.yml -f deploy/docker-compose.e2e.yml"; \
-	cleanup() { $(E2E_ENV) $(COMPOSE) -p $(E2E_PROJECT) $$files down --volumes --remove-orphans >/dev/null 2>&1 || true; }; \
+	created_networks=""; \
+	ensure_network() { if ! $(DOCKER) network inspect "$$1" >/dev/null 2>&1; then $(DOCKER) network create "$$1" >/dev/null; created_networks="$$created_networks $$1"; fi; }; \
+	cleanup() { $(E2E_ENV) $(COMPOSE) -p $(E2E_PROJECT) $$files down --volumes --remove-orphans >/dev/null 2>&1 || true; for network in $$created_networks; do $(DOCKER) network rm "$$network" >/dev/null 2>&1 || true; done; }; \
 	trap cleanup EXIT INT TERM; \
+	ensure_network amocrm-admin-link; \
+	ensure_network amocrm-admin-observability; \
 	$(E2E_ENV) $(COMPOSE) -p $(E2E_PROJECT) $$files up --build --detach --wait; \
 	printf '%s' '$(E2E_PASSWORD)' | $(E2E_ENV) $(COMPOSE) -p $(E2E_PROJECT) $$files --profile tools run --rm -T admin-cli \
 	  employee create --email '$(E2E_EMAIL)' --name Admin --role admin --password-stdin \
