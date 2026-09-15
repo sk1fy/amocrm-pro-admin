@@ -1,0 +1,24 @@
+.banner {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: 8px;
+  background: var(--tone-error-bg);
+  border: 1px solid color-mix(in srgb, var(--tone-error) 24%, var(--color-surface));
+}
+
+.banner h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.banner p {
+  margin: 0;
+  font-size: 13.5px;
+}
+
+.technical {
+  font-family: var(--mono);
+  font-size: 12px;
+  margin: 0;
+}

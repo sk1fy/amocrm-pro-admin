@@ -7,7 +7,8 @@ import { EmptyState } from '../../components/EmptyState'
 import { allSourcesUnavailable } from '../../components/SourcesBanner'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
-import { formatNull, formatTime } from '../../lib/format'
+import { formatNull, formatRelativeTime, formatTime } from '../../lib/format'
+import { widgetProblems } from '../../lib/connectionHealth'
 
 export function AccountWidgets() {
   const { accountId } = useRouteParams<{ accountId: string }>()
@@ -87,15 +88,30 @@ export function AccountWidgets() {
         },
         {
           id: 'pilot',
-          header: 'Пилот',
+          header: 'Activity',
           cell: (obs) => (
             <StatusBadge domain="pilot" state={obs.data?.activity?.pilot || 'not_configured'} />
           ),
         },
         {
+          id: 'problems',
+          header: 'Проблемы',
+          cell: (obs) => {
+            if (!obs.data) {
+              return formatNull(null)
+            }
+            const problems = widgetProblems(obs.data)
+            return problems.length > 0 ? problems.join('; ') : 'Нет'
+          },
+        },
+        {
           id: 'observed',
           header: 'Обновлено',
-          cell: (obs) => formatTime(obs.observed_at),
+          cell: (obs) => (
+            <time dateTime={obs.observed_at} title={formatTime(obs.observed_at)}>
+              {formatRelativeTime(obs.observed_at)}
+            </time>
+          ),
         },
       ]}
     />

@@ -118,7 +118,7 @@ export function connectionCommand(
       permission: 'activity:sync',
       scope: 'Синхронизация CRM Events этой установки.',
       consequence:
-        'Команда будет поставлена в очередь. Ответ 202 не означает завершение: дождитесь succeeded или failed.',
+        'Команда будет поставлена в очередь и продолжит выполняться в фоне. Результат появится в истории операции.',
     },
     'activity-panel-create': {
       label: 'Создать панель Activity',

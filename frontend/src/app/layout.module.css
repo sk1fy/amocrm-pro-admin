@@ -221,7 +221,7 @@
 .crumbs {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--space-2);
   font-size: 13px;
   color: var(--color-subtle);
   min-width: 0;
@@ -233,16 +233,24 @@
 .crumb {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--space-2);
 }
 
-.crumb b {
+.crumbs a {
+  color: var(--color-muted);
+}
+
+.crumbs a:hover {
+  color: var(--color-text);
+}
+
+.crumbCurrent {
   color: var(--color-text);
   font-weight: 600;
 }
 
 .crumbSep {
-  color: var(--color-border);
+  color: var(--color-subtle);
 }
 
 .crumbMono {

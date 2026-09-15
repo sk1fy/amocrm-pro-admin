@@ -1,0 +1,54 @@
+.timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.timeline > li {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.timeline > li:last-child {
+  border-bottom: none;
+}
+
+.timeline time {
+  font-size: 12.5px;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.body {
+  display: grid;
+  gap: 4px;
+}
+
+.action {
+  margin: 0;
+  font-size: 13.5px;
+}
+
+.meta,
+.object {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.code {
+  color: var(--color-subtle);
+  font-size: 12px;
+}
+
+.failed {
+  background: var(--color-surface-2);
+}

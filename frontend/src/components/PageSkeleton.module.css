@@ -1,0 +1,58 @@
+.hero,
+.block,
+.chip,
+.metric,
+.card,
+.line {
+  border-radius: var(--radius);
+  background: linear-gradient(
+    90deg,
+    var(--color-border-soft),
+    var(--color-surface-2),
+    var(--color-border-soft)
+  );
+}
+
+.hero {
+  height: 4.5rem;
+}
+
+.row {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.chip {
+  height: 2rem;
+  width: 7rem;
+}
+
+.block {
+  height: 7rem;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: var(--space-3);
+}
+
+.metric {
+  height: 5.5rem;
+}
+
+.card {
+  height: 6.5rem;
+  flex: 1 1 12rem;
+}
+
+.table,
+.dl {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.line {
+  height: 2.5rem;
+}

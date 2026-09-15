@@ -12,6 +12,7 @@
 | [0005](0005-admin-db-migrations.md) | Миграции admin DB | принято |
 | [0006](0006-trusted-proxy-headers.md) | Доверие заголовкам прокси | принято |
 | [0007](0007-account-filter-scans.md) | Ограниченный скан для фильтров списка аккаунтов | принято |
+| [0015](0015-connection-diagnostics-ux.md) | Диагностика подключения в UI | принято |
 
 Ожидаемые ADR следующих этапов: проверка
 подключения через владельца исходящего бюджета и список безопасных повторов
@@ -26,3 +27,4 @@
 - [ADR-0012: источник подписок](0012-subscriptions-source.md).
 - [ADR-0013: метрики Prometheus Admin API](0013-admin-metrics.md).
 - [ADR-0014: retention и объём admin DB](0014-admin-db-retention.md).
+- [ADR-0015: диагностика подключения в интерфейсе](0015-connection-diagnostics-ux.md).

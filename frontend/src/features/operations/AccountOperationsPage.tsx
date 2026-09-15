@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { usePushSearch, useRouteParams, useRouteSearch } from '../../app/hooks'
@@ -5,7 +6,7 @@ import type { CursorSearch } from '../../app/search'
 import { fetchAccount, fetchAccountJobs, keys } from '../../api/queries'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
-import { FilterBar, FilterField } from '../../components/FilterBar'
+import { FilterBar, FilterField, type FilterChip } from '../../components/FilterBar'
 import { SourcesBanner, allSourcesUnavailable } from '../../components/SourcesBanner'
 import { SourcesCaption } from '../../components/SourcesCaption'
 import { JobsTable } from './JobsTable'
@@ -17,6 +18,7 @@ export function AccountOperationsPage() {
   const { accountId } = useRouteParams<{ accountId: string }>()
   const search = useRouteSearch<CursorSearch>()
   const pushSearch = usePushSearch()
+  const [typeDraft, setTypeDraft] = useState(search.type ?? '')
   const setSearch = (patch: Partial<CursorSearch>) => {
     pushSearch(`/accounts/${accountId}/operations`, { ...search, ...patch })
   }
@@ -37,6 +39,13 @@ export function AccountOperationsPage() {
   })
   const rows = (jobs.data?.items ?? []).map((job) => ({ job, backend: job.backend }))
   const sources = jobs.data?.sources ?? []
+  const chips: FilterChip[] = []
+  if (search.status) {
+    chips.push({ id: 'status', label: 'Статус', value: lookupState('job', search.status).label })
+  }
+  if (search.type) {
+    chips.push({ id: 'type', label: 'Тип', value: search.type })
+  }
 
   return (
     <div className={page.page}>
@@ -60,9 +69,30 @@ export function AccountOperationsPage() {
           )}
         </section>
       ) : null}
+      <p className={page.row}>
+        <button
+          type="button"
+          onClick={() => {
+            setTypeDraft('')
+            setSearch({ status: 'failed', cursor: undefined })
+          }}
+        >
+          Ошибки
+        </button>
+      </p>
       <FilterBar
+        chips={chips}
+        onRemoveChip={(id) => {
+          if (id === 'type') setTypeDraft('')
+          setSearch({ [id]: undefined, cursor: undefined })
+        }}
+        onReset={() => {
+          setTypeDraft('')
+          pushSearch(`/accounts/${accountId}/operations`, { limit })
+        }}
         onSubmit={(event) => {
           event.preventDefault()
+          setSearch({ type: typeDraft || undefined, cursor: undefined })
         }}
       >
         <FilterField label="Статус">
@@ -82,10 +112,9 @@ export function AccountOperationsPage() {
         </FilterField>
         <FilterField label="Тип">
           <input
-            value={search.type ?? ''}
-            onChange={(event) =>
-              setSearch({ type: event.target.value || undefined, cursor: undefined })
-            }
+            value={typeDraft}
+            onChange={(event) => setTypeDraft(event.target.value)}
+            name="type"
           />
         </FilterField>
         <FilterField label="На странице">
@@ -100,6 +129,7 @@ export function AccountOperationsPage() {
             <option value="100">100</option>
           </select>
         </FilterField>
+        <button type="submit">Найти</button>
       </FilterBar>
       <SourcesBanner sources={sources} />
       {jobs.isPending ? <div className={page.skeleton} /> : null}
@@ -111,7 +141,7 @@ export function AccountOperationsPage() {
           <EmptyState title="Нет задач по этому аккаунту" />
         )
       ) : null}
-      {jobs.data ? (
+      {jobs.data && rows.length > 0 ? (
         <>
           <SourcesCaption sources={sources} />
           <JobsTable
@@ -120,6 +150,8 @@ export function AccountOperationsPage() {
             nextCursor={jobs.data.next_cursor}
             onNext={() => setSearch({ cursor: jobs.data?.next_cursor ?? undefined })}
             onReset={() => setSearch({ cursor: undefined })}
+            resetDisabled={!search.cursor}
+            total={jobs.data.total}
           />
         </>
       ) : null}

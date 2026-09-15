@@ -1,0 +1,143 @@
+.summary {
+  display: grid;
+  gap: var(--space-3);
+  padding: 1rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.summaryNav,
+.problems {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.summaryNav a,
+.problems a {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.groupLabel {
+  width: 100%;
+  margin: 0;
+  color: var(--color-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.danger {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--tone-error) 35%, var(--color-border));
+  border-radius: var(--radius);
+}
+
+.danger p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-muted);
+}
+
+.switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.switcher label {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: 13px;
+}
+
+.timeline {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 13.5px;
+}
+
+.secondary {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12.5px;
+}
+
+.code {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.events {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.events ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.compact {
+  padding: 0.85rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.compact[open] {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.compact summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.listSkeleton {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.listSkeletonItem {
+  height: 2.5rem;
+  border-radius: var(--radius);
+  background: linear-gradient(
+    90deg,
+    var(--color-border-soft),
+    var(--color-surface-2),
+    var(--color-border-soft)
+  );
+}
+
+.unsaved {
+  margin: 0;
+  font-size: 13px;
+}

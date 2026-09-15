@@ -21,7 +21,7 @@ export function ErrorState({ error, onRetry }: Props) {
       {requestId ? <div className={styles.requestId}>request_id: {requestId}</div> : null}
       {onRetry && !forbidden ? (
         <div>
-          <button type="button" onClick={onRetry}>
+          <button type="button" data-variant="primary" onClick={onRetry}>
             Повторить
           </button>
         </div>

@@ -1,14 +1,39 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
-import { createView, deleteView, fetchMe, fetchViews, keys } from '../../api/queries'
-import type { SavedView } from '../../api/types'
+import { createView, deleteView, fetchMe, fetchViews, keys, patchView } from '../../api/queries'
 import { FilterField } from '../../components/FilterBar'
+import styles from './SavedViews.module.css'
 
 type Props = {
   section: 'accounts' | 'operations' | 'stats'
   current: Record<string, string | number | undefined>
   columns: string[]
   onLoad: (params: Record<string, unknown>) => void
+}
+
+export function normalizeViewParams(params: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [key, value] of Object.entries(params)) {
+    if (key === 'cursor' || value === undefined || value === '') {
+      continue
+    }
+    out[key] = String(value)
+  }
+  return out
+}
+
+export function viewMatchesCurrent(
+  params: Record<string, unknown>,
+  current: Record<string, string | number | undefined>,
+): boolean {
+  const left = normalizeViewParams(params)
+  const right = normalizeViewParams(current)
+  const keysLeft = Object.keys(left).sort()
+  const keysRight = Object.keys(right).sort()
+  if (keysLeft.length !== keysRight.length) {
+    return false
+  }
+  return keysLeft.every((key) => left[key] === right[key])
 }
 
 export function SavedViews({ section, current, columns, onLoad }: Props) {
@@ -20,51 +45,95 @@ export function SavedViews({ section, current, columns, onLoad }: Props) {
   })
   const [name, setName] = useState('')
   const [shared, setShared] = useState(false)
+  const [selectedId, setSelectedId] = useState('')
   const canWrite = Boolean(me.data?.permissions.includes('views:write'))
   const isAdmin = me.data?.role === 'admin'
+  const items = list.data?.items ?? []
+  const selected = items.find((item) => item.id === selectedId)
+  const active = items.find((item) => viewMatchesCurrent(item.params, current))
+  const canManageSelected = Boolean(selected) && canWrite && (selected?.shared ? isAdmin : true)
 
-  async function save(event: FormEvent) {
-    event.preventDefault()
-    if (!name.trim()) return
+  async function refresh() {
+    await queryClient.invalidateQueries({ queryKey: keys.views(section) })
+  }
+
+  function currentParams(): Record<string, unknown> {
     const params: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(current)) {
       if (value !== undefined && value !== '') {
         params[key] = value
       }
     }
+    return params
+  }
+
+  async function save(event: FormEvent) {
+    event.preventDefault()
+    if (!name.trim()) return
     await createView({
       section,
       name: name.trim(),
-      params,
+      params: currentParams(),
       columns,
       shared: isAdmin && shared,
     })
     setName('')
-    void queryClient.invalidateQueries({ queryKey: keys.views(section) })
+    void refresh()
+  }
+
+  async function rename() {
+    if (!selected || !name.trim()) return
+    await patchView(selected.id, { name: name.trim() })
+    setName('')
+    void refresh()
+  }
+
+  async function updateSelected() {
+    if (!selected) return
+    await patchView(selected.id, { params: currentParams(), columns })
+    void refresh()
+  }
+
+  async function removeSelected() {
+    if (!selected) return
+    await deleteView(selected.id)
+    setSelectedId('')
+    void refresh()
   }
 
   return (
-    <div>
+    <div className={styles.wrap}>
       <FilterField label="Сохранённые представления">
         <select
           aria-label="Сохранённые представления"
-          defaultValue=""
+          value={selectedId}
           onChange={(event) => {
-            const view = list.data?.items.find((item) => item.id === event.target.value)
+            const id = event.target.value
+            setSelectedId(id)
+            const view = items.find((item) => item.id === id)
             if (view) onLoad(view.params)
           }}
         >
           <option value="">Выбрать</option>
-          {(list.data?.items ?? []).map((item) => (
+          {items.map((item) => (
             <option key={item.id} value={item.id}>
               {item.name}
-              {item.shared ? ' (общее)' : ''}
+              {item.shared ? ' (доступно всем администраторам)' : ''}
+              {viewMatchesCurrent(item.params, current) ? ' — текущее' : ''}
             </option>
           ))}
         </select>
       </FilterField>
+      {active ? (
+        <p className={styles.active} aria-live="polite">
+          Активно: {active.name}
+          {active.shared ? ' (доступно всем администраторам)' : ''}
+        </p>
+      ) : (
+        <p className={styles.active}>Нет активного сохранённого представления</p>
+      )}
       {canWrite ? (
-        <form onSubmit={(event) => void save(event)}>
+        <form className={styles.manage} onSubmit={(event) => void save(event)}>
           <FilterField label="Имя представления">
             <input
               value={name}
@@ -74,41 +143,33 @@ export function SavedViews({ section, current, columns, onLoad }: Props) {
             />
           </FilterField>
           {isAdmin ? (
-            <label>
+            <label className={styles.shared}>
               <input
                 type="checkbox"
                 checked={shared}
                 onChange={(event) => setShared(event.target.checked)}
               />{' '}
-              Общее
+              Доступно всем администраторам
             </label>
           ) : null}
-          <button type="submit">Сохранить представление</button>
+          <div className={styles.actions}>
+            <button type="submit">Сохранить представление</button>
+            {canManageSelected ? (
+              <>
+                <button type="button" onClick={() => void updateSelected()}>
+                  Обновить выбранное
+                </button>
+                <button type="button" onClick={() => void rename()} disabled={!name.trim()}>
+                  Переименовать
+                </button>
+                <button type="button" onClick={() => void removeSelected()}>
+                  Удалить {selected?.name}
+                </button>
+              </>
+            ) : null}
+          </div>
         </form>
       ) : null}
-      {canWrite
-        ? (list.data?.items ?? []).map((item) => (
-            <ViewDelete key={item.id} item={item} role={me.data?.role} section={section} />
-          ))
-        : null}
     </div>
-  )
-}
-
-function ViewDelete({ item, role, section }: { item: SavedView; role?: string; section: string }) {
-  const queryClient = useQueryClient()
-  const canDelete = item.shared ? role === 'admin' : true
-  if (!canDelete) return null
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        void deleteView(item.id).then(() =>
-          queryClient.invalidateQueries({ queryKey: keys.views(section) }),
-        )
-      }}
-    >
-      Удалить {item.name}
-    </button>
   )
 }

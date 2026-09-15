@@ -34,6 +34,8 @@
   --space-3: 0.75rem;
   --space-4: 1rem;
   --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
   --radius: 6px;
   --radius-sm: 4px;
   --shadow-sm: 0 1px 2px rgb(20 25 20 / 4%);
@@ -104,6 +106,41 @@ button:disabled {
   transform: none;
 }
 
+button[data-variant='primary'] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+button[data-variant='primary']:hover {
+  background: var(--color-link-hover);
+  border-color: var(--color-link-hover);
+  color: #fff;
+}
+
+button[data-variant='ghost'] {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-muted);
+}
+
+button[data-variant='ghost']:hover {
+  background: var(--color-border-soft);
+  border-color: transparent;
+  color: var(--color-text);
+}
+
+button[data-variant='danger'] {
+  background: var(--color-surface);
+  border-color: color-mix(in srgb, var(--tone-error) 50%, var(--color-border));
+  color: var(--tone-error);
+}
+
+button[data-variant='danger']:hover {
+  background: var(--tone-error-bg);
+  border-color: var(--tone-error);
+}
+
 input,
 select {
   border: 1px solid var(--color-border);
@@ -138,15 +175,15 @@ h3 {
 }
 
 h1 {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
 }
 
 h2 {
-  font-size: 1rem;
+  font-size: 1.125rem;
 }
 
 h3 {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 time,

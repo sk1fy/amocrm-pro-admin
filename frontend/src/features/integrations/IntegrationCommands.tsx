@@ -65,23 +65,27 @@ export function CreateIntegration() {
   const me = useQuery({ queryKey: keys.me, queryFn: fetchMe })
   const catalog = useQuery({ queryKey: keys.catalog, queryFn: fetchCatalog })
   const [draftBackend, setDraftBackend] = useState('')
-  const backend = draftBackend || catalog.data?.backends[0]?.code || ''
+  const backends = catalog.data?.backends ?? []
+  const backend = draftBackend || backends[0]?.code || ''
   if (!me.data?.permissions.includes('integrations:write')) return null
   return (
-    <section className={page.card}>
-      <h2>Создание интеграции</h2>
-      <label>
-        Бекенд{' '}
-        <select value={backend} onChange={(event) => setDraftBackend(event.target.value)}>
-          {catalog.data?.backends.map((item) => (
-            <option key={item.code} value={item.code}>
-              {item.display_name}
-            </option>
-          ))}
-        </select>
-      </label>
+    <div className={page.actions}>
+      {backends.length > 1 ? (
+        <label className={page.label}>
+          Бекенд
+          <select value={backend} onChange={(event) => setDraftBackend(event.target.value)}>
+            {backends.map((item) => (
+              <option key={item.code} value={item.code}>
+                {item.display_name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       {backend ? (
         <CommandAction
+          layout="inline"
+          emphasis="primary"
           spec={integrationSpec(backend, 'new', 'create', 'Создать интеграцию')}
           fields={[
             { name: 'code', label: 'Код интеграции', required: true },
@@ -104,7 +108,7 @@ export function CreateIntegration() {
           })}
         />
       ) : null}
-    </section>
+    </div>
   )
 }
 

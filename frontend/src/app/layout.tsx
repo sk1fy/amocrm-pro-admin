@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchMe, keys, logout } from '../api/queries'
 import type { Me } from '../api/types'
 import { employeeRoleLabels } from '../states'
+import { breadcrumbsFor } from './crumbs'
 import { clearSession } from './session'
 import styles from './layout.module.css'
 
@@ -30,18 +31,6 @@ const navGroups: Array<{
     items: [{ to: '/system', label: 'Система', icon: 'system' }],
   },
 ]
-
-const crumbLabels: Record<string, string> = {
-  accounts: 'Аккаунты',
-  widgets: 'Виджеты',
-  operations: 'Операции',
-  system: 'Система',
-  employees: 'Сотрудники',
-  sessions: 'Сессии',
-  audit: 'Аудит',
-  settings: 'Настройки',
-  stats: 'Статистика',
-}
 
 function NavIcon({ name }: { name: NavIconName }) {
   const props = {
@@ -122,14 +111,7 @@ export function AppLayout() {
     router.history.push('/login?next=/')
   }
 
-  const segments = pathname.split('/').filter(Boolean)
-  const crumbs =
-    segments.length === 0
-      ? [{ label: 'Обзор', mono: false }]
-      : segments.map((segment) => ({
-          label: crumbLabels[segment] ?? segment,
-          mono: !(segment in crumbLabels),
-        }))
+  const crumbs = breadcrumbsFor(pathname)
 
   return (
     <div className={styles.shell}>
@@ -224,16 +206,27 @@ export function AppLayout() {
             </button>
             <nav className={styles.crumbs} aria-label="Хлебные крошки">
               {crumbs.map((crumb, index) => (
-                <span key={`${crumb.label}-${index}`} className={styles.crumb}>
+                <span key={`${crumb.href ?? crumb.label}-${index}`} className={styles.crumb}>
                   {index > 0 ? (
                     <span className={styles.crumbSep} aria-hidden="true">
-                      /
+                      ›
                     </span>
                   ) : null}
-                  {index === crumbs.length - 1 ? (
-                    <b className={crumb.mono ? styles.crumbMono : undefined}>{crumb.label}</b>
+                  {crumb.href ? (
+                    <Link to={crumb.href} className={crumb.mono ? styles.crumbMono : undefined}>
+                      {crumb.label}
+                    </Link>
                   ) : (
-                    <span className={crumb.mono ? styles.crumbMono : undefined}>{crumb.label}</span>
+                    <span
+                      aria-current="page"
+                      className={
+                        crumb.mono
+                          ? `${styles.crumbCurrent} ${styles.crumbMono}`
+                          : styles.crumbCurrent
+                      }
+                    >
+                      {crumb.label}
+                    </span>
                   )}
                 </span>
               ))}

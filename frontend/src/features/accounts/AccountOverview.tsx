@@ -40,7 +40,7 @@ export function AccountOverview() {
             >
               {(conn) => (
                 <Link
-                  className={page.card}
+                  className={page.stack}
                   to="/accounts/$accountId/widgets/$backend/$connectionId"
                   params={{
                     accountId,
@@ -64,6 +64,13 @@ export function AccountOverview() {
                     Webhook: <StatusBadge domain="webhook" state={conn.webhook?.status} />
                   </div>
                   {conn.webhook?.last_error ? <p>{conn.webhook.last_error}</p> : null}
+                  {obs.freshness === 'stale' || obs.freshness === 'unavailable' ? (
+                    <p className={page.muted}>
+                      Данные этого подключения{' '}
+                      {obs.freshness === 'stale' ? 'устарели' : 'недоступны'}. Это не состояние «всё
+                      в порядке».
+                    </p>
+                  ) : null}
                   <p className={page.muted}>{conn.account_domain || formatNull(null)}</p>
                 </Link>
               )}

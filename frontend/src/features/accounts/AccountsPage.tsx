@@ -8,6 +8,7 @@ import { DataTable } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { FilterBar, FilterField } from '../../components/FilterBar'
+import { PageSkeleton } from '../../components/PageSkeleton'
 import {
   SourcesBanner,
   allSourcesUnavailable,
@@ -16,7 +17,7 @@ import {
 import { SourcesCaption } from '../../components/SourcesCaption'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
-import { formatNull, formatTime } from '../../lib/format'
+import { formatNull, formatRelativeTime, formatTime } from '../../lib/format'
 import { lookupState, problemCodes } from '../../states'
 import { SavedViews } from '../overview/SavedViews'
 
@@ -59,95 +60,108 @@ export function AccountsPage() {
 
   const unavailable = allSourcesUnavailable(list.data?.sources)
   const partial = sourcesUnavailable(list.data?.sources)
+  const filtered = Boolean(
+    search.q || search.product || search.connection || search.problem || search.origin,
+  )
 
   return (
     <div className={page.page}>
-      <h1>Аккаунты</h1>
-      <FilterBar onSubmit={submit}>
-        <FilterField label="Поиск" grow>
-          <input
-            data-testid="accounts-search"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            name="q"
-            placeholder="ID, домен или ссылка"
-          />
-        </FilterField>
-        <FilterField label="Продукт">
-          <select
-            value={search.product ?? ''}
-            onChange={(event) =>
-              setSearch({ product: event.target.value || undefined, cursor: undefined })
-            }
-          >
-            <option value="">Все</option>
-            {(catalog.data?.products ?? []).map((product) => (
-              <option key={product.code} value={product.code}>
-                {product.display_name}
-              </option>
-            ))}
-          </select>
-        </FilterField>
-        <FilterField label="Состояние подключения">
-          <select
-            value={search.connection ?? ''}
-            onChange={(event) =>
-              setSearch({ connection: event.target.value || undefined, cursor: undefined })
-            }
-          >
-            <option value="">Все</option>
-            {connectionStates.map((state) => (
-              <option key={state} value={state}>
-                {lookupState('connection', state).label}
-              </option>
-            ))}
-          </select>
-        </FilterField>
-        <FilterField label="Проблема">
-          <select
-            value={search.problem ?? ''}
-            onChange={(event) =>
-              setSearch({ problem: event.target.value || undefined, cursor: undefined })
-            }
-          >
-            <option value="">Все</option>
-            {problemCodes.map((problem) => (
-              <option key={problem} value={problem}>
-                {lookupState('problem', problem).label}
-              </option>
-            ))}
-          </select>
-        </FilterField>
-        <FilterField label="Происхождение">
-          <select
-            value={search.origin ?? ''}
-            onChange={(event) =>
-              setSearch({ origin: event.target.value || undefined, cursor: undefined })
-            }
-          >
-            <option value="">Все</option>
-            <option value="real">реальные данные</option>
-            <option value="fixture">тестовые данные</option>
-          </select>
-        </FilterField>
-        <FilterField label="На странице">
-          <select
-            value={String(search.limit ?? 25)}
-            onChange={(event) =>
-              setSearch({ limit: Number(event.target.value), cursor: undefined })
-            }
-          >
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-        </FilterField>
-        <button type="submit">Найти</button>
-      </FilterBar>
+      <header className={page.header}>
+        <div className={page.heading}>
+          <h1 className={page.title}>Аккаунты</h1>
+          <p className={page.description}>
+            Поиск по ID, домену или ссылке amoCRM. Состояние аккаунта и статусы подключений — разные
+            факты.
+          </p>
+        </div>
+      </header>
+      <div className={page.filters}>
+        <FilterBar onSubmit={submit}>
+          <FilterField label="Поиск" grow>
+            <input
+              data-testid="accounts-search"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              name="q"
+              placeholder="ID, домен или ссылка"
+            />
+          </FilterField>
+          <FilterField label="Продукт">
+            <select
+              value={search.product ?? ''}
+              onChange={(event) =>
+                setSearch({ product: event.target.value || undefined, cursor: undefined })
+              }
+            >
+              <option value="">Все</option>
+              {(catalog.data?.products ?? []).map((product) => (
+                <option key={product.code} value={product.code}>
+                  {product.display_name}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Состояние подключения">
+            <select
+              value={search.connection ?? ''}
+              onChange={(event) =>
+                setSearch({ connection: event.target.value || undefined, cursor: undefined })
+              }
+            >
+              <option value="">Все</option>
+              {connectionStates.map((state) => (
+                <option key={state} value={state}>
+                  {lookupState('connection', state).label}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Проблема">
+            <select
+              value={search.problem ?? ''}
+              onChange={(event) =>
+                setSearch({ problem: event.target.value || undefined, cursor: undefined })
+              }
+            >
+              <option value="">Все</option>
+              {problemCodes.map((problem) => (
+                <option key={problem} value={problem}>
+                  {lookupState('problem', problem).label}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Происхождение">
+            <select
+              value={search.origin ?? ''}
+              onChange={(event) =>
+                setSearch({ origin: event.target.value || undefined, cursor: undefined })
+              }
+            >
+              <option value="">Все</option>
+              <option value="real">реальные данные</option>
+              <option value="fixture">тестовые данные</option>
+            </select>
+          </FilterField>
+          <FilterField label="На странице">
+            <select
+              value={String(search.limit ?? 25)}
+              onChange={(event) =>
+                setSearch({ limit: Number(event.target.value), cursor: undefined })
+              }
+            >
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </FilterField>
+          <button type="submit">Найти</button>
+        </FilterBar>
+      </div>
       <SavedViews
         section="accounts"
         current={params}
-        columns={['account', 'connections', 'state']}
+        columns={['account_id', 'domain', 'connections', 'state']}
         onLoad={(loaded) =>
           setSearch({
             q: typeof loaded.q === 'string' ? loaded.q : undefined,
@@ -161,86 +175,122 @@ export function AccountsPage() {
         }
       />
       {partial ? <SourcesBanner sources={list.data?.sources} /> : null}
-      {list.isPending ? <div className={page.skeleton} /> : null}
+      {list.isPending ? <PageSkeleton label="Загрузка списка аккаунтов…" variant="list" /> : null}
       {list.error ? <ErrorState error={list.error} onRetry={() => void list.refetch()} /> : null}
       {list.data && list.data.items.length === 0 ? (
         unavailable ? (
           <EmptyState
             title="Источник недоступен"
-            description="Список аккаунтов нельзя показать, пока бекенд не ответит."
+            description="Список аккаунтов нельзя показать, пока бекенд не ответит. Это не пустой результат поиска."
+          />
+        ) : filtered ? (
+          <EmptyState
+            title="Ничего не найдено"
+            description="По запросу и фильтрам нет аккаунтов. Источник ответил, список пуст."
           />
         ) : (
-          <EmptyState title="Ничего не найдено" description="Измените запрос или фильтры." />
+          <EmptyState
+            title="Нет аккаунтов"
+            description="В доступных источниках пока нет аккаунтов. Если ожидали данные, проверьте бекенд на странице «Система»."
+          />
         )
       ) : null}
       {list.data && list.data.items.length > 0 ? (
         <>
           <SourcesCaption sources={list.data.sources} />
-          <DataTable
-            rows={list.data.items}
-            rowKey={(row) => row.account_id}
-            nextCursor={list.data.next_cursor}
-            onReset={() => setSearch({ cursor: undefined })}
-            onNext={() => setSearch({ cursor: list.data?.next_cursor ?? undefined })}
-            columns={[
-              {
-                id: 'account',
-                header: 'Аккаунт',
-                cell: (row) => (
-                  <div>
+          <div className={page.content}>
+            <DataTable
+              rows={list.data.items}
+              rowKey={(row) => row.account_id}
+              nextCursor={list.data.next_cursor}
+              onReset={() => setSearch({ cursor: undefined })}
+              onNext={() => setSearch({ cursor: list.data?.next_cursor ?? undefined })}
+              columns={[
+                {
+                  id: 'account_id',
+                  header: 'ID аккаунта',
+                  cell: (row) => (
                     <Link to="/accounts/$accountId" params={{ accountId: row.account_id }}>
                       {row.account_id}
                     </Link>
-                    <div className={page.muted}>
-                      {row.domains.length > 0 ? row.domains.join(', ') : formatNull(null)}
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                id: 'connections',
-                header: 'Подключения',
-                cell: (row) => (
-                  <div className={page.row}>
-                    {row.connections.map((conn) => (
-                      <Link
-                        key={`${conn.backend}:${conn.connection_id}`}
-                        to="/accounts/$accountId/widgets/$backend/$connectionId"
-                        params={{
-                          accountId: row.account_id,
-                          backend: conn.backend,
-                          connectionId: conn.connection_id,
-                        }}
-                      >
-                        <StatusBadge
-                          domain="connection"
-                          state={conn.state}
-                          raw={conn.raw}
-                          testId="connection-badge"
-                        />
-                        <span className={page.muted}> {conn.integration_code}</span>
-                      </Link>
-                    ))}
-                  </div>
-                ),
-              },
-              {
-                id: 'state',
-                header: 'Агрегат',
-                cell: (row) => <StatusBadge domain="account" state={row.state} />,
-              },
-              {
-                id: 'activity',
-                header: 'Последняя активность',
-                cell: (row) => formatTime(row.last_activity_at),
-              },
-              {
-                id: 'origin',
-                header: 'Происхождение',
-                cell: (row) => <StatusBadge domain="origin" state={row.origin} />,
-              },
-            ]}
-          />
+                  ),
+                },
+                {
+                  id: 'domain',
+                  header: 'Домен',
+                  cell: (row) =>
+                    row.domains.length === 0 ? (
+                      formatNull(null)
+                    ) : (
+                      <div className={page.stack}>
+                        {row.domains.map((domain) => (
+                          <Link
+                            key={domain}
+                            to="/accounts/$accountId"
+                            params={{ accountId: row.account_id }}
+                          >
+                            {domain}
+                          </Link>
+                        ))}
+                      </div>
+                    ),
+                },
+                {
+                  id: 'connections',
+                  header: 'Подключения',
+                  cell: (row) =>
+                    row.connections.length === 0 ? (
+                      formatNull(null)
+                    ) : (
+                      <div className={page.connList}>
+                        {row.connections.map((conn) => (
+                          <Link
+                            key={`${conn.backend}:${conn.connection_id}`}
+                            className={page.conn}
+                            to="/accounts/$accountId/widgets/$backend/$connectionId"
+                            params={{
+                              accountId: row.account_id,
+                              backend: conn.backend,
+                              connectionId: conn.connection_id,
+                            }}
+                          >
+                            <StatusBadge
+                              domain="connection"
+                              state={conn.state}
+                              raw={conn.raw}
+                              testId="connection-badge"
+                            />
+                            <span>{conn.integration_code}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    ),
+                },
+                {
+                  id: 'state',
+                  header: 'Аккаунт',
+                  cell: (row) => <StatusBadge domain="account" state={row.state} />,
+                },
+                {
+                  id: 'activity',
+                  header: 'Последняя активность',
+                  cell: (row) => (
+                    <time
+                      dateTime={row.last_activity_at ?? undefined}
+                      title={row.last_activity_at ? formatTime(row.last_activity_at) : undefined}
+                    >
+                      {formatRelativeTime(row.last_activity_at)}
+                    </time>
+                  ),
+                },
+                {
+                  id: 'origin',
+                  header: 'Происхождение',
+                  cell: (row) => <StatusBadge domain="origin" state={row.origin} />,
+                },
+              ]}
+            />
+          </div>
         </>
       ) : null}
     </div>

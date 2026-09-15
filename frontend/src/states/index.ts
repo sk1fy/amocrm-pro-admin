@@ -27,6 +27,8 @@ export type StateDomain =
   | 'origin'
   | 'problem'
   | 'employee_status'
+  | 'connection_health'
+  | 'audit_outcome'
 
 const unknownEntry: StateEntry = { tone: 'unknown', label: 'Неизвестно' }
 
@@ -96,11 +98,11 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     not_configured: { tone: 'unknown', label: 'Пилот не настроен' },
   },
   delivery: {
-    pending_delivery: { tone: 'attention', label: 'Ожидает доставки' },
-    delivering: { tone: 'attention', label: 'Доставляется' },
-    accepted: { tone: 'ok', label: 'Принята' },
-    failed: { tone: 'error', label: 'Ошибка доставки' },
-    expired: { tone: 'error', label: 'Истекла' },
+    pending_delivery: { tone: 'attention', label: 'Ожидает' },
+    delivering: { tone: 'attention', label: 'Выполняется' },
+    accepted: { tone: 'ok', label: 'Доставлена' },
+    failed: { tone: 'error', label: 'Отклонена' },
+    expired: { tone: 'error', label: 'Исчерпаны попытки' },
   },
   sync: {
     pending: { tone: 'attention', label: 'Ожидает синхронизации' },
@@ -162,6 +164,17 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
   employee_status: {
     active: { tone: 'ok', label: 'Активен' },
     disabled: { tone: 'off', label: 'Отключён' },
+  },
+  connection_health: {
+    working: { tone: 'ok', label: 'Работает' },
+    working_with_warnings: { tone: 'attention', label: 'Работает с предупреждениями' },
+    needs_action: { tone: 'action', label: 'Требует действия' },
+    unavailable: { tone: 'error', label: 'Недоступно' },
+  },
+  audit_outcome: {
+    ok: { tone: 'ok', label: 'Успех' },
+    denied: { tone: 'action', label: 'Отклонено' },
+    failed: { tone: 'error', label: 'Ошибка' },
   },
 }
 

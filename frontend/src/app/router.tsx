@@ -31,7 +31,13 @@ import { SystemPage } from '../features/system/SystemPage'
 import { EmployeesPage } from '../features/system/EmployeesPage'
 import { SessionsPage } from '../features/system/SessionsPage'
 import { AuditPage } from '../features/system/AuditPage'
-import { accountsSearch, cursorSearch, overviewSearch, statsAccountsSearch } from './search'
+import {
+  accountsSearch,
+  connectionSearch,
+  cursorSearch,
+  overviewSearch,
+  statsAccountsSearch,
+} from './search'
 import { clearSession } from './session'
 
 export type RouterContext = {
@@ -129,6 +135,7 @@ const accountWidgetsRoute = createRoute({
 const connectionRoute = createRoute({
   getParentRoute: () => accountRoute,
   path: 'widgets/$backend/$connectionId',
+  validateSearch: connectionSearch,
   component: ConnectionPage,
 })
 

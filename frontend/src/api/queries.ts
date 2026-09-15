@@ -281,6 +281,17 @@ export function createView(body: {
   return apiSend('/api/v1/views', 'POST', body)
 }
 
+export function patchView(
+  id: string,
+  body: {
+    name?: string
+    params?: Record<string, unknown>
+    columns?: string[]
+  },
+): Promise<SavedView> {
+  return apiSend(`/api/v1/views/${encodeURIComponent(id)}`, 'PATCH', body)
+}
+
 export function deleteView(id: string): Promise<{ ok: boolean }> {
   return apiSend(`/api/v1/views/${encodeURIComponent(id)}`, 'DELETE')
 }

@@ -19,6 +19,7 @@
 | Агрегированное состояние | вычисляется в Admin API по [states.md](states.md) | — | там же | новый |
 | Происхождение (`real`/`fixture`) | `installations.settings->>'origin'` = `fixture` | там же | там же | новый |
 | Проблемы аккаунта, фильтр `problem` и счётчики «Требуют внимания» | вычисляются в Admin API из подключений (статус, webhook, авторизация, failed/dead jobs за 24 ч) | `GET /admin/v1/accounts` отдаёт `webhook_status`, `authorization_state`, `recent_failed_jobs` и `total` | `GET /api/v1/accounts?problem=`, Обзор | новый |
+| Рекомендуемое действие по типу проблемы | вычисление UI по коду `problem` | — | ссылка `/accounts?problem=` на Обзоре | UI 2026-09-14 |
 | Подписка: `plan`, `state`, `expires_at`, `capabilities` | адаптер `SubscriptionBackend.GetSubscription`; fixture — `Subscriptions` для 91000001/91000002/91000003/91000005 (у 91000004/91000006 факта нет) | Core capability `subscriptions` не объявляет | `GET /api/v1/accounts/{account_id}/subscription` | новый (этап 4); ADR-0012 |
 | Подписка: правило unknown и границы | опрашиваются только бекенды с capability `subscriptions`; пустой `items` — «данные подписки недоступны», не «нет подписки»; `Subscription` не `Grant` | — | там же | новый (этап 4); ADR-0012 |
 | Пользователи/контакты аккаунта | надёжного источника нет | — | — | не в этапах 1–4 без нового источника |
@@ -27,12 +28,16 @@
 
 | Поле | Источник | Core admin read | Admin API | Статус |
 | --- | --- | --- | --- | --- |
+| Итог подключения `connection_health` и причины | вычисление UI из Observation карточки ([ADR-0015](../adr/0015-connection-diagnostics-ux.md)) | — | карточка подключения | UI 2026-09-14 |
+| Вкладки `section` включая «Технические данные» (`tech`) | те же Observation карточки: UUID, версии, source, Grafana/Loki | — | карточка подключения `?section=tech` | UI 2026-09-14 |
+| Webhook: последняя успешная проверка | `webhook_checked_at`, только если нет `webhook_last_error`; иначе «Проверено» без слова «успешная». Ожидаемые vs зарегистрированные события не показываются: в API карточки нет пары expected/registered | там же | карточка, вкладка Webhook | UI 2026-09-14 |
+| Длительность последнего синка | вычисление UI: `last_success_at − last_event_at`, только если интервал > 0 и ≤ 24 ч; иначе поле скрыто | `activity/status` | карточка Activity и настройки | UI 2026-09-14 |
 | `installation_id`, `integration_id`, `account_id`, `account_domain` | `installations` | `GET /admin/v1/installations`, `GET /admin/v1/installations/{id}` | `GET /api/v1/connections/core/{id}` | новый |
 | Состояние подключения | `installations.status` | там же | там же | новый |
 | `installed_by` | `installations.installed_by` | там же | там же | новый |
 | Даты создания/обновления | `installations.created_at/updated_at` | там же | там же | новый |
 | Webhook: состояние, события, `checked_at`, `last_error` | `installations.webhook_status`, `webhook_settings`, `webhook_checked_at`, `webhook_last_error` | там же | там же | новый |
-| Webhook: подтверждённые destinations (кол-во, без URL) | `installation_webhook_destinations` (миграция 000015) — только `count`, `created_at`; URL зашифрованы и не читаются | там же | там же | новый |
+| Webhook: подтверждённые адреса доставки (кол-во, без URL) | `installation_webhook_destinations` (миграция 000015) — только `count`, `created_at`; URL зашифрованы и не читаются; в UI «подтверждённые адреса доставки», 0 при active — предупреждение | там же | там же | новый |
 | Авторизация: наличие, `expires_at`, `credential_version` (колонка `token_version`), `refreshed_at`, `key_version`, lease активна | `oauth_credentials` (без `*_ciphertext`) | там же | там же | новый; JSON-ключ `credential_version`, чтобы не содержать подстроку `token` |
 | Авторизация: результат проверки к amoCRM | внешний вызов через `amocrm.Client` в worker/Gateway | `POST /admin/v1/installations/{id}/commands/check` | операция | этап 2 |
 | Гранты сервисов интеграции | `integration_services` | вложено в installation/integration | там же | новый |
@@ -50,6 +55,7 @@
 | Поле | Источник | Core admin read | Admin API | Статус |
 | --- | --- | --- | --- | --- |
 | `id`, `code`, `client_id`, `status`, `redirect_uri`, `webhook_events`, даты | `integrations` (без `client_secret_ciphertext`) | `GET /admin/v1/integrations`, `GET /admin/v1/integrations/{id}` | `GET /api/v1/integrations`, `GET /api/v1/integrations/core/{id}` | новый |
+| Каталог: хост редиректа и число событий webhook | `redirect_uri` (host, полный URL в `title`); `webhook_events` — счётчик с раскрытием по сущностям | там же | каталог `/widgets`, карточка интеграции | UI 2026-09-14 |
 | Версия ключа секрета и дата ротации | `integrations.client_secret_key_version`, `updated_at` | там же | там же | новый; сам секрет не читается |
 | Сервисы и гранты | `integration_services` | там же | там же | новый |
 | Счётчики подключений по состояниям | `installations` GROUP BY `integration_id, status` | там же | там же | новый |
@@ -60,6 +66,8 @@
 | Поле | Источник | Core admin read | Admin API | Статус |
 | --- | --- | --- | --- | --- |
 | Job: `id`, `installation_id`, `account_id`, `type`, `status`, `priority`, `attempts`, `max_attempts`, `run_after`, `last_error_code`, `last_error_message`, даты | `jobs` (без `payload`, `result`, `locked_by`) | `GET /admin/v1/jobs`, `GET /admin/v1/installations/{id}/jobs` | `GET /api/v1/operations/jobs`, таблица задач, ссылка на подключение | новый |
+| Длительность задачи в таблице | `finished_at - created_at`; без `finished_at` — «—» | те же поля job | таблица задач, карточка задачи | UI 2026-09-14 |
+| Карточка задачи: безопасные поля, попытки, ссылка на подключение | job + `GET …/jobs/{backend}/{id}` (`attempts`); `payload`/`result` не показываются | `GET /admin/v1/jobs/{id}` | `GET /api/v1/operations/jobs/{backend}/{id}` | UI 2026-09-14 |
 | Job: инициатор и ресурс (`actor_type`, `actor_id` — ID пользователя amoCRM, `resource_type`, `resource_id`) | `jobs` (миграция 000002) | там же | там же | новый |
 | Попытки: `attempt`, `worker_id`, `started_at`, `finished_at`, `outcome`, `error_code`, `error_message`, `duration_ms` | `job_attempts` | `GET /admin/v1/jobs/{id}` | `GET /api/v1/operations/jobs/core/{id}` | новый |
 | Размер очередей по состояниям | `jobs` GROUP BY `status` (или метрики backlog) | `GET /admin/v1/jobs/summary` | Обзор | новый; согласовать с `jobs.BacklogMetrics` |
@@ -71,6 +79,8 @@
 | --- | --- | --- | --- | --- |
 | Аудит Core по установке/интеграции | `audit_log` (`installation_id`, `object_type`, `object_id`, `actor_type`, `actor_id`, `action`, `metadata`, `correlation_job_id`, `created_at`) | `GET /admin/v1/audit?installation_id=&object_type=&object_id=` | вкладка История, карточка интеграции | новый; `metadata` уже без секретов (runbook integrations); `correlation_job_id` — ссылка на job |
 | Аудит действий сотрудников | admin DB `admin_audit_log` | — | `GET /api/v1/system/audit` | новый |
+| Фильтр аудита по сотруднику | admin DB `employees` (id, name, email) | — | `GET /api/v1/system/employees` → query `employee_id` аудита | UI 2026-09-14 |
+| Подпись действия аудита | словарь UI `auditLabel`; фильтр `action` как точное значение API | — | query `action` | UI 2026-09-14 |
 
 ## Система
 
@@ -81,6 +91,7 @@
 | Реестр: `contract_version`, `revision` | `Descriptor().ContractVersion`; после успешного `Health` — `health.revision` | `GET /admin/v1/backend` (`contract_version`, `revision`) | там же | новый (этап 4); ADR-0011 |
 | Реестр: `adapter_capabilities[]`, `backend_capabilities[]` | `Capabilities().Names()`; `health.capabilities` последнего успешного ответа | `GET /admin/v1/backend` (`capabilities`) | там же | новый (этап 4); ADR-0011 |
 | Реестр: `observed_at`, `checked_at`, `error{code,message}` | `observed_at` — последний успешный ответ (переживает отказ, может быть `null`), `checked_at` — последняя проба, `error` — безопасная ошибка | — | там же | новый (этап 4) |
+| Реестр: таблица vs карточка | таблица: имя, тип, статус, контракт, последняя проверка, ошибки; ревизия SHA, возможности, продукты, компоненты JSON — карточка | — | там же | UI 2026-09-14 |
 | Компоненты Activity/CRM Events (режим, readiness) | management `GET /components`, `GET /components/activity/ready` — другой listener | `health.components` из `GET /admin/v1/backend` | там же | новый; management порт наружу не открывать |
 | Сотрудники, роли, статусы | admin DB `employees` | — | `GET/POST/PATCH /api/v1/system/employees` | новый |
 | Сессии | admin DB `sessions` | — | `GET /api/v1/me/sessions`, `DELETE …/{id}` | новый |

@@ -48,6 +48,118 @@ func TestAggregateTwoWidgetsNeedsAction(t *testing.T) {
 	assertContains(t, got.Problems, adapter.ProblemReauthRequired, adapter.ProblemWebhookError)
 }
 
+func TestAggregateStateTable(t *testing.T) {
+	now := time.Date(2026, 9, 14, 12, 0, 0, 0, time.UTC)
+	active := Connection{
+		State:         adapter.State{Canonical: adapter.StatusActive},
+		Webhook:       adapter.State{Canonical: adapter.StatusActive},
+		Authorization: adapter.State{Canonical: adapter.AuthValid},
+		Freshness:     adapter.FreshnessFresh,
+		ObservedAt:    now,
+	}
+	unverified := adapter.Authorization{State: adapter.State{Canonical: adapter.AuthValid}, Unverified: true}
+	tests := []struct {
+		name              string
+		connections       []Connection
+		sourceUnavailable bool
+		want              string
+		problem           string
+	}{
+		{
+			name:        "active fresh verified is ok",
+			connections: []Connection{active},
+			want:        adapter.AccountOK,
+		},
+		{
+			name:              "backend unavailable is partial",
+			connections:       []Connection{active},
+			sourceUnavailable: true,
+			want:              adapter.AccountPartial,
+			problem:           adapter.ProblemSourceUnavailable,
+		},
+		{
+			name: "connection freshness unavailable is partial",
+			connections: []Connection{{
+				State:      adapter.State{Canonical: adapter.StatusActive},
+				Webhook:    adapter.State{Canonical: adapter.StatusActive},
+				Freshness:  adapter.FreshnessUnavailable,
+				ObservedAt: now,
+			}},
+			want:    adapter.AccountPartial,
+			problem: adapter.ProblemSourceUnavailable,
+		},
+		{
+			name: "stale freshness is attention not ok",
+			connections: []Connection{{
+				State:         adapter.State{Canonical: adapter.StatusActive},
+				Webhook:       adapter.State{Canonical: adapter.StatusActive},
+				Authorization: adapter.State{Canonical: adapter.AuthValid},
+				Freshness:     adapter.FreshnessStale,
+				ObservedAt:    now,
+			}},
+			want: adapter.AccountAttention,
+		},
+		{
+			name: "unverified authorization on active is attention not ok",
+			connections: []Connection{{
+				State:                adapter.State{Canonical: adapter.StatusActive},
+				Webhook:              adapter.State{Canonical: adapter.StatusActive},
+				Authorization:        adapter.State{Canonical: adapter.AuthValid},
+				AuthorizationDetails: &unverified,
+				Freshness:            adapter.FreshnessFresh,
+				ObservedAt:           now,
+			}},
+			want: adapter.AccountAttention,
+		},
+		{
+			name: "unverified authorization on pending is attention not ok",
+			connections: []Connection{{
+				State:                adapter.State{Canonical: adapter.StatusPending},
+				Webhook:              adapter.State{Canonical: adapter.StatusPending},
+				Authorization:        adapter.State{Canonical: adapter.AuthValid},
+				AuthorizationDetails: &unverified,
+				Freshness:            adapter.FreshnessFresh,
+			}},
+			want: adapter.AccountAttention,
+		},
+		{
+			name: "missing details does not invent unverified",
+			connections: []Connection{{
+				State:         adapter.State{Canonical: adapter.StatusActive},
+				Webhook:       adapter.State{Canonical: adapter.StatusActive},
+				Authorization: adapter.State{Canonical: adapter.AuthValid},
+				Freshness:     adapter.FreshnessFresh,
+			}},
+			want: adapter.AccountOK,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := AggregateConnections(91000001, []string{"fixture.amocrm.test"}, now, tt.connections, tt.sourceUnavailable)
+			if got.State != tt.want {
+				t.Fatalf("state=%s want=%s", got.State, tt.want)
+			}
+			if tt.problem != "" {
+				assertContains(t, got.Problems, tt.problem)
+			}
+		})
+	}
+}
+
+func TestConnectionFromSummaryLeavesFreshnessEmpty(t *testing.T) {
+	got := ConnectionFromSummary("core", adapter.ConnectionSummary{
+		ID:     "inst-1",
+		Status: adapter.State{Canonical: adapter.StatusActive},
+		Origin: adapter.OriginFixture,
+	})
+	if got.Freshness != "" || !got.ObservedAt.IsZero() {
+		t.Fatalf("summary without adapter freshness must stay empty: %+v", got)
+	}
+	if got.AuthorizationDetails != nil {
+		t.Fatal("nil details must stay nil")
+	}
+}
+
 func TestAggregatePartialWhenSourceUnavailable(t *testing.T) {
 	account := adapter.Account{
 		AccountID: 1,

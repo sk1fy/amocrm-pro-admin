@@ -41,6 +41,9 @@ type Props = {
   disabled?: boolean
   disabledReason?: string
   onInspect?: () => void
+  layout?: 'stack' | 'inline'
+  reasonAsTooltip?: boolean
+  emphasis?: 'default' | 'primary' | 'danger'
 }
 
 const affectedQueries = new Set([
@@ -86,6 +89,9 @@ function CommandControl({
   disabledReason,
   onInspect,
   employeeId,
+  layout = 'stack',
+  reasonAsTooltip = false,
+  emphasis = 'default',
 }: Props & { employeeId: string }) {
   const storageKey = intentStorageKey(employeeId, spec.path)
   const [intent, setIntentState] = useState<CommandIntent | null>(() => readIntent(storageKey))
@@ -184,13 +190,27 @@ function CommandControl({
   }
 
   return (
-    <div className={page.stack}>
-      <button type="button" onClick={open} disabled={disabled || !canStart} title={disabledReason}>
+    <div className={layout === 'inline' ? styles.inline : page.stack}>
+      <button
+        type="button"
+        onClick={open}
+        disabled={disabled || !canStart}
+        title={disabledReason}
+        className={
+          emphasis === 'primary'
+            ? styles.primary
+            : emphasis === 'danger'
+              ? styles.danger
+              : undefined
+        }
+      >
         {operation?.state === 'partial' && spec.command === 'uninstall'
           ? 'Повторить удаление'
           : spec.label}
       </button>
-      {disabledReason ? <span className={page.muted}>{disabledReason}</span> : null}
+      {disabledReason && !reasonAsTooltip ? (
+        <span className={page.muted}>{disabledReason}</span>
+      ) : null}
       {submitting ? <p role="status">Команда отправляется…</p> : null}
       {error ? <ErrorState error={error} /> : null}
       {intent && !operation && !submitting ? (
