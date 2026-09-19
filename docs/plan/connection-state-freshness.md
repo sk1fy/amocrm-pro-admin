@@ -400,7 +400,7 @@ integration tests прошли. Повтор всего набора с PostgreS
 
 - [Локальный запуск](../runbooks/local-run.md): polling и VITE build args.
 - [Эксплуатация](../runbooks/operator.md): факты состояния и rollout Core.
-- [Core runbook](../../../amocrm-pro/docs/runbooks/connection-verification.md):
+- [Core runbook](https://github.com/sk1fy/amocrm-pro/blob/79011d1b28fcc13a6dbe9bdcf5b4bdccd80cd888/docs/runbooks/connection-verification.md):
   флаг, pilot scope, лимиты, мониторинг и rollback scheduler.
 - Playwright проверяет изменение fixture-состояния без reload за 90 секунд
   и продолжение поиска после пустой bounded страницы.
@@ -449,3 +449,10 @@ receipts без version fence не переносятся в новую прое
 | Compose config, docs-check, git diff --check | ok |
 
 Тестовые PostgreSQL и fixture E2E-стеки удалены вместе с их volumes.
+
+### Исправление ссылок для изолированного CI
+
+Проверка документации в CI выявила две ссылки на соседнюю локальную папку
+Core. Они заменены ссылками GitHub на ревизию `79011d1`. Падение
+воспроизведено в отдельной копии Admin без Core; после исправления
+`make docs-check` проходит и там, и в основном рабочем дереве.
