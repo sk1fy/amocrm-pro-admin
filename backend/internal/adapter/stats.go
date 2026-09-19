@@ -17,7 +17,13 @@ type StatsBackend interface {
 	ListStatsAccounts(context.Context, Actor, StatsAccountFilter) (Observation[Page[StatsAccount]], error)
 }
 
+type VerificationCounts struct {
+	Unverified      int64 `json:"unverified"`
+	TemporaryErrors int64 `json:"temporary_errors"`
+	Verified        int64 `json:"verified"`
+}
 type StatsSnapshot struct {
+	Verification   *VerificationCounts
 	Connected      *int
 	Disconnected   *int
 	ActiveAccounts *int

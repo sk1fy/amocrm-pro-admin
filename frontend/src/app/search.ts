@@ -18,6 +18,7 @@ export function numberParam(value: unknown, fallback?: number): number | undefin
 }
 
 export type AccountsSearch = {
+  verification?: string
   q?: string
   product?: string
   connection?: string
@@ -30,6 +31,7 @@ export type AccountsSearch = {
 export function accountsSearch(search: Record<string, unknown>): AccountsSearch {
   return {
     q: stringParam(search.q),
+    verification: stringParam(search.verification),
     product: stringParam(search.product),
     connection: stringParam(search.connection),
     problem: stringParam(search.problem),

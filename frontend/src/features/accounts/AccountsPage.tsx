@@ -1,3 +1,5 @@
+import { VerificationBadge } from '../../components/VerificationBadge'
+import { RefreshStatus } from '../../components/RefreshStatus'
 import { useState, type FormEvent } from 'react'
 import { Link } from '@tanstack/react-router'
 import { usePushSearch, useRouteSearch } from '../../app/hooks'
@@ -41,6 +43,7 @@ export function AccountsPage() {
   const catalog = useQuery({ queryKey: keys.catalog, queryFn: fetchCatalog })
   const params = {
     q: search.q,
+    verification: search.verification,
     product: search.product,
     connection: search.connection,
     problem: search.problem,
@@ -61,7 +64,12 @@ export function AccountsPage() {
   const unavailable = allSourcesUnavailable(list.data?.sources)
   const partial = sourcesUnavailable(list.data?.sources)
   const filtered = Boolean(
-    search.q || search.product || search.connection || search.problem || search.origin,
+    search.verification ||
+      search.q ||
+      search.product ||
+      search.connection ||
+      search.problem ||
+      search.origin,
   )
 
   return (
@@ -75,6 +83,12 @@ export function AccountsPage() {
           </p>
         </div>
       </header>
+      <RefreshStatus
+        updatedAt={list.dataUpdatedAt}
+        fetching={list.isFetching}
+        failed={Boolean(list.error)}
+        onRefresh={() => void list.refetch({ cancelRefetch: false })}
+      />
       <div className={page.filters}>
         <FilterBar onSubmit={submit}>
           <FilterField label="Поиск" grow>
@@ -101,7 +115,21 @@ export function AccountsPage() {
               ))}
             </select>
           </FilterField>
-          <FilterField label="Состояние подключения">
+          <FilterField label="Проверка amoCRM">
+            <select
+              value={search.verification ?? ''}
+              onChange={(event) =>
+                setSearch({ verification: event.target.value || undefined, cursor: undefined })
+              }
+            >
+              <option value="">Все</option>
+              <option value="ok">Доступ подтверждён</option>
+              <option value="stale">Проверка устарела</option>
+              <option value="unknown">Не проверено</option>
+              <option value="failed">Ошибка проверки</option>
+            </select>
+          </FilterField>
+          <FilterField label="Состояние установки">
             <select
               value={search.connection ?? ''}
               onChange={(event) =>
@@ -165,6 +193,7 @@ export function AccountsPage() {
         onLoad={(loaded) =>
           setSearch({
             q: typeof loaded.q === 'string' ? loaded.q : undefined,
+            verification: typeof loaded.verification === 'string' ? loaded.verification : undefined,
             product: typeof loaded.product === 'string' ? loaded.product : undefined,
             connection: typeof loaded.connection === 'string' ? loaded.connection : undefined,
             problem: typeof loaded.problem === 'string' ? loaded.problem : undefined,
@@ -183,6 +212,16 @@ export function AccountsPage() {
             title="Источник недоступен"
             description="Список аккаунтов нельзя показать, пока бекенд не ответит. Это не пустой результат поиска."
           />
+        ) : list.data.next_cursor ? (
+          <section className={page.card}>
+            <p>В проверенной части списка совпадений нет. Поиск ещё не завершён.</p>
+            <button
+              type="button"
+              onClick={() => setSearch({ cursor: list.data?.next_cursor ?? undefined })}
+            >
+              Продолжить поиск
+            </button>
+          </section>
         ) : filtered ? (
           <EmptyState
             title="Ничего не найдено"
@@ -261,6 +300,10 @@ export function AccountsPage() {
                               testId="connection-badge"
                             />
                             <span>{conn.integration_code}</span>
+                            <VerificationBadge
+                              verification={conn.authorization_check}
+                              unavailable={partial || Boolean(list.error)}
+                            />
                           </Link>
                         ))}
                       </div>

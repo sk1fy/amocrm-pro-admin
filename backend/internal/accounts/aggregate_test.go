@@ -51,11 +51,12 @@ func TestAggregateTwoWidgetsNeedsAction(t *testing.T) {
 func TestAggregateStateTable(t *testing.T) {
 	now := time.Date(2026, 9, 14, 12, 0, 0, 0, time.UTC)
 	active := Connection{
-		State:         adapter.State{Canonical: adapter.StatusActive},
-		Webhook:       adapter.State{Canonical: adapter.StatusActive},
-		Authorization: adapter.State{Canonical: adapter.AuthValid},
-		Freshness:     adapter.FreshnessFresh,
-		ObservedAt:    now,
+		AuthorizationCheck: &adapter.Verification{Classification: "verified_ok", Freshness: adapter.FreshnessFresh, ObservedAt: &now},
+		State:              adapter.State{Canonical: adapter.StatusActive},
+		Webhook:            adapter.State{Canonical: adapter.StatusActive},
+		Authorization:      adapter.State{Canonical: adapter.AuthValid},
+		Freshness:          adapter.FreshnessFresh,
+		ObservedAt:         now,
 	}
 	unverified := adapter.Authorization{State: adapter.State{Canonical: adapter.AuthValid}, Unverified: true}
 	tests := []struct {
@@ -123,14 +124,14 @@ func TestAggregateStateTable(t *testing.T) {
 			want: adapter.AccountAttention,
 		},
 		{
-			name: "missing details does not invent unverified",
+			name: "missing verification cannot claim success",
 			connections: []Connection{{
 				State:         adapter.State{Canonical: adapter.StatusActive},
 				Webhook:       adapter.State{Canonical: adapter.StatusActive},
 				Authorization: adapter.State{Canonical: adapter.AuthValid},
 				Freshness:     adapter.FreshnessFresh,
 			}},
-			want: adapter.AccountOK,
+			want: adapter.AccountAttention,
 		},
 	}
 	for _, tt := range tests {

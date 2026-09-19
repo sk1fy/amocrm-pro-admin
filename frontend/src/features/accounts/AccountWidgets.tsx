@@ -1,3 +1,4 @@
+import { VerificationBadge } from '../../components/VerificationBadge'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useRouteParams } from '../../app/hooks'
@@ -56,7 +57,7 @@ export function AccountWidgets() {
         },
         {
           id: 'state',
-          header: 'Состояние',
+          header: 'Состояние установки',
           cell: (obs) => (
             <StatusBadge
               domain="connection"
@@ -67,8 +68,18 @@ export function AccountWidgets() {
           ),
         },
         {
+          id: 'verification',
+          header: 'Проверка amoCRM',
+          cell: (obs) => (
+            <VerificationBadge
+              verification={obs.data?.authorization_check}
+              unavailable={obs.freshness === 'unavailable'}
+            />
+          ),
+        },
+        {
           id: 'authorization',
-          header: 'Авторизация',
+          header: 'Локальная авторизация',
           cell: (obs) =>
             obs.data ? (
               <span className={page.row}>

@@ -162,7 +162,8 @@ func (c *Client) GetStats(ctx context.Context, actor adapter.Actor, period strin
 		latency = &value
 	}
 	return adapter.Fresh(c.desc.Code, resp.ObservedAt, adapter.StatsSnapshot{
-		Period: resp.Period, PeriodStart: start.UTC(), PeriodEnd: end.UTC(),
+		Verification: resp.Verification,
+		Period:       resp.Period, PeriodStart: start.UTC(), PeriodEnd: end.UTC(),
 		Connections: connections, Connected: connected, Disconnected: disconnected,
 		ActiveAccounts: resp.ActiveAccounts, LastUseAt: resp.LastUseAt, JobErrors: resp.JobErrors,
 		LatencyP50Ms: latency, Queues: queues, AuthProblems: auth, SyncProblems: sync,

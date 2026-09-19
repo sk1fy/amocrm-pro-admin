@@ -78,7 +78,7 @@ help: ## Show available commands
 
 docs-check: ## Verify relative Markdown links resolve
 	@status=0; \
-	for f in $$(find . -name '*.md' -not -path './.git/*' -not -path './frontend/node_modules/*'); do \
+	for f in $$(find . -name '*.md' -not -path './.git/*' -not -path './frontend/node_modules/*' -not -path './node_modules/*'); do \
 		dir=$$(dirname "$$f"); \
 		for link in $$(grep -oE '\]\(([^)#]+)(#[^)]*)?\)' "$$f" | sed -E 's/\]\(([^)#]+).*/\1/' | grep -vE '^https?://'); do \
 			[ -e "$$dir/$$link" ] || { echo "broken link in $$f: $$link"; status=1; }; \

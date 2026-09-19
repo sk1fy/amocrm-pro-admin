@@ -1,3 +1,5 @@
+import { lookupState } from '../../states'
+import { RefreshStatus } from '../../components/RefreshStatus'
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
@@ -88,7 +90,7 @@ export function ConnectionPage() {
   if (query.isPending) {
     return <PageSkeleton label="Загрузка подключения…" />
   }
-  if (query.error) {
+  if (query.error && !query.data) {
     return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
   }
   const card = query.data
@@ -117,6 +119,12 @@ export function ConnectionPage() {
       </p>
       <ConnectionSwitcher accountId={accountId} backend={backend} connectionId={connectionId} />
       <h2>Подключение {identity?.integration_code ?? connectionId}</h2>
+      <RefreshStatus
+        updatedAt={query.dataUpdatedAt}
+        fetching={query.isFetching}
+        failed={Boolean(query.error)}
+        onRefresh={() => void query.refetch({ cancelRefetch: false })}
+      />
       <HealthSummary
         card={card}
         health={health}
@@ -589,7 +597,7 @@ function AuthSection({
   return (
     <>
       <Observation
-        title="Авторизация"
+        title="Локальная авторизация"
         observation={card.authorization}
         hideSource={hideSource(card.authorization.source)}
         onRetry={onRetry}
@@ -627,7 +635,11 @@ function AuthSection({
               {staleOrUnknown ? (
                 <p className={styles.secondary}>
                   Последняя завершённая проверка:{' '}
-                  <StatusBadge domain="verification" state={result.classification} /> ·{' '}
+                  <span>
+                    {lookupState('verification', result.classification).label} (исторический
+                    результат)
+                  </span>{' '}
+                  ·{' '}
                   <time dateTime={result.observed_at} title={formatTime(result.observed_at)}>
                     {formatRelativeTime(result.observed_at)}
                   </time>

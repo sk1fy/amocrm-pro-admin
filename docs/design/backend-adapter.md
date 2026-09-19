@@ -311,3 +311,13 @@ backends:
 опущенном профиле `demo`): `demo` объявляет все возможности, `module` —
 только чтение. Fixture подставляет синтетические данные с меткой
 `origin=fixture` и в проде не используется.
+
+## Verification summary
+
+`ConnectionSummary.AuthorizationCheck` optional. Core adapter передаёт
+нормализованную classification/freshness, timestamp и срок актуальности.
+Неизвестная classification превращается в unknown + raw; upstream error
+body не передаётся. `AccountFilter.Verification` передаётся в Core query;
+старые источники совместимы через bounded post-filter. `Account.Cursor`
+содержит native continuation, его не возвращают отдельным полем клиенту.
+Правила: [ADR-0017](../adr/0017-connection-state-freshness.md).

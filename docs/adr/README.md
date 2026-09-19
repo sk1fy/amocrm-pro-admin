@@ -26,3 +26,5 @@
 подключений, если patch-план
 [connection-state-freshness.md](../plan/connection-state-freshness.md)
 потребует изменения модели свежести или проверки amoCRM.
+
+- [ADR-0017: актуальность состояния](0017-connection-state-freshness.md).

@@ -202,7 +202,13 @@ export function computeConnectionHealth(card: ConnectionCard): ConnectionHealth 
       title: 'Локальная авторизация требует повторного OAuth',
       section: 'auth',
     })
-  } else if (auth?.unverified) {
+  } else if (
+    auth?.unverified &&
+    !(
+      card.authorization_check?.freshness === 'fresh' &&
+      card.authorization_check?.data?.classification === 'verified_ok'
+    )
+  ) {
     pushProblem(problems, {
       id: 'unverified',
       title: 'Фактическая авторизация не проверена запросом к amoCRM',

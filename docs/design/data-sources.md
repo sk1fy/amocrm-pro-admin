@@ -126,7 +126,7 @@
 | Операции, инициатор, команда, state/result | admin DB operations, через /operations/admin |
 | Результат Core-команды | Core command receipt, без повторной отправки |
 | authorization_check.classification/observed_at | Подтверждённый результат последней check-квитанции; внешний вызов worker |
-| authorization_check.freshness | Admin: stale после 15 минут, unknown до результата |
+| authorization_check.freshness | Core: stale после 90 минут; Admin fallback 15 минут для старого Core |
 | job.retry_allowed | Core policy: allowlist + состояние job/установки/интеграции |
 | delivery.retry_allowed | failed и возраст менее 7 суток; Core дополнительно сверяет owner |
 | oauth_start_url после revoke | Ответ Core, публичная OAuth start ссылка |
@@ -191,3 +191,22 @@ Core admin.
 Источник: `error.request_id` или `X-Request-ID` ответа Admin API.
 Показывается только с сообщением временной недоступности на экране входа.
 При сетевом отказе без ответа код обращения отсутствует.
+
+## Актуальность установок (2026-09-19)
+
+| Поле | Источник | Правило |
+| --- | --- | --- |
+| summary.authorization_check | Core installation_checks + receipt | Только текущая версия credentials и состояние |
+| classification | Завершённый Core check | Не выводится из active |
+| observed_at проверки | Время фактической попытки | Отдельно от HTTP снимка |
+| freshness проверки | Core на чтении | 90 минут, включительно на границе |
+| fresh_for_seconds | Core connectioncheck.FreshFor | 5400, UI только показывает |
+| stats.verification.unverified | Core aggregate | active, unknown или stale |
+| stats.verification.temporary_errors | Core aggregate | active, network/429/internal |
+| Обновлено | Query dataUpdatedAt | Время получения backend-снимка браузером |
+
+Новое поле optional. Старый Core без него совместим; в списке это unknown,
+в карточке доступна прежняя ручная квитанция. Unknown нового Core не включает
+fallback, поэтому старая ошибка после новой OAuth-сессии не возвращается.
+Недоступный Core помечает его факты unavailable. См.
+[ADR-0017](../adr/0017-connection-state-freshness.md).

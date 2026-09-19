@@ -331,6 +331,9 @@ paths:
       operationId: listAccounts
       summary: Search and list accounts aggregated from backends.
       parameters:
+        - name: verification
+          in: query
+          schema: {type: string, enum: [ok, stale, unknown, failed]}
         - $ref: '#/components/parameters/RequestID'
         - name: q
           in: query
@@ -1631,6 +1634,8 @@ components:
       type: object
       required: [backend, connection_id, state]
       properties:
+        authorization_check:
+          $ref: '#/components/schemas/Verification'
         backend: {type: string}
         connection_id: {type: string}
         integration_id: {type: string}
@@ -1847,7 +1852,20 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/Observation'
+            allOf:
+              - $ref: '#/components/schemas/Observation'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      verification:
+                        type: object
+                        description: Optional counters for active installations; absence is unknown.
+                        properties:
+                          unverified: {type: integer}
+                          temporary_errors: {type: integer}
+                          verified: {type: integer}
         period: {type: string}
     SavedView:
       type: object
@@ -1913,6 +1931,18 @@ components:
             details:
               type: object
               additionalProperties: true
+    Verification:
+      type: object
+      description: Server-computed live amoCRM verification, separate from installation state. Optional for older backends.
+      properties:
+        classification: {type: string}
+        observed_at: {type: [string, 'null'], format: date-time}
+        freshness: {type: string, enum: [fresh, stale, unknown, unavailable]}
+        fresh_for_seconds: {type: integer}
+        retry_after: {type: integer}
+        raw: {type: string}
+
+
   responses:
     Unauthenticated:
       description: Authentication required or failed.

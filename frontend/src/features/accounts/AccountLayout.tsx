@@ -1,3 +1,4 @@
+import { RefreshStatus } from '../../components/RefreshStatus'
 import { Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { useRouteParams } from '../../app/hooks'
 import { useQuery } from '@tanstack/react-query'
@@ -26,6 +27,12 @@ export function AccountLayout() {
 
   return (
     <div className={page.page}>
+      <RefreshStatus
+        updatedAt={account.dataUpdatedAt}
+        fetching={account.isFetching}
+        failed={Boolean(account.error)}
+        onRefresh={() => void account.refetch({ cancelRefetch: false })}
+      />
       {account.error ? (
         <ErrorState error={account.error} onRetry={() => void account.refetch()} />
       ) : null}

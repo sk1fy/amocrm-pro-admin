@@ -78,7 +78,16 @@ export type AdminAudit = {
   created_at: string
 }
 
+export type Verification = {
+  classification: string
+  observed_at?: string | null
+  freshness: string
+  fresh_for_seconds: number
+  retry_after?: number
+  raw?: string
+}
 export type AccountConnection = {
+  authorization_check?: Verification | null
   backend: string
   connection_id: string
   integration_id?: string
@@ -126,6 +135,7 @@ export type Webhook = {
 }
 
 export type AccountConnectionCard = {
+  authorization_check?: Verification | null
   backend: string
   connection_id: string
   integration_code: string
@@ -330,6 +340,7 @@ export type LeadStatusRun = {
 }
 
 export type StatsSnapshot = {
+  verification?: { unverified: number; temporary_errors: number; verified: number } | null
   period: string
   period_start: string
   period_end: string

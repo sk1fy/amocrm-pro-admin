@@ -25,9 +25,10 @@ type positioned[T any] struct {
 }
 
 type streamPage[T any] struct {
-	Items      []positioned[T]
-	More       bool
-	ObservedAt time.Time
+	EmptyCursor string
+	Items       []positioned[T]
+	More        bool
+	ObservedAt  time.Time
 }
 
 type pageStream[T any] struct {
@@ -79,6 +80,7 @@ func mergePages[T any](ctx context.Context, scope, raw string, limit int, stream
 	}
 	candidates := []candidate{}
 	more := sourceUnavailable(sources)
+	advanced := false
 	for i, result := range results {
 		if errors.Is(result.err, adapter.ErrInvalidArgument) {
 			return nil, nil, nil, adapter.ErrInvalidArgument
@@ -92,6 +94,10 @@ func mergePages[T any](ctx context.Context, scope, raw string, limit int, stream
 		if result.err != nil {
 			more = true
 			continue
+		}
+		if len(result.page.Items) == 0 && result.page.EmptyCursor != "" {
+			cursor.Positions[streams[i].ID] = result.page.EmptyCursor
+			advanced = true
 		}
 		more = more || result.page.More
 		for _, row := range result.page.Items {
@@ -119,7 +125,7 @@ func mergePages[T any](ctx context.Context, scope, raw string, limit int, stream
 		cursor.Positions[streams[item.stream].ID] = item.row.Cursor
 	}
 	var next *string
-	if more && len(items) > 0 {
+	if more && (len(items) > 0 || advanced) {
 		data, err := json.Marshal(cursor)
 		if err != nil {
 			return nil, nil, nil, err

@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { backendIntervals, visibleInterval } from '../../api/queryClient'
+import { observeOperation } from '../../api/queryClient'
+import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import type { AdminOperation } from '../../api/types'
 import { fetchJob, keys } from '../../api/queries'
@@ -34,8 +36,10 @@ function JobObservation({
         observation?.freshness === 'unavailable' ||
         observation?.freshness === 'unknown'
       )
-        return false
-      return jobPending(observation?.data?.job.status) ? 1500 : false
+        return visibleInterval(backendIntervals.detail)
+      return jobPending(observation?.data?.job.status)
+        ? visibleInterval(backendIntervals.operation)
+        : visibleInterval(backendIntervals.detail)
     },
   })
   if (query.isPending) return <p role="status">Загрузка состояния задачи…</p>
@@ -117,6 +121,8 @@ export function OperationView({
   link?: boolean
   onInspect?: () => void
 }) {
+  const client = useQueryClient()
+  useEffect(() => observeOperation(client, operation), [client, operation])
   const result = operation.result ?? {}
   const oauthURL = safeOperationURL(result.oauth_start_url)
   const classification =

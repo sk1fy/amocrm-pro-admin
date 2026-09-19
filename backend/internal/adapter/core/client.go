@@ -113,6 +113,7 @@ func (c *Client) Health(ctx context.Context, actor adapter.Actor) (adapter.Obser
 func (c *Client) ListAccounts(ctx context.Context, actor adapter.Actor, f adapter.AccountFilter) (adapter.Observation[adapter.Page[adapter.Account]], error) {
 	query := url.Values{}
 	setQuery(query, "q", f.Query)
+	setQuery(query, "verification", f.Verification)
 	setQuery(query, "integration_id", f.IntegrationID)
 	setQuery(query, "status", f.Status)
 	setLimitCursor(query, f.Limit, f.Cursor)

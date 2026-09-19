@@ -1,3 +1,4 @@
+import { backendIntervals, visibleInterval } from '../../api/queryClient'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useRouter } from '@tanstack/react-router'
@@ -36,7 +37,9 @@ export function AdminOperationsPage() {
     queryKey: keys.adminOperations(params),
     queryFn: () => fetchAdminOperations(params),
     refetchInterval: (query) =>
-      query.state.data?.items.some((item) => operationPending(item.state)) ? 1500 : false,
+      query.state.data?.items.some((item) => operationPending(item.state))
+        ? visibleInterval(backendIntervals.operation)
+        : visibleInterval(backendIntervals.detail),
   })
   const change = (patch: Partial<CursorSearch>) =>
     pushSearch('/operations/admin', { ...search, ...patch, cursor: undefined })

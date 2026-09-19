@@ -19,7 +19,15 @@ func (h *api) listAccounts(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, err)
 		return
 	}
+	verification := strings.TrimSpace(query.Get("verification"))
+	switch verification {
+	case "", "ok", "stale", "unknown", "failed":
+	default:
+		httpx.WriteError(w, r, httpx.InvalidArgument("invalid verification filter"))
+		return
+	}
 	result, err := h.accounts.ListAccounts(r.Context(), adminActor(r), accounts.ListFilter{
+		Verification:  verification,
 		Q:             query.Get("q"),
 		IntegrationID: strings.TrimSpace(query.Get("integration_id")),
 		Product:       strings.TrimSpace(query.Get("product")),

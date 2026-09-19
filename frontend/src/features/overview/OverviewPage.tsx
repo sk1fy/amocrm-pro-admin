@@ -1,3 +1,4 @@
+import { RefreshStatus } from '../../components/RefreshStatus'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { usePushSearch, useRouteSearch } from '../../app/hooks'
@@ -106,6 +107,15 @@ export function OverviewPage() {
           </select>
         </label>
       </header>
+      <RefreshStatus
+        updatedAt={stats.dataUpdatedAt}
+        fetching={stats.isFetching}
+        failed={Boolean(stats.error)}
+        onRefresh={() => {
+          for (const query of [stats, backends, ...problems, ...latestJobs])
+            void query.refetch({ cancelRefetch: false })
+        }}
+      />
 
       {stats.error ? <ErrorState error={stats.error} onRetry={() => void stats.refetch()} /> : null}
       {stats.isPending ? <PageSkeleton label="Загрузка статистики…" variant="dashboard" /> : null}
@@ -146,10 +156,26 @@ export function OverviewPage() {
             metric="active"
             period={period}
           />
+          <Metric
+            label="Проверка устарела или не выполнялась"
+            value={snapshot.verification?.unverified}
+          />
+          <Metric
+            label="Временная ошибка проверки"
+            value={snapshot.verification?.temporary_errors}
+          />
+          <Metric
+            label="Бекенд недоступен"
+            value={
+              backends.error || !backends.data
+                ? null
+                : backends.data.items.filter((item) => item.status === 'unavailable').length
+            }
+          />
           <Metric label="Ошибки задач" value={snapshot.job_errors} to="/operations" />
           <Metric label="Задержка p50, мс" value={snapshot.latency_p50_ms} />
           <Metric
-            label="Проблемы авторизации"
+            label="Нужна повторная авторизация"
             value={snapshot.auth_problems}
             to="/stats/accounts"
             metric="auth_problems"

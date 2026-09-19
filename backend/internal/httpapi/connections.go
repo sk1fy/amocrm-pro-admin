@@ -79,6 +79,7 @@ func (h *api) getConnection(w http.ResponseWriter, r *http.Request) {
 	card.AuthorizationCheck = observationFrom(check, check.Data)
 	if connErr != nil {
 		unavail := unavailableObservation(source, connErr)
+		card.AuthorizationCheck = unavail
 		card.Connection = unavail
 		card.Authorization = unavail
 		card.Webhook = unavail
@@ -89,6 +90,13 @@ func (h *api) getConnection(w http.ResponseWriter, r *http.Request) {
 		detail := adapter.ConnectionDetail{}
 		if data != nil {
 			detail = *data
+		}
+		if verification := detail.Connection.AuthorizationCheck; verification != nil {
+			observed := now
+			if verification.ObservedAt != nil {
+				observed = *verification.ObservedAt
+			}
+			card.AuthorizationCheck = observationDTO{Source: source, ObservedAt: observed, Freshness: verification.Freshness, Error: verification.Error, Data: verification, Raw: verification.Raw}
 		}
 		card.Connection = observationFrom(connObs, toConnectionDTO(detail.Connection))
 		card.Authorization = observationFrom(connObs, toAuthorizationDTO(detail.Authorization))
