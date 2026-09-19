@@ -212,7 +212,8 @@ Core admin (`amocrm-pro/internal/adminread`, `admincommand`):
 - Мутации: сессия + `X-Requested-With` + `Origin` + `Idempotency-Key`.
 - Cookie `HttpOnly; Secure; SameSite=Strict`. В development `Secure`
   отключается только при `APP_ENV=development`.
-- Ограничение частоты входа; одинаковый ответ на любую ошибку входа.
+- Ограничение частоты входа; одинаковый ответ на ошибки учётных данных.
+  Инфраструктурный отказ — безопасный 5xx с request_id, не 401.
 - Admin listener Core и Admin API management listener слушают только
   loopback/внутреннюю сеть. Публикация портов в compose — `127.0.0.1:`.
 - Fixtures и тесты используют только вымышленные домены (`*.example.invalid`,
@@ -253,7 +254,8 @@ integration-test`; Activity-части — `make activity-ci`. Host Go там н
 | `make test` | `go test -race ./...`; `npm test` (Vitest) |
 | `make integration-test` | миграции up/down и `*_integration_test.go` с PostgreSQL в изолированном compose-проекте |
 | `make e2e` | Playwright против собранного стека с fixture-адаптером |
-| `make check` | всё выше |
+| `make vulncheck` | govulncheck по официальной базе Go в Docker |
+| `make check` | всё выше, документация и проверки скриптов |
 
 Правила:
 

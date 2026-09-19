@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [lint, test, integration-test, e2e]
+        target: [lint, test, integration-test, e2e, vulncheck]
     steps:
       - uses: actions/checkout@v4
         with:

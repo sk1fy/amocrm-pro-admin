@@ -115,6 +115,10 @@ func (h *api) login(w http.ResponseWriter, r *http.Request) {
 	}
 	token, account, err := h.sessions.Login(r.Context(), email, body.Password, ip, r.UserAgent())
 	if err != nil {
+		if !errors.Is(err, auth.ErrInvalidCredentials) {
+			httpx.WriteError(w, r, httpx.Internal())
+			return
+		}
 		_ = h.audit.Record(r.Context(), audit.Event{
 			ActorEmail: email,
 			Action:     audit.ActionLoginFailed,
@@ -140,19 +144,12 @@ func (h *api) login(w http.ResponseWriter, r *http.Request) {
 
 func (h *api) logout(w http.ResponseWriter, r *http.Request) {
 	principal, _ := auth.PrincipalFromContext(r.Context())
-	if err := h.sessions.Revoke(r.Context(), principal.SessionID, auth.ReasonLogout); err != nil && !errors.Is(err, auth.ErrNotFound) {
+	event := h.accessEvent(r)
+	event.Action = audit.ActionLogout
+	if err := h.access.RevokeSession(r.Context(), principal.SessionID, principal.EmployeeID, event); err != nil && !errors.Is(err, auth.ErrNotFound) {
 		httpx.WriteError(w, r, httpx.Internal())
 		return
 	}
-	_ = h.audit.Record(r.Context(), audit.Event{
-		EmployeeID: &principal.EmployeeID,
-		ActorEmail: principal.Account.Email,
-		Action:     audit.ActionLogout,
-		ObjectType: "session",
-		ObjectRef:  "session:" + principal.SessionID.String(),
-		RequestID:  httpx.RequestIDFromContext(r.Context()),
-		IP:         h.clientIP(r),
-	})
 	h.sessions.ClearCookie(w)
 	httpx.WriteJSON(w, http.StatusOK, okResponse{OK: true})
 }
@@ -189,7 +186,9 @@ func (h *api) revokeOwnSession(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	if err := h.sessions.RevokeOwned(r.Context(), id, principal.EmployeeID, auth.ReasonLogout); err != nil {
+	event := h.accessEvent(r)
+	event.Action = audit.ActionSessionRevoke
+	if err := h.access.RevokeSession(r.Context(), id, principal.EmployeeID, event); err != nil {
 		if errors.Is(err, auth.ErrNotFound) {
 			httpx.WriteError(w, r, httpx.NotFound("session not found"))
 			return
@@ -197,15 +196,6 @@ func (h *api) revokeOwnSession(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, httpx.Internal())
 		return
 	}
-	_ = h.audit.Record(r.Context(), audit.Event{
-		EmployeeID: &principal.EmployeeID,
-		ActorEmail: principal.Account.Email,
-		Action:     audit.ActionSessionRevoke,
-		ObjectType: "session",
-		ObjectRef:  "session:" + id.String(),
-		RequestID:  httpx.RequestIDFromContext(r.Context()),
-		IP:         h.clientIP(r),
-	})
 	httpx.WriteJSON(w, http.StatusOK, okResponse{OK: true})
 }
 
@@ -248,9 +238,9 @@ func (h *api) createEmployee(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, httpx.Internal())
 		return
 	}
-	emp, err := h.employees.Create(r.Context(), employees.CreateInput{
+	emp, err := h.access.Create(r.Context(), employees.CreateInput{
 		Email: email, Name: name, Role: body.Role, PasswordHash: hash,
-	})
+	}, h.accessEvent(r))
 	if err != nil {
 		if errors.Is(err, employees.ErrConflict) {
 			httpx.WriteError(w, r, httpx.Conflict("employee already exists"))
@@ -259,17 +249,6 @@ func (h *api) createEmployee(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, httpx.Internal())
 		return
 	}
-	actor := actorFrom(r)
-	_ = h.audit.Record(r.Context(), audit.Event{
-		EmployeeID: actor.id,
-		ActorEmail: actor.email,
-		Action:     audit.ActionEmployeeCreate,
-		ObjectType: "employee",
-		ObjectRef:  "employee:" + emp.ID.String(),
-		RequestID:  httpx.RequestIDFromContext(r.Context()),
-		IP:         h.clientIP(r),
-		Metadata:   map[string]any{"email": emp.Email, "role": emp.Role},
-	})
 	httpx.WriteJSON(w, http.StatusCreated, toEmployeeDTO(emp))
 }
 
@@ -300,18 +279,9 @@ func (h *api) patchEmployee(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, httpx.InvalidArgument("status must be active or disabled"))
 		return
 	}
-	before, err := h.employees.GetRecord(r.Context(), id)
-	if err != nil {
-		if errors.Is(err, employees.ErrNotFound) {
-			httpx.WriteError(w, r, httpx.NotFound("employee not found"))
-			return
-		}
-		httpx.WriteError(w, r, httpx.Internal())
-		return
-	}
-	emp, roleChanged, statusChanged, err := h.employees.Update(r.Context(), id, employees.UpdateInput{
+	emp, err := h.access.Update(r.Context(), id, employees.UpdateInput{
 		Name: body.Name, Role: body.Role, Status: body.Status,
-	})
+	}, h.accessEvent(r))
 	if err != nil {
 		if errors.Is(err, employees.ErrNotFound) {
 			httpx.WriteError(w, r, httpx.NotFound("employee not found"))
@@ -320,50 +290,6 @@ func (h *api) patchEmployee(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, httpx.Internal())
 		return
 	}
-	if emp.Status == auth.StatusDisabled && statusChanged {
-		if err := h.sessions.RevokeAll(r.Context(), emp.ID, auth.ReasonDisabled); err != nil {
-			httpx.WriteError(w, r, httpx.Internal())
-			return
-		}
-	} else if roleChanged {
-		if err := h.sessions.RevokeAll(r.Context(), emp.ID, auth.ReasonRoleChange); err != nil {
-			httpx.WriteError(w, r, httpx.Internal())
-			return
-		}
-	}
-	action := audit.ActionEmployeeUpdate
-	if statusChanged && emp.Status == auth.StatusDisabled {
-		action = audit.ActionEmployeeDisable
-	}
-	changed := make([]string, 0, 3)
-	from := map[string]any{}
-	to := map[string]any{}
-	if body.Name != nil && before.Name != emp.Name {
-		changed = append(changed, "name")
-		from["name"] = before.Name
-		to["name"] = emp.Name
-	}
-	if roleChanged {
-		changed = append(changed, "role")
-		from["role"] = before.Role
-		to["role"] = emp.Role
-	}
-	if statusChanged {
-		changed = append(changed, "status")
-		from["status"] = before.Status
-		to["status"] = emp.Status
-	}
-	actor := actorFrom(r)
-	_ = h.audit.Record(r.Context(), audit.Event{
-		EmployeeID: actor.id,
-		ActorEmail: actor.email,
-		Action:     action,
-		ObjectType: "employee",
-		ObjectRef:  "employee:" + emp.ID.String(),
-		RequestID:  httpx.RequestIDFromContext(r.Context()),
-		IP:         h.clientIP(r),
-		Metadata:   map[string]any{"changed": changed, "from": from, "to": to},
-	})
 	httpx.WriteJSON(w, http.StatusOK, toEmployeeDTO(emp))
 }
 
@@ -373,7 +299,7 @@ func (h *api) revokeEmployeeSessions(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, err)
 		return
 	}
-	if _, err := h.employees.GetRecord(r.Context(), id); err != nil {
+	if err := h.access.RevokeAll(r.Context(), id, h.accessEvent(r)); err != nil {
 		if errors.Is(err, employees.ErrNotFound) {
 			httpx.WriteError(w, r, httpx.NotFound("employee not found"))
 			return
@@ -381,20 +307,6 @@ func (h *api) revokeEmployeeSessions(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, httpx.Internal())
 		return
 	}
-	if err := h.sessions.RevokeAll(r.Context(), id, auth.ReasonAdmin); err != nil {
-		httpx.WriteError(w, r, httpx.Internal())
-		return
-	}
-	actor := actorFrom(r)
-	_ = h.audit.Record(r.Context(), audit.Event{
-		EmployeeID: actor.id,
-		ActorEmail: actor.email,
-		Action:     audit.ActionSessionsRevoke,
-		ObjectType: "employee",
-		ObjectRef:  "employee:" + id.String(),
-		RequestID:  httpx.RequestIDFromContext(r.Context()),
-		IP:         h.clientIP(r),
-	})
 	httpx.WriteJSON(w, http.StatusOK, okResponse{OK: true})
 }
 
@@ -526,4 +438,12 @@ func toAuditDTO(item audit.Entry) auditDTO {
 
 func contextWithTimeout(r *http.Request, timeout time.Duration) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(r.Context(), timeout)
+}
+
+func (h *api) accessEvent(r *http.Request) audit.Event {
+	actor := actorFrom(r)
+	return audit.Event{
+		EmployeeID: actor.id, ActorEmail: actor.email,
+		RequestID: httpx.RequestIDFromContext(r.Context()), IP: h.clientIP(r),
+	}
 }

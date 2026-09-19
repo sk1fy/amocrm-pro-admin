@@ -20,6 +20,7 @@
 | [0013](0013-admin-metrics.md) | Метрики Prometheus Admin API | принято |
 | [0014](0014-admin-db-retention.md) | Retention и объём admin DB | принято |
 | [0015](0015-connection-diagnostics-ux.md) | Диагностика подключения в UI | принято |
+| [0016](0016-atomic-employee-access.md) | Атомарное изменение доступа сотрудников | принято |
 
 Следующее ожидаемое решение — фоновая актуальность состояния
 подключений, если patch-план

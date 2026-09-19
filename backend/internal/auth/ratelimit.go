@@ -1,63 +1,53 @@
 package auth
 
 import (
+	"crypto/sha256"
 	"sync"
 	"time"
 )
 
 const limiterMaxEntries = 10_000
 
-type window struct {
-	minute time.Time
-	count  int
-}
+// Fixed-size hashes bound memory even for attacker-controlled email lengths.
+type limiterKey [sha256.Size]byte
 
 type Limiter struct {
 	mu      sync.Mutex
 	limit   int
-	entries map[string]*window
+	minute  time.Time
+	now     func() time.Time
+	entries map[limiterKey]int
 }
 
 func NewLimiter(perMinute int) *Limiter {
 	if perMinute < 1 {
 		perMinute = 1
 	}
-	return &Limiter{limit: perMinute, entries: make(map[string]*window)}
+	return &Limiter{limit: perMinute, now: time.Now, entries: make(map[limiterKey]int)}
 }
 
 func (l *Limiter) Allow(ip, email string) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	now := time.Now().UTC().Truncate(time.Minute)
-	okIP := l.hit("ip:"+ip, now)
-	okEmail := l.hit("email:"+email, now)
-	l.evict(now)
-	return okIP && okEmail
-}
-
-func (l *Limiter) hit(key string, now time.Time) bool {
-	current := l.entries[key]
-	if current == nil || current.minute != now {
-		l.entries[key] = &window{minute: now, count: 1}
-		return true
+	now := l.now().UTC().Truncate(time.Minute)
+	if now != l.minute {
+		// All counters share a fixed window. Clear at most once per window,
+		// never scan the table on a denied request in the same window.
+		clear(l.entries)
+		l.minute = now
 	}
-	if current.count >= l.limit {
+	if !l.hit(sha256.Sum256([]byte("ip:" + ip))) {
 		return false
 	}
-	current.count++
-	return true
+	return l.hit(sha256.Sum256([]byte("email:" + email)))
 }
 
-func (l *Limiter) evict(now time.Time) {
-	if len(l.entries) <= limiterMaxEntries {
-		return
+func (l *Limiter) hit(key limiterKey) bool {
+	count, exists := l.entries[key]
+	if count >= l.limit || (!exists && len(l.entries) >= limiterMaxEntries) {
+		// Fail closed at capacity; evicting live counters would reset limits.
+		return false
 	}
-	for key, value := range l.entries {
-		if value.minute != now {
-			delete(l.entries, key)
-		}
-		if len(l.entries) <= limiterMaxEntries {
-			return
-		}
-	}
+	l.entries[key] = count + 1
+	return true
 }

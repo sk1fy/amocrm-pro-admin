@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -85,8 +86,11 @@ func (s *Service) Login(ctx context.Context, email, password, ip, userAgent stri
 
 	account, passwordHash, err := s.lookupByEmail(ctx, email)
 	if err != nil {
-		_ = Verify(password, dummyPasswordHash())
-		return "", Account{}, ErrInvalidCredentials
+		if errors.Is(err, ErrNotFound) {
+			_ = Verify(password, dummyPasswordHash())
+			return "", Account{}, ErrInvalidCredentials
+		}
+		return "", Account{}, err
 	}
 	hash := ""
 	if passwordHash != nil {
@@ -177,7 +181,11 @@ func (s *Service) Revoke(ctx context.Context, sessionID uuid.UUID, reason string
 func (s *Service) RevokeOwned(ctx context.Context, sessionID, employeeID uuid.UUID, reason string) error {
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
-	tag, err := s.pool.Exec(ctx, `
+	return s.RevokeOwnedTx(ctx, s.pool, sessionID, employeeID, reason)
+}
+
+func (s *Service) RevokeOwnedTx(ctx context.Context, db sessionExecutor, sessionID, employeeID uuid.UUID, reason string) error {
+	tag, err := db.Exec(ctx, `
 		UPDATE sessions
 		SET revoked_at = now(), revoke_reason = $3
 		WHERE id = $1 AND employee_id = $2 AND revoked_at IS NULL`, sessionID, employeeID, reason)
@@ -193,7 +201,15 @@ func (s *Service) RevokeOwned(ctx context.Context, sessionID, employeeID uuid.UU
 func (s *Service) RevokeAll(ctx context.Context, employeeID uuid.UUID, reason string) error {
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
-	if _, err := s.pool.Exec(ctx, `
+	return s.RevokeAllTx(ctx, s.pool, employeeID, reason)
+}
+
+type sessionExecutor interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+}
+
+func (s *Service) RevokeAllTx(ctx context.Context, db sessionExecutor, employeeID uuid.UUID, reason string) error {
+	if _, err := db.Exec(ctx, `
 		UPDATE sessions
 		SET revoked_at = now(), revoke_reason = $2
 		WHERE employee_id = $1 AND revoked_at IS NULL`, employeeID, reason); err != nil {

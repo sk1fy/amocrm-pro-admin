@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { useRouteSearch } from '../../app/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import { isApiError } from '../../api/client'
+import { loginErrorMessage } from '../../states/login'
 import { keys, login } from '../../api/queries'
 import { safeNextPath } from '../../lib/format'
 import { LoginShell } from '../../app/layout'
@@ -28,11 +28,7 @@ export function LoginPage() {
       queryClient.setQueryData(keys.me, me)
       router.history.push(safeNextPath(next))
     } catch (caught) {
-      if (isApiError(caught) && caught.status === 429) {
-        setError('Слишком много попыток, повторите через 60 с')
-      } else {
-        setError('Неверный email или пароль')
-      }
+      setError(loginErrorMessage(caught))
     } finally {
       setPending(false)
     }
