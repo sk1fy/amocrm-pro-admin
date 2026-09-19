@@ -23,11 +23,11 @@ curl --fail http://127.0.0.1:18082/ready
 ```
 
 Порты хоста: публичный API `127.0.0.1:18080`, management `127.0.0.1:18082`,
-admin listener (после части 1.1) `127.0.0.1:18083`. Все — loopback.
+admin listener `127.0.0.1:18083`. Все — loopback.
 
 Admin listener включается переменными `ADMIN_HTTP_ADDRESS=:8083` и
 `ADMIN_API_TOKEN` в `docker-compose.activity.yml`; без обеих listener не
-стартует. Проверка после реализации:
+стартует. Проверка:
 
 ```sh
 curl --fail -H "Authorization: Bearer $ADMIN_API_TOKEN" \
@@ -147,7 +147,7 @@ make e2e
 Демонстрационный сценарий экранов:
 [demo-stage-1.md](demo-stage-1.md).
 
-## Этап 4: второй бекенд, метрики, эксплуатация
+## Второй бекенд, метрики, эксплуатация
 
 Второй бекенд уже в dev-стеке: `deploy/backends.yaml`, код `fixture`
 (`kind: fixture`, `profile: module`) — тестовые данные с
@@ -184,8 +184,8 @@ make bench-admin                                  # 10^4/10^5
 ## Проверки
 
 ```sh
-make docs-check        # работает сейчас
-make check             # docs-check + lint + test + integration-test (после 1.2)
+make docs-check        # относительные Markdown-ссылки
+make check             # docs-check + lint + test + integration-test + e2e
 cd ../amocrm-pro && make fmt-check vet test openapi-check integration-test
 ```
 

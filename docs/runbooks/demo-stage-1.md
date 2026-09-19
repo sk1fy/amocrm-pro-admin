@@ -1,8 +1,13 @@
 # Демонстрация этапа 1
 
-Сценарий для команды: найти аккаунт, увидеть несколько виджетов с
+> Исторический сценарий приёмки этапа 1 (чтение без команд). Актуальный
+> операторский путь — [operator.md](operator.md); сквозной сценарий
+> экранов — [demo-stage-4.md](demo-stage-4.md).
+
+Сценарий: найти аккаунт, увидеть несколько виджетов с
 разными состояниями, открыть подключение, убедиться в свежести и метке
-fixture. Команд (изменений в Core) нет.
+fixture. Команды этого сценария не входят — они в
+[demo-stage-2.md](demo-stage-2.md).
 
 Два пути данных. Их нельзя смешивать без метки происхождения.
 
@@ -86,8 +91,8 @@ printf '%s' 'correct-horse-battery' | \
 5. Открыть подключение `fixture-widget-a`. Секции авторизации,
    webhook, грантов независимы. `observed_at` видно у блоков.
    Авторизация — `missing` + `unverified` (в SQL-fixture нет
-   `oauth_credentials`). Синхронизация Activity — «нет данных»
-   до этапа 3.
+   `oauth_credentials`). Синхронизация Activity в SQL-fixture может
+   быть «нет данных»; полный sync — [demo-stage-3.md](demo-stage-3.md).
 6. Обновить страницу: прямая ссылка открывается снова.
 7. Вкладки Операции и История аккаунта, глобальные Виджеты /
    Операции / Система.
@@ -103,9 +108,9 @@ printf '%s' 'correct-horse-battery' | \
 | 91000005 | fixture-five.amocrm.test | OAuth не завершён |
 | 91000006 | fixture-six.amocrm.test | ошибка и dead job |
 
-## Что не показывать как успех этапа 1
+## Границы этого сценария
 
-- Команды enable/disable/revoke/uninstall — этап 2.
-- Проверка токена запросом к amoCRM — этап 2.
-- SyncStatus Activity — этап 3.
+- Команды enable/disable/revoke/uninstall — [demo-stage-2.md](demo-stage-2.md).
+- Проверка токена запросом к amoCRM — [demo-stage-2.md](demo-stage-2.md).
+- SyncStatus Activity — [demo-stage-3.md](demo-stage-3.md).
 - Данные без метки fixture, если это SQL- или adapter-fixture.

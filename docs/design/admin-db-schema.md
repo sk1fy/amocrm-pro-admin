@@ -1,14 +1,14 @@
 # Схема собственной БД админки
 
-PostgreSQL 17, база `admin`. Хранит только то, чем владеет админка: сотрудники,
-сессии, аудит действий сотрудников, операции (этап 2), сохранённые
-представления и агрегаты статистики (этап 3). Данных Core/Activity/CRM Events
-здесь нет и не будет — они читаются через адаптеры.
+PostgreSQL 17, база `admin`. Хранит только то, чем владеет админка:
+сотрудники, сессии, аудит действий сотрудников, операции, сохранённые
+представления. Данных Core/Activity/CRM Events здесь нет и не будет —
+они читаются через адаптеры.
 
 Формат миграций и мигратор — [ADR-0005](../adr/0005-admin-db-migrations.md).
-Ниже — целевая схема этапа 1 (миграции `000001`–`000003`) и зарезервированные
-таблицы следующих этапов. SQL в этом документе — черновик для миграций; при
-расхождении источник истины — файлы `backend/migrations`.
+Ниже — схема миграций `000001`–`000006`. SQL в этом документе должен
+совпадать с `backend/migrations`; при расхождении источник истины —
+файлы миграций.
 
 ## Общие соглашения
 
@@ -108,40 +108,59 @@ CREATE INDEX admin_audit_object_created_idx ON admin_audit_log (object_type, obj
 запрещённых ключей). Записи `auth.login_failed` содержат только `actor_email`
 и `ip`.
 
-## Зарезервировано: этап 2 — `operations`
+## 000004_operations
 
 ```sql
 CREATE TABLE operations (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY,
     employee_id     UUID NOT NULL REFERENCES employees(id),
-    backend         TEXT NOT NULL,                 -- код бекенда из backends.yaml
-    target_type     TEXT NOT NULL,                 -- connection | integration
-    target_id       TEXT NOT NULL,                 -- локальный ID бекенда
-    command         TEXT NOT NULL,                 -- check | enable | disable | revoke | uninstall | reconcile | retry | ...
-    idempotency_key TEXT NOT NULL,
-    request_hash    BYTEA NOT NULL,                -- SHA-256 канонического payload
-    state           TEXT NOT NULL DEFAULT 'accepted',
-    outcome         JSONB,                         -- безопасный результат бекенда
-    error_code      TEXT,
-    error_message   TEXT,
-    backend_ref     TEXT,                          -- ID операции/job бекенда, если есть
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    actor_email     TEXT NOT NULL,
+    request_id      UUID NOT NULL,
+    changed_fields  JSONB NOT NULL DEFAULT '[]'
+                    CHECK (jsonb_typeof(changed_fields) = 'array'),
+    backend         TEXT NOT NULL,
+    target_type     TEXT NOT NULL
+                    CHECK (target_type IN
+                    ('installation', 'integration', 'job', 'delivery')),
+    target_id       TEXT NOT NULL,
+    command         TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL
+                    CHECK (length(idempotency_key) BETWEEN 1 AND 128),
+    request_hash    BYTEA NOT NULL CHECK (octet_length(request_hash) = 32),
+    state           TEXT NOT NULL
+                    CHECK (state IN ('accepted', 'pending', 'running',
+                    'succeeded', 'failed', 'partial', 'unknown_outcome')),
+    outcome         TEXT NOT NULL DEFAULT '',
+    result          JSONB NOT NULL DEFAULT '{}'
+                    CHECK (jsonb_typeof(result) = 'object'),
+    error           JSONB,
+    lease_until     TIMESTAMPTZ NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT statement_timestamp(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT statement_timestamp(),
     finished_at     TIMESTAMPTZ,
-    CONSTRAINT operations_idempotency_key UNIQUE (backend, target_type, target_id, command, idempotency_key),
-    CONSTRAINT operations_state_check CHECK (state IN
-        ('accepted', 'pending', 'running', 'succeeded', 'failed', 'partial', 'unknown_outcome')),
-    CONSTRAINT operations_request_hash_len CHECK (octet_length(request_hash) = 32)
+    observed_at     TIMESTAMPTZ,
+    UNIQUE (backend, target_type, target_id, command, idempotency_key)
 );
-CREATE INDEX operations_target_created_idx ON operations (backend, target_type, target_id, created_at DESC);
-CREATE INDEX operations_employee_created_idx ON operations (employee_id, created_at DESC);
-CREATE INDEX operations_active_idx ON operations (updated_at) WHERE state IN ('accepted', 'pending', 'running');
+CREATE UNIQUE INDEX operations_active_target
+    ON operations (backend, target_type, target_id)
+    WHERE state IN ('accepted', 'running', 'pending');
+CREATE INDEX operations_created_id ON operations (created_at DESC, id DESC);
+CREATE INDEX operations_target_created
+    ON operations (backend, target_type, target_id, created_at DESC, id DESC);
+CREATE INDEX operations_state_created
+    ON operations (state, created_at DESC, id DESC);
+CREATE INDEX operations_request_key
+    ON operations (idempotency_key, created_at DESC, id DESC);
+CREATE TRIGGER operations_updated_at BEFORE UPDATE ON operations
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 ```
 
-Повтор с тем же ключом и другим `request_hash` → `conflict`. Ключ общий для
-всех сотрудников: два оператора с одним ключом получают одну операцию.
+Повтор с тем же ключом и другим `request_hash` → `conflict`. Ключ общий
+для всех сотрудников: два оператора с одним ключом получают одну
+операцию. Одновременно активна не более одной операции на
+`(backend, target_type, target_id)`.
 
-## 000005_saved_views (этап 3)
+## 000005_saved_views
 
 ```sql
 CREATE TABLE saved_views (
@@ -155,8 +174,23 @@ CREATE TABLE saved_views (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT statement_timestamp(),
     CONSTRAINT saved_views_section_check
         CHECK (section IN ('accounts', 'operations', 'stats')),
-    CONSTRAINT saved_views_name_not_blank CHECK (btrim(name) <> '')
+    CONSTRAINT saved_views_name_not_blank CHECK (btrim(name) <> ''),
+    CONSTRAINT saved_views_params_object CHECK (jsonb_typeof(params) = 'object'),
+    CONSTRAINT saved_views_columns_array CHECK (jsonb_typeof(columns) = 'array')
 );
+CREATE INDEX saved_views_owner_section_idx
+    ON saved_views (owner_employee_id, section);
+CREATE INDEX saved_views_shared_section_idx
+    ON saved_views (section) WHERE owner_employee_id IS NULL;
+CREATE UNIQUE INDEX saved_views_owner_section_name_key
+    ON saved_views (owner_employee_id, section, name)
+    WHERE owner_employee_id IS NOT NULL;
+CREATE UNIQUE INDEX saved_views_shared_section_name_key
+    ON saved_views (section, name)
+    WHERE owner_employee_id IS NULL;
+CREATE TRIGGER saved_views_updated_at
+    BEFORE UPDATE ON saved_views
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 ```
 
 Уникальность личных: `(owner_employee_id, section, name)` где owner
@@ -210,5 +244,6 @@ admin-cli prune --sessions-before 2026-08-14 --confirm
 
 ## Резервное копирование
 
-`pg_dump --format=custom` базы `admin` (этап 4); проверка restore в новую БД
-с прогоном миграций и входом сотрудника.
+`pg_dump --format=custom` базы `admin`; проверка restore в новую БД
+с прогоном миграций и входом сотрудника. Порядок —
+[operator.md](../runbooks/operator.md).

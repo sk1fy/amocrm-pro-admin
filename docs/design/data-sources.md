@@ -20,8 +20,8 @@
 | Происхождение (`real`/`fixture`) | `installations.settings->>'origin'` = `fixture` | там же | там же | новый |
 | Проблемы аккаунта, фильтр `problem` и счётчики «Требуют внимания» | вычисляются в Admin API из подключений (статус, webhook, авторизация, failed/dead jobs за 24 ч) | `GET /admin/v1/accounts` отдаёт `webhook_status`, `authorization_state`, `recent_failed_jobs` и `total` | `GET /api/v1/accounts?problem=`, Обзор | новый |
 | Рекомендуемое действие по типу проблемы | вычисление UI по коду `problem` | — | ссылка `/accounts?problem=` на Обзоре | UI 2026-09-14 |
-| Подписка: `plan`, `state`, `expires_at`, `capabilities` | адаптер `SubscriptionBackend.GetSubscription`; fixture — `Subscriptions` для 91000001/91000002/91000003/91000005 (у 91000004/91000006 факта нет) | Core capability `subscriptions` не объявляет | `GET /api/v1/accounts/{account_id}/subscription` | новый (этап 4); ADR-0012 |
-| Подписка: правило unknown и границы | опрашиваются только бекенды с capability `subscriptions`; пустой `items` — «данные подписки недоступны», не «нет подписки»; `Subscription` не `Grant` | — | там же | новый (этап 4); ADR-0012 |
+| Подписка: `plan`, `state`, `expires_at`, `capabilities` | адаптер `SubscriptionBackend.GetSubscription`; fixture — `Subscriptions` для 91000001/91000002/91000003/91000005 (у 91000004/91000006 факта нет) | Core capability `subscriptions` не объявляет | `GET /api/v1/accounts/{account_id}/subscription` | есть; ADR-0012 |
+| Подписка: правило unknown и границы | опрашиваются только бекенды с capability `subscriptions`; пустой `items` — «данные подписки недоступны», не «нет подписки»; `Subscription` не `Grant` | — | там же | есть; ADR-0012 |
 | Пользователи/контакты аккаунта | надёжного источника нет | — | — | не в этапах 1–4 без нового источника |
 
 ## Подключение (installation)
@@ -39,15 +39,15 @@
 | Webhook: состояние, события, `checked_at`, `last_error` | `installations.webhook_status`, `webhook_settings`, `webhook_checked_at`, `webhook_last_error` | там же | там же | новый |
 | Webhook: подтверждённые адреса доставки (кол-во, без URL) | `installation_webhook_destinations` (миграция 000015) — только `count`, `created_at`; URL зашифрованы и не читаются; в UI «подтверждённые адреса доставки», 0 при active — предупреждение | там же | там же | новый |
 | Авторизация: наличие, `expires_at`, `credential_version` (колонка `token_version`), `refreshed_at`, `key_version`, lease активна | `oauth_credentials` (без `*_ciphertext`) | там же | там же | новый; JSON-ключ `credential_version`, чтобы не содержать подстроку `token` |
-| Авторизация: результат проверки к amoCRM | внешний вызов через `amocrm.Client` в worker/Gateway | `POST /admin/v1/installations/{id}/commands/check` | операция | этап 2 |
+| Авторизация: результат проверки к amoCRM | внешний вызов через `amocrm.Client` в worker/Gateway | `POST /admin/v1/installations/{id}/commands/check` | операция | есть |
 | Гранты сервисов интеграции | `integration_services` | вложено в installation/integration | там же | новый |
 | Activity pilot | `activity_pilots.enabled` | вложено в `GET /admin/v1/installations/{id}` | там же | новый |
 | Activity доставка команд | `activity_command_receipts` ⋈ `activity_command_outbox` (`action`, `target`, `status`, `attempts`, `error_code`, `created_at`) — то же, что `activitybridge.ListDeliveries` | `GET /admin/v1/installations/{id}/activity/deliveries` | там же | новый (переиспользовать `ListDeliveries`/`InspectDelivery`) |
-| Activity синхронизация (`SyncStatus`) | CRM Events `Status`; unix 0 → `null`; неизвестный state → `unknown`+`raw`. `not_enabled` — отдельное состояние, не «нулевая активность» | `GET /admin/v1/installations/{id}/activity/status` | `GET …/activity/status`, карточка `activity_sync` | этап 3 |
-| Activity настройки | Activity `Settings` + `updated_at` unix (0 = defaults never saved) | `GET /admin/v1/installations/{id}/activity/settings` | `GET …/activity/settings`; команда `activity-configure` | этап 3 |
-| Activity панели и сотрудники | Activity `ManagedPanel` / users; без `view_key`/`share_url` | `GET …/activity/panels`, `…/panels/{id}`, `…/employees` | те же пути Admin API | этап 3 |
-| Lead-status правила | `lead_status_workflow_rules`, CAS revision | `GET …/lead-status/rules` | `GET …/lead-status/rules`; команда `lead-status-configure` | этап 3 |
-| Lead-status запуски | `workflow_runs`, skip/error reason, effect | `GET …/lead-status/runs` | `GET …/lead-status/runs` (`operations:read`) | этап 3 |
+| Activity синхронизация (`SyncStatus`) | CRM Events `Status`; unix 0 → `null`; неизвестный state → `unknown`+`raw`. `not_enabled` — отдельное состояние, не «нулевая активность» | `GET /admin/v1/installations/{id}/activity/status` | `GET …/activity/status`, карточка `activity_sync` | есть |
+| Activity настройки | Activity `Settings` + `updated_at` unix (0 = defaults never saved) | `GET /admin/v1/installations/{id}/activity/settings` | `GET …/activity/settings`; команда `activity-configure` | есть |
+| Activity панели и сотрудники | Activity `ManagedPanel` / users; без `view_key`/`share_url` | `GET …/activity/panels`, `…/panels/{id}`, `…/employees` | те же пути Admin API | есть |
+| Lead-status правила | `lead_status_workflow_rules`, CAS revision | `GET …/lead-status/rules` | `GET …/lead-status/rules`; команда `lead-status-configure` | есть |
+| Lead-status запуски | `workflow_runs`, skip/error reason, effect | `GET …/lead-status/runs` | `GET …/lead-status/runs` (`operations:read`) | есть |
 | Настройки установки `settings` | `installations.settings` | не выводить целиком; только `origin` | — | решение о редакции отдельно |
 
 ## Интеграция
@@ -71,7 +71,7 @@
 | Job: инициатор и ресурс (`actor_type`, `actor_id` — ID пользователя amoCRM, `resource_type`, `resource_id`) | `jobs` (миграция 000002) | там же | там же | новый |
 | Попытки: `attempt`, `worker_id`, `started_at`, `finished_at`, `outcome`, `error_code`, `error_message`, `duration_ms` | `job_attempts` | `GET /admin/v1/jobs/{id}` | `GET /api/v1/operations/jobs/core/{id}` | новый |
 | Размер очередей по состояниям | `jobs` GROUP BY `status` (или метрики backlog) | `GET /admin/v1/jobs/summary` | Обзор | новый; согласовать с `jobs.BacklogMetrics` |
-| Workflow/эффекты lead-status | `workflow_runs`, `outbound_effects` | `GET …/lead-status/runs` | история на экране настроек | этап 3 |
+| Workflow/эффекты lead-status | `workflow_runs`, `outbound_effects` | `GET …/lead-status/runs` | история на экране настроек | есть |
 
 ## История
 
@@ -86,11 +86,11 @@
 
 | Поле | Источник | Core admin read | Admin API | Статус |
 | --- | --- | --- | --- | --- |
-| Реестр: `backend`, `kind`, `display_name`, `products` | конфигурация `deploy/backends.yaml` + `Descriptor`/продукты адаптера | `GET /admin/v1/backend` даёт `backend` | `GET /api/v1/system/backends`, `items[]` | новый (этап 4) |
-| Реестр: `status` (`available`/`unavailable`/`unknown`) | `catalog.Registry.Probe`: кеш 10 с, персональный таймаут `Descriptor().Timeout` (запас 5 с) | — | там же | новый (этап 4); `degraded` зарезервирован, [states.md](states.md) |
-| Реестр: `contract_version`, `revision` | `Descriptor().ContractVersion`; после успешного `Health` — `health.revision` | `GET /admin/v1/backend` (`contract_version`, `revision`) | там же | новый (этап 4); ADR-0011 |
-| Реестр: `adapter_capabilities[]`, `backend_capabilities[]` | `Capabilities().Names()`; `health.capabilities` последнего успешного ответа | `GET /admin/v1/backend` (`capabilities`) | там же | новый (этап 4); ADR-0011 |
-| Реестр: `observed_at`, `checked_at`, `error{code,message}` | `observed_at` — последний успешный ответ (переживает отказ, может быть `null`), `checked_at` — последняя проба, `error` — безопасная ошибка | — | там же | новый (этап 4) |
+| Реестр: `backend`, `kind`, `display_name`, `products` | конфигурация `deploy/backends.yaml` + `Descriptor`/продукты адаптера | `GET /admin/v1/backend` даёт `backend` | `GET /api/v1/system/backends`, `items[]` | есть |
+| Реестр: `status` (`available`/`unavailable`/`unknown`) | `catalog.Registry.Probe`: кеш 10 с, персональный таймаут `Descriptor().Timeout` (запас 5 с) | — | там же | есть; `degraded` зарезервирован, [states.md](states.md) |
+| Реестр: `contract_version`, `revision` | `Descriptor().ContractVersion`; после успешного `Health` — `health.revision` | `GET /admin/v1/backend` (`contract_version`, `revision`) | там же | есть; ADR-0011 |
+| Реестр: `adapter_capabilities[]`, `backend_capabilities[]` | `Capabilities().Names()`; `health.capabilities` последнего успешного ответа | `GET /admin/v1/backend` (`capabilities`) | там же | есть; ADR-0011 |
+| Реестр: `observed_at`, `checked_at`, `error{code,message}` | `observed_at` — последний успешный ответ (переживает отказ, может быть `null`), `checked_at` — последняя проба, `error` — безопасная ошибка | — | там же | есть |
 | Реестр: таблица vs карточка | таблица: имя, тип, статус, контракт, последняя проверка, ошибки; ревизия SHA, возможности, продукты, компоненты JSON — карточка | — | там же | UI 2026-09-14 |
 | Компоненты Activity/CRM Events (режим, readiness) | management `GET /components`, `GET /components/activity/ready` — другой listener | `health.components` из `GET /admin/v1/backend` | там же | новый; management порт наружу не открывать |
 | Сотрудники, роли, статусы | admin DB `employees` | — | `GET/POST/PATCH /api/v1/system/employees` | новый |
@@ -99,11 +99,12 @@
 
 ## Правила заполнения
 
-- «Статус» — `новый` (создать в этом этапе), `есть` (существующий endpoint),
-  `этап N`, `отложено` (с причиной).
+- «Статус» — `есть`, `новый` или `UI YYYY-MM-DD` (реализовано;
+  `новый` — поле админки, которого не было в публичном API Core),
+  `отложено` (с причиной), `не в этапах` (нет источника).
 - Поле без строки в таблице не реализуется.
 - Если источник — вычисление, указать формулу словами или SQL-агрегат.
-- Для каждого показателя статистики этапа 3 добавляются столбцы «формула»,
+- Для каждого показателя статистики добавляются столбцы «формула»,
   «период», «свежесть».
 
 ### Исправления после проверки этапа 1
@@ -118,7 +119,7 @@
   задач подключений; `backend` у каждой строки берётся из адаптера.
 - Подключения интеграции: список аккаунтов с `integration_id` и `backend`.
 
-## Этап 2: управление
+## Управление
 
 | Поле | Источник |
 | --- | --- |
@@ -140,7 +141,7 @@
 безопасного результата операции; подтверждение постановки не означает
 успешного выполнения.
 
-## Этап 3: Activity, статистика, представления
+## Activity, статистика, представления
 
 Все агрегаты статистики — один snapshot с общим `observed_at`. Окно
 выбранного `period` (`24h`/`7d`/`30d`; по умолчанию `7d`, как в Core)
@@ -168,10 +169,10 @@ Core admin.
 | Сохранённые представления | admin DB `saved_views` | — | запись | — | `GET/POST/PATCH/DELETE /api/v1/views` |
 | Grafana/Loki | env `GRAFANA_BASE_URL`/`LOKI_BASE_URL`; id только в query URL | интервал UI | конфиг процесса | — | поле `observability` в `/system/backends` |
 
-## Этап 4: реестр, подписки, наблюдаемость, retention
+## Реестр, подписки, наблюдаемость, retention
 
 Реестр бекендов и подписки описаны в таблицах выше; эксплуатационные
-артефакты этапа:
+артефакты:
 
 | Поле / артефакт | Источник | Admin API / команда | Статус |
 | --- | --- | --- | --- |
