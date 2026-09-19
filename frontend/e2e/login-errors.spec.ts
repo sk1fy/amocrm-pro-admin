@@ -34,3 +34,48 @@ for (const failure of [401, 429, 500, 'network'] as const) {
     await expect(page.getByRole('button', { name: 'Войти', exact: true })).toBeEnabled()
   })
 }
+
+test('login keyboard flow preserves password, pending state and next destination', async ({
+  page,
+}) => {
+  let releaseLogin: (() => void) | undefined
+  let authenticated = false
+  const me = { id: 'fixture-viewer', name: 'Viewer', role: 'viewer', permissions: [] }
+  await page.route('**/api/v1/**', async (route) => {
+    const path = new URL(route.request().url()).pathname
+    if (path === '/api/v1/auth/login') {
+      expect(route.request().postDataJSON()).toEqual({
+        email: 'fixture@example.invalid',
+        password: 'fixture-password',
+      })
+      await new Promise<void>((resolve) => {
+        releaseLogin = resolve
+      })
+      authenticated = true
+      return route.fulfill({ json: me })
+    }
+    if (!authenticated)
+      return route.fulfill({ status: 401, json: { error: { code: 'unauthenticated' } } })
+    return route.fulfill({ json: path === '/api/v1/me' ? me : { items: [] } })
+  })
+  await page.goto('/login?next=/system/sessions')
+  await page.getByLabel('Email', { exact: true }).fill('fixture@example.invalid')
+  const password = page.getByLabel('Пароль', { exact: true })
+  await password.fill('fixture-password')
+  await password.press('Tab')
+  await expect(page.getByRole('button', { name: 'Показать пароль' })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(password).toHaveAttribute('type', 'text')
+  await expect(password).toHaveValue('fixture-password')
+  await page.keyboard.press('Enter')
+  await expect(password).toHaveAttribute('type', 'password')
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: 'Войти', exact: true })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('status')).toHaveText('Выполняется вход…')
+  await expect(page.getByRole('button', { name: 'Войти', exact: true })).toBeDisabled()
+  await expect.poll(() => !!releaseLogin).toBe(true)
+  releaseLogin?.()
+  await expect(page).toHaveURL(/\/system\/sessions$/)
+  await expect(page.getByRole('heading', { name: 'Мои сессии' })).toBeVisible()
+})

@@ -1,81 +1,427 @@
-.panel {
-  width: min(24rem, 100%);
+.page {
+  --login-muted: #657184;
+  --login-border: #e0e5eb;
+  --color-focus: #64748b;
+  min-height: 100svh;
   display: grid;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(28rem, 1fr);
+  color-scheme: light;
+  background: #ffffff;
+  color: #182234;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+}
+
+.poster {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  overflow: hidden;
+  padding: clamp(2rem, 4.5vw, 5rem);
+  border-right: 1px solid var(--login-border);
+  background:
+    radial-gradient(ellipse at 80% 25%, #ffffff 0%, transparent 65%),
+    linear-gradient(145deg, #edf1f5, #e7edf2);
+}
+
+.poster::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgb(115 132 157 / 5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(115 132 157 / 5%) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(black, transparent 70%);
 }
 
 .brand {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 12px;
+  font-size: 25px;
+  font-weight: 750;
+  letter-spacing: -0.045em;
 }
 
-.brandMark {
-  width: 22px;
-  height: 22px;
-  border-radius: 5px;
-  background: var(--color-text);
+.brand svg {
+  width: 42px;
+  height: 42px;
+}
+
+.art {
   position: relative;
-  flex: none;
+  width: min(100%, 34rem);
+  height: clamp(17rem, 34vw, 31rem);
+  margin: 0 auto;
+  flex: 1;
+  min-height: 19rem;
 }
 
-.brandMark::after {
-  content: '';
+.orbit {
   position: absolute;
-  inset: 6px;
-  border-radius: 2px;
-  background: var(--color-accent);
+  width: 92%;
+  aspect-ratio: 1;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgb(111 131 158 / 12%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
 }
 
-.brandName {
-  font-weight: 700;
-  font-size: 14.5px;
-  letter-spacing: -0.01em;
+.frameOuter,
+.frameMiddle,
+.frameInner,
+.aperture {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(-24deg) skew(7deg, 7deg);
 }
 
-.brandCaption {
-  font-family: var(--mono);
+.frameOuter {
+  width: 66%;
+  border: 1px solid rgb(111 131 158 / 23%);
+  box-shadow: 30px 40px 60px rgb(73 97 130 / 4%);
+}
+
+.frameMiddle {
+  width: 49%;
+  border: clamp(16px, 3vw, 38px) solid rgb(187 200 215 / 22%);
+  box-shadow:
+    0 0 0 1px rgb(148 165 186 / 18%),
+    20px 24px 36px rgb(83 102 131 / 7%);
+}
+
+.frameInner {
+  width: 33%;
+  border: clamp(12px, 2.3vw, 29px) solid #fdfefe;
+  background: linear-gradient(140deg, #cad5e0, #e4eaf0);
+  box-shadow:
+    14px 17px 0 #bbc9d7,
+    25px 31px 40px rgb(73 97 130 / 15%);
+}
+
+.aperture {
+  width: 15%;
+  background: #e4eaf0;
+  box-shadow: inset 9px 10px 12px rgb(84 105 134 / 12%);
+}
+
+.artLine {
+  position: absolute;
+  width: 110%;
+  height: 1px;
+  left: -5%;
+  top: 50%;
+  background: linear-gradient(90deg, transparent, rgb(121 142 170 / 20%), transparent);
+  transform: rotate(-17deg);
+}
+
+.posterCopy {
+  position: relative;
+  z-index: 1;
+  padding-top: 1rem;
+}
+
+.eyebrow {
   font-size: 11px;
-  color: var(--color-subtle);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--login-muted);
 }
 
-.card {
-  width: min(24rem, 100%);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 1.75rem;
+.statement {
+  margin: 17px 0 20px;
+  font-size: clamp(40px, 4.7vw, 72px);
+  line-height: 1.04;
+  letter-spacing: -0.065em;
+  font-weight: 550;
+}
+
+.description {
+  margin: 0;
+  font-size: clamp(13px, 1.1vw, 16px);
+  line-height: 1.7;
+  color: var(--login-muted);
+}
+
+.posterFoot {
+  margin-top: 42px;
+  padding-top: 18px;
+  border-top: 1px solid #d0d9e2;
+  color: var(--login-muted);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.entry {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(2rem, 4.5vw, 5rem);
+}
+
+.entryCaption,
+.entryFoot {
+  font-size: 12px;
+  color: var(--login-muted);
+}
+
+.entryCaption {
+  text-align: right;
+}
+
+.formWrap {
+  width: min(100%, 360px);
+  margin: auto;
+  padding: 52px 0;
+}
+
+.welcomeMark {
+  width: 44px;
+  height: 44px;
   display: grid;
-  gap: 1rem;
-  box-shadow: var(--shadow-sm);
+  place-items: center;
+  margin-bottom: 28px;
+  border: 1px solid var(--login-border);
+  border-radius: 12px;
+  color: #475569;
+  background: #ffffff;
+}
+
+.welcomeMark svg {
+  width: 23px;
+  height: 23px;
+}
+
+.formWrap h1 {
+  font-size: clamp(26px, 2.5vw, 34px);
+  font-weight: 650;
+  letter-spacing: -0.05em;
+}
+
+.intro {
+  color: var(--login-muted);
+  margin: 12px 0 34px;
+  font-size: 14px;
+}
+
+.form {
+  display: grid;
+  gap: 21px;
 }
 
 .field {
   display: grid;
-  gap: 6px;
+  gap: 9px;
 }
 
-.field > span {
+.field > span,
+.field > label {
   font-size: 12px;
-  color: var(--color-muted);
-  font-weight: 600;
+  font-weight: 650;
 }
 
-.card button[type='submit'] {
+.field input {
   width: 100%;
-  background: var(--color-text);
-  border-color: var(--color-text);
-  color: #fff;
+  height: 50px;
+  padding: 12px 14px;
+  border: 1px solid var(--login-border);
+  font-family: inherit;
+  font-size: 16px;
+  border-radius: 8px;
+  background: #fbfcfd;
+  color: #182234;
 }
 
-.card button[type='submit']:hover {
-  background: #2a2d28;
+.field input::placeholder {
+  font-size: 14px;
+  color: var(--login-muted);
+}
+
+.field input:focus {
+  border-color: #64748b;
+  box-shadow: 0 0 0 3px rgb(100 116 139 / 12%);
+}
+
+.passwordWrap {
+  position: relative;
+}
+
+.passwordWrap input {
+  padding-right: 53px;
+}
+
+.passwordToggle {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--login-muted);
+}
+
+.passwordToggle:hover {
+  background: #edf1f5;
+  color: #182234;
+}
+
+.passwordToggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.submit {
+  width: 100%;
+  height: 50px;
+  margin-top: 4px;
+  justify-content: space-between;
+  padding: 0 17px;
+  border-color: var(--color-accent);
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--color-link-hover);
+  border-color: var(--color-link-hover);
+}
+
+.submit svg {
+  width: 20px;
+  height: 20px;
+}
+
+.progress {
+  min-height: 18px;
+  margin-top: -12px;
+  font-size: 12px;
+  color: var(--login-muted);
+}
+
+.help {
+  margin: 7px 0 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--login-border);
+  color: var(--login-muted);
+  font-size: 12px;
+  line-height: 1.8;
 }
 
 .error {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid var(--tone-error);
+  border-radius: var(--radius-sm);
   background: var(--tone-error-bg);
   color: var(--tone-error);
-  padding: 0.75rem;
-  border-radius: var(--radius);
   font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.entryFoot {
+  text-align: center;
+}
+
+@media (min-width: 1600px) {
+  .poster {
+    padding-left: max(5rem, calc((100vw - 1440px) / 2));
+  }
+}
+
+@media (max-width: 760px) {
+  .page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .poster {
+    min-height: 0;
+    height: 166px;
+    padding: 26px 28px;
+    border-right: 0;
+    border-bottom: 1px solid var(--login-border);
+  }
+
+  .brand {
+    font-size: 22px;
+  }
+
+  .brand svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .art {
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    min-height: 0;
+    top: -28px;
+    right: -45px;
+    margin: 0;
+  }
+
+  .posterCopy {
+    padding-top: 22px;
+  }
+
+  .statement,
+  .description,
+  .posterFoot {
+    display: none;
+  }
+
+  .entry {
+    padding: 34px 28px 24px;
+  }
+
+  .entryCaption {
+    display: none;
+  }
+
+  .entryFoot {
+    margin-top: auto;
+  }
+
+  .formWrap {
+    margin: 0 auto;
+    padding: 0 0 36px;
+  }
+
+  .welcomeMark {
+    display: none;
+  }
+
+  .formWrap h1 {
+    font-size: 28px;
+  }
+
+  .intro {
+    margin-bottom: 29px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page button,
+  .page input {
+    transition: none;
+  }
 }

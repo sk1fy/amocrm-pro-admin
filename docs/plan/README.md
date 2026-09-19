@@ -14,6 +14,7 @@ patch-планами с актуальной базой и собственны�
 
 | План | Статус |
 | --- | --- |
+| [Редизайн входа](login-redesign.md) | completed |
 | [Актуальность состояния подключений](connection-state-freshness.md) | completed; rollout отдельно |
 | [Исправления внешнего аудита](security-audit-fixes.md) | completed |
 | [Диагностика подключений в интерфейсе](connection-diagnostics-ux.md) | completed |
