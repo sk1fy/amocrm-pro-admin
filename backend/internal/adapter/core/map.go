@@ -12,14 +12,15 @@ func mapAccountListItem(item accountListItem) adapter.Account {
 	connections := make([]adapter.ConnectionSummary, 0, len(item.Installations))
 	for _, inst := range item.Installations {
 		summary := adapter.ConnectionSummary{
-			ID:               inst.ID,
-			IntegrationID:    inst.IntegrationID,
-			IntegrationCode:  inst.IntegrationCode,
-			AccountID:        item.AccountID,
-			Status:           adapter.MapConnectionStatus(inst.Status),
-			Origin:           mapOriginValue(item.Origin),
-			RecentFailedJobs: inst.RecentFailedJobs,
-			Grants:           mapGrants(inst.Grants),
+			AuthorizationCheck: adapter.NormalizeVerification(inst.AuthorizationCheck),
+			ID:                 inst.ID,
+			IntegrationID:      inst.IntegrationID,
+			IntegrationCode:    inst.IntegrationCode,
+			AccountID:          item.AccountID,
+			Status:             adapter.MapConnectionStatus(inst.Status),
+			Origin:             mapOriginValue(item.Origin),
+			RecentFailedJobs:   inst.RecentFailedJobs,
+			Grants:             mapGrants(inst.Grants),
 		}
 		if inst.Authorization != "" {
 			summary.Authorization = adapter.MapAuthState(inst.Authorization)
@@ -30,6 +31,7 @@ func mapAccountListItem(item accountListItem) adapter.Account {
 		connections = append(connections, summary)
 	}
 	return adapter.Account{
+		Cursor:         rowCursor(item.LastActivityAt, strconv.FormatInt(item.AccountID, 10)),
 		AccountID:      item.AccountID,
 		Domains:        nonNil(item.Domains),
 		Origin:         mapOriginValue(item.Origin),
@@ -74,19 +76,20 @@ func mapCardSummary(card installationCard) adapter.ConnectionSummary {
 func mapInstallation(item installationSummary) adapter.ConnectionSummary {
 	origin := adapter.MapOrigin(item.Origin)
 	return adapter.ConnectionSummary{
-		RecentFailedJobs: item.RecentFailedJobs,
-		ID:               item.ID,
-		IntegrationID:    item.IntegrationID,
-		IntegrationCode:  item.IntegrationCode,
-		AccountID:        item.AccountID,
-		AccountDomain:    item.AccountDomain,
-		Status:           adapter.MapConnectionStatus(item.Status),
-		WebhookStatus:    optionalWebhook(item.WebhookStatus),
-		Origin:           origin.Canonical,
-		OriginRaw:        origin.Raw,
-		InstalledBy:      item.InstalledBy,
-		CreatedAt:        item.CreatedAt.UTC(),
-		UpdatedAt:        item.UpdatedAt.UTC(),
+		AuthorizationCheck: adapter.NormalizeVerification(item.AuthorizationCheck),
+		RecentFailedJobs:   item.RecentFailedJobs,
+		ID:                 item.ID,
+		IntegrationID:      item.IntegrationID,
+		IntegrationCode:    item.IntegrationCode,
+		AccountID:          item.AccountID,
+		AccountDomain:      item.AccountDomain,
+		Status:             adapter.MapConnectionStatus(item.Status),
+		WebhookStatus:      optionalWebhook(item.WebhookStatus),
+		Origin:             origin.Canonical,
+		OriginRaw:          origin.Raw,
+		InstalledBy:        item.InstalledBy,
+		CreatedAt:          item.CreatedAt.UTC(),
+		UpdatedAt:          item.UpdatedAt.UTC(),
 	}
 }
 

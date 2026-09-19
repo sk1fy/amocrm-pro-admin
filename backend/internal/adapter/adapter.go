@@ -178,6 +178,7 @@ type Backend interface {
 }
 
 type AccountFilter struct {
+	Verification  string
 	Query         string
 	IntegrationID string
 	Status        string
@@ -222,6 +223,7 @@ func (s State) Unknown() bool {
 }
 
 type Account struct {
+	Cursor         string
 	AccountID      int64
 	Domains        []string
 	Origin         string
@@ -230,6 +232,7 @@ type Account struct {
 }
 
 type ConnectionSummary struct {
+	AuthorizationCheck   *Verification
 	AuthorizationDetails *Authorization
 	WebhookDetails       *Webhook
 	ID                   string

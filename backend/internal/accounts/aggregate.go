@@ -17,6 +17,7 @@ type Aggregated struct {
 }
 
 type Connection struct {
+	AuthorizationCheck   *adapter.Verification
 	AuthorizationDetails *adapter.Authorization
 	WebhookDetails       *adapter.Webhook
 	Backend              string
@@ -54,6 +55,7 @@ func ConnectionFromSummary(backend string, conn adapter.ConnectionSummary) Conne
 	// ConnectionSummary has no Freshness/ObservedAt. GetAccount copies them
 	// from the account Observation; list items stay empty until then.
 	return Connection{
+		AuthorizationCheck:   conn.AuthorizationCheck,
 		AuthorizationDetails: conn.AuthorizationDetails,
 		WebhookDetails:       conn.WebhookDetails,
 		Backend:              backend,
@@ -104,6 +106,7 @@ func stateOf(connections []Connection) string {
 	}
 	if anyConnection(connections, func(c Connection) bool {
 		return c.State.Canonical == adapter.StatusReauthRequired ||
+			(c.AuthorizationCheck != nil && c.AuthorizationCheck.Classification == "auth_error") ||
 			(c.Authorization.Canonical == adapter.AuthMissing &&
 				(c.State.Canonical == adapter.StatusActive || c.State.Canonical == adapter.StatusPending))
 	}) {
@@ -147,10 +150,7 @@ func authUnverifiedOnLive(c Connection) bool {
 	if c.State.Canonical != adapter.StatusActive && c.State.Canonical != adapter.StatusPending {
 		return false
 	}
-	if c.AuthorizationDetails != nil {
-		return c.AuthorizationDetails.Unverified
-	}
-	return false
+	return !c.AuthorizationCheck.Confirmed()
 }
 
 func connectionLooksOK(c Connection) bool {
@@ -160,7 +160,7 @@ func connectionLooksOK(c Connection) bool {
 	if c.Webhook.Canonical == adapter.StatusError {
 		return false
 	}
-	if c.Authorization.Canonical == adapter.AuthMissing || c.Authorization.Canonical == adapter.AuthReauthRequired {
+	if c.Authorization.Canonical != adapter.AuthValid && c.Authorization.Canonical != adapter.AuthExpiredRefreshable {
 		return false
 	}
 	if c.Freshness == adapter.FreshnessStale || c.Freshness == adapter.FreshnessUnavailable {
@@ -186,7 +186,7 @@ func problemsOf(connections []Connection, sourceUnavailable bool) []string {
 		if connectionSourceUnavailable(conn) {
 			add(adapter.ProblemSourceUnavailable)
 		}
-		if conn.State.Canonical == adapter.StatusReauthRequired {
+		if conn.State.Canonical == adapter.StatusReauthRequired || (conn.AuthorizationCheck != nil && conn.AuthorizationCheck.Classification == "auth_error") {
 			add(adapter.ProblemReauthRequired)
 		}
 		if conn.Webhook.Canonical == adapter.StatusError {

@@ -1,3 +1,4 @@
+import { backendIntervals, visibleInterval } from '../../api/queryClient'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useRouteParams } from '../../app/hooks'
@@ -58,7 +59,9 @@ export function OperationPage() {
     queryKey: keys.adminOperation(operationId),
     queryFn: () => fetchAdminOperation(operationId),
     refetchInterval: (query) =>
-      operationPending(query.state.data?.operation.state) ? 1500 : false,
+      operationPending(query.state.data?.operation.state)
+        ? visibleInterval(backendIntervals.operation)
+        : visibleInterval(backendIntervals.detail),
   })
   const operation = query.data?.operation
   return (

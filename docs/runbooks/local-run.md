@@ -197,3 +197,19 @@ cd ../amocrm-pro && make fmt-check vet test openapi-check integration-test
 | Контейнеры пилота `unhealthy` | Зависят от postgres | Дождаться `pg_isready`, при необходимости `restart` |
 | Admin API отвечает `backend_unavailable` для `core` | Listener не включён или токен не совпадает | Проверить `ADMIN_HTTP_ADDRESS`/`ADMIN_API_TOKEN` в compose пилота и `CORE_ADMIN_API_TOKEN` в `.env` |
 | Fixture: `fixture integrations are missing` | Интеграции не созданы через CLI | Выполнить раздел «Интеграции для пилота» |
+
+## Актуальность данных
+
+Frontend использует build-time env:
+`VITE_BACKEND_DETAIL_INTERVAL_MS=15000`,
+`VITE_BACKEND_LIST_INTERVAL_MS=90000`, `VITE_OPERATION_INTERVAL_MS=1500`.
+Допустимый диапазон 1000–300000 мс; неверное значение останавливает сборку
+клиента при инициализации. Скрытые вкладки и окна без фокуса не опрашивают backend; при возврате
+снимок запрашивается сразу. Чтобы проверить polling, открыть аккаунты,
+изменить fixture-ответ и ждать до 90 секунд без reload. Автоматизированный
+сценарий находится в `frontend/e2e/accounts.spec.ts`.
+
+Docker Compose передаёт эти переменные как build args в frontend. После
+изменения выполнить `docker-compose -f deploy/docker-compose.yml build frontend`
+и пересоздать frontend средствами обычного deployment. Перезапуск готового
+образа без сборки не меняет build-time настройки.

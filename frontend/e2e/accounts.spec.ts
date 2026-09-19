@@ -47,3 +47,68 @@ test('login next, two connection states and search formats', async ({ page }) =>
   await expect(page.getByText('тестовые данные').first()).toBeVisible()
   await expect(page.getByRole('heading', { name: /Подключение/ })).toBeVisible()
 })
+
+test('an active account list refreshes fixture state after ninety seconds', async ({ page }) => {
+  test.setTimeout(60_000)
+  await page.goto('/login')
+  await page.getByTestId('login-form').locator('input[name="email"]').fill(email)
+  await page.getByTestId('login-form').locator('input[name="password"]').fill(password)
+  await page.getByRole('button', { name: 'Войти' }).click()
+  await expect(page.getByRole('heading', { name: 'Обзор', exact: true })).toBeVisible()
+  let changed = false
+  let reads = 0
+  await page.clock.install()
+  await page.bringToFront()
+  await page.route('**/api/v1/accounts?**', async (route) => {
+    reads++
+    const response = await route.fetch()
+    const body = (await response.json()) as { items: { domains: string[] }[] }
+    if (changed && body.items.length) body.items[0].domains = ['changed-fixture.amocrm.test']
+    await route.fulfill({ response, json: body })
+  })
+  await page.goto('/accounts')
+  await expect(page.getByTestId('accounts-search')).toBeVisible()
+  await expect(page.getByRole('link', { name: '91000002' })).toBeVisible()
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000))
+  const refresh = page.getByRole('button', { name: 'Обновить', exact: true })
+  const refreshed = page.waitForResponse((response) => response.url().includes('/api/v1/accounts?'))
+  await refresh.click()
+  await (await refreshed).finished()
+  await page.clock.runFor(0)
+  await expect(refresh).toBeEnabled()
+  changed = true
+  const baseline = reads
+  await page.clock.fastForward(89_999)
+  expect(reads).toBe(baseline)
+  const updated = page.waitForResponse((response) => response.url().includes('/api/v1/accounts?'))
+  await page.clock.fastForward(1)
+  await (await updated).finished()
+  await page.clock.runFor(0)
+  await expect(page.getByText('changed-fixture.amocrm.test').first()).toBeVisible()
+})
+
+test('empty bounded verification page allows continuing the search', async ({ page }) => {
+  await page.goto('/login')
+  await page.getByTestId('login-form').locator('input[name="email"]').fill(email)
+  await page.getByTestId('login-form').locator('input[name="password"]').fill(password)
+  await page.getByRole('button', { name: 'Войти' }).click()
+  await expect(page.getByRole('heading', { name: 'Обзор', exact: true })).toBeVisible()
+  await page.route('**/api/v1/accounts?**', async (route) => {
+    const original = new URL(route.request().url())
+    const upstream = new URL(original)
+    upstream.searchParams.delete('cursor')
+    const response = await route.fetch({ url: upstream.toString() })
+    const body = (await response.json()) as { items: unknown[]; next_cursor: string | null }
+    if (!original.searchParams.has('cursor')) {
+      body.items = []
+      body.next_cursor = 'fixture-next'
+    }
+    await route.fulfill({ response, json: body })
+  })
+  await page.goto('/accounts?verification=unknown')
+  await expect(page.getByText('Поиск ещё не завершён.', { exact: false })).toBeVisible()
+  await expect(page.getByText('Ничего не найдено')).not.toBeVisible()
+  await page.getByRole('button', { name: 'Продолжить поиск' }).click()
+  await expect(page).toHaveURL(/cursor=fixture-next/)
+  await expect(page.getByRole('link', { name: '91000002' })).toBeVisible()
+})

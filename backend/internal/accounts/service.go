@@ -17,6 +17,7 @@ type Service struct {
 }
 
 type ListFilter struct {
+	Verification  string
 	IntegrationID string
 	Q             string
 	Product       string
@@ -73,7 +74,7 @@ const (
 )
 
 func hasPostFilter(f ListFilter) bool {
-	return f.Product != "" || f.Connection != "" || f.Problem != "" || f.Origin != ""
+	return f.Verification != "" || f.Product != "" || f.Connection != "" || f.Problem != "" || f.Origin != ""
 }
 
 func (s *Service) ListAccounts(ctx context.Context, actor adapter.Actor, filter ListFilter) (ListResult, error) {
@@ -83,6 +84,9 @@ func (s *Service) ListAccounts(ctx context.Context, actor adapter.Actor, filter 
 	}
 	if limit > 100 {
 		limit = 100
+	}
+	if filter.Verification != "" {
+		return s.verificationAccounts(ctx, actor, filter, limit)
 	}
 	scanOffset := 0
 	scanMode := strings.HasPrefix(filter.Cursor, scanCursor)
@@ -367,6 +371,16 @@ func (s *Service) backend(code string) (adapter.Backend, bool) {
 }
 
 func matchAggregated(item Aggregated, filter ListFilter) bool {
+	if filter.Verification != "" {
+		found := false
+		for _, conn := range item.Connections {
+			found = found || conn.AuthorizationCheck.Matches(filter.Verification)
+		}
+		if !found {
+			return false
+		}
+	}
+
 	if filter.Connection != "" {
 		found := false
 		for _, conn := range item.Connections {

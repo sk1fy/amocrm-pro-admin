@@ -79,6 +79,9 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     valid: { tone: 'ok', label: 'Действует' },
   },
   verification: {
+    unknown: { tone: 'unknown', label: 'Доступ не проверен' },
+    stale: { tone: 'attention', label: 'Проверка устарела' },
+    unavailable: { tone: 'error', label: 'Источник недоступен' },
     verified_ok: { tone: 'ok', label: 'Проверка amoCRM успешна' },
     auth_error: { tone: 'action', label: 'Ошибка авторизации amoCRM' },
     network_error: { tone: 'unknown', label: 'Ошибка сети при проверке' },

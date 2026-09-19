@@ -6,6 +6,7 @@ import type { Me } from '../api/types'
 import { employeeRoleLabels } from '../states'
 import { breadcrumbsFor } from './crumbs'
 import { clearSession } from './session'
+import { BrandLogo } from '../components/BrandLogo'
 import styles from './layout.module.css'
 
 type NavIconName = 'overview' | 'accounts' | 'widgets' | 'operations' | 'system'
@@ -117,7 +118,7 @@ export function AppLayout() {
     <div className={styles.shell}>
       <aside className={menuOpen ? `${styles.sidebar} ${styles.sidebarOpen}` : styles.sidebar}>
         <div className={styles.brand}>
-          <div className={styles.brandMark} aria-hidden="true" />
+          <BrandLogo className={styles.brandMark} />
           <div>
             <div className={styles.brandName}>Ракурс</div>
             <div className={styles.brandEnv}>панель управления</div>

@@ -153,6 +153,7 @@ func (a *Adapter) ListAccounts(ctx context.Context, _ adapter.Actor, f adapter.A
 	items := make([]adapter.Account, 0, len(data.Accounts))
 	for _, account := range data.Accounts {
 		if matchAccount(account, f) {
+			account.Cursor = strconv.FormatInt(account.AccountID, 10)
 			items = append(items, account)
 		}
 	}
@@ -399,6 +400,16 @@ func (a *Adapter) check(ctx context.Context) error {
 }
 
 func matchAccount(account adapter.Account, f adapter.AccountFilter) bool {
+	if f.Verification != "" {
+		found := false
+		for _, conn := range account.Connections {
+			found = found || conn.AuthorizationCheck.Matches(f.Verification)
+		}
+		if !found {
+			return false
+		}
+	}
+
 	if f.Query != "" {
 		q := strings.ToLower(strings.TrimSpace(f.Query))
 		id := strconv.FormatInt(account.AccountID, 10)

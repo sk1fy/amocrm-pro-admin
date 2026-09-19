@@ -1,3 +1,4 @@
+import { backendIntervals, visibleInterval } from '../../api/queryClient'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -46,32 +47,6 @@ type Props = {
   emphasis?: 'default' | 'primary' | 'danger'
 }
 
-const affectedQueries = new Set([
-  'accounts',
-  'account',
-  'account-history',
-  'account-jobs',
-  'connection',
-  'connection-jobs',
-  'integration',
-  'integrations',
-  'job',
-  'jobs',
-  'audit',
-  'catalog',
-  'backends',
-  'admin-operations',
-  'connection-settings',
-  'connection-status',
-  'connection-panels',
-  'connection-employees',
-  'connection-rules',
-  'connection-runs',
-  'stats',
-  'stats-accounts',
-  'views',
-])
-
 export function CommandAction(props: Props) {
   const me = useQuery({ queryKey: keys.me, queryFn: fetchMe })
   if (!me.data?.permissions.includes(props.spec.permission)) return null
@@ -118,7 +93,10 @@ function CommandControl({
     queryKey: keys.adminOperations(lookupParams),
     queryFn: () => fetchAdminOperations(lookupParams),
     enabled: Boolean(intent && !intent.operationId && !submitting),
-    refetchInterval: intent && !intent.operationId && !submitting ? 1500 : false,
+    refetchInterval:
+      intent && !intent.operationId && !submitting
+        ? visibleInterval(backendIntervals.operation)
+        : visibleInterval(backendIntervals.detail),
   })
   const operationId = intent?.operationId ?? lookup.data?.items[0]?.id
   const operationQuery = useQuery({
@@ -126,13 +104,11 @@ function CommandControl({
     queryFn: () => fetchAdminOperation(operationId ?? ''),
     enabled: Boolean(operationId),
     refetchInterval: (query) =>
-      operationPending(query.state.data?.operation.state) ? 1500 : false,
+      operationPending(query.state.data?.operation.state)
+        ? visibleInterval(backendIntervals.operation)
+        : visibleInterval(backendIntervals.detail),
   })
   const operation = operationQuery.data?.operation ?? lookup.data?.items[0]
-  const completedOperation =
-    operation && !operationPending(operation.state)
-      ? `${operation.id}:${operation.state}:${operation.updated_at}`
-      : undefined
   useEffect(() => {
     if (intent && operationId && intent.operationId !== operationId) {
       const next = { ...intent, operationId }
@@ -140,13 +116,6 @@ function CommandControl({
       setIntentState(next)
     }
   }, [intent, operationId, storageKey])
-  useEffect(() => {
-    if (completedOperation) {
-      void queryClient.invalidateQueries({
-        predicate: (query) => affectedQueries.has(String(query.queryKey[0])),
-      })
-    }
-  }, [completedOperation, queryClient])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

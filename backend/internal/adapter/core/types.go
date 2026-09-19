@@ -41,14 +41,15 @@ type accountListItem struct {
 }
 
 type accountInstallation struct {
-	Grants           []grant `json:"grants"`
-	ID               string  `json:"id"`
-	IntegrationID    string  `json:"integration_id"`
-	IntegrationCode  string  `json:"integration_code"`
-	Status           string  `json:"status"`
-	WebhookStatus    string  `json:"webhook_status"`
-	Authorization    string  `json:"authorization_state"`
-	RecentFailedJobs int     `json:"recent_failed_jobs"`
+	AuthorizationCheck *adapter.Verification `json:"authorization_check"`
+	Grants             []grant               `json:"grants"`
+	ID                 string                `json:"id"`
+	IntegrationID      string                `json:"integration_id"`
+	IntegrationCode    string                `json:"integration_code"`
+	Status             string                `json:"status"`
+	WebhookStatus      string                `json:"webhook_status"`
+	Authorization      string                `json:"authorization_state"`
+	RecentFailedJobs   int                   `json:"recent_failed_jobs"`
 }
 
 type accountResponse struct {
@@ -61,18 +62,19 @@ type accountResponse struct {
 }
 
 type installationSummary struct {
-	RecentFailedJobs int       `json:"recent_failed_jobs"`
-	ID               string    `json:"id"`
-	IntegrationID    string    `json:"integration_id"`
-	IntegrationCode  string    `json:"integration_code"`
-	AccountID        int64     `json:"account_id"`
-	AccountDomain    string    `json:"account_domain"`
-	Status           string    `json:"status"`
-	InstalledBy      *int64    `json:"installed_by"`
-	Origin           string    `json:"origin"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
-	WebhookStatus    string    `json:"webhook_status"`
+	AuthorizationCheck *adapter.Verification `json:"authorization_check"`
+	RecentFailedJobs   int                   `json:"recent_failed_jobs"`
+	ID                 string                `json:"id"`
+	IntegrationID      string                `json:"integration_id"`
+	IntegrationCode    string                `json:"integration_code"`
+	AccountID          int64                 `json:"account_id"`
+	AccountDomain      string                `json:"account_domain"`
+	Status             string                `json:"status"`
+	InstalledBy        *int64                `json:"installed_by"`
+	Origin             string                `json:"origin"`
+	CreatedAt          time.Time             `json:"created_at"`
+	UpdatedAt          time.Time             `json:"updated_at"`
+	WebhookStatus      string                `json:"webhook_status"`
 }
 
 type installationCard struct {
@@ -313,25 +315,26 @@ type leadStatusRun struct {
 }
 
 type statsResponse struct {
-	Connected         *int                      `json:"connected"`
-	Disconnected      *int                      `json:"disconnected"`
-	ActiveAccounts    *int                      `json:"active_accounts"`
-	LastUseAt         *time.Time                `json:"last_use_at"`
-	JobErrors         *int                      `json:"job_errors"`
-	LatencyP50Ms      *int64                    `json:"latency_p50_ms"`
-	AuthProblems      *int                      `json:"auth_problems"`
-	SyncProblems      *int                      `json:"sync_problems"`
-	AuthProblemsCount *int64                    `json:"auth_problems_count"`
-	SyncProblemsCount *int64                    `json:"sync_problems_count"`
-	Source            string                    `json:"source"`
-	ObservedAt        time.Time                 `json:"observed_at"`
-	Period            string                    `json:"period"`
-	PeriodStart       time.Time                 `json:"period_start"`
-	PeriodEnd         time.Time                 `json:"period_end"`
-	From              time.Time                 `json:"from"`
-	To                time.Time                 `json:"to"`
-	Connections       []statsConnection         `json:"connections"`
-	Queues            []adapter.StatsQueueCount `json:"queues"`
+	Verification      *adapter.VerificationCounts `json:"verification"`
+	Connected         *int                        `json:"connected"`
+	Disconnected      *int                        `json:"disconnected"`
+	ActiveAccounts    *int                        `json:"active_accounts"`
+	LastUseAt         *time.Time                  `json:"last_use_at"`
+	JobErrors         *int                        `json:"job_errors"`
+	LatencyP50Ms      *int64                      `json:"latency_p50_ms"`
+	AuthProblems      *int                        `json:"auth_problems"`
+	SyncProblems      *int                        `json:"sync_problems"`
+	AuthProblemsCount *int64                      `json:"auth_problems_count"`
+	SyncProblemsCount *int64                      `json:"sync_problems_count"`
+	Source            string                      `json:"source"`
+	ObservedAt        time.Time                   `json:"observed_at"`
+	Period            string                      `json:"period"`
+	PeriodStart       time.Time                   `json:"period_start"`
+	PeriodEnd         time.Time                   `json:"period_end"`
+	From              time.Time                   `json:"from"`
+	To                time.Time                   `json:"to"`
+	Connections       []statsConnection           `json:"connections"`
+	Queues            []adapter.StatsQueueCount   `json:"queues"`
 	PeriodEvents      struct {
 		Connected    *int64 `json:"connected"`
 		Disconnected *int64 `json:"disconnected"`

@@ -1,3 +1,4 @@
+import { RefreshStatus } from '../../components/RefreshStatus'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { fetchBackends, fetchMe, keys } from '../../api/queries'
@@ -38,6 +39,12 @@ export function SystemPage() {
   const backends = useQuery({ queryKey: keys.backends, queryFn: fetchBackends })
   return (
     <div className={page.page}>
+      <RefreshStatus
+        updatedAt={backends.dataUpdatedAt}
+        fetching={backends.isFetching}
+        failed={Boolean(backends.error)}
+        onRefresh={() => void backends.refetch({ cancelRefetch: false })}
+      />
       <h1>Система</h1>
       <SystemNav />
       {backends.isPending ? <div className={page.skeleton} /> : null}

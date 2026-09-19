@@ -273,3 +273,14 @@ UI всегда передаёт `period` явно, окно по умолчан
 одной транзакцией Admin DB. PATCH блокирует строку до чтения старых прав;
 непереданные поля сохраняют актуальные значения. Отзыв своих/чужих
 сессий и logout также фиксируются вместе с аудитом.
+
+## Проверка актуальности
+
+`GET /api/v1/accounts` принимает независимый параметр
+`verification=ok|stale|unknown|failed`. Параметр не меняет фильтр `connection`.
+Установки в списке и карточке получают optional `authorization_check`:
+classification, observed_at, freshness, fresh_for_seconds, безопасная ошибка.
+`GET /api/v1/stats` добавляет optional `verification` со счётчиками
+unverified, temporary_errors, verified. Отсутствие поля означает отсутствие
+факта, не нулевое значение. По verification total может быть null;
+пустая страница с next_cursor требует продолжения.

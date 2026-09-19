@@ -37,12 +37,13 @@ type accountListItemDTO struct {
 }
 
 type accountConnectionDTO struct {
-	Backend         string `json:"backend"`
-	ConnectionID    string `json:"connection_id"`
-	IntegrationID   string `json:"integration_id,omitempty"`
-	IntegrationCode string `json:"integration_code"`
-	State           string `json:"state"`
-	Raw             string `json:"raw,omitempty"`
+	AuthorizationCheck *adapter.Verification `json:"authorization_check,omitempty"`
+	Backend            string                `json:"backend"`
+	ConnectionID       string                `json:"connection_id"`
+	IntegrationID      string                `json:"integration_id,omitempty"`
+	IntegrationCode    string                `json:"integration_code"`
+	State              string                `json:"state"`
+	Raw                string                `json:"raw,omitempty"`
 }
 
 type accountCardDTO struct {
@@ -342,6 +343,7 @@ type leadStatusRunDTO struct {
 }
 
 type statsSnapshotDTO struct {
+	Verification   *adapter.VerificationCounts    `json:"verification,omitempty"`
 	Connected      *int                           `json:"connected"`
 	Disconnected   *int                           `json:"disconnected"`
 	ActiveAccounts *int                           `json:"active_accounts"`
@@ -375,7 +377,8 @@ func toAccountListItem(item accounts.Aggregated) accountListItemDTO {
 	connections := make([]accountConnectionDTO, 0, len(item.Connections))
 	for _, conn := range item.Connections {
 		connections = append(connections, accountConnectionDTO{
-			Backend: conn.Backend, ConnectionID: conn.ConnectionID,
+			AuthorizationCheck: conn.AuthorizationCheck,
+			Backend:            conn.Backend, ConnectionID: conn.ConnectionID,
 			IntegrationID: conn.IntegrationID, IntegrationCode: conn.IntegrationCode,
 			State: conn.State.Canonical, Raw: conn.State.Raw,
 		})
@@ -403,17 +406,18 @@ func toAccountCard(card accounts.AccountCard) accountCardDTO {
 		connections = append(connections, observationDTO{
 			Source: conn.Backend, ObservedAt: observedAt, Freshness: freshness,
 			Data: map[string]any{
-				"backend":          conn.Backend,
-				"connection_id":    conn.ConnectionID,
-				"integration_code": conn.IntegrationCode,
-				"state":            conn.State.Canonical,
-				"raw":              omitEmpty(conn.State.Raw),
-				"account_domain":   conn.AccountDomain,
-				"origin":           conn.Origin,
-				"authorization":    accountAuthorization(conn),
-				"webhook":          accountWebhook(conn),
-				"grants":           toGrantDTOs(conn.Grants),
-				"activity":         activityDTO{Pilot: conn.Pilot.Canonical, PilotRaw: conn.Pilot.Raw},
+				"backend":             conn.Backend,
+				"connection_id":       conn.ConnectionID,
+				"integration_code":    conn.IntegrationCode,
+				"state":               conn.State.Canonical,
+				"raw":                 omitEmpty(conn.State.Raw),
+				"account_domain":      conn.AccountDomain,
+				"origin":              conn.Origin,
+				"authorization":       accountAuthorization(conn),
+				"authorization_check": conn.AuthorizationCheck,
+				"webhook":             accountWebhook(conn),
+				"grants":              toGrantDTOs(conn.Grants),
+				"activity":            activityDTO{Pilot: conn.Pilot.Canonical, PilotRaw: conn.Pilot.Raw},
 			},
 		})
 	}
@@ -659,7 +663,8 @@ func toStatsSnapshotDTO(item adapter.StatsSnapshot) statsSnapshotDTO {
 		queues = []adapter.StatsQueueCount{}
 	}
 	return statsSnapshotDTO{
-		Period: item.Period, PeriodStart: item.PeriodStart.UTC(), PeriodEnd: item.PeriodEnd.UTC(),
+		Verification: item.Verification,
+		Period:       item.Period, PeriodStart: item.PeriodStart.UTC(), PeriodEnd: item.PeriodEnd.UTC(),
 		Connections: connections, Connected: item.Connected, Disconnected: item.Disconnected,
 		ActiveAccounts: item.ActiveAccounts, LastUseAt: item.LastUseAt, JobErrors: item.JobErrors,
 		LatencyP50Ms: item.LatencyP50Ms, Queues: queues, AuthProblems: item.AuthProblems, SyncProblems: item.SyncProblems,

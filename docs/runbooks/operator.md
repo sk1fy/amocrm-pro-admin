@@ -443,3 +443,12 @@ SQL
   метрики и labels.
 - [../adr/0014-admin-db-retention.md](../adr/0014-admin-db-retention.md)
   — retention.
+
+## Проверки подключений
+
+Время backend-снимка и время проверки amoCRM различаются. Состояние active
+означает установку; подтверждённый доступ требует свежего verification.
+Новое расписание Core изначально выключено. Порядок pilot rollout и env:
+[Core runbook](https://github.com/sk1fy/amocrm-pro/blob/79011d1b28fcc13a6dbe9bdcf5b4bdccd80cd888/docs/runbooks/connection-verification.md).
+Не включать весь охват до 24-часового наблюдения pilot. Отключение scheduler
+оставляет ручные проверки и polling интерфейса рабочими.
