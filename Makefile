@@ -7,6 +7,7 @@ COMPOSE ?= $(shell docker compose version >/dev/null 2>&1 && echo "docker compos
 COMPOSE_FILE ?= deploy/docker-compose.yml
 GO_VERSION ?= 1.25
 GO_IMAGE ?= golang:$(GO_VERSION)-alpine
+GOVULNCHECK_VERSION ?= v1.1.4
 GOLANGCI_LINT_VERSION ?= v2.13.2
 GOLANGCI_LINT_IMAGE ?= golangci/golangci-lint:$(GOLANGCI_LINT_VERSION)-alpine
 NODE_IMAGE ?= node:24-alpine
@@ -60,6 +61,10 @@ BUILD_REVISION ?= $(shell { git rev-parse HEAD 2>/dev/null || echo unknown; git 
 export BUILD_REVISION
 
 .DEFAULT_GOAL := help
+
+.PHONY: vulncheck
+vulncheck: ## Check reachable Go vulnerabilities against the official database
+	$(DOCKER_GO) go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
 
 .PHONY: help docs-check config build up down logs migrate lint test integration-test e2e scripts-test check \
 	backup-db restore-check fixtures-core fixtures-core-dry-run bench-admin
@@ -176,7 +181,7 @@ e2e: ## Playwright scenarios against the built stack with the fixture adapter
 scripts-test: ## Safety tests for backup/restore using command doubles, no database
 	sh deploy/scripts/test-backup-restore.sh
 
-check: docs-check lint test integration-test e2e scripts-test ## Everything required before merging
+check: docs-check lint test integration-test e2e scripts-test vulncheck ## Everything required before merging
 
 # ---------------------------------------------------------------------------
 # Admin DB backup and restore verification (stage 4.3)

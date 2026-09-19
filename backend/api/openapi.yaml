@@ -28,6 +28,10 @@ paths:
       tags: [Auth]
       operationId: login
       summary: Create an employee session.
+      description: >-
+        Unknown email, wrong password and disabled employee return the same 401.
+        Database or session persistence failures return a safe 500 with request_id.
+        Rate limiting returns 429, including when the bounded limiter is full.
       security: []
       parameters:
         - $ref: '#/components/parameters/RequestID'

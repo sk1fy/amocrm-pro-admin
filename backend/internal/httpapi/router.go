@@ -42,6 +42,7 @@ type Dependencies struct {
 }
 
 type api struct {
+	access         *employees.Access
 	operations     *operations.Service
 	employees      *employees.Store
 	sessions       *auth.Service
@@ -65,6 +66,7 @@ func New(deps Dependencies) http.Handler {
 		accountSvc = accounts.New(registry.Backends(), deps.Audit)
 	}
 	h := &api{
+		access:         employees.NewAccess(deps.Employees, deps.Sessions, deps.Audit),
 		operations:     deps.Operations,
 		employees:      deps.Employees,
 		sessions:       deps.Sessions,

@@ -56,8 +56,16 @@ func NewStore(pool *pgxpool.Pool, timeout time.Duration) *Store {
 func (s *Store) Create(ctx context.Context, in CreateInput) (Employee, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
+	return s.CreateTx(ctx, s.pool, in)
+}
+
+type rowQuerier interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+func (s *Store) CreateTx(ctx context.Context, db rowQuerier, in CreateInput) (Employee, error) {
 	var emp Employee
-	err := s.pool.QueryRow(ctx, `
+	err := db.QueryRow(ctx, `
 		INSERT INTO employees (email, name, role, password_hash, status)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, email, name, role, status, created_at, updated_at`,
@@ -148,40 +156,63 @@ func (s *Store) List(ctx context.Context) ([]Employee, error) {
 	return items, nil
 }
 
+// Update serializes read/modify/write even for callers without audit orchestration.
 func (s *Store) Update(ctx context.Context, id uuid.UUID, in UpdateInput) (Employee, bool, bool, error) {
-	current, err := s.GetRecord(ctx, id)
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return Employee{}, false, false, fmt.Errorf("begin employee update: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	before, emp, err := s.UpdateTx(ctx, tx, id, in)
 	if err != nil {
 		return Employee{}, false, false, err
 	}
-	name := current.Name
-	role := current.Role
-	status := current.Status
-	if in.Name != nil {
-		name = strings.TrimSpace(*in.Name)
+	if err := tx.Commit(ctx); err != nil {
+		return Employee{}, false, false, fmt.Errorf("commit employee update: %w", err)
 	}
-	if in.Role != nil {
-		role = *in.Role
-	}
-	if in.Status != nil {
-		status = *in.Status
-	}
-	ctx, cancel := context.WithTimeout(ctx, s.timeout)
-	defer cancel()
+	return emp, before.Role != emp.Role, before.Status != emp.Status, nil
+}
+
+func (s *Store) lockRecord(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Employee, error) {
 	var emp Employee
-	err = s.pool.QueryRow(ctx, `
+	err := tx.QueryRow(ctx, `
+		SELECT id, email, name, role, status, created_at, updated_at
+		FROM employees WHERE id = $1 FOR UPDATE`, id).Scan(
+		&emp.ID, &emp.Email, &emp.Name, &emp.Role, &emp.Status, &emp.CreatedAt, &emp.UpdatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Employee{}, ErrNotFound
+	}
+	if err != nil {
+		return Employee{}, fmt.Errorf("lock employee: %w", err)
+	}
+	return emp, nil
+}
+
+// UpdateTx returns the state read under the row lock for a consistent audit diff.
+func (s *Store) UpdateTx(ctx context.Context, tx pgx.Tx, id uuid.UUID, in UpdateInput) (Employee, Employee, error) {
+	before, err := s.lockRecord(ctx, tx, id)
+	if err != nil {
+		return Employee{}, Employee{}, err
+	}
+	var name *string
+	if in.Name != nil {
+		trimmed := strings.TrimSpace(*in.Name)
+		name = &trimmed
+	}
+	var emp Employee
+	err = tx.QueryRow(ctx, `
 		UPDATE employees
-		SET name = $2, role = $3, status = $4
+		SET name = COALESCE($2, name), role = COALESCE($3, role), status = COALESCE($4, status)
 		WHERE id = $1
 		RETURNING id, email, name, role, status, created_at, updated_at`,
-		id, name, role, status,
+		id, name, in.Role, in.Status,
 	).Scan(&emp.ID, &emp.Email, &emp.Name, &emp.Role, &emp.Status, &emp.CreatedAt, &emp.UpdatedAt)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return Employee{}, false, false, ErrNotFound
-		}
-		return Employee{}, false, false, fmt.Errorf("update employee: %w", err)
+		return Employee{}, Employee{}, fmt.Errorf("update employee: %w", err)
 	}
-	return emp, role != current.Role, status != current.Status, nil
+	return before, emp, nil
 }
 
 func isUniqueViolation(err error) bool {
