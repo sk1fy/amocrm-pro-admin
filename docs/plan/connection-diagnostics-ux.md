@@ -1,6 +1,9 @@
 # Patch-план: диагностика подключений в интерфейсе
 
-Статус: in progress
+Статус: completed.
+
+Документ сохранён как patch-план и отчёт приёмки. Текущий backlog —
+[connection-state-freshness.md](connection-state-freshness.md).
 
 Дата: 2026-09-14
 

@@ -1,7 +1,7 @@
 # Контракты: Admin API v1 и Core admin read v1
 
 Два контракта, два репозитория. Здесь — черновик уровня «что и в какой форме»;
-формальные схемы пишутся как OpenAPI 3 при реализации:
+формальные схемы — OpenAPI 3:
 `backend/api/openapi.yaml` (Admin API) и `api/admin-openapi.yaml` (Core).
 
 ## Общие правила
@@ -27,7 +27,7 @@
   умолчанию 25, максимум 100).
 - Данные бекендов оборачиваются в `Observation` (ADR-0004).
 - `X-Request-ID` принимается и возвращается; логируется на всех уровнях.
-- Мутации (этап 2) требуют `Idempotency-Key` и возвращают `operation`.
+- Мутации требуют `Idempotency-Key` и возвращают `operation`.
 
 ## Admin API v1 (этот репозиторий)
 
@@ -110,18 +110,10 @@ loopback/внутренняя сеть, без аутентификации). С
 установок, сотрудников, job и сессий, email, домены и request id в
 labels запрещены — [ADR-0013](../adr/0013-admin-metrics.md).
 
-### Этап 2 (зарезервировано)
-
-`POST /api/v1/connections/{backend}/{id}/commands/{command}`,
-`POST /api/v1/integrations/{backend}/{id}/commands/{command}`,
-`GET /api/v1/operations/admin?state=`, `GET /api/v1/operations/admin/{id}`.
-Команда возвращает `202 { "operation": { "id", "state", "target", "command", "created_at" } }`.
-
 ## Core admin read v1 (`amocrm-pro`, listener `ADMIN_HTTP_ADDRESS`)
 
 Аутентификация: `Authorization: Bearer <ADMIN_API_TOKEN>`; обязательный
-`X-Admin-Actor`. Ответы содержат `observed_at` и `source: "core"`. Только чтение
-на этапе 1.
+`X-Admin-Actor`. Ответы содержат `observed_at` и `source: "core"`.
 
 | Метод и путь | Назначение | Источник |
 | --- | --- | --- |
@@ -205,7 +197,7 @@ labels запрещены — [ADR-0013](../adr/0013-admin-metrics.md).
 OAuth-интеграции; вместе с `backend` используется карточкой интеграции.
 Недоступный источник делает `total` неизвестным (`null`) и без фильтров.
 
-## Реализованные команды этапа 2
+## Команды
 
 Мутации требуют сессию, Origin, X-Requested-With и Idempotency-Key.
 Ответ: `202 {operation:{id,employee_id,backend,target_type,target_id,command,
@@ -240,7 +232,7 @@ classification, observed_at, retry_after (если задан). Jobs/deliveries
 для reconcile/retry. Дальнейший результат читается отдельно по `job_id`
 через существующий маршрут просмотра задачи.
 
-## Этап 3
+## Activity, статистика и представления
 
 Чтения (сессия + RBAC). Все данные бекенда — Observation.
 
@@ -255,13 +247,13 @@ classification, observed_at, retry_after (если задан). Jobs/deliveries
 | `GET /api/v1/connections/{backend}/{id}/lead-status/runs` | `operations:read` |
 | `GET /api/v1/stats?period=24h\|7d\|30d` | `stats:read` (по умолчанию `7d`) |
 | `GET /api/v1/stats/accounts?metric=&period=&product=&cursor=` | `stats:read` (по умолчанию `7d`) |
-
-UI всегда передаёт `period` явно, окно по умолчанию — `24h`; `7d` —
-умолчание Admin API при отсутствии параметра, как в Core.
 | `GET /api/v1/views?section=` | `accounts:read` |
 | `POST /api/v1/views` | `views:write` (личные; общие — только admin) |
 | `PATCH /api/v1/views/{id}` | `views:write` (владелец; общие — admin) |
 | `DELETE /api/v1/views/{id}` | `views:write` (владелец; общие — admin) |
+
+UI всегда передаёт `period` явно, окно по умолчанию — `24h`; `7d` —
+умолчание Admin API при отсутствии параметра, как в Core.
 
 Мутации идут существующим
 `POST /connections/{backend}/{id}/commands/{command}`:

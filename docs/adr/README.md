@@ -12,19 +12,16 @@
 | [0005](0005-admin-db-migrations.md) | Миграции admin DB | принято |
 | [0006](0006-trusted-proxy-headers.md) | Доверие заголовкам прокси | принято |
 | [0007](0007-account-filter-scans.md) | Ограниченный скан для фильтров списка аккаунтов | принято |
+| [0008](0008-account-stream-pagination.md) | Курсоры истории и операций аккаунта | принято |
+| [0009](0009-durable-admin-operations.md) | Устойчивые операции и диагностика | принято |
+| [0010](0010-stage-3-activity-stats.md) | Activity, lead-status и статистика | принято |
+| [0011](0011-adapter-contract-v1.md) | Контракт адаптера бекенда v1 | принято |
+| [0012](0012-subscriptions-source.md) | Источник подписок | принято |
+| [0013](0013-admin-metrics.md) | Метрики Prometheus Admin API | принято |
+| [0014](0014-admin-db-retention.md) | Retention и объём admin DB | принято |
 | [0015](0015-connection-diagnostics-ux.md) | Диагностика подключения в UI | принято |
 
-Ожидаемые ADR следующих этапов: проверка
-подключения через владельца исходящего бюджета и список безопасных повторов
-(этап 2), административный контекст авторизации Activity (этап 3, в
-`amocrm-pro`).
-
-- [ADR-0008: курсоры истории и операций аккаунта](0008-account-stream-pagination.md).
-
-- [ADR-0009: устойчивые операции и диагностика](0009-durable-admin-operations.md).
-- [ADR-0010: Activity, lead-status и статистика этапа 3](0010-stage-3-activity-stats.md).
-- [ADR-0011: контракт адаптера бекенда v1](0011-adapter-contract-v1.md).
-- [ADR-0012: источник подписок](0012-subscriptions-source.md).
-- [ADR-0013: метрики Prometheus Admin API](0013-admin-metrics.md).
-- [ADR-0014: retention и объём admin DB](0014-admin-db-retention.md).
-- [ADR-0015: диагностика подключения в интерфейсе](0015-connection-diagnostics-ux.md).
+Следующее ожидаемое решение — фоновая актуальность состояния
+подключений, если patch-план
+[connection-state-freshness.md](../plan/connection-state-freshness.md)
+потребует изменения модели свежести или проверки amoCRM.

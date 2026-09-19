@@ -14,7 +14,7 @@ frontend использует `GET /api/v1/me` только для скрыти�
 
 ## Матрица прав
 
-| Право | viewer | operator | admin | Появляется |
+| Право | viewer | operator | admin | С этапа |
 | --- | :-: | :-: | :-: | --- |
 | `accounts:read` | ✓ | ✓ | ✓ | этап 1 |
 | `connections:read` | ✓ | ✓ | ✓ | этап 1 |
@@ -61,7 +61,7 @@ frontend использует `GET /api/v1/me` только для скрыти�
   личные представления; `viewer` не имеет `views:write`. Обход правила
   сервер отклоняет с `403`; frontend лишь скрывает флажок «Общее» и
   кнопку удаления общего представления.
-- Чтение подписки (`GET /api/v1/accounts/{id}/subscription`, этап 4)
+- Чтение подписки (`GET /api/v1/accounts/{id}/subscription`)
   использует `accounts:read`; отдельного права нет. Бекенд без capability
   `subscriptions` даёт `unknown`, а не ошибку доступа.
 

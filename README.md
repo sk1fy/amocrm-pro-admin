@@ -30,7 +30,8 @@ amoCRM, проверка подключённых виджетов, диагно
 
 | Кому | Читать |
 | --- | --- |
-| Агент-разработчик любого этапа | [AGENTS.md](AGENTS.md) → [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) |
+| Агент-разработчик | [AGENTS.md](AGENTS.md) → [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) |
+| Индекс документации | [docs/README.md](docs/README.md) |
 | Обзор решений, завершённые этапы и patch-планы | [docs/plan/README.md](docs/plan/README.md) |
 | Ближайшая работа | [docs/plan/connection-state-freshness.md](docs/plan/connection-state-freshness.md) |
 | Как устроено размещение и границы | [docs/design/architecture.md](docs/design/architecture.md) |
@@ -45,9 +46,7 @@ amoCRM, проверка подключённых виджетов, диагно
 | Полный операторский сценарий | [docs/runbooks/operator.md](docs/runbooks/operator.md) |
 | Принятые решения | [docs/adr/](docs/adr/) |
 
-## Целевая структура репозитория
-
-Создаётся по мере реализации; пустые каталоги заранее не заводятся.
+## Структура репозитория
 
 ```text
 backend/            Go Admin API (собственная PostgreSQL: сотрудники, сессии, аудит)
@@ -63,4 +62,4 @@ Makefile            Docker-first команды: build, up, test, lint, migrate
 
 Изменения в `amocrm-pro` (Core admin read listener, контракт, ADR) выполняются
 в том репозитории на отдельной ветке по его правилам; см.
-[architecture.md](docs/design/architecture.md#изменения-в-amocrm-pro).
+[architecture.md](docs/design/architecture.md#core-admin-в-amocrm-pro).

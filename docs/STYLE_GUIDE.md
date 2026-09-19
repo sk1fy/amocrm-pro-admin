@@ -44,19 +44,24 @@
 
 ## 2. Порядок работы
 
-Перед этапом:
+Этапы 1–4 завершены. Новая работа — patch-план из
+[plan/README.md](plan/README.md), не файлы `plan/stage-*.md`.
 
-1. Прочитать этот файл, [plan/README.md](plan/README.md), файл этапа,
-   [architecture.md](design/architecture.md), [states.md](design/states.md),
-   [data-sources.md](design/data-sources.md), [roles.md](design/roles.md).
+Перед частью:
+
+1. Прочитать этот файл, [plan/README.md](plan/README.md), активный
+   patch-план, [architecture.md](design/architecture.md),
+   [states.md](design/states.md), [data-sources.md](design/data-sources.md),
+   [roles.md](design/roles.md).
 2. Сверить факты с актуальным `../amocrm-pro` (`git log -1`, миграции,
    `internal/apicontract/routes.go`, `cmd/integrations/main.go`,
    `cmd/activity-control/main.go`, `internal/serviceapi/contracts.go`).
-3. Заполнить раздел «Объём» в файле этапа. Расхождения — в план и
+3. Заполнить раздел «Объём» в patch-плане. Расхождения — в план и
    `data-sources.md`.
 
-Внутри этапа — части в указанном порядке. Каждая часть заканчивается зелёным
-`make check` и обновлённой документацией.
+Внутри части — контракт, бекенд, интерфейс, проверка, документация.
+Каждая часть заканчивается зелёным `make check` и обновлённой
+документацией.
 
 При сомнении в семантике бекенда — читать код и миграции, а не обзорные
 документы: часть документации `amocrm-pro` отстаёт (это сказано в самом
@@ -106,7 +111,7 @@
 Core admin (`amocrm-pro/internal/adminread`, `admincommand`):
 
 - Пакет не импортирует `cmd/*`; `cmd/api` импортирует пакет.
-- Никаких новых таблиц Core без миграции и ADR; на этапе 1 схема не меняется.
+- Никаких новых таблиц Core без миграции и ADR.
 - Секретные колонки не упоминаются в SQL пакета (проверяется тестом, который
   ищет подстроки `ciphertext`, `webhook_key` в исходниках пакета).
 - Прикладные вызовы — те же функции, что CLI: если функции нет — добавить её в
@@ -156,8 +161,8 @@ Core admin (`amocrm-pro/internal/adminread`, `admincommand`):
   frontend/src/
     app/            роутер, провайдеры, layout
     api/            клиент, типы ответов (генерируются из OpenAPI или пишутся вручную и проверяются тестом контракта)
-    features/       accounts, connections, integrations, operations, system, auth
-    components/     StatusBadge, Observation, DataTable, FilterBar, EmptyState, ErrorState, SourcesBanner
+    features/       overview, accounts, connections, integrations, operations, system, auth
+    components/     StatusBadge, Observation, DataTable, FilterBar, EmptyState, ErrorState, SourcesBanner, IncidentBanner, ActionMenu, CopyableId
     states/         словарь состояний: константы, тексты, тона (единственное место)
     lib/            утилиты (форматирование времени, нормализация)
   ```
@@ -177,7 +182,7 @@ Core admin (`amocrm-pro/internal/adminread`, `admincommand`):
   диалогах, работа с клавиатуры в таблицах и фильтрах.
 - Стили — CSS Modules и переменные из `app/theme.css`; глобальные стили
   только для reset и переменных. UI-киты и CSS-фреймворки не подключаются.
-- Диалог команды (этап 2+) всегда показывает: объект, область воздействия,
+- Диалог команды всегда показывает: объект, область воздействия,
   необратимость, следующий шаг для клиента (если есть).
 
 ## 8. Состояния, наблюдения, свежесть
@@ -217,8 +222,6 @@ Core admin (`amocrm-pro/internal/adminread`, `admincommand`):
   отдельными коммитами.
 
 ## 10. Операции и команды
-
-(Действует с этапа 2; этап 1 закладывает типы.)
 
 - Команда возвращает `202` с `operation{id, state, target, command}`;
   состояние опрашивается по `GET /operations/admin/{id}`.
@@ -287,8 +290,11 @@ integration-test`; Activity-части — `make activity-ci`. Host Go там н
 
 - Не писать документацию о том, что не реализовано, как о реализованном.
   Планируемое — в `plan/`, сделанное — в `design/` и runbooks.
-- Runbooks (`docs/runbooks/`): `local-run.md`, `demo-stage-N.md`,
-  `operator.md` (этап 4), `new-module.md` (этап 4).
+- Runbooks (`docs/runbooks/`): `local-run.md` (разработка),
+  `operator.md` и `new-module.md` (эксплуатация). `demo-stage-N.md` —
+  исторические сценарии приёмки этапов; актуальный сквозной путь —
+  `operator.md` и `demo-stage-4.md`.
+- Индекс папки — [README.md](README.md).
 
 ## 13. Коммиты и PR
 
@@ -301,7 +307,7 @@ integration-test`; Activity-части — `make activity-ci`. Host Go там н
   сделано, ссылки на разделы плана.
 - Не сливать при красных проверках; не отключать тесты «временно».
 - В `amocrm-pro` PR дополнительно указывает: изменённые контракты, миграции,
-  влияние на публичный API/worker (должно быть «нет» на этапе 1).
+  влияние на публичный API/worker (по умолчанию «нет», иначе обосновать).
 
 ## 14. Запрещено
 
@@ -340,9 +346,9 @@ integration-test`; Activity-части — `make activity-ci`. Host Go там н
 - [ ] `make check` в этом репозитории и (если менялся) в `amocrm-pro` зелёные.
 - [ ] Коммиты оформлены по разделу 13.
 
-## 16. Отчёт об этапе
+## 16. Отчёт об этапе или patch-плане
 
-Заполняется в разделе «Отчёт» файла этапа:
+Заполняется в разделе «Отчёт» активного плана:
 
 ```markdown
 ## Отчёт
