@@ -40,7 +40,7 @@ export function AccountOverview() {
             >
               {(conn) => (
                 <Link
-                  className={page.stack}
+                  className={`${page.stack} ${page.cardLink}`}
                   to="/accounts/$accountId/widgets/$backend/$connectionId"
                   params={{
                     accountId,

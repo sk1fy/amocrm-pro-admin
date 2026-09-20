@@ -277,7 +277,7 @@ type Webhook struct {
 	Events                []string
 	CheckedAt             *time.Time
 	LastError             *string
-	ConfirmedDestinations int
+	ConfirmedDestinations *int
 }
 
 type Grant struct {

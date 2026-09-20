@@ -157,7 +157,7 @@ test('operator confirms scope once and follows a persisted diagnostic operation'
   await expect(page.getByText('Ошибка авторизации amoCRM', { exact: true })).toBeVisible()
   expect(posts).toHaveLength(1)
   expect(posts[0]).toMatch(/^[0-9a-f-]{36}$/)
-  await page.getByRole('link', { name: 'Операция operation-check', exact: true }).click()
+  await page.locator('a[href="/operations/admin/operation-check"]').click()
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Операция operation-check' })).toBeVisible()
   await expect(page.getByText('Ошибка авторизации amoCRM', { exact: true })).toBeVisible()
@@ -190,9 +190,7 @@ test('lost POST response is recovered read-only with the original request key af
   await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить' }).click()
   await expect(page.getByText(/Ответ на команду не получен/)).toBeVisible()
   await page.reload()
-  await expect(
-    page.getByRole('link', { name: 'Операция operation-recovered', exact: true }),
-  ).toBeVisible()
+  await expect(page.locator('a[href="/operations/admin/operation-recovered"]')).toBeVisible()
   expect(posts).toHaveLength(1)
   expect(lookups.length).toBeGreaterThan(0)
   expect(lookups.every((key) => key === posts[0])).toBe(true)
@@ -261,9 +259,7 @@ test('integration creation clears secret inputs and persists only receipt identi
   await dialog.getByLabel('OAuth redirect URI').fill('https://fixture.example.invalid/callback')
   await dialog.getByLabel(/Сервисы через запятую/).fill('lead-status, activity')
   await dialog.getByRole('button', { name: 'Подтвердить' }).click()
-  await expect(
-    page.getByRole('link', { name: 'Операция integration-created', exact: true }),
-  ).toBeVisible()
+  await expect(page.locator('a[href="/operations/admin/integration-created"]')).toBeVisible()
   await expect(page.locator('input[name="client_secret"]')).toHaveValue('')
   expect(body?.services).toEqual(['lead-status', 'activity'])
   expect(await page.evaluate(() => JSON.stringify(sessionStorage))).not.toContain(
@@ -358,9 +354,7 @@ test('eligible job retry uses the command endpoint and an idempotency key', asyn
   await page.getByRole('button', { name: 'Повторить задачу', exact: true }).click()
   await expect(page.getByRole('dialog').getByText(/Задача eligible-job/)).toBeVisible()
   await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить' }).click()
-  await expect(
-    page.getByRole('link', { name: 'Операция retry-operation', exact: true }),
-  ).toBeVisible()
+  await expect(page.locator('a[href="/operations/admin/retry-operation"]')).toBeVisible()
   expect(requestKey).toMatch(/^[0-9a-f-]{36}$/)
 })
 

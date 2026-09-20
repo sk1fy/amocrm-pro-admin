@@ -13,7 +13,7 @@ export function RefreshStatus({
   onRefresh: () => void
 }) {
   return (
-    <div className={page.row}>
+    <div className={page.refresh}>
       <button type="button" disabled={fetching} onClick={onRefresh}>
         Обновить
       </button>

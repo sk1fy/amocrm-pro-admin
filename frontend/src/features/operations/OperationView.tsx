@@ -115,10 +115,12 @@ function OperationJob({
 export function OperationView({
   operation,
   link = true,
+  compact = false,
   onInspect,
 }: {
   operation: AdminOperation
   link?: boolean
+  compact?: boolean
   onInspect?: () => void
 }) {
   const client = useQueryClient()
@@ -130,12 +132,16 @@ export function OperationView({
   const observed =
     typeof result.observed_at === 'string' ? result.observed_at : operation.observed_at
   return (
-    <section className={page.card} aria-label="Результат операции" aria-live="polite">
+    <section
+      className={`${page.card} ${compact ? page.compact : ''}`}
+      aria-label="Результат операции"
+      aria-live="polite"
+    >
       <div className={page.row}>
         <StatusBadge domain="operation" state={operation.state} />
         {link ? (
           <Link to="/operations/admin/$operationId" params={{ operationId: operation.id }}>
-            Операция {operation.id}
+            {compact ? 'Открыть операцию' : `Операция ${operation.id}`}
           </Link>
         ) : (
           <span>{operation.id}</span>

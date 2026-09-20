@@ -55,6 +55,7 @@ test('operator settings, sync polling, stats null vs zero, saved view, viewer hi
   await expect(page.getByTestId('stat-Задержка p50, мс')).toHaveText('—')
 
   await page.goto('/accounts')
+  await page.getByRole('button', { name: 'Сохранить вид', exact: true }).click()
   await page.getByLabel('Имя представления').fill('fixture-reauth')
   await page.getByRole('button', { name: 'Сохранить представление', exact: true }).click()
   const savedViews = page.getByLabel('Сохранённые представления')

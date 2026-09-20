@@ -31,3 +31,13 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-pop);
 }
+
+@media (max-width: 540px) {
+  .panel {
+    position: fixed;
+    inset: auto 1rem 1rem;
+    min-width: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+}

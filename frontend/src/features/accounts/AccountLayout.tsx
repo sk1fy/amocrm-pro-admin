@@ -27,12 +27,14 @@ export function AccountLayout() {
 
   return (
     <div className={page.page}>
-      <RefreshStatus
-        updatedAt={account.dataUpdatedAt}
-        fetching={account.isFetching}
-        failed={Boolean(account.error)}
-        onRefresh={() => void account.refetch({ cancelRefetch: false })}
-      />
+      {!connectionPage ? (
+        <RefreshStatus
+          updatedAt={account.dataUpdatedAt}
+          fetching={account.isFetching}
+          failed={Boolean(account.error)}
+          onRefresh={() => void account.refetch({ cancelRefetch: false })}
+        />
+      ) : null}
       {account.error ? (
         <ErrorState error={account.error} onRetry={() => void account.refetch()} />
       ) : null}
@@ -42,9 +44,9 @@ export function AccountLayout() {
             <p>
               <Link to="/accounts">Аккаунты</Link>
             </p>
-            <h1>Аккаунт {account.data.account_id}</h1>
+            <h1>{account.data.domains[0] ?? `Аккаунт ${account.data.account_id}`}</h1>
             <div className={page.row}>
-              <span>{account.data.domains.join(', ') || formatNull(null)}</span>
+              <span className={page.muted}>Аккаунт {account.data.account_id}</span>
               <span>подключений: {formatNull(account.data.connections.length)}</span>
               <StatusBadge domain="account" state={account.data.state} />
               <StatusBadge domain="origin" state={account.data.origin} />
@@ -55,7 +57,7 @@ export function AccountLayout() {
                 непроверенная авторизация. Смотрите разбивку по подключениям.
               </p>
             ) : null}
-            {account.data.problems.length > 0 ? (
+            {!connectionPage && account.data.problems.length > 0 ? (
               <div className={page.row}>
                 {account.data.problems.map((problem) => (
                   <StatusBadge key={problem} domain="problem" state={problem} />

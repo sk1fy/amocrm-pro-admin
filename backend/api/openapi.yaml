@@ -1751,7 +1751,14 @@ components:
         authorization:
           $ref: '#/components/schemas/Observation'
         webhook:
-          $ref: '#/components/schemas/Observation'
+          allOf:
+            - $ref: '#/components/schemas/Observation'
+            - type: object
+              properties:
+                data:
+                  anyOf:
+                    - $ref: '#/components/schemas/Webhook'
+                    - type: 'null'
         grants:
           $ref: '#/components/schemas/Observation'
         activity:
@@ -1762,6 +1769,28 @@ components:
           $ref: '#/components/schemas/Observation'
         recent_audit:
           $ref: '#/components/schemas/Observation'
+    Webhook:
+      type: object
+      required: [status, events, confirmed_destinations]
+      properties:
+        status: {type: string}
+        raw: {type: string}
+        events:
+          type: array
+          items: {type: string}
+        checked_at:
+          type: [string, 'null']
+          format: date-time
+          description: Время последней сверки регистрации, не проверки доставки.
+        last_error:
+          type: [string, 'null']
+        confirmed_destinations:
+          type: [integer, 'null']
+          minimum: 0
+          description: >-
+            Число адресов в локальном реестре владения Core. Не подтверждает
+            текущую подписку в amoCRM или доставку событий. null означает,
+            что источник не передал значение; 0 — известный пустой реестр.
     CatalogProduct:
       type: object
       required: [code, display_name]

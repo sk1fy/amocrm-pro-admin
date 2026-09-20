@@ -1,4 +1,5 @@
 .summary {
+  min-width: 0;
   display: grid;
   gap: var(--space-3);
   padding: 1rem 1.25rem;
@@ -140,4 +141,71 @@
 .unsaved {
   margin: 0;
   font-size: 13px;
+}
+
+.summaryNav {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  border-top: 1px solid var(--color-border-soft);
+  padding-top: var(--space-3);
+}
+.summaryNav a {
+  align-content: start;
+  font-size: 12.5px;
+}
+.summaryNav > p {
+  grid-column: 1 / -1;
+}
+.problems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.problemCenter {
+  display: grid;
+  gap: var(--space-2);
+}
+.problems a {
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+.problemAction {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.toolbar {
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+.group {
+  min-width: 0;
+  max-width: 100%;
+}
+.group:has(section[aria-label='Результат операции']) {
+  flex-basis: 100%;
+}
+.switcher {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12px;
+}
+.switcher label {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.switcher select {
+  min-width: 0;
+  max-width: 100%;
+}
+.compact {
+  min-width: 0;
+}
+@media (max-width: 540px) {
+  .summary,
+  .compact {
+    padding: var(--space-4);
+  }
+  .switcher {
+    gap: var(--space-2);
+  }
 }

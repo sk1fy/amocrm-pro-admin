@@ -58,3 +58,13 @@
   border-color: color-mix(in srgb, var(--tone-error) 50%, var(--color-border));
   color: var(--tone-error);
 }
+
+.inline {
+  min-width: 0;
+}
+.inline > section {
+  width: min(40rem, 100%);
+}
+.dialog {
+  overflow-wrap: anywhere;
+}

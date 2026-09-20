@@ -2,7 +2,7 @@
   /* Status tones: the single source of colour for states (states/index.ts). */
   --tone-ok: #2f6f4f;
   --tone-ok-bg: #e7f0ea;
-  --tone-attention: #b8862b;
+  --tone-attention: #8a6018;
   --tone-attention-bg: #fbf1de;
   --tone-action: #b4571e;
   --tone-action-bg: #f9ece1;
@@ -19,7 +19,7 @@
   --color-surface-2: #fbfcfa;
   --color-text: #171a18;
   --color-muted: #62675f;
-  --color-subtle: #9ba097;
+  --color-subtle: #71776d;
   --color-border: #e3e5e1;
   --color-border-soft: #eceeeb;
   --color-accent: #2f6f4f;

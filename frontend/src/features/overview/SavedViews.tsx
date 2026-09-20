@@ -25,9 +25,14 @@ export function normalizeViewParams(params: Record<string, unknown>): Record<str
 export function viewMatchesCurrent(
   params: Record<string, unknown>,
   current: Record<string, string | number | undefined>,
+  section?: Props['section'],
 ): boolean {
   const left = normalizeViewParams(params)
   const right = normalizeViewParams(current)
+  if (section === 'accounts') {
+    left.origin ??= 'all'
+    right.origin ??= 'all'
+  }
   const keysLeft = Object.keys(left).sort()
   const keysRight = Object.keys(right).sort()
   if (keysLeft.length !== keysRight.length) {
@@ -44,13 +49,14 @@ export function SavedViews({ section, current, columns, onLoad }: Props) {
     queryFn: () => fetchViews(section),
   })
   const [name, setName] = useState('')
+  const [editing, setEditing] = useState(false)
   const [shared, setShared] = useState(false)
   const [selectedId, setSelectedId] = useState('')
   const canWrite = Boolean(me.data?.permissions.includes('views:write'))
   const isAdmin = me.data?.role === 'admin'
   const items = list.data?.items ?? []
   const selected = items.find((item) => item.id === selectedId)
-  const active = items.find((item) => viewMatchesCurrent(item.params, current))
+  const active = items.find((item) => viewMatchesCurrent(item.params, current, section))
   const canManageSelected = Boolean(selected) && canWrite && (selected?.shared ? isAdmin : true)
 
   async function refresh() {
@@ -103,37 +109,51 @@ export function SavedViews({ section, current, columns, onLoad }: Props) {
 
   return (
     <div className={styles.wrap}>
-      <FilterField label="Сохранённые представления">
-        <select
-          aria-label="Сохранённые представления"
-          value={selectedId}
-          onChange={(event) => {
-            const id = event.target.value
-            setSelectedId(id)
-            const view = items.find((item) => item.id === id)
-            if (view) onLoad(view.params)
-          }}
-        >
-          <option value="">Выбрать</option>
-          {items.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-              {item.shared ? ' (доступно всем администраторам)' : ''}
-              {viewMatchesCurrent(item.params, current) ? ' — текущее' : ''}
-            </option>
-          ))}
-        </select>
-      </FilterField>
+      <div className={styles.toolbar}>
+        <FilterField label="Сохранённые представления">
+          <select
+            aria-label="Сохранённые представления"
+            value={selectedId}
+            onChange={(event) => {
+              const id = event.target.value
+              setSelectedId(id)
+              const view = items.find((item) => item.id === id)
+              if (view) onLoad(view.params)
+            }}
+          >
+            <option value="">Выбрать</option>
+            {items.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+                {item.shared ? ' (доступно всем администраторам)' : ''}
+                {viewMatchesCurrent(item.params, current, section) ? ' — текущее' : ''}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        {canWrite ? (
+          <button
+            type="button"
+            aria-expanded={editing}
+            aria-controls={`view-editor-${section}`}
+            onClick={() => setEditing((value) => !value)}
+          >
+            {editing ? 'Закрыть настройки вида' : 'Сохранить вид'}
+          </button>
+        ) : null}
+      </div>
       {active ? (
         <p className={styles.active} aria-live="polite">
           Активно: {active.name}
           {active.shared ? ' (доступно всем администраторам)' : ''}
         </p>
-      ) : (
-        <p className={styles.active}>Нет активного сохранённого представления</p>
-      )}
-      {canWrite ? (
-        <form className={styles.manage} onSubmit={(event) => void save(event)}>
+      ) : null}
+      {canWrite && editing ? (
+        <form
+          id={`view-editor-${section}`}
+          className={styles.manage}
+          onSubmit={(event) => void save(event)}
+        >
           <FilterField label="Имя представления">
             <input
               value={name}
