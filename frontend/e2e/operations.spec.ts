@@ -225,7 +225,7 @@ test('partial uninstall shows webhook error and explicit repeat creates a new op
   await expect(page.getByText('Ошибка webhook: Не удалось снять подписку')).toBeVisible()
   await page.getByRole('button', { name: 'Повторить удаление', exact: true }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить' }).click()
-  await expect(page.getByRole('link', { name: 'Операция uninstall-2', exact: true })).toBeVisible()
+  await expect(page.locator('a[href="/operations/admin/uninstall-2"]')).toBeVisible()
   expect(keys).toHaveLength(2)
   expect(keys[0]).not.toBe(keys[1])
 })
