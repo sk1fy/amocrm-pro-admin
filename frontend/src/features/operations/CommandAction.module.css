@@ -62,8 +62,11 @@
 .inline {
   min-width: 0;
 }
+.inline:has(section[aria-label='Результат операции']) {
+  width: 28rem;
+}
 .inline > section {
-  width: min(40rem, 100%);
+  width: 100%;
 }
 .dialog {
   overflow-wrap: anywhere;

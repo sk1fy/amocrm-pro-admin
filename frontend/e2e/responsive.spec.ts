@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page, type Route } from '@playwright/test'
 
 const email = process.env.E2E_EMAIL ?? 'admin@example.invalid'
 const password = process.env.E2E_PASSWORD ?? 'correct-horse-battery'
@@ -39,11 +39,43 @@ for (const width of [375, 768, 1440]) {
     await expect(page.getByText('Адресов в локальном реестре:', { exact: false })).toBeVisible()
     await expectContained(page)
     await page.screenshot({ path: testInfo.outputPath(`connection-${width}.png`), fullPage: true })
+    const diagnosticJobId = 'f2a00000-0000-4000-8000-000000000123'
+    const addDiagnosticDetails = async (route: Route) => {
+      const response = await route.fetch()
+      const body = (await response.json()) as { operation: { result: Record<string, unknown> } }
+      body.operation.result = { ...body.operation.result, job_id: diagnosticJobId, retry_after: 60 }
+      await route.fulfill({ response, json: body })
+    }
+    await page.route('**/api/v1/connections/core/*/commands/check', addDiagnosticDetails)
+    await page.route('**/api/v1/operations/admin/*', addDiagnosticDetails)
     await page.getByRole('button', { name: 'Проверить подключение', exact: true }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить', exact: true }).click()
     await expect(page.getByRole('region', { name: 'Результат операции' })).toBeVisible()
     await expectContained(page)
+    const result = page.getByRole('region', { name: 'Результат операции' })
+    await expect(result.getByText(`Задача: ${diagnosticJobId}`, { exact: true })).not.toBeVisible()
+    await page.evaluate(() => window.scrollTo(0, 0))
     await page.screenshot({ path: testInfo.outputPath(`operation-${width}.png`), fullPage: true })
+    if (width === 1440) {
+      const diagnose = await page
+        .getByRole('button', { name: 'Проверить подключение', exact: true })
+        .boundingBox()
+      const disable = await page
+        .getByRole('button', { name: 'Отключить подключение', exact: true })
+        .boundingBox()
+      expect(diagnose && disable && Math.abs(diagnose.y - disable.y) < 4).toBe(true)
+    }
+    await result.getByText('Подробности выполнения', { exact: true }).click()
+    await expect(result.getByText(`Задача: ${diagnosticJobId}`, { exact: true })).toBeVisible()
+    await expect(
+      result.getByRole('button', { name: 'Проверить задачу', exact: true }),
+    ).toBeVisible()
+    await expectContained(page)
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.screenshot({
+      path: testInfo.outputPath(`operation-details-${width}.png`),
+      fullPage: true,
+    })
 
     await page.goto('/accounts/91000002')
     await expect(page.getByTestId('connection-badge')).toHaveCount(3)

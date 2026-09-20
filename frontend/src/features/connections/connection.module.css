@@ -181,7 +181,7 @@
   max-width: 100%;
 }
 .group:has(section[aria-label='Результат операции']) {
-  flex-basis: 100%;
+  flex: 0 1 28rem;
 }
 .switcher {
   min-width: 0;

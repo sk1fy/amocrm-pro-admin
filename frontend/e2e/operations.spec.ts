@@ -401,6 +401,7 @@ test('queued command inspects its job with GET polling and stops after completio
   await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить' }).click()
   await expect(page.getByText(/Задача поставлена в очередь/)).toBeVisible()
   expect(jobReads).toBe(0)
+  await page.getByText('Подробности выполнения', { exact: true }).click()
   await page.getByRole('button', { name: 'Проверить задачу', exact: true }).click()
   await expect(page.getByText('Выполняется', { exact: true })).toBeVisible()
   await page.clock.fastForward(1600)

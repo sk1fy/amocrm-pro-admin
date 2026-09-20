@@ -9,6 +9,7 @@ import { ErrorState } from '../../components/ErrorState'
 import { Observation } from '../../components/Observation'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
+import styles from './OperationView.module.css'
 import { formatNull, formatTime } from '../../lib/format'
 import { jobPending, operationPending, safeOperationURL } from './commands'
 
@@ -131,9 +132,30 @@ export function OperationView({
     typeof result.classification === 'string' ? result.classification : undefined
   const observed =
     typeof result.observed_at === 'string' ? result.observed_at : operation.observed_at
+  const jobDetails = (
+    <>
+      {typeof result.job_id === 'string' && result.job_id !== '' ? (
+        <OperationJob
+          key={`${operation.id}:${result.job_id}`}
+          operationId={operation.id}
+          backend={operation.backend}
+          jobId={result.job_id}
+        />
+      ) : null}
+      {typeof result.retry_after === 'number' ? (
+        <p>Повторная проверка доступна через {result.retry_after} с.</p>
+      ) : null}
+    </>
+  )
+  const metadata = (
+    <p className={page.muted}>
+      Обновлено: <time dateTime={operation.updated_at}>{formatTime(operation.updated_at)}</time> ·
+      источник: {formatNull(operation.backend)}
+    </p>
+  )
   return (
     <section
-      className={`${page.card} ${compact ? page.compact : ''}`}
+      className={`${page.card} ${compact ? `${page.compact} ${styles.compact}` : ''}`}
       aria-label="Результат операции"
       aria-live="polite"
     >
@@ -152,7 +174,7 @@ export function OperationView({
           Команда выполняется. Операция продолжит выполняться в фоне. Результат появится в истории.
         </p>
       ) : null}
-      {operation.state === 'succeeded' ? <p role="status">Команда завершена.</p> : null}
+      {operation.state === 'succeeded' && !compact ? <p role="status">Команда завершена.</p> : null}
       {operation.outcome === 'queued' ? (
         <p role="status">
           Задача поставлена в очередь. Результат выполнения проверяйте по задаче и объекту.
@@ -178,26 +200,23 @@ export function OperationView({
           <time dateTime={observed ?? undefined}>{formatTime(observed)}</time>
         </div>
       ) : null}
-      {typeof result.job_id === 'string' && result.job_id !== '' ? (
-        <OperationJob
-          key={`${operation.id}:${result.job_id}`}
-          operationId={operation.id}
-          backend={operation.backend}
-          jobId={result.job_id}
-        />
-      ) : null}
-      {typeof result.retry_after === 'number' ? (
-        <p>Повторная проверка доступна через {result.retry_after} с.</p>
-      ) : null}
+      {compact ? (
+        <details className={styles.details}>
+          <summary>Подробности выполнения</summary>
+          <div className={page.stack}>
+            {jobDetails}
+            {metadata}
+          </div>
+        </details>
+      ) : (
+        jobDetails
+      )}
       {oauthURL ? (
         <a href={oauthURL} target="_blank" rel="noopener noreferrer">
           Ссылка для повторной авторизации OAuth
         </a>
       ) : null}
-      <p className={page.muted}>
-        Обновлено: <time dateTime={operation.updated_at}>{formatTime(operation.updated_at)}</time> ·
-        источник: {formatNull(operation.backend)}
-      </p>
+      {!compact ? metadata : null}
       {onInspect ? (
         <button type="button" onClick={onInspect}>
           Проверить объект
