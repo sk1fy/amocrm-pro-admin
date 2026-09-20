@@ -102,7 +102,7 @@ type webhookDTO struct {
 	Events                []string   `json:"events"`
 	CheckedAt             *time.Time `json:"checked_at"`
 	LastError             *string    `json:"last_error"`
-	ConfirmedDestinations int        `json:"confirmed_destinations"`
+	ConfirmedDestinations *int       `json:"confirmed_destinations"`
 }
 
 type grantDTO struct {

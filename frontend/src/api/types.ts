@@ -131,7 +131,7 @@ export type Webhook = {
   events: string[]
   checked_at?: string | null
   last_error?: string | null
-  confirmed_destinations: number
+  confirmed_destinations?: number | null
 }
 
 export type AccountConnectionCard = {

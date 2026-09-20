@@ -4,8 +4,14 @@ import { Link } from '@tanstack/react-router'
 import { usePushSearch, useRouteSearch } from '../../app/hooks'
 import type { OverviewSearch } from '../../app/search'
 import { fetchAccounts, fetchBackends, fetchJobs, fetchStats, keys } from '../../api/queries'
-import type { BackendRegistryEntry, Observation, StatsSnapshot } from '../../api/types'
+import type {
+  BackendRegistryEntry,
+  Observation as ObservationValue,
+  StatsSnapshot,
+} from '../../api/types'
 import { CopyableId } from '../../components/CopyableId'
+import { Observation } from '../../components/Observation'
+import styles from './OverviewPage.module.css'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { PageSkeleton } from '../../components/PageSkeleton'
@@ -34,8 +40,8 @@ function metricValue(value: number | null | undefined): string {
 }
 
 function primaryStats(
-  items: Observation<StatsSnapshot>[] | undefined,
-): Observation<StatsSnapshot> | undefined {
+  items: ObservationValue<StatsSnapshot>[] | undefined,
+): ObservationValue<StatsSnapshot> | undefined {
   return items?.find((item) => item.data) ?? items?.[0]
 }
 
@@ -88,9 +94,7 @@ export function OverviewPage() {
       <header className={page.header}>
         <div className={page.heading}>
           <h1 className={page.title}>Обзор</h1>
-          <p className={page.description}>
-            Оперативная сводка бекендов, аккаунтов и сбоев. Ноль и отсутствие данных различаются.
-          </p>
+          <p className={page.description}>Состояние платформы и задачи, которым нужно внимание.</p>
         </div>
         <label className={page.period}>
           <span className={page.label}>Период</span>
@@ -133,64 +137,124 @@ export function OverviewPage() {
           }
         />
       ) : null}
-      {snapshot ? (
-        <div className={page.metrics} data-testid="overview-stats">
-          <Metric
-            label="Новые подключения"
-            value={snapshot.connected}
-            to="/stats/accounts"
-            metric="connected"
-            period={period}
-          />
-          <Metric
-            label="Отключения"
-            value={snapshot.disconnected}
-            to="/stats/accounts"
-            metric="disconnected"
-            period={period}
-          />
-          <Metric
-            label="Активные аккаунты"
-            value={snapshot.active_accounts}
-            to="/stats/accounts"
-            metric="active"
-            period={period}
-          />
-          <Metric
-            label="Проверка устарела или не выполнялась"
-            value={snapshot.verification?.unverified}
-          />
-          <Metric
-            label="Временная ошибка проверки"
-            value={snapshot.verification?.temporary_errors}
-          />
-          <Metric
-            label="Бекенд недоступен"
-            value={
-              backends.error || !backends.data
-                ? null
-                : backends.data.items.filter((item) => item.status === 'unavailable').length
-            }
-          />
-          <Metric label="Ошибки задач" value={snapshot.job_errors} to="/operations" />
-          <Metric label="Задержка p50, мс" value={snapshot.latency_p50_ms} />
-          <Metric
-            label="Нужна повторная авторизация"
-            value={snapshot.auth_problems}
-            to="/stats/accounts"
-            metric="auth_problems"
-            period={period}
-          />
-          <Metric
-            label="Проблемы синхронизации"
-            value={snapshot.sync_problems}
-            to="/stats/accounts"
-            metric="sync_problems"
-            period={period}
-          />
-        </div>
+      {statsObservation ? (
+        <Observation
+          title="Состояние платформы"
+          observation={statsObservation}
+          onRetry={() => void stats.refetch()}
+        >
+          {() => (
+            <div className={styles.primaryMetrics} data-testid="overview-stats">
+              <Metric
+                label="Бекенд недоступен"
+                value={
+                  backends.error || !backends.data
+                    ? null
+                    : backends.data.items.filter((item) => item.status === 'unavailable').length
+                }
+              />
+              <Metric label="Ошибки задач" value={snapshot?.job_errors} to="/operations" />
+              <Metric
+                label="Нужна повторная авторизация"
+                value={snapshot?.auth_problems}
+                to="/stats/accounts"
+                metric="auth_problems"
+                period={period}
+              />
+              <Metric
+                label="Проблемы синхронизации"
+                value={snapshot?.sync_problems}
+                to="/stats/accounts"
+                metric="sync_problems"
+                period={period}
+              />
+            </div>
+          )}
+        </Observation>
       ) : null}
+      <section className={page.section}>
+        <h2>Требуют внимания</h2>
+        {problemsPending ? (
+          <PageSkeleton label="Загрузка проверок…" variant="list" />
+        ) : attention.open.length === 0 ? (
+          <EmptyState
+            title="Открытых проблем нет"
+            description="По доступным данным проблем не найдено."
+          />
+        ) : (
+          <ul className={page.problemList}>
+            {attention.open.map((item) => (
+              <li key={item.problem} className={styles.problemRow}>
+                <StatusBadge domain="problem" state={item.problem} />
+                <strong>{item.unavailable ? formatNull(null) : formatNull(item.count)}</strong>
+                <Link to="/accounts" search={{ problem: item.problem, origin: 'all', limit: 25 }}>
+                  {problemNextAction[item.problem]}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {attention.passed.length > 0 ? (
+          <details className={page.expand}>
+            <summary>Остальные проверки пройдены</summary>
+            <ul className={page.problemList}>
+              {attention.passed.map((item) => (
+                <li key={item.problem} className={styles.problemRow}>
+                  <StatusBadge domain="problem" state={item.problem} />
+                  <strong>{formatNull(0)}</strong>
+                  <Link to="/accounts" search={{ problem: item.problem, origin: 'all', limit: 25 }}>
+                    {problemNextAction[item.problem]}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+      </section>
 
+      {snapshot ? (
+        <section className={page.section} aria-labelledby="usage-title">
+          <div className={page.header}>
+            <h2 id="usage-title">Использование за период</h2>
+            <Link to="/accounts" search={{ limit: 25 }}>
+              Открыть аккаунты →
+            </Link>
+          </div>
+          <div className={page.metrics}>
+            <Metric
+              label="Новые подключения"
+              value={snapshot.connected}
+              to="/stats/accounts"
+              metric="connected"
+              period={period}
+            />
+            <Metric
+              label="Отключения"
+              value={snapshot.disconnected}
+              to="/stats/accounts"
+              metric="disconnected"
+              period={period}
+            />
+            <Metric
+              label="Активные аккаунты"
+              value={snapshot.active_accounts}
+              to="/stats/accounts"
+              metric="active"
+              period={period}
+            />
+            <Metric
+              label="Проверка устарела или не выполнялась"
+              value={snapshot.verification?.unverified}
+            />
+            <Metric
+              label="Временная ошибка проверки"
+              value={snapshot.verification?.temporary_errors}
+            />
+            <Metric label="Задержка p50, мс" value={snapshot.latency_p50_ms} />
+          </div>
+          <p className={page.muted}>Последнее использование: {formatTime(snapshot.last_use_at)}</p>
+        </section>
+      ) : null}
       <section className={page.section}>
         <h2>Бекенды</h2>
         {backends.isPending ? (
@@ -213,58 +277,6 @@ export function OverviewPage() {
       </section>
 
       <section className={page.section}>
-        <h2>Требуют внимания</h2>
-        {problemsPending ? (
-          <PageSkeleton label="Загрузка проверок…" variant="list" />
-        ) : attention.open.length === 0 ? (
-          <EmptyState
-            title="Открытых проблем нет"
-            description="Все проверки вернули ноль. Это не недоступность источника."
-          />
-        ) : (
-          <ul className={page.problemList}>
-            {attention.open.map((item) => (
-              <li key={item.problem} className={page.problemRow}>
-                <StatusBadge domain="problem" state={item.problem} />
-                <strong>{item.unavailable ? formatNull(null) : formatNull(item.count)}</strong>
-                <Link to="/accounts" search={{ problem: item.problem, limit: 25 }}>
-                  {problemNextAction[item.problem]}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-        {attention.passed.length > 0 ? (
-          <details className={page.expand}>
-            <summary>Остальные проверки пройдены</summary>
-            <ul className={page.problemList}>
-              {attention.passed.map((item) => (
-                <li key={item.problem} className={page.problemRow}>
-                  <StatusBadge domain="problem" state={item.problem} />
-                  <strong>{formatNull(0)}</strong>
-                  <Link to="/accounts" search={{ problem: item.problem, limit: 25 }}>
-                    {problemNextAction[item.problem]}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </details>
-        ) : null}
-      </section>
-
-      <section className={page.section}>
-        <h2>Аккаунты</h2>
-        {snapshot ? (
-          <p className={page.muted}>Последнее использование: {formatTime(snapshot.last_use_at)}</p>
-        ) : null}
-        <p>
-          <Link to="/accounts" search={{ limit: 25 }}>
-            Открыть список аккаунтов
-          </Link>
-        </p>
-      </section>
-
-      <section className={page.section}>
         <h2>Задачи</h2>
         {snapshot && snapshot.queues.length > 0 ? (
           <table className={page.queues}>
@@ -279,7 +291,7 @@ export function OverviewPage() {
             <tbody>
               {snapshot.queues.map((queue) => (
                 <tr key={`${queue.type}:${queue.status}`}>
-                  <td>{queue.type}</td>
+                  <td>{jobLabel(queue.type)}</td>
                   <td>
                     <StatusBadge domain="job" state={queue.status} />
                   </td>
@@ -307,7 +319,7 @@ export function OverviewPage() {
           ) : (
             <EmptyState
               title="Нет задач с ошибками"
-              description="Запросы failed и dead вернули пустой список. Это отсутствие ошибок, а не недоступность очереди."
+              description="В последних задачах нет ошибок или исчерпанных попыток."
             />
           )
         ) : null}
@@ -315,12 +327,16 @@ export function OverviewPage() {
           <ul className={page.jobList}>
             {recentJobs.map((job) => (
               <li key={job.id} className={page.jobRow}>
-                {jobLabel(job.type)} · <StatusBadge domain="job" state={job.status} raw={job.raw} />{' '}
-                ·{' '}
-                <time dateTime={job.updated_at} title={formatTime(job.updated_at)}>
-                  {formatRelativeTime(job.updated_at)}
-                </time>
-                {job.last_error_message ? ` — ${job.last_error_message}` : ''}
+                <div className={page.row}>
+                  <strong>{jobLabel(job.type)}</strong>
+                  <StatusBadge domain="job" state={job.status} raw={job.raw} />
+                  <time dateTime={job.updated_at} title={formatTime(job.updated_at)}>
+                    {formatRelativeTime(job.updated_at)}
+                  </time>
+                </div>
+                {job.last_error_message ? (
+                  <p className={page.muted}>{job.last_error_message}</p>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -330,44 +346,6 @@ export function OverviewPage() {
             Задачи со статусом «{lookupState('job', 'dead').label}»
           </Link>
         </p>
-      </section>
-
-      <section className={page.section}>
-        <h2>Авторизация</h2>
-        <p>
-          <Link to="/accounts" search={{ problem: 'reauth_required', limit: 25 }}>
-            {problemNextAction.reauth_required}
-          </Link>
-        </p>
-        <p>
-          <Link to="/accounts" search={{ problem: 'missing_credentials', limit: 25 }}>
-            {problemNextAction.missing_credentials}
-          </Link>
-        </p>
-      </section>
-
-      <section className={page.section}>
-        <h2>Webhook</h2>
-        <p>
-          <Link to="/accounts" search={{ problem: 'webhook_error', limit: 25 }}>
-            {problemNextAction.webhook_error}
-          </Link>
-        </p>
-      </section>
-
-      <section className={page.section}>
-        <h2>Синхронизация</h2>
-        <p>
-          <Link to="/stats/accounts" search={{ metric: 'sync_problems', period }}>
-            Открыть аккаунты с проблемами синхронизации
-          </Link>
-        </p>
-        {snapshot ? (
-          <p className={page.muted}>
-            Проблемы синхронизации за фиксированные 7 суток:{' '}
-            {formatNull(snapshot.sync_problems ?? null)}
-          </p>
-        ) : null}
       </section>
     </div>
   )
@@ -392,6 +370,7 @@ function Metric({
       <div className={page.metricValue} data-testid={`stat-${label}`}>
         {metricValue(value)}
       </div>
+      {metric === 'sync_problems' ? <span className={page.muted}>За последние 7 суток</span> : null}
     </article>
   )
   if (to === '/stats/accounts' && metric) {
@@ -418,12 +397,15 @@ function BackendCard({ item }: { item: BackendRegistryEntry }) {
     <article className={`${page.card} ${page.compact}`}>
       <h3>{formatNull(item.display_name)}</h3>
       <StatusBadge domain="source" state={item.status} />
-      {item.revision ? (
-        <CopyableId value={item.revision} label="ревизия" />
-      ) : (
-        <p className={page.muted}>ревизия: {formatNull(null)}</p>
-      )}
-      <p className={page.muted}>контракт: {formatNull(item.contract_version)}</p>
+      <details className={page.expand}>
+        <summary>Технические данные</summary>
+        {item.revision ? (
+          <CopyableId value={item.revision} label="ревизия" />
+        ) : (
+          <p className={page.muted}>ревизия: {formatNull(null)}</p>
+        )}
+        <p className={page.muted}>контракт: {formatNull(item.contract_version)}</p>
+      </details>
       <time dateTime={checked ?? undefined} title={checked ? formatTime(checked) : undefined}>
         {checked ? `Проверка ${formatRelativeTime(checked)}` : formatNull(null)}
       </time>

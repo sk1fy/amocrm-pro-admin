@@ -215,7 +215,9 @@ function CommandControl({
       {operationQuery.error ? (
         <ErrorState error={operationQuery.error} onRetry={() => void operationQuery.refetch()} />
       ) : null}
-      {operation ? <OperationView operation={operation} onInspect={onInspect} /> : null}
+      {operation ? (
+        <OperationView operation={operation} compact={layout === 'inline'} onInspect={onInspect} />
+      ) : null}
       <dialog
         ref={dialog}
         className={styles.dialog}

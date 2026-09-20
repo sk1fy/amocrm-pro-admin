@@ -112,13 +112,15 @@ export function ConnectionPage() {
 
   return (
     <div className={page.page}>
-      <p>
-        <Link to="/accounts/$accountId" params={{ accountId }}>
-          Назад к аккаунту {accountId}
-        </Link>
-      </p>
-      <ConnectionSwitcher accountId={accountId} backend={backend} connectionId={connectionId} />
-      <h2>Подключение {identity?.integration_code ?? connectionId}</h2>
+      <header className={page.header}>
+        <div className={page.heading}>
+          <h2>Подключение {identity?.integration_code ?? 'без названия'}</h2>
+          <Link to="/accounts/$accountId" params={{ accountId }}>
+            К обзору аккаунта
+          </Link>
+        </div>
+        <ConnectionSwitcher accountId={accountId} backend={backend} connectionId={connectionId} />
+      </header>
       <RefreshStatus
         updatedAt={query.dataUpdatedAt}
         fetching={query.isFetching}
@@ -134,24 +136,6 @@ export function ConnectionPage() {
       />
       {health.coreAuthIncident ? (
         <IncidentBanner incident={health.coreAuthIncident} onRetry={refetch} />
-      ) : null}
-      {health.problems.length > 0 ? (
-        <section className={styles.summary} aria-labelledby="problem-center">
-          <h3 id="problem-center">Требуют внимания — {health.problems.length}</h3>
-          <ul className={styles.problems}>
-            {health.problems.map((problem) => (
-              <li key={problem.id}>
-                <Link
-                  to="/accounts/$accountId/widgets/$backend/$connectionId"
-                  params={{ accountId, backend, connectionId }}
-                  search={{ section: problem.section }}
-                >
-                  {problem.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
       ) : null}
       <ConnectionToolbar
         accountId={accountId}
@@ -289,12 +273,26 @@ function HealthSummary({
         />
         <span className={page.muted}>источник: {health.pageSource}</span>
       </div>
-      {health.reasons.length > 0 ? (
-        <ul>
-          {health.reasons.map((reason) => (
-            <li key={reason}>{reason}</li>
-          ))}
-        </ul>
+      {health.problems.length > 0 ? (
+        <div className={styles.problemCenter}>
+          <h3>Требуют внимания — {health.problems.length}</h3>
+          <ul className={styles.problems}>
+            {health.problems.map((problem) => (
+              <li key={problem.id}>
+                <Link
+                  to="/accounts/$accountId/widgets/$backend/$connectionId"
+                  params={{ accountId, backend, connectionId }}
+                  search={{ section: problem.section }}
+                >
+                  <span>{problem.title}</span>
+                  <span className={styles.problemAction}>Подробнее →</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : health.reasons.length > 0 ? (
+        <p className={page.muted}>{health.reasons.join(' · ')}</p>
       ) : (
         <p className={page.muted}>Активных проблем нет.</p>
       )}
@@ -700,17 +698,37 @@ function WebhookSection({
       {(hook) => (
         <div className={page.stack}>
           <WebhookEvents events={hook.events} />
-          <WebhookCheckedAt checkedAt={hook.checked_at} lastError={hook.last_error} />
+          <WebhookCheckedAt
+            checkedAt={hook.checked_at}
+            lastError={hook.last_error}
+            status={hook.status}
+          />
           {hook.last_error ? (
             <p>Последняя ошибка: {hook.last_error}</p>
           ) : (
-            <p className={page.muted}>Ошибок нет</p>
+            <p className={page.muted}>
+              {hook.checked_at
+                ? 'Последняя сверка не содержит ошибки'
+                : 'Сверка регистрации ещё не зафиксирована'}
+            </p>
           )}
-          <p>Подтверждённых адресов доставки: {formatNull(hook.confirmed_destinations)}</p>
+          <p>Адресов в локальном реестре: {formatNull(hook.confirmed_destinations ?? null)}</p>
           <p className={styles.secondary}>
-            Это число адресов, которые Core подтвердил как приёмники событий amoCRM. Обычно нужен
-            хотя бы один. Ноль при активной подписке значит, что события могут не доходить.
+            Число адресов, учтённых Core для этой установки. Реестр не подтверждает текущую подписку
+            в amoCRM или доставку событий.
           </p>
+          {hook.confirmed_destinations == null ? (
+            <p className={styles.secondary}>
+              Источник не передал число адресов в локальном реестре.
+            </p>
+          ) : null}
+          {hook.confirmed_destinations === 0 && hook.status === 'active' ? (
+            <p className={styles.secondary}>
+              В локальном реестре нет адресов. У подписки, созданной до появления реестра, это
+              возможно и при рабочей доставке. Сверьте регистрацию в amoCRM; при необходимости
+              запустите восстановление.
+            </p>
+          ) : null}
           {hook.confirmed_destinations === 0 && hook.status === 'active' ? (
             <CommandAction
               spec={connectionCommand(backend, connectionId, 'reconcile', accountId)}
@@ -1073,9 +1091,7 @@ function JobsSection({
         const rows = showAll ? sorted : sorted.slice(0, 8)
         return (
           <div className={page.stack}>
-            <p className={styles.secondary}>
-              Очередь Core по этой установке, не журнал действий администратора.
-            </p>
+            <p className={styles.secondary}>Последние фоновые задачи подключения.</p>
             <p className={styles.secondary}>
               {[...grouped.entries()]
                 .map(([type, count]) => `${jobLabel(type)} ×${count}`)
@@ -1181,9 +1197,7 @@ function HistorySection({
         const rows = showAll ? items : items.slice(0, 8)
         return (
           <div className={page.stack}>
-            <p className={styles.secondary}>
-              Журнал аудита Core. Фоновые задачи очереди смотрите во вкладке «Задачи».
-            </p>
+            <p className={styles.secondary}>Изменения подключения и действия пользователей.</p>
             <p className={styles.secondary}>
               {grouped
                 .map((group) => `${auditLabel(group.key)} ×${group.items.length}`)
@@ -1293,15 +1307,17 @@ function CompactSection({
 function WebhookCheckedAt({
   checkedAt,
   lastError,
+  status,
 }: {
+  status?: string
   checkedAt?: string | null
   lastError?: string | null
 }) {
-  const successAt = webhookSuccessfulCheckAt(checkedAt, lastError)
+  const successAt = webhookSuccessfulCheckAt(checkedAt, lastError, status)
   if (successAt) {
     return (
       <p className={styles.secondary}>
-        Последняя успешная проверка{' '}
+        Последняя успешная сверка регистрации{' '}
         <time dateTime={successAt} title={formatTime(successAt)}>
           {formatRelativeTime(successAt)}
         </time>
@@ -1310,7 +1326,7 @@ function WebhookCheckedAt({
   }
   return (
     <p className={styles.secondary}>
-      Проверено{' '}
+      Последняя сверка регистрации{' '}
       <time dateTime={checkedAt ?? undefined} title={formatTime(checkedAt)}>
         {formatRelativeTime(checkedAt)}
       </time>

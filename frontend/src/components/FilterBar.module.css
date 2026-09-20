@@ -1,7 +1,6 @@
 .form {
   display: grid;
   gap: 12px;
-  margin-bottom: 1.25rem;
   padding: 12px 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -20,7 +19,9 @@
 .fieldGrow {
   display: grid;
   gap: 6px;
-  min-width: 10rem;
+  min-width: min(100%, 10rem);
+  max-width: 100%;
+  flex: 1 1 10rem;
 }
 
 .fieldGrow {
@@ -90,4 +91,12 @@
 
 .form button[type='submit']:hover {
   background: #2a2d28;
+}
+
+.field input,
+.field select,
+.fieldGrow input,
+.fieldGrow select {
+  min-width: 0;
+  width: 100%;
 }

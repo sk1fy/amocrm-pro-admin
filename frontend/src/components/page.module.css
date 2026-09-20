@@ -1,4 +1,7 @@
 .page {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  overflow-wrap: anywhere;
   display: grid;
   align-content: start;
   gap: var(--space-5);
@@ -57,6 +60,7 @@
 }
 
 .section {
+  min-width: 0;
   display: grid;
   gap: var(--space-3);
 }
@@ -69,18 +73,21 @@
 }
 
 .cards {
+  min-width: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
   gap: var(--space-4);
 }
 
 .cardsCompact {
+  min-width: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
   gap: var(--space-3);
 }
 
 .card {
+  min-width: 0;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -107,14 +114,16 @@
 }
 
 .metrics {
+  min-width: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr));
   gap: var(--space-3);
 }
 
 .metric {
+  height: 100%;
   text-decoration: none;
-  color: inherit;
+  color: var(--color-text);
 }
 
 .metricValue {
@@ -151,6 +160,7 @@
 }
 
 .stack {
+  min-width: 0;
   display: grid;
   gap: var(--space-2);
 }
@@ -191,7 +201,7 @@
 
 .dl {
   display: grid;
-  grid-template-columns: 12rem 1fr;
+  grid-template-columns: minmax(7rem, 12rem) minmax(0, 1fr);
   gap: 0.4rem 1rem;
   font-size: 13.5px;
   margin: 0;
@@ -204,6 +214,8 @@
 }
 
 .dl dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
   margin: 0;
 }
 
@@ -254,12 +266,17 @@
 }
 
 .connList {
+  min-width: 18rem;
+  max-width: 32rem;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
 
 .conn {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -328,4 +345,45 @@
 .queues th,
 .queues td {
   padding: var(--space-2) var(--space-3) var(--space-2) 0;
+}
+
+.page p {
+  margin-block: 0;
+}
+
+.refresh {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 540px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+  .card {
+    padding: var(--space-4);
+  }
+  .dl {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+  .dl dd + dt {
+    margin-top: var(--space-2);
+  }
+  .tab {
+    padding: 10px 12px;
+  }
+}
+
+.cardLink,
+.cardLink:hover {
+  color: var(--color-text);
+}
+.cardLink h2 {
+  color: var(--color-link);
 }

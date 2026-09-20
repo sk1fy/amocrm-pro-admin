@@ -1,4 +1,6 @@
 .wrap {
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -7,6 +9,7 @@
 }
 
 .table {
+  overflow-wrap: normal;
   width: 100%;
   min-width: 40rem;
 }

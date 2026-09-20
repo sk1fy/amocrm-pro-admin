@@ -273,10 +273,27 @@ export function computeConnectionHealth(card: ConnectionCard): ConnectionHealth 
       section: 'webhook',
       action: 'reconcile',
     })
-  } else if (webhook && webhook.confirmed_destinations === 0 && webhook.status === 'active') {
+  } else if (card.webhook.freshness === 'stale') {
+    pushProblem(problems, {
+      id: 'webhook-stale',
+      title: 'Данные о регистрации webhook устарели',
+      section: 'webhook',
+      action: 'retry',
+    })
+  } else if (
+    card.webhook.freshness === 'unknown' ||
+    !webhook ||
+    (webhook.status === 'active' && webhook.confirmed_destinations == null)
+  ) {
+    pushProblem(problems, {
+      id: 'webhook-registry-unknown',
+      title: 'Нет данных локального реестра webhook',
+      section: 'webhook',
+    })
+  } else if (webhook.confirmed_destinations === 0 && webhook.status === 'active') {
     pushProblem(problems, {
       id: 'webhook-destinations',
-      title: 'Нет подтверждённых адресов доставки webhook',
+      title: 'Регистрация webhook требует сверки',
       section: 'webhook',
       action: 'reconcile',
     })
@@ -421,8 +438,9 @@ export function lastSyncDurationSeconds(sync: ActivitySync): number | null {
 export function webhookSuccessfulCheckAt(
   checkedAt?: string | null,
   lastError?: string | null,
+  status?: string,
 ): string | null {
-  if (!checkedAt || lastError) {
+  if (!checkedAt || lastError || status !== 'active') {
     return null
   }
   return checkedAt

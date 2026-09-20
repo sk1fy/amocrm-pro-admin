@@ -29,6 +29,8 @@
 }
 
 .body {
+  min-width: 0;
+  overflow-wrap: anywhere;
   display: grid;
   gap: var(--space-3);
   padding: 1rem 1.25rem 1.25rem;

@@ -47,7 +47,7 @@ export function AccountsPage() {
     product: search.product,
     connection: search.connection,
     problem: search.problem,
-    origin: search.origin,
+    origin: search.origin === 'all' ? undefined : (search.origin ?? 'real'),
     cursor: search.cursor,
     limit: search.limit ?? 25,
   }
@@ -69,7 +69,7 @@ export function AccountsPage() {
       search.product ||
       search.connection ||
       search.problem ||
-      search.origin,
+      (search.origin && search.origin !== 'real'),
   )
 
   return (
@@ -78,8 +78,7 @@ export function AccountsPage() {
         <div className={page.heading}>
           <h1 className={page.title}>Аккаунты</h1>
           <p className={page.description}>
-            Поиск по ID, домену или ссылке amoCRM. Состояние аккаунта и статусы подключений — разные
-            факты.
+            Найдите аккаунт по ID, домену или ссылке amoCRM и проверьте его подключения.
           </p>
         </div>
       </header>
@@ -161,12 +160,10 @@ export function AccountsPage() {
           </FilterField>
           <FilterField label="Происхождение">
             <select
-              value={search.origin ?? ''}
-              onChange={(event) =>
-                setSearch({ origin: event.target.value || undefined, cursor: undefined })
-              }
+              value={search.origin ?? 'real'}
+              onChange={(event) => setSearch({ origin: event.target.value, cursor: undefined })}
             >
-              <option value="">Все</option>
+              <option value="all">Все, включая тестовые</option>
               <option value="real">реальные данные</option>
               <option value="fixture">тестовые данные</option>
             </select>
@@ -188,7 +185,7 @@ export function AccountsPage() {
       </div>
       <SavedViews
         section="accounts"
-        current={params}
+        current={{ ...params, origin: search.origin ?? 'real' }}
         columns={['account_id', 'domain', 'connections', 'state']}
         onLoad={(loaded) =>
           setSearch({
@@ -197,7 +194,7 @@ export function AccountsPage() {
             product: typeof loaded.product === 'string' ? loaded.product : undefined,
             connection: typeof loaded.connection === 'string' ? loaded.connection : undefined,
             problem: typeof loaded.problem === 'string' ? loaded.problem : undefined,
-            origin: typeof loaded.origin === 'string' ? loaded.origin : undefined,
+            origin: typeof loaded.origin === 'string' ? loaded.origin : 'all',
             limit: typeof loaded.limit === 'number' ? loaded.limit : search.limit,
             cursor: undefined,
           })
@@ -227,6 +224,18 @@ export function AccountsPage() {
             title="Ничего не найдено"
             description="По запросу и фильтрам нет аккаунтов. Источник ответил, список пуст."
           />
+        ) : params.origin === 'real' ? (
+          <section className={page.section}>
+            <EmptyState
+              title="Нет реальных аккаунтов"
+              description="В доступных источниках пока нет реальных аккаунтов. Тестовые аккаунты скрыты текущим фильтром."
+            />
+            <div className={page.actions}>
+              <button type="button" onClick={() => setSearch({ origin: 'all', cursor: undefined })}>
+                Показать все аккаунты, включая тестовые
+              </button>
+            </div>
+          </section>
         ) : (
           <EmptyState
             title="Нет аккаунтов"

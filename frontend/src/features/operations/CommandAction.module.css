@@ -58,3 +58,16 @@
   border-color: color-mix(in srgb, var(--tone-error) 50%, var(--color-border));
   color: var(--tone-error);
 }
+
+.inline {
+  min-width: 0;
+}
+.inline:has(section[aria-label='Результат операции']) {
+  width: 28rem;
+}
+.inline > section {
+  width: 100%;
+}
+.dialog {
+  overflow-wrap: anywhere;
+}

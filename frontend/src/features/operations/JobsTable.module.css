@@ -12,13 +12,15 @@
 }
 
 .detail {
+  min-width: 0;
+  overflow-wrap: anywhere;
   display: grid;
   gap: var(--space-3);
 }
 
 .detail dl {
   display: grid;
-  grid-template-columns: 8rem 1fr;
+  grid-template-columns: minmax(6rem, 8rem) minmax(0, 1fr);
   gap: 0.35rem 0.75rem;
   margin: 0;
   font-size: 13px;
@@ -29,6 +31,7 @@
 }
 
 .detail dd {
+  min-width: 0;
   margin: 0;
 }
 
@@ -55,4 +58,13 @@
 
 .attempts tbody tr:last-child td {
   border-bottom: none;
+}
+
+@media (max-width: 540px) {
+  .detail dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .detail dd + dt {
+    margin-top: var(--space-2);
+  }
 }
