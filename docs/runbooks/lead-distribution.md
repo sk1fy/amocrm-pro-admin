@@ -56,3 +56,5 @@ Blocked delivery повторяется лишь по frozen message_id/CAS atte
 интеграция и отдельные аккаунты; production не используется. Серверные
 метрики Core: backlog/age/state/error, без account/user IDs в labels.
 Реальное переключение/откат старого распределителя — отдельный РС-10.
+
+РС-10: [контроль пилота](lead-distribution-pilot.md) и ссылки на каноническую приёмку.
