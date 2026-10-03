@@ -8,7 +8,7 @@ import (
 
 func TestCommandPermissionMatrix(t *testing.T) {
 	for _, target := range []string{"installation", "integration", "job", "delivery"} {
-		for _, cmd := range []string{"create", "update", "rotate-secret", "set-service", "enable", "disable", "revoke", "uninstall", "reconcile", "check", "pilot-enable", "pilot-disable", "retry", "activity-configure", "activity-sync", "activity-panel-create", "activity-panel-patch", "activity-panel-rotate", "lead-status-configure"} {
+		for _, cmd := range []string{"create", "update", "rotate-secret", "set-service", "enable", "disable", "revoke", "uninstall", "reconcile", "check", "pilot-enable", "pilot-disable", "retry", "activity-configure", "activity-sync", "activity-panel-create", "activity-panel-patch", "activity-panel-rotate", "lead-status-configure", "distribution-pause", "distribution-resume", "distribution-reconcile", "distribution-delivery-retry"} {
 			p := Permission(target, cmd)
 			if p == "" {
 				continue

@@ -28,3 +28,5 @@
 потребует изменения модели свежести или проверки amoCRM.
 
 - [ADR-0017: актуальность состояния](0017-connection-state-freshness.md).
+
+- [ADR-0018: диагностика распределения](0018-distribution-diagnostics.md).

@@ -372,3 +372,41 @@ Unknown/stale даёт attention с отдельным verification-бейдже
 не доказывает принятие credentials сервером amoCRM. При ошибке refetch
 предыдущий снимок остаётся с предупреждением; зелёного подтверждения без
 свежей успешной проверки нет.
+
+## Распределение сделок (РС-09)
+
+Состояния переводит адаптер; неизвестные значения сохраняют `raw`.
+`module_enabled` — effective capability Core, не состояние правил TeamOS.
+`paused` — остановка новой CRM-адмиссии, не остановка текущих операций.
+Очередь TeamOS в Core не наблюдается: `team_queue_state=unknown`.
+
+| Канон | Тон | Текст |
+| --- | --- | --- |
+| pending | attention | Ожидает |
+| processed | ok | Обработано |
+| ignored | off | Пропущено |
+| blocked | error | Заблокировано |
+| delivering | attention | Доставляется |
+| acknowledged | ok | Доставка подтверждена |
+| queued | attention | В очереди |
+| prechecking | attention | Проверка условий |
+| applying | attention | Назначение отправляется |
+| confirming | attention | Результат проверяется |
+| outcome_unknown | unknown | Исход назначения неизвестен |
+| succeeded | ok | Назначение подтверждено |
+| no_change | ok | Изменение не требуется |
+| rejected | error | Отклонено |
+| conflict | action | Конфликт текущего состояния |
+| cancelled | off | Отменено |
+| scanning | attention | Сверка событий |
+| completed | ok | Завершено |
+| active | ok | Связь активна |
+| disabled | off | Связь отключена |
+| revoked | off | Связь отозвана |
+| unknown | unknown | Неизвестно |
+
+Эффект операции: no_attempt — не отправлялся, in_flight — отправляется,
+unknown — неизвестен, settled — выяснен. Это отдельный факт от state.
+`evidence` выводится безопасным кодом источника, не сырым payload.
+Счётчики `0` показываются как `0`, отсутствующие факты — как «—».
+Завершение команды восстановления не подтверждает назначение сделки.

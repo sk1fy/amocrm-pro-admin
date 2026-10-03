@@ -262,3 +262,25 @@ dispatch.
 запуски (`expected_revision`). Ошибка авторизации Core — один баннер.
 Карточка подключения показывает `activity_sync` Observation (лаг,
 диапазон, last_*, reauth). Ссылки Grafana/Loki, если заданы env.
+
+## Распределение (РС-09)
+
+В карточке `/accounts/$accountId/widgets/$backend/$connectionId` вкладка
+«Распределение сделок» (`section=distribution`). Сводка показывает источник,
+время наблюдения, происхождение, OAuth/webhook, effective capability,
+паузы новой Core-адмиссии, связь TeamOS и независимые backlog/операции.
+Очередь TeamOS обозначена unknown, её данные Core не наблюдает.
+
+Поиск UUID и `distribution_cursor/distribution_limit` сохраняются в URL;
+back/forward обновляет поисковую форму. Черновик ввода остаётся локальным
+до отправки. Цепочка показывает event/operation/result/scan/consumer,
+безопасные ссылки идентичностей, эффект/evidence и ошибки.
+При неизвестном эффекте доступна GET-проверка, при blocked delivery —
+повтор того же message_id. Нет слепой повторной команды назначения.
+Команда открывает доступный с клавиатуры существующий confirm dialog;
+показывает scope/последствия/следующий шаг и durable operation.
+
+Квитанции trace-команд сохраняются отдельно по installation/command и
+immutable message_id/operation_id. Неизвестный результат одного сообщения
+не показывается как результат соседнего. Поле «Разрешение Core для TeamOS»
+подтверждает grant, не доступность TeamOS или готовность всего подключения.

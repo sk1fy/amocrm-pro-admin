@@ -909,6 +909,49 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/connections/{backend}/{connection_id}/distribution:
+    get:
+      tags: [Connections]
+      operationId: getDistribution
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+      responses:
+        '200':
+          description: Safe distribution observation; absent capability is unknown.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DistributionSummaryObservation'}
+        '400': {$ref: '#/components/responses/InvalidArgument'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
+  /api/v1/connections/{backend}/{connection_id}/distribution/trace:
+    get:
+      tags: [Connections]
+      operationId: getDistributionTrace
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Backend'
+        - $ref: '#/components/parameters/ConnectionID'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - name: reference
+          in: query
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Safe distribution observation; absent capability is unknown.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DistributionTraceObservation'}
+        '400': {$ref: '#/components/responses/InvalidArgument'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '500': {$ref: '#/components/responses/InternalError'}
   /api/v1/stats:
     get:
       tags: [System]
@@ -1942,6 +1985,103 @@ components:
         retry_after: {type: integer}
         raw: {type: string}
 
+
+    DistributionCount:
+      type: object
+      additionalProperties: false
+      required: [state, count]
+      properties:
+        state: {type: string}
+        raw: {type: string}
+        count: {type: integer, minimum: 0}
+    DistributionBacklog:
+      type: object
+      additionalProperties: false
+      required: [states, oldest_pending_at]
+      properties:
+        states:
+          type: array
+          items: {$ref: '#/components/schemas/DistributionCount'}
+        oldest_pending_at: {type: string, format: date-time, nullable: true}
+    DistributionBinding:
+      type: object
+      nullable: true
+      additionalProperties: false
+      required: [id, company_id, state, revision, mapping_revision, mapped_employees, service_authorized]
+      properties:
+        id: {type: string, format: uuid}
+        company_id: {type: string, format: uuid}
+        state: {type: string}
+        raw: {type: string}
+        revision: {type: integer}
+        mapping_revision: {type: integer}
+        mapped_employees: {type: integer}
+        service_authorized: {type: boolean}
+    DistributionSummary:
+      type: object
+      additionalProperties: false
+      required: [installation_id, module_enabled, paused, authorization_state, webhook_state, webhook_checked_at, binding, events, results, operations, historical_gaps, team_queue_state, origin]
+      properties:
+        installation_id: {type: string, format: uuid}
+        module_enabled: {type: boolean}
+        paused: {type: boolean}
+        authorization_state: {type: string}
+        authorization_raw: {type: string}
+        webhook_state: {type: string}
+        webhook_raw: {type: string}
+        webhook_checked_at: {type: string, format: date-time, nullable: true}
+        binding: {$ref: '#/components/schemas/DistributionBinding'}
+        events: {$ref: '#/components/schemas/DistributionBacklog'}
+        results: {$ref: '#/components/schemas/DistributionBacklog'}
+        operations:
+          type: array
+          items: {$ref: '#/components/schemas/DistributionCount'}
+        historical_gaps: {type: integer, minimum: 0}
+        team_queue_state: {type: string, enum: [unknown]}
+        origin: {type: string, enum: [real, fixture]}
+    DistributionTraceItem:
+      type: object
+      additionalProperties: false
+      required: [kind, id, message_id, state, created_at, error_code, event_id, operation_id, correlation_id, causation_id, lead_id, result_version, external_effect_state, evidence, attempts]
+      properties:
+        kind: {type: string}
+        message_id: {type: string, format: uuid, nullable: true}
+        id: {type: string}
+        state: {type: string}
+        raw: {type: string}
+        created_at: {type: string, format: date-time}
+        error_code: {type: string, nullable: true}
+        event_id: {type: string, format: uuid, nullable: true}
+        operation_id: {type: string, format: uuid, nullable: true}
+        correlation_id: {type: string, format: uuid, nullable: true}
+        causation_id: {type: string, format: uuid, nullable: true}
+        lead_id: {type: string, nullable: true}
+        result_version: {type: integer, nullable: true}
+        external_effect_state: {type: string, nullable: true}
+        evidence: {type: string, nullable: true}
+        attempts: {type: integer, nullable: true}
+    DistributionTrace:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor, total]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/DistributionTraceItem'}
+        next_cursor: {type: string, nullable: true}
+        total: {type: integer, nullable: true}
+    DistributionSummaryObservation:
+      allOf:
+        - $ref: '#/components/schemas/Observation'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/DistributionSummary'}
+    DistributionTraceObservation:
+      allOf:
+        - $ref: '#/components/schemas/Observation'
+        - type: object
+          properties:
+            data: {$ref: '#/components/schemas/DistributionTrace'}
 
   responses:
     Unauthenticated:

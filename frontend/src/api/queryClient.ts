@@ -18,6 +18,8 @@ const affected = new Set([
   'account-history',
   'account-jobs',
   'connection',
+  'distribution',
+  'distribution-trace',
   'connection-jobs',
   'integration',
   'integrations',

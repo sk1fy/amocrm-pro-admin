@@ -28,3 +28,6 @@
 
 Последний аудит этой папки:
 [docs-audit-2026-09-19.md](reviews/docs-audit-2026-09-19.md).
+
+Распределение: [план РС-09](plan/lead-distribution-diagnostics.md),
+[диагностика и восстановление](runbooks/lead-distribution.md).

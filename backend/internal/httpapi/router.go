@@ -131,6 +131,8 @@ func New(deps Dependencies) http.Handler {
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(rbac.Require(rbac.ConnectionsRead, deps.Employees))
+			r.Method(apicontract.Distribution.Method, apicontract.Distribution.Path, http.HandlerFunc(h.getDistribution))
+			r.Method(apicontract.DistributionTrace.Method, apicontract.DistributionTrace.Path, http.HandlerFunc(h.getDistributionTrace))
 			r.Method(apicontract.Connection.Method, apicontract.Connection.Path, http.HandlerFunc(h.getConnection))
 			r.Method(apicontract.ActivitySettings.Method, apicontract.ActivitySettings.Path, http.HandlerFunc(h.getActivitySettings))
 			r.Method(apicontract.ActivityStatus.Method, apicontract.ActivityStatus.Path, http.HandlerFunc(h.getActivityStatus))

@@ -284,3 +284,27 @@ classification, observed_at, freshness, fresh_for_seconds, безопасная 
 unverified, temporary_errors, verified. Отсутствие поля означает отсутствие
 факта, не нулевое значение. По verification total может быть null;
 пустая страница с next_cursor требует продолжения.
+
+## Распределение (РС-09)
+
+GET `connections/{backend}/{connection_id}/distribution` возвращает
+Observation типизированной сводки. GET `.../distribution/trace` принимает
+UUID `reference`, keyset `cursor`, `limit` 25/100; это Observation
+`{items,next_cursor,total:null}`. Полные схемы в `backend/api/openapi.yaml`.
+Оба пути под `/api/v1`, с сессией и правом `connections:read`.
+Некорректный UUID/limit — 400; чужая установка — 404.
+Нет capability — unknown без data; отказ/timeout — unavailable без data.
+404 нового Core с capability сохраняет 404; старый Core без capability
+даёт unknown: возможность либо установка недоступна.
+
+Команды используют существующий POST `.../commands/{command}`.
+`distribution-pause/resume`: `{expected_paused:boolean}`.
+`distribution-delivery-retry`: `{kind:events|results,message_id:UUID,
+expected_attempts:integer}`. `distribution-reconcile`:
+`{operation_id:UUID,expected_result_version:integer}`.
+Сессия/Origin/X-Requested-With/Idempotency-Key обязательны.
+202 возвращает durable admin operation, не подтверждение CRM эффекта.
+
+Trace `id` — идентификатор строки, может быть составным. `message_id` —
+UUID замороженного конверта; повтор разрешён только при его наличии.
+`operation_id` и `result_version` связывают результат с назначением.

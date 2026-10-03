@@ -12,23 +12,24 @@ import (
 )
 
 type Data struct {
-	Accounts          []adapter.Account
-	ConnectionDetails map[string]adapter.ConnectionDetail
-	Integrations      []adapter.Integration
-	Jobs              []adapter.JobDetail
-	ConnectionJobs    map[string][]adapter.Job
-	ConnectionAudit   map[string][]adapter.AuditEntry
-	Deliveries        map[string][]adapter.Delivery
-	ActivitySettings  map[string]adapter.ActivitySettings
-	ActivitySync      map[string]adapter.ActivitySyncStatus
-	ActivityPanels    map[string][]adapter.ActivityPanel
-	ActivityEmployees map[string][]adapter.ActivityEmployee
-	LeadStatusRules   map[string][]adapter.LeadStatusRule
-	LeadStatusRuns    map[string][]adapter.LeadStatusRun
-	Stats             map[string]adapter.StatsSnapshot
-	StatsAccounts     map[string][]adapter.StatsAccount
-	Subscriptions     map[int64]adapter.Subscription
-	Health            adapter.Health
+	DistributionPaused map[string]bool
+	Accounts           []adapter.Account
+	ConnectionDetails  map[string]adapter.ConnectionDetail
+	Integrations       []adapter.Integration
+	Jobs               []adapter.JobDetail
+	ConnectionJobs     map[string][]adapter.Job
+	ConnectionAudit    map[string][]adapter.AuditEntry
+	Deliveries         map[string][]adapter.Delivery
+	ActivitySettings   map[string]adapter.ActivitySettings
+	ActivitySync       map[string]adapter.ActivitySyncStatus
+	ActivityPanels     map[string][]adapter.ActivityPanel
+	ActivityEmployees  map[string][]adapter.ActivityEmployee
+	LeadStatusRules    map[string][]adapter.LeadStatusRule
+	LeadStatusRuns     map[string][]adapter.LeadStatusRun
+	Stats              map[string]adapter.StatsSnapshot
+	StatsAccounts      map[string][]adapter.StatsAccount
+	Subscriptions      map[int64]adapter.Subscription
+	Health             adapter.Health
 }
 
 type Adapter struct {
@@ -60,7 +61,7 @@ func New(opts Options) *Adapter {
 	}
 	caps := adapter.Capabilities{
 		Accounts: true, Connections: true, Integrations: true, Jobs: true, Audit: true, Commands: true, Diagnostics: true,
-		ActivityDeliveries: true, Settings: true, Stats: true, Subscriptions: true,
+		DistributionRead: true, DistributionCommands: true, ActivityDeliveries: true, Settings: true, Stats: true, Subscriptions: true,
 	}
 	if opts.Caps != nil {
 		caps = *opts.Caps
@@ -79,6 +80,9 @@ func New(opts Options) *Adapter {
 		health.Capabilities = []string{"accounts", "connections", "integrations", "jobs", "audit"}
 	}
 	data := opts.Data
+	if data.DistributionPaused == nil {
+		data.DistributionPaused = map[string]bool{}
+	}
 	data.Health = health
 	if data.ConnectionDetails == nil {
 		data.ConnectionDetails = map[string]adapter.ConnectionDetail{}

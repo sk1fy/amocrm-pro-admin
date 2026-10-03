@@ -60,7 +60,15 @@ describe('backend refresh policy', () => {
   })
   it('terminal command invalidates account, connection, stats and backends on any screen', async () => {
     const client = createQueryClient()
-    for (const key of ['accounts', 'account', 'connection', 'stats', 'backends'])
+    for (const key of [
+      'accounts',
+      'account',
+      'connection',
+      'distribution',
+      'distribution-trace',
+      'stats',
+      'backends',
+    ])
       client.setQueryData([key], {})
     await client.fetchQuery({
       queryKey: ['admin-operation', 'fixture'],
@@ -68,7 +76,15 @@ describe('backend refresh policy', () => {
         operation: { id: 'fixture', state: 'succeeded', updated_at: '2026-09-19T12:00:00Z' },
       }),
     })
-    for (const key of ['accounts', 'account', 'connection', 'stats', 'backends'])
+    for (const key of [
+      'accounts',
+      'account',
+      'connection',
+      'distribution',
+      'distribution-trace',
+      'stats',
+      'backends',
+    ])
       expect(client.getQueryState([key])?.isInvalidated).toBe(true)
     client.clear()
   })

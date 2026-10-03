@@ -246,7 +246,7 @@ func safeResult(result adapter.CommandResult) map[string]any {
 		"service", "pilot", "command_id", "initial_days", "retention_days", "updated_at", "kind",
 		"from", "to", "operation_id", "delivery_state", "state", "revision", "panel_id", "name",
 		"employee_ids", "lag_seconds", "expected_revision", "rule_id", "source_pipeline_id",
-		"source_status_id", "target_pipeline_id", "target_status_id",
+		"source_status_id", "target_pipeline_id", "target_status_id", "paused", "message_id", "result_version", "expected_attempts",
 	} {
 		value, ok := result.Result[key]
 		if !ok {

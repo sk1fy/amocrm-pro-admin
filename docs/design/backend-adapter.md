@@ -321,3 +321,17 @@ body не передаётся. `AccountFilter.Verification` передаётс�
 старые источники совместимы через bounded post-filter. `Account.Cursor`
 содержит native continuation, его не возвращают отдельным полем клиенту.
 Правила: [ADR-0017](../adr/0017-connection-state-freshness.md).
+
+## DistributionBackend (РС-09)
+
+Optional interface `GetDistribution/GetDistributionTrace`; возможности
+`distribution-read` и `distribution-commands`. Старые адаптеры остаются
+совместимы. Typed DTO исключает payload и неожиданные поля upstream.
+Core adapter читает только `/admin/v1/installations/{id}/distribution`
+и `/distribution/trace`; actor передаётся штатным заголовком.
+Freshness вычисляет сервер: старше 15 минут → stale. Неполный snapshot,
+отрицательные counts/attempts, будущие timestamps → unavailable.
+Неизвестные state → unknown+raw; raw ограничен безопасным кодом до 64 знаков.
+404 summary → unknown capability/недоступная установка.
+Команды распределения проходят preflight свежего summary; отсутствие
+capability/data не допускает отправки. Fixture помечает origin=fixture.

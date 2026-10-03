@@ -17,34 +17,39 @@ type commandReceipt struct {
 }
 
 type commandPayload struct {
-	Enabled           *bool                 `json:"enabled"`
-	ExpectedUpdatedAt *int64                `json:"expected_updated_at"`
-	ExpectedRevision  *int64                `json:"expected_revision"`
-	DisplayWindow     adapter.DisplayWindow `json:"display_window"`
-	Code              string                `json:"code"`
-	ClientID          string                `json:"client_id"`
-	Secret            string                `json:"client_secret"`
-	RedirectURI       string                `json:"redirect_uri"`
-	Service           string                `json:"service"`
-	InstallationID    string                `json:"installation_id"`
-	Kind              string                `json:"kind"`
-	From              int64                 `json:"from"`
-	To                int64                 `json:"to"`
-	PanelID           string                `json:"panel_id"`
-	Name              string                `json:"name"`
-	RuleID            string                `json:"rule_id"`
-	WebhookEvents     []string              `json:"webhook_events"`
-	Services          []string              `json:"services"`
-	EmployeeIDs       []int64               `json:"employee_ids"`
-	InitialDays       int                   `json:"initial_days"`
-	RetentionDays     int                   `json:"retention_days"`
-	Revision          int64                 `json:"revision"`
-	SourcePipelineID  int64                 `json:"source_pipeline_id"`
-	SourceStatusID    int64                 `json:"source_status_id"`
-	TargetPipelineID  int64                 `json:"target_pipeline_id"`
-	TargetStatusID    int64                 `json:"target_status_id"`
-	ServiceEnabled    bool                  `json:"-"`
-	HasServiceEnabled bool                  `json:"-"`
+	ExpectedPaused        *bool                 `json:"expected_paused"`
+	OperationID           string                `json:"operation_id"`
+	ExpectedResultVersion *int64                `json:"expected_result_version"`
+	MessageID             string                `json:"message_id"`
+	ExpectedAttempts      *int                  `json:"expected_attempts"`
+	Enabled               *bool                 `json:"enabled"`
+	ExpectedUpdatedAt     *int64                `json:"expected_updated_at"`
+	ExpectedRevision      *int64                `json:"expected_revision"`
+	DisplayWindow         adapter.DisplayWindow `json:"display_window"`
+	Code                  string                `json:"code"`
+	ClientID              string                `json:"client_id"`
+	Secret                string                `json:"client_secret"`
+	RedirectURI           string                `json:"redirect_uri"`
+	Service               string                `json:"service"`
+	InstallationID        string                `json:"installation_id"`
+	Kind                  string                `json:"kind"`
+	From                  int64                 `json:"from"`
+	To                    int64                 `json:"to"`
+	PanelID               string                `json:"panel_id"`
+	Name                  string                `json:"name"`
+	RuleID                string                `json:"rule_id"`
+	WebhookEvents         []string              `json:"webhook_events"`
+	Services              []string              `json:"services"`
+	EmployeeIDs           []int64               `json:"employee_ids"`
+	InitialDays           int                   `json:"initial_days"`
+	RetentionDays         int                   `json:"retention_days"`
+	Revision              int64                 `json:"revision"`
+	SourcePipelineID      int64                 `json:"source_pipeline_id"`
+	SourceStatusID        int64                 `json:"source_status_id"`
+	TargetPipelineID      int64                 `json:"target_pipeline_id"`
+	TargetStatusID        int64                 `json:"target_status_id"`
+	ServiceEnabled        bool                  `json:"-"`
+	HasServiceEnabled     bool                  `json:"-"`
 }
 
 func (a *Adapter) snapshot() Data {
@@ -54,6 +59,10 @@ func (a *Adapter) snapshot() Data {
 }
 func cloneData(source Data) Data {
 	out := source
+	out.DistributionPaused = map[string]bool{}
+	for id, v := range source.DistributionPaused {
+		out.DistributionPaused[id] = v
+	}
 	out.Accounts = append([]adapter.Account{}, source.Accounts...)
 	for i := range out.Accounts {
 		out.Accounts[i].Connections = append([]adapter.ConnectionSummary{}, source.Accounts[i].Connections...)
@@ -237,6 +246,24 @@ func (a *Adapter) ExecuteCommand(ctx context.Context, _ adapter.Actor, key strin
 					conn.WebhookStatus = adapter.MapWebhookStatus("active")
 				case "pilot-enable":
 					conn.Pilot = adapter.MapPilot("enabled")
+				case "distribution-pause", "distribution-resume":
+					current := a.data.DistributionPaused[conn.ID]
+					if payload.ExpectedPaused == nil || *payload.ExpectedPaused != current {
+						return result, adapter.ErrConflict
+					}
+					a.data.DistributionPaused[conn.ID] = request.Command == "distribution-pause"
+					result.Result["paused"] = a.data.DistributionPaused[conn.ID]
+				case "distribution-reconcile":
+					if payload.OperationID != distributionOperationID || payload.ExpectedResultVersion == nil || *payload.ExpectedResultVersion != 1 {
+						return result, adapter.ErrConflict
+					}
+					result.State = "pending"
+					result.Result["operation_id"] = payload.OperationID
+				case "distribution-delivery-retry":
+					if payload.Kind != "results" || payload.MessageID != distributionResultID || payload.ExpectedAttempts == nil || *payload.ExpectedAttempts != 3 {
+						return result, adapter.ErrConflict
+					}
+					result.Result["message_id"] = payload.MessageID
 				case "pilot-disable":
 					conn.Pilot = adapter.MapPilot("disabled")
 				case "activity-configure":

@@ -71,3 +71,15 @@ Admin API передаёт в Core заголовок `X-Admin-Actor: employee:<
 Core записывает его в `audit_log.actor_id` с `actor_type = 'admin'` (новое
 значение, отличное от `operator` CLI и `bootstrap`). Email и имя сотрудника в
 Core не передаются; сопоставление — по UUID в admin DB.
+
+## Команды распределения (РС-09)
+
+Новые права не вводятся. Summary/trace: `connections:read` для всех ролей.
+Пауза/возобновление новых Core назначений: `connections:disable`,
+operator/admin. Проверка существующего результата и повтор замороженной
+доставки: `operations:retry`, operator/admin. Проверка OAuth использует
+`connections:check`, webhook — `webhooks:reconcile`. Viewer видит данные,
+но сервер отклоняет все перечисленные команды до обращения к источнику.
+Текущая роль перепроверяется после preflight перед dispatch.
+Все команды адресованы одной installation UUID; Core проверяет, что
+operation/message принадлежит этой установке.

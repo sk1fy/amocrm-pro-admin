@@ -29,9 +29,17 @@ import type {
   ActivitySync,
   LeadStatusRule,
   LeadStatusRun,
+  DistributionSummary,
+  DistributionTrace,
 } from './types'
 
 export const keys = {
+  distribution: (backend: string, id: string) => ['distribution', backend, id] as const,
+  distributionTrace: (
+    backend: string,
+    id: string,
+    params: Record<string, string | number | undefined>,
+  ) => ['distribution-trace', backend, id, params] as const,
   me: ['me'] as const,
   accounts: (params: Record<string, string | number | undefined>) => ['accounts', params] as const,
   account: (id: string) => ['account', id] as const,
@@ -294,4 +302,26 @@ export function patchView(
 
 export function deleteView(id: string): Promise<{ ok: boolean }> {
   return apiSend(`/api/v1/views/${encodeURIComponent(id)}`, 'DELETE')
+}
+
+export function fetchDistribution(
+  backend: string,
+  id: string,
+  signal?: AbortSignal,
+): Promise<Observation<DistributionSummary>> {
+  return apiFetch(
+    `/api/v1/connections/${encodeURIComponent(backend)}/${encodeURIComponent(id)}/distribution`,
+    { signal },
+  )
+}
+export function fetchDistributionTrace(
+  backend: string,
+  id: string,
+  params: Record<string, string | number | undefined>,
+  signal?: AbortSignal,
+): Promise<Observation<DistributionTrace>> {
+  return apiFetch(
+    `/api/v1/connections/${encodeURIComponent(backend)}/${encodeURIComponent(id)}/distribution/trace${queryString(params)}`,
+    { signal },
+  )
 }

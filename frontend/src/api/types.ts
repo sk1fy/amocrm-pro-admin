@@ -482,3 +482,59 @@ export type ListResponse<T> = {
   next_cursor?: string | null
   total?: number | null
 }
+
+export type DistributionCount = { state: string; raw?: string; count: number }
+export type DistributionBacklog = {
+  states: DistributionCount[]
+  oldest_pending_at: string | null
+}
+export type DistributionBinding = {
+  id: string
+  company_id: string
+  state: string
+  raw?: string
+  revision: number
+  mapping_revision: number
+  mapped_employees: number
+  service_authorized: boolean
+}
+export type DistributionSummary = {
+  installation_id: string
+  module_enabled: boolean
+  paused: boolean
+  authorization_state: string
+  authorization_raw?: string
+  webhook_state: string
+  webhook_raw?: string
+  webhook_checked_at: string | null
+  binding: DistributionBinding | null
+  events: DistributionBacklog
+  results: DistributionBacklog
+  operations: DistributionCount[]
+  historical_gaps: number
+  team_queue_state: string
+  origin: string
+}
+export type DistributionTraceItem = {
+  message_id: string | null
+  kind: string
+  id: string
+  state: string
+  raw?: string
+  created_at: string
+  error_code: string | null
+  event_id: string | null
+  operation_id: string | null
+  correlation_id: string | null
+  causation_id: string | null
+  lead_id: string | null
+  result_version: number | null
+  external_effect_state: string | null
+  evidence: string | null
+  attempts: number | null
+}
+export type DistributionTrace = {
+  items: DistributionTraceItem[]
+  next_cursor: string | null
+  total: number | null
+}
