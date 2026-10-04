@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import type { DistributionTrace, Observation } from '../src/api/types'
 const connection = 'f1a00000-0000-4000-8000-000000000004'
 const path = `/accounts/91000002/widgets/core/${connection}?section=distribution`
 const email = process.env.E2E_EMAIL ?? 'admin@example.invalid'
@@ -106,4 +107,37 @@ test('distribution mobile keyboard and source failure do not show empty success'
   await page.reload()
   await expect(page.getByText('Источник распределения недоступен')).toBeVisible()
   await expect(page.getByText('Источник подтвердил отсутствие записей.')).toHaveCount(0)
+})
+
+test('unfinished confirming assignment can be verified with its current version', async ({
+  page,
+}) => {
+  await page.route('**/api/v1/connections/core/*/distribution/trace?*', async (route) => {
+    const response = await route.fetch()
+    const body: Observation<DistributionTrace> = await response.json()
+    for (const row of body.data?.items ?? []) {
+      if (row.kind === 'operation') {
+        row.state = 'confirming'
+        row.external_effect_state = 'settled'
+      }
+    }
+    await route.fulfill({ response, json: body })
+  })
+  await login(page)
+  await expect(page.getByText('Результат проверяется', { exact: true })).toBeVisible()
+  const admitted = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().endsWith('/commands/distribution-reconcile'),
+  )
+  await page.getByRole('button', { name: 'Проверить результат назначения', exact: true }).click()
+  await expect(page.getByRole('dialog')).toContainText('Новое назначение не отправляется')
+  await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить', exact: true }).click()
+  const response = await admitted
+  expect(response.request().postDataJSON()).toEqual({
+    operation_id: 'd1500000-0000-4000-8000-000000000002',
+    expected_result_version: 1,
+  })
+  expect(response.status()).toBe(202)
+  expect((await response.json()).operation.state).toBe('pending')
 })

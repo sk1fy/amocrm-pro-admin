@@ -32,4 +32,6 @@
 Распределение: [план РС-09](plan/lead-distribution-diagnostics.md),
 [диагностика и восстановление](runbooks/lead-distribution.md).
 
+Независимое ревью: [РС-03–10](plan/lead-distribution-review.md).
+
 РС-10: [контроль пилота и другие окружения](runbooks/lead-distribution-pilot.md).

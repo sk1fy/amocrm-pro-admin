@@ -125,3 +125,44 @@ func TestDistributionCapableSourcePreservesScopedNotFound(t *testing.T) {
 		t.Fatalf("trace scoped error=%v", e)
 	}
 }
+
+func TestDistributionCapabilityProbePreservesSourceFailures(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		status int
+		body   string
+		slow   bool
+		want   error
+	}{
+		{"unavailable", 503, `{}`, false, adapter.ErrUnavailable},
+		{"timeout", 200, `{}`, true, adapter.ErrTimeout},
+		{"malformed health", 200, `{}`, false, adapter.ErrUnavailable},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/admin/v1/backend" {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if tc.slow {
+					<-r.Context().Done()
+					return
+				}
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer server.Close()
+			client, err := New(Options{BaseURL: server.URL, Token: "fixture", Timeout: time.Second})
+			if err != nil {
+				t.Fatal(err)
+			}
+			id := "d1500000-0000-4000-8000-000000000001"
+			if _, err = client.GetDistribution(t.Context(), adapter.Actor{}, id); !errors.Is(err, tc.want) {
+				t.Fatalf("summary must preserve source error: %v", err)
+			}
+			if _, err = client.GetDistributionTrace(t.Context(), adapter.Actor{}, id, adapter.DistributionFilter{}); !errors.Is(err, tc.want) {
+				t.Fatalf("trace must preserve source error: %v", err)
+			}
+		})
+	}
+}

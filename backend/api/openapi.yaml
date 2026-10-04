@@ -1428,7 +1428,20 @@ components:
         command: {type: string}
         state: {type: string, enum: [accepted, pending, running, succeeded, failed, partial, unknown_outcome]}
         outcome: {type: string}
-        result: {type: object, additionalProperties: true}
+        result:
+          type: object
+          additionalProperties: true
+          properties:
+            assignment_state:
+              type: string
+              enum: [queued, prechecking, applying, confirming, outcome_unknown, succeeded, no_change, rejected, conflict, cancelled, unknown]
+              description: Assignment outcome observed by distribution-reconcile; independent of command success.
+            external_effect_state:
+              type: string
+              enum: [no_attempt, in_flight, unknown, settled]
+            evidence:
+              type: string
+              enum: [no_request_sent, observed_state_only, response_and_observation, unknown]
         error: {type: object, additionalProperties: true}
         created_at: {type: string, format: date-time}
         updated_at: {type: string, format: date-time}

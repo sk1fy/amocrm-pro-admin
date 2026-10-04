@@ -1,9 +1,46 @@
 import { describe, expect, it } from 'vitest'
 import { connectionSearch } from '../../app/search'
-import { distributionCommand } from './DistributionSection'
+import { canReconcileDistribution, distributionCommand } from './DistributionSection'
+import type { DistributionTraceItem } from '../../api/types'
 import { lookupState } from '../../states'
 
 describe('distribution diagnostics contract', () => {
+  it.each<[string, string | null, boolean]>([
+    ['applying', 'in_flight', true],
+    ['confirming', 'settled', true],
+    ['outcome_unknown', 'unknown', true],
+    ['succeeded', 'settled', false],
+    ['conflict', 'settled', false],
+    ['rejected', 'no_attempt', false],
+    ['cancelled', 'no_attempt', false],
+    ['queued', 'no_attempt', false],
+    ['prechecking', 'no_attempt', false],
+    ['applying', 'no_attempt', false],
+    ['outcome_unknown', null, false],
+    ['future_state', 'unknown', false],
+  ])('offers only a read-only recovery for %s/%s', (state, effect, expected) => {
+    const row: DistributionTraceItem = {
+      kind: 'operation',
+      id: 'd1500000-0000-4000-8000-000000000002',
+      state,
+      created_at: '2026-10-04T00:00:00Z',
+      message_id: null,
+      error_code: null,
+      event_id: null,
+      operation_id: null,
+      correlation_id: null,
+      causation_id: null,
+      lead_id: null,
+      result_version: 1,
+      external_effect_state: effect,
+      evidence: null,
+      attempts: null,
+    }
+    expect(canReconcileDistribution(row)).toBe(expected)
+    expect(canReconcileDistribution({ ...row, kind: 'result' })).toBe(false)
+    expect(canReconcileDistribution({ ...row, result_version: null })).toBe(false)
+    expect(canReconcileDistribution({ ...row, result_version: 0 })).toBe(false)
+  })
   it('keeps exact installation scope, privileges and honest command semantics', () => {
     for (const command of [
       'distribution-pause',

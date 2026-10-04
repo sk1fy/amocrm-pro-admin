@@ -332,7 +332,9 @@ Core adapter читает только `/admin/v1/installations/{id}/distributio
 Freshness вычисляет сервер: старше 15 минут → stale. Неполный snapshot,
 отрицательные counts/attempts, будущие timestamps → unavailable.
 Неизвестные state → unknown+raw; raw ограничен безопасным кодом до 64 знаков.
-404 summary → unknown capability/недоступная установка.
+404 summary/trace проверяется через health: объявленная возможность
+сохраняет scoped 404; отсутствие возможности даёт unknown. Ошибка или
+таймаут health сохраняет unavailable, а не отсутствие capability.
 Команды распределения проходят preflight свежего summary; отсутствие
 capability/data не допускает отправки. Fixture помечает origin=fixture.
 

@@ -305,6 +305,11 @@ expected_attempts:integer}`. `distribution-reconcile`:
 Сессия/Origin/X-Requested-With/Idempotency-Key обязательны.
 202 возвращает durable admin operation, не подтверждение CRM эффекта.
 
+Результат `distribution-reconcile` сохраняет `assignment_state`,
+`external_effect_state`, `evidence` независимо от состояния admin-команды.
+Эти поля принимают только известные коды Core; новый/небезопасный код
+нормализуется в unknown. Старые квитанции без полей остаются совместимыми.
+
 Trace `id` — идентификатор строки, может быть составным. `message_id` —
 UUID замороженного конверта; повтор разрешён только при его наличии.
 `operation_id` и `result_version` связывают результат с назначением.

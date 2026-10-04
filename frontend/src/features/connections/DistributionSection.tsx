@@ -389,7 +389,7 @@ function TraceActions({
   onInspect: () => void
   disabled: boolean
 }) {
-  if (row.kind === 'operation' && row.result_version !== null && row.state === 'outcome_unknown')
+  if (canReconcileDistribution(row))
     return (
       <CommandAction
         spec={spec('distribution-reconcile')}
@@ -420,6 +420,17 @@ function TraceActions({
     )
   return <span>—</span>
 }
+
+export function canReconcileDistribution(row: DistributionTraceItem): boolean {
+  if (row.kind !== 'operation' || row.result_version === null || row.result_version < 1)
+    return false
+  return (
+    (row.state === 'applying' && row.external_effect_state === 'in_flight') ||
+    (row.state === 'confirming' && row.external_effect_state === 'settled') ||
+    (row.state === 'outcome_unknown' && row.external_effect_state === 'unknown')
+  )
+}
+
 export function distributionCommand(backend: string, id: string, command: string): CommandSpec {
   const pause = command === 'distribution-pause' || command === 'distribution-resume'
   const labels: Record<string, string> = {

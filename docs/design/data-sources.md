@@ -233,9 +233,14 @@ fallback, поэтому старая ошибка после новой OAuth-�
 | kind/id/state/created_at/error_code | Safe trace Core | GET distribution/trace | GET distribution/trace |
 | message/event/operation/correlation/causation/lead IDs | Связи safe trace Core | там же | там же |
 | result_version/effect/evidence/attempts | Редактированные факты Core | там же | там же |
+| Результат проверки: assignment_state, external_effect_state, evidence | Квитанция Core команды distribution-reconcile; только известные коды, остальные unknown | GET commands/{id} | result операции admin |
 | raw | Неизвестное состояние источника | wire state | адаптер |
 | observed_at/freshness | Core snapshot/Admin threshold 15 минут | envelope | Observation |
 | origin | Тип адаптера; fixture явно помечен | adapter descriptor | summary |
 
 Поиск и курсор живут в URL. Reference — UUID события/операции/запроса,
 не произвольный production payload. Counts не сообщают состояние TeamOS.
+
+Состояние команды проверки и состояние назначения показываются отдельно
+в квитанции, включая компактный вид. Отсутствующий факт старой квитанции
+остаётся unknown; успешный GET не превращает unknown назначения в успех.

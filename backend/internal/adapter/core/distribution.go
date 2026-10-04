@@ -37,13 +37,12 @@ func (c *Client) GetDistribution(ctx context.Context, actor adapter.Actor, id st
 	var wire distributionSummary
 	if err := c.get(ctx, actor, "/admin/v1/installations/"+id+"/distribution", nil, &wire); err != nil {
 		if errors.Is(err, adapter.ErrNotFound) {
-			health, healthErr := c.Health(ctx, actor)
-			if healthErr == nil && health.Data != nil {
-				for _, capability := range health.Data.Capabilities {
-					if capability == "distribution-read" {
-						return adapter.Observation[adapter.DistributionSummary]{}, err
-					}
-				}
+			capable, healthErr := c.distributionReadCapability(ctx, actor)
+			if healthErr != nil {
+				return adapter.Observation[adapter.DistributionSummary]{}, healthErr
+			}
+			if capable {
+				return adapter.Observation[adapter.DistributionSummary]{}, err
 			}
 			return adapter.UnknownObs[adapter.DistributionSummary](c.desc.Code, time.Now().UTC(), adapter.ErrorCodeUnsupported, "Источник не поддерживает диагностику распределения или установка недоступна"), nil
 		}
@@ -111,14 +110,9 @@ func (c *Client) GetDistributionTrace(ctx context.Context, actor adapter.Actor, 
 	setQuery(q, "reference", f.Reference)
 	if err := c.get(ctx, actor, "/admin/v1/installations/"+id+"/distribution/trace", q, &wire); err != nil {
 		if errors.Is(err, adapter.ErrNotFound) {
-			health, healthErr := c.Health(ctx, actor)
-			capable := false
-			if healthErr == nil && health.Data != nil {
-				for _, capability := range health.Data.Capabilities {
-					if capability == "distribution-read" {
-						capable = true
-					}
-				}
+			capable, healthErr := c.distributionReadCapability(ctx, actor)
+			if healthErr != nil {
+				return adapter.Observation[adapter.DistributionTrace]{}, healthErr
 			}
 			if !capable {
 				return adapter.UnknownObs[adapter.DistributionTrace](c.desc.Code, time.Now().UTC(), adapter.ErrorCodeUnsupported, "Источник не поддерживает цепочку распределения"), nil
@@ -150,6 +144,25 @@ func (c *Client) GetDistributionTrace(ctx context.Context, actor adapter.Actor, 
 		obs.Freshness = adapter.FreshnessStale
 	}
 	return obs, nil
+}
+
+func (c *Client) distributionReadCapability(ctx context.Context, actor adapter.Actor) (bool, error) {
+	health, err := c.Health(ctx, actor)
+	if errors.Is(err, adapter.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if health.Data == nil || health.Data.Capabilities == nil || !validDistributionTime(health.ObservedAt) {
+		return false, adapter.ErrUnavailable
+	}
+	for _, capability := range health.Data.Capabilities {
+		if capability == "distribution-read" {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func validDistributionTime(t time.Time) bool {
