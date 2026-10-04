@@ -2,9 +2,9 @@
 
 Локальная подготовка; реальный пилот и переключение `rakurs-ssd` не выполнены.
 Канонические материалы владельца Core:
-[матрица 16 сценариев](../../../amocrm-pro/docs/specs/lead-distribution-v1/11-local-acceptance.md),
-[пилот, наблюдение, backup и остановка](../../../amocrm-pro/docs/runbooks/lead-distribution-pilot.md),
-[G1–G6](../../../amocrm-pro/docs/specs/lead-distribution-v1/03-pilot-and-acceptance.md).
+[матрица 16 сценариев](https://github.com/sk1fy/amocrm-pro/blob/42c47d2c5f0317bab4150609923cdbe6a72ecaee/docs/specs/lead-distribution-v1/11-local-acceptance.md),
+[пилот, наблюдение, backup и остановка](https://github.com/sk1fy/amocrm-pro/blob/42c47d2c5f0317bab4150609923cdbe6a72ecaee/docs/runbooks/lead-distribution-pilot.md),
+[G1–G6](https://github.com/sk1fy/amocrm-pro/blob/42c47d2c5f0317bab4150609923cdbe6a72ecaee/docs/specs/lead-distribution-v1/03-pilot-and-acceptance.md).
 
 ## Перед включением
 
@@ -30,7 +30,12 @@ read, outboxes, guards и неизвестные эффекты. Дополни�
 
 При неизвестном результате сохранить exact operation/request ID. Отсутствие operation
 при 404 недоступного Core не даёт права создать replacement intent или удалить claims;
-истёкший неподтверждённый intent требует разбора владельцем. После двухстороннего restore
+истёкший неподтверждённый intent TeamOS завершает через private Core
+`assignments/expire` с исходными frozen body и request key. Только
+подтверждённый terminal `rejected/no_attempt` разрешает освободить claims.
+Существующий unknown после возможного PATCH сохраняется; при недоступном
+или старом Core защита остаётся до успешного завершения протокола.
+После двухстороннего restore
 сначала сверить CRM и неизвестные эффекты, затем разрешать новые записи.
 Смена observe → live не исполняет прошлые наблюдения; обычная pause/resume сохраняет
 ранее принятую рабочую очередь. Откат приложения и ZIP требует совместимых версий;

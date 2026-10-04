@@ -8,6 +8,9 @@ export default defineConfig({
     ? `${process.env.E2E_ARTIFACTS_DIR}/test-results`
     : 'test-results',
   fullyParallel: false,
+  // Files mutate one shared fixture adapter and Admin DB. Browser contexts do
+  // not isolate installation guards; business concurrency is tested in Go/PG.
+  workers: 1,
   retries: 0,
   timeout: 60_000,
   use: {

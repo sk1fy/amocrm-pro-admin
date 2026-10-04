@@ -42,7 +42,11 @@ for (const width of [375, 768, 1440]) {
     const diagnosticJobId = 'f2a00000-0000-4000-8000-000000000123'
     const addDiagnosticDetails = async (route: Route) => {
       const response = await route.fetch()
+      expect(response.status(), await response.text()).toBe(
+        route.request().method() === 'POST' ? 202 : 200,
+      )
       const body = (await response.json()) as { operation: { result: Record<string, unknown> } }
+      expect(body.operation, 'diagnostic response must contain an operation').toBeDefined()
       body.operation.result = { ...body.operation.result, job_id: diagnosticJobId, retry_after: 60 }
       await route.fulfill({ response, json: body })
     }

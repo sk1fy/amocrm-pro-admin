@@ -134,7 +134,7 @@ Admin API: `http://127.0.0.1:8090/api/v1`, management `127.0.0.1:8092`,
 сборки образа: `cd frontend && npm run dev` (Vite проксирует `/api` на
 `:8090`).
 
-Сквозные сценарии против fixture-адаптера (не входят в `make check`):
+Сквозные сценарии против fixture-адаптера (входят в `make check`):
 
 ```sh
 make e2e
@@ -143,6 +143,11 @@ make e2e
 Стек e2e изолирован портами (`E2E_POSTGRES_PORT=5434`,
 `E2E_FRONTEND_PORT=5174`, `E2E_HTTP_PORT=8094`, `E2E_MANAGEMENT_PORT=8095`)
 и может работать одновременно с dev-стеком.
+
+Playwright запускается с одним worker: файлы сценариев меняют один общий
+fixture адаптер и Admin DB, в том числе guard одной установки. Отдельный
+browser context не изолирует это состояние. Все сценарии сохраняются;
+параллельные команды и блокировки проверяются Go/PostgreSQL race-тестами.
 
 Демонстрационный сценарий экранов:
 [demo-stage-1.md](demo-stage-1.md).

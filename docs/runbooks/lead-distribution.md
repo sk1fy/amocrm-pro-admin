@@ -1,7 +1,7 @@
 # Распределение: диагностика и восстановление
 
 РС-09, локальная версия. Подробная Core семантика:
-[Core runbooks](../../../amocrm-pro/docs/runbooks/).
+[Core runbook](https://github.com/sk1fy/amocrm-pro/blob/42c47d2c5f0317bab4150609923cdbe6a72ecaee/docs/runbooks/lead-distribution-admin.md).
 
 ## Запуск и демонстрация
 

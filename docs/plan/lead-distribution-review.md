@@ -24,6 +24,9 @@ durable операции и восстановление без повторно
    не скрывает outcome_unknown операции CRM.
 4. Проверка после интеграции main: backend, frontend, PostgreSQL,
    E2E, scripts, vulncheck, документация через обязательный `make check`.
+5. Исправления первого GitHub CI: внешние ссылки не зависят от соседнего
+   checkout; E2E общий mutable fixture запускается одним worker,
+   диагностический interceptor проверяет HTTP-статус до чтения квитанции.
 
 Истёкшие замороженные запросы без квитанции Core исправляются владельцами
 в Core и TeamOS, отдельно от реального неизвестного эффекта CRM. Admin
@@ -93,6 +96,33 @@ ZIP, deploy и production cutover остаются вне этой локаль�
 Новый PostgreSQL тест подтверждает сохранение unknown назначения при
 успешной команде проверки и повторном открытии store. Браузер проверяет
 доступность reconcile в confirming, точные operation ID/версию и 202.
+
+### Проверка GitHub runner
+
+Первый [GitHub CI](https://github.com/sk1fy/amocrm-pro-admin/actions/runs/37204546354)
+на `75bca3c` завершился ошибками docs и E2E, несмотря на локальные PASS.
+Четыре ссылки зависели от соседнего checkout `amocrm-pro`; заменены
+immutable GitHub-ссылками Core `42c47d2` с актуальным expiry runbook.
+Проверка ссылок дополнительно выполняется в отдельной копии Admin без
+соседних репозиториев.
+
+Runner выбрал два Playwright worker. Responsive и settings сценарии
+параллельно меняли одну fixture установку; error envelope вместо operation
+привёл к TypeError в диагностическом interceptor. Общий mutable стенд
+теперь явно использует один worker. HTTP 200/202 и наличие operation
+проверяются до подмешивания диагностических полей; ошибка API остаётся
+ошибкой теста. Число сценариев, backend guards, Go/PG race и проверки
+бизнес-конкуренции сохраняются.
+
+Settings E2E дополнительно ждёт success конкретного sync receipt ID:
+прежнее первое «Успех» могло принадлежать предыдущей configure-команде
+и позволять сценарию уйти с ещё pending синхронизацией.
+
+Повторно локально: isolated `make docs-check` без sibling Core — PASS;
+Docker frontend lint/tsc — PASS; canonical E2E — 39/39 PASS с одним
+worker, включая ожидание конкретного sync receipt; scripts — 11/11 PASS.
+Результаты повторного GitHub прогона отслеживаются в
+[PR #12](https://github.com/sk1fy/amocrm-pro-admin/pull/12).
 
 ### Запуск и демонстрационный сценарий
 
