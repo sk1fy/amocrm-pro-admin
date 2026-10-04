@@ -18,6 +18,7 @@ patch-планами с актуальной базой и собственны�
 
 | План | Статус |
 | --- | --- |
+| [Визуальные улучшения и диагностика webhook](operator-visual-webhook.md) | completed |
 | [Редизайн входа](login-redesign.md) | completed |
 | [Актуальность состояния подключений](connection-state-freshness.md) | completed; rollout отдельно |
 | [Исправления внешнего аудита](security-audit-fixes.md) | completed |

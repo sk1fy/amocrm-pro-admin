@@ -6,6 +6,8 @@
 }
 
 .value {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-family: var(--mono);
   font-size: 12px;
   background: var(--color-surface-2);

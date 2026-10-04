@@ -37,14 +37,14 @@ Email и пароль вводит сотрудник; данные переда
 | --- | --- | --- | --- | --- |
 | Итог подключения `connection_health` и причины | вычисление UI из Observation карточки ([ADR-0015](../adr/0015-connection-diagnostics-ux.md)) | — | карточка подключения | UI 2026-09-14 |
 | Вкладки `section` включая «Технические данные» (`tech`) | те же Observation карточки: UUID, версии, source, Grafana/Loki | — | карточка подключения `?section=tech` | UI 2026-09-14 |
-| Webhook: последняя успешная проверка | `webhook_checked_at`, только если нет `webhook_last_error`; иначе «Проверено» без слова «успешная». Ожидаемые vs зарегистрированные события не показываются: в API карточки нет пары expected/registered | там же | карточка, вкладка Webhook | UI 2026-09-14 |
+| Webhook: последняя успешная сверка регистрации | `webhook_checked_at`, только при `status=active` и отсутствии `webhook_last_error`; иначе время сверки без слова «успешная». Это не проверка доставки. Ожидаемые vs зарегистрированные события не показываются: в API карточки нет пары expected/registered | там же | карточка, вкладка Webhook | уточнено 2026-09-20 |
 | Длительность последнего синка | вычисление UI: `last_success_at − last_event_at`, только если интервал > 0 и ≤ 24 ч; иначе поле скрыто | `activity/status` | карточка Activity и настройки | UI 2026-09-14 |
 | `installation_id`, `integration_id`, `account_id`, `account_domain` | `installations` | `GET /admin/v1/installations`, `GET /admin/v1/installations/{id}` | `GET /api/v1/connections/core/{id}` | новый |
 | Состояние подключения | `installations.status` | там же | там же | новый |
 | `installed_by` | `installations.installed_by` | там же | там же | новый |
 | Даты создания/обновления | `installations.created_at/updated_at` | там же | там же | новый |
 | Webhook: состояние, события, `checked_at`, `last_error` | `installations.webhook_status`, `webhook_settings`, `webhook_checked_at`, `webhook_last_error` | там же | там же | новый |
-| Webhook: подтверждённые адреса доставки (кол-во, без URL) | `installation_webhook_destinations` (миграция 000015) — только `count`, `created_at`; URL зашифрованы и не читаются; в UI «подтверждённые адреса доставки», 0 при active — предупреждение | там же | там же | новый |
+| Webhook: адреса локального реестра владения (число, без URL) | `installation_webhook_destinations` (миграция 000015), `count(*)`; реестр может содержать намерение до внешней регистрации и не заполняет старые регистрации автоматически. Ноль не доказывает отсутствие webhook в amoCRM; неизвестное значение остаётся `null` | там же | там же, совместимое поле `confirmed_destinations` | уточнено 2026-09-20 |
 | Авторизация: наличие, `expires_at`, `credential_version` (колонка `token_version`), `refreshed_at`, `key_version`, lease активна | `oauth_credentials` (без `*_ciphertext`) | там же | там же | новый; JSON-ключ `credential_version`, чтобы не содержать подстроку `token` |
 | Авторизация: результат проверки к amoCRM | внешний вызов через `amocrm.Client` в worker/Gateway | `POST /admin/v1/installations/{id}/commands/check` | операция | есть |
 | Гранты сервисов интеграции | `integration_services` | вложено в installation/integration | там же | новый |

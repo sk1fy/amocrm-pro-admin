@@ -1,7 +1,6 @@
 .wrap {
   display: grid;
   gap: 10px;
-  margin-bottom: 1.25rem;
   padding: 12px 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -30,4 +29,22 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+}
+.toolbar > label {
+  flex: 0 1 24rem;
+  min-width: 0;
+}
+.manage {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+.wrap {
+  min-width: 0;
 }

@@ -136,8 +136,7 @@ export function OperationsPage() {
         className={page.muted}
         title="Core хранит задачи 7 суток (retention), поэтому список ограничен этим окном"
       >
-        Окно: последние 7 суток. Порядок строк задаёт сервер; текущая страница не переставляется,
-        чтобы курсор списка оставался корректным.
+        Последние 7 суток, сначала новые задачи.
       </p>
       <SourcesBanner sources={jobs.data?.sources} />
       {jobs.isPending ? <div className={page.skeleton} /> : null}

@@ -35,7 +35,9 @@ export function accountsSearch(search: Record<string, unknown>): AccountsSearch 
     product: stringParam(search.product),
     connection: stringParam(search.connection),
     problem: stringParam(search.problem),
-    origin: stringParam(search.origin),
+    origin: ['real', 'fixture', 'all'].includes(String(search.origin))
+      ? String(search.origin)
+      : 'real',
     cursor: stringParam(search.cursor),
     limit: numberParam(search.limit, 25),
   }

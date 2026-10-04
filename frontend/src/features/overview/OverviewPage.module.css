@@ -1,0 +1,40 @@
+.primaryMetrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+}
+.primaryMetrics > * {
+  min-width: 0;
+}
+.problemRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+.problemRow > a {
+  justify-self: end;
+  font-size: 13px;
+}
+@media (max-width: 1150px) {
+  .primaryMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 540px) {
+  .primaryMetrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .problemRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .problemRow > a {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}

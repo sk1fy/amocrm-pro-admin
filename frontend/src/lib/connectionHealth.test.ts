@@ -84,6 +84,64 @@ describe('computeConnectionHealth', () => {
     expect(health.defaultSection).toBe('auth')
   })
 
+  it.each([
+    { count: 0, id: 'webhook-destinations', title: 'Регистрация webhook требует сверки' },
+    { count: null, id: 'webhook-registry-unknown', title: 'Нет данных локального реестра webhook' },
+    {
+      count: undefined,
+      id: 'webhook-registry-unknown',
+      title: 'Нет данных локального реестра webhook',
+    },
+  ])(
+    'distinguishes registry count $count without claiming delivery failure',
+    ({ count, id, title }) => {
+      const health = computeConnectionHealth(
+        card({ webhook: obs({ status: 'active', events: [], confirmed_destinations: count }) }),
+      )
+      expect(health.state).toBe('working_with_warnings')
+      expect(health.problems).toEqual([
+        { id, title, section: 'webhook', ...(count === 0 ? { action: 'reconcile' } : {}) },
+      ])
+      expect(health.defaultSection).toBe('webhook')
+    },
+  )
+
+  it.each([
+    { freshness: 'stale', id: 'webhook-stale', action: 'retry' },
+    { freshness: 'unknown', id: 'webhook-registry-unknown', action: undefined },
+    { freshness: 'unavailable', id: 'webhook-unavailable', action: 'retry' },
+  ])(
+    'does not treat $freshness registry snapshots as a known zero',
+    ({ freshness, id, action }) => {
+      const health = computeConnectionHealth(
+        card({
+          webhook: obs({ status: 'active', events: [], confirmed_destinations: 0 }, freshness),
+        }),
+      )
+      expect(health.problems).toHaveLength(1)
+      expect(health.problems[0]).toMatchObject({ id, section: 'webhook' })
+      expect(health.problems[0].action).toBe(action)
+    },
+  )
+
+  it('keeps an explicit registration error actionable even with registered addresses', () => {
+    const health = computeConnectionHealth(
+      card({ webhook: obs({ status: 'error', events: [], confirmed_destinations: 1 }) }),
+    )
+    expect(health.state).toBe('needs_action')
+    expect(health.problems[0]).toMatchObject({ id: 'webhook-error', action: 'reconcile' })
+  })
+
+  it.each(['disabled', 'unregistered', 'pending'])(
+    'does not infer missing delivery from %s and zero',
+    (status) => {
+      const health = computeConnectionHealth(
+        card({ webhook: obs({ status, events: [], confirmed_destinations: 0 }) }),
+      )
+      expect(health.problems.some((problem) => problem.id === 'webhook-destinations')).toBe(false)
+    },
+  )
+
   it('groups core admin authentication as one incident', () => {
     const error = { code: 'backend_unavailable', message: 'core admin authentication failed' }
     const health = computeConnectionHealth(
@@ -153,10 +211,15 @@ describe('lastSyncDurationSeconds', () => {
 })
 
 describe('webhookSuccessfulCheckAt', () => {
-  it('returns checked_at only when there is no last error', () => {
-    expect(webhookSuccessfulCheckAt('2026-09-14T19:00:00Z', null)).toBe('2026-09-14T19:00:00Z')
-    expect(webhookSuccessfulCheckAt('2026-09-14T19:00:00Z', 'timeout')).toBeNull()
-    expect(webhookSuccessfulCheckAt(null, null)).toBeNull()
+  it('returns checked_at only for active registration without a last error', () => {
+    expect(webhookSuccessfulCheckAt('2026-09-14T19:00:00Z', null, 'active')).toBe(
+      '2026-09-14T19:00:00Z',
+    )
+    expect(webhookSuccessfulCheckAt('2026-09-14T19:00:00Z', 'timeout', 'active')).toBeNull()
+    expect(webhookSuccessfulCheckAt(null, null, 'active')).toBeNull()
+    expect(webhookSuccessfulCheckAt('2026-09-14T19:00:00Z', null, 'unregistered')).toBeNull()
+    expect(webhookSuccessfulCheckAt('2026-09-14T19:00:00Z', null, 'pending')).toBeNull()
+    expect(webhookSuccessfulCheckAt('2026-09-14T19:00:00Z', null)).toBeNull()
   })
 })
 

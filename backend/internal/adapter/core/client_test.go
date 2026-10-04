@@ -147,6 +147,44 @@ func TestClientJSONUsesCredentialVersion(t *testing.T) {
 	}
 }
 
+func TestClientPreservesWebhookRegistryCount(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		field string
+		want  *int
+	}{
+		{name: "omitted"},
+		{name: "null", field: `,"confirmed_destinations":null`},
+		{name: "zero", field: `,"confirmed_destinations":0`, want: new(int)},
+		{name: "positive", field: `,"confirmed_destinations":2`, want: func() *int { n := 2; return &n }()},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, `{"source":"core","observed_at":"2026-09-20T10:00:00Z",`+
+					`"installation":{"status":"active"},"webhook":{"status":"active","events":[]`+tc.field+`}}`)
+			}))
+			t.Cleanup(server.Close)
+			client := testClient(t, server.URL)
+			obs, err := client.GetConnection(context.Background(), adapter.Actor{Value: "employee:test"}, "fixture-installation")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if obs.Data == nil {
+				t.Fatal("missing connection")
+			}
+			got := obs.Data.Webhook.ConfirmedDestinations
+			if tc.want == nil {
+				if got != nil {
+					t.Fatalf("missing count became %d", *got)
+				}
+			} else if got == nil || *got != *tc.want {
+				t.Fatalf("count=%v want=%d", got, *tc.want)
+			}
+		})
+	}
+}
+
 func testClient(t *testing.T, baseURL string) *Client {
 	t.Helper()
 	client, err := New(Options{Code: "core", BaseURL: baseURL, Token: "test-token", Timeout: time.Second})

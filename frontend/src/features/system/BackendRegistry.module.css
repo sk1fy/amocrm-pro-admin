@@ -20,6 +20,8 @@
 }
 
 .detail {
+  min-width: 0;
+  overflow-wrap: anywhere;
   display: grid;
   gap: var(--space-3);
 }
@@ -31,7 +33,7 @@
 
 .detail dl {
   display: grid;
-  grid-template-columns: 9rem 1fr;
+  grid-template-columns: minmax(6rem, 9rem) minmax(0, 1fr);
   gap: 0.35rem 0.75rem;
   margin: 0;
   font-size: 13px;
@@ -42,6 +44,7 @@
 }
 
 .detail dd {
+  min-width: 0;
   margin: 0;
 }
 
@@ -70,4 +73,13 @@
   font-size: 12px;
   color: var(--tone-ok);
   min-height: 1em;
+}
+
+@media (max-width: 540px) {
+  .detail dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .detail dd + dt {
+    margin-top: var(--space-2);
+  }
 }

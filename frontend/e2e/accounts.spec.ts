@@ -4,7 +4,7 @@ const email = process.env.E2E_EMAIL ?? 'admin@example.invalid'
 const password = process.env.E2E_PASSWORD ?? 'correct-horse-battery'
 
 async function searchAccount(page: Page, query: string) {
-  await page.goto('/accounts')
+  await page.goto('/accounts?origin=all')
   await page.getByTestId('accounts-search').fill(query)
   await page.getByRole('button', { name: 'Найти' }).click()
   await expect(page.getByRole('link', { name: '91000002' })).toBeVisible()
@@ -66,7 +66,7 @@ test('an active account list refreshes fixture state after ninety seconds', asyn
     if (changed && body.items.length) body.items[0].domains = ['changed-fixture.amocrm.test']
     await route.fulfill({ response, json: body })
   })
-  await page.goto('/accounts')
+  await page.goto('/accounts?origin=all')
   await expect(page.getByTestId('accounts-search')).toBeVisible()
   await expect(page.getByRole('link', { name: '91000002' })).toBeVisible()
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000))
@@ -105,7 +105,7 @@ test('empty bounded verification page allows continuing the search', async ({ pa
     }
     await route.fulfill({ response, json: body })
   })
-  await page.goto('/accounts?verification=unknown')
+  await page.goto('/accounts?verification=unknown&origin=all')
   await expect(page.getByText('Поиск ещё не завершён.', { exact: false })).toBeVisible()
   await expect(page.getByText('Ничего не найдено')).not.toBeVisible()
   await page.getByRole('button', { name: 'Продолжить поиск' }).click()
