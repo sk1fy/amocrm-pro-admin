@@ -41,6 +41,39 @@ func (p *probe) ExecuteCommand(ctx context.Context, actor adapter.Actor, key str
 
 const testConnection = "f1a00000-0000-4000-8000-000000000001"
 
+func TestDistributionVerificationPreservesUnknownAssignmentAfterRestart(t *testing.T) {
+	pool := testkit.Postgres(t)
+	testkit.Reset(t, pool)
+	employeesStore := employees.NewStore(pool, 2*time.Second)
+	employee, err := employeesStore.Create(t.Context(), employees.CreateInput{Email: "distribution-check@example.invalid", Name: "Operator", Role: rbac.RoleOperator, PasswordHash: "unused"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := NewStore(pool, 2*time.Second, audit.NewStore(pool, 2*time.Second))
+	op, _, err := store.Admit(t.Context(), Operation{ID: uuid.New(), EmployeeID: employee.ID, ActorEmail: employee.Email, Backend: "core", TargetType: "installation", TargetID: testConnection, Command: "distribution-reconcile", Key: "read-only-check", Hash: make([]byte, 32), LeaseUntil: time.Now().Add(time.Minute)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = store.Finish(t.Context(), op, adapter.CommandResult{State: "succeeded", Outcome: "observed", Result: map[string]any{
+		"assignment_state": "outcome_unknown", "external_effect_state": "unknown", "evidence": "observed_state_only", "result_version": 3,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	restarted := NewStore(pool, 2*time.Second, audit.NewStore(pool, 2*time.Second))
+	persisted, err := restarted.Get(t.Context(), op.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var facts map[string]any
+	if err = json.Unmarshal(persisted.Result, &facts); err != nil {
+		t.Fatal(err)
+	}
+	if persisted.State != "succeeded" || facts["assignment_state"] != "outcome_unknown" || facts["external_effect_state"] != "unknown" || facts["evidence"] != "observed_state_only" {
+		t.Fatalf("command success lost unresolved assignment: %+v %s", persisted, persisted.Result)
+	}
+}
+
 func TestOperationIdempotencyIsSharedAcrossEmployees(t *testing.T) {
 	pool := testkit.Postgres(t)
 	testkit.Reset(t, pool)

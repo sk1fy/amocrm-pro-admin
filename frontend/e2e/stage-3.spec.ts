@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import type { OperationResponse } from '../src/api/types'
 
 const email = process.env.E2E_EMAIL ?? 'admin@example.invalid'
 const password = process.env.E2E_PASSWORD ?? 'correct-horse-battery'
@@ -44,11 +45,21 @@ test('operator settings, sync polling, stats null vs zero, saved view, viewer hi
   expect(conflict.operation.state).toBe('failed')
   expect(conflict.operation.error.code).toBe('conflict')
 
+  const syncResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' && response.url().endsWith('/commands/activity-sync'),
+  )
   await page.getByRole('button', { name: 'Синхронизировать сейчас', exact: true }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить', exact: true }).click()
   await expect(page.getByText('Команда выполняется').first()).toBeVisible()
   await expect(page.getByText('Результат появится в истории').first()).toBeVisible()
-  await expect(page.getByText('Успех').first()).toBeVisible()
+  const admitted = await syncResponse
+  expect(admitted.status(), await admitted.text()).toBe(202)
+  const { operation }: OperationResponse = await admitted.json()
+  const syncResult = page.getByRole('region', { name: 'Результат операции' }).filter({
+    has: page.locator(`a[href="/operations/admin/${operation.id}"]`),
+  })
+  await expect(syncResult.getByText('Успех', { exact: true })).toBeVisible()
 
   await page.goto('/')
   await expect(page.getByTestId('stat-Отключения')).toHaveText('0')

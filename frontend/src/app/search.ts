@@ -103,12 +103,23 @@ export type ConnectionSectionSearch = (typeof connectionSectionValues)[number]
 
 export type ConnectionSearch = {
   section?: ConnectionSectionSearch
+  reference?: string
+  distribution_cursor?: string
+  distribution_limit?: number
 }
 
 export function connectionSearch(search: Record<string, unknown>): ConnectionSearch {
   const section = stringParam(search.section)
   if (section && (connectionSectionValues as readonly string[]).includes(section)) {
-    return { section: section as ConnectionSectionSearch }
+    return {
+      section: section as ConnectionSectionSearch,
+      reference: stringParam(search.reference),
+      distribution_cursor:
+        typeof search.distribution_cursor === 'number'
+          ? String(search.distribution_cursor)
+          : stringParam(search.distribution_cursor),
+      distribution_limit: numberParam(search.distribution_limit, 25),
+    }
   }
   return {}
 }

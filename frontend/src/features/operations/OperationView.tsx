@@ -132,6 +132,7 @@ export function OperationView({
     typeof result.classification === 'string' ? result.classification : undefined
   const observed =
     typeof result.observed_at === 'string' ? result.observed_at : operation.observed_at
+  const distributionVerification = operation.command === 'distribution-reconcile'
   const jobDetails = (
     <>
       {typeof result.job_id === 'string' && result.job_id !== '' ? (
@@ -160,6 +161,7 @@ export function OperationView({
       aria-live="polite"
     >
       <div className={page.row}>
+        {distributionVerification ? <span>Команда проверки:</span> : null}
         <StatusBadge domain="operation" state={operation.state} />
         {link ? (
           <Link to="/operations/admin/$operationId" params={{ operationId: operation.id }}>
@@ -175,6 +177,36 @@ export function OperationView({
         </p>
       ) : null}
       {operation.state === 'succeeded' && !compact ? <p role="status">Команда завершена.</p> : null}
+      {distributionVerification ? (
+        <div className={page.stack}>
+          <div className={page.row}>
+            <span>Результат назначения:</span>
+            <StatusBadge
+              domain="distribution"
+              state={
+                typeof result.assignment_state === 'string' ? result.assignment_state : 'unknown'
+              }
+            />
+          </div>
+          <div className={page.row}>
+            <span>Эффект в CRM:</span>
+            <StatusBadge
+              domain="distribution_effect"
+              state={
+                typeof result.external_effect_state === 'string'
+                  ? result.external_effect_state
+                  : 'unknown'
+              }
+            />
+          </div>
+          <p>
+            Основание: {formatNull(typeof result.evidence === 'string' ? result.evidence : null)}
+          </p>
+          <p>
+            Завершение проверки не подтверждает назначение. Сверьте результат и цепочку операции.
+          </p>
+        </div>
+      ) : null}
       {operation.outcome === 'queued' ? (
         <p role="status">
           Задача поставлена в очередь. Результат выполнения проверяйте по задаче и объекту.

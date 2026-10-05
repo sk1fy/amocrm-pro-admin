@@ -95,6 +95,7 @@ type Capabilities struct {
 	Accounts, Connections, Integrations, Jobs, Audit bool
 	Diagnostics, Commands, Settings, Stats           bool
 	ActivityDeliveries, Subscriptions                bool
+	DistributionRead, DistributionCommands           bool
 }
 
 // Names returns the enabled capability codes in a fixed order. The codes are
@@ -116,6 +117,8 @@ func (c Capabilities) Names() []string {
 		{"stats", c.Stats},
 		{"activity-deliveries", c.ActivityDeliveries},
 		{"subscriptions", c.Subscriptions},
+		{"distribution-read", c.DistributionRead},
+		{"distribution-commands", c.DistributionCommands},
 	} {
 		if item.enabled {
 			names = append(names, item.name)

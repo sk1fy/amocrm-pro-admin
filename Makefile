@@ -24,6 +24,9 @@ E2E_MANAGEMENT_PORT ?= 8095
 # The browser joins the Compose network. Loopback-only published ports are
 # intentionally not reachable through the Docker host's gateway address.
 E2E_BASE_URL ?= http://frontend
+# Optional local visual evidence; fixtures only, outside the repository.
+E2E_ARTIFACTS_DIR ?=
+E2E_ARTIFACT_MOUNT = $(if $(E2E_ARTIFACTS_DIR),--volume "$(abspath $(E2E_ARTIFACTS_DIR)):/artifacts" --env E2E_ARTIFACTS_DIR=/artifacts,)
 E2E_ENV = POSTGRES_PORT=$(E2E_POSTGRES_PORT) FRONTEND_PORT=$(E2E_FRONTEND_PORT) \
 	HTTP_PORT=$(E2E_HTTP_PORT) MANAGEMENT_PORT=$(E2E_MANAGEMENT_PORT) \
 	ADMIN_PUBLIC_ORIGIN='$(E2E_BASE_URL)'
@@ -173,6 +176,7 @@ e2e: ## Playwright scenarios against the built stack with the fixture adapter
 	  --env E2E_BASE_URL='$(E2E_BASE_URL)' \
 	  --env E2E_EMAIL='$(E2E_EMAIL)' \
 	  --env E2E_PASSWORD='$(E2E_PASSWORD)' \
+	  $(E2E_ARTIFACT_MOUNT) \
 	  --volume "$(CURDIR)/frontend:/src:ro" \
 	  --workdir /tmp/e2e \
 	  $(PLAYWRIGHT_IMAGE) \

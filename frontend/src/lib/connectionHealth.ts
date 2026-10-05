@@ -15,6 +15,7 @@ export const connectionSections = [
   'auth',
   'webhook',
   'activity',
+  'distribution',
   'jobs',
   'history',
   'tech',

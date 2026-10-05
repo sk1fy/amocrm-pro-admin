@@ -1,0 +1,45 @@
+.backlogs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--space-4);
+}
+.search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+}
+.search > label:first-child {
+  width: 100%;
+}
+.search input {
+  min-width: 0;
+  flex: 1 1 240px;
+}
+.search label:last-child {
+  display: grid;
+  gap: 0.35rem;
+}
+.details {
+  display: grid;
+  gap: 0.5rem;
+  overflow-wrap: anywhere;
+}
+.details dd {
+  margin: 0;
+}
+
+.container,
+.container > section,
+.content {
+  min-width: 0;
+}
+.facts {
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 650px) {
+  .facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

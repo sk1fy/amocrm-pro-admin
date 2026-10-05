@@ -8,6 +8,8 @@ export type StateEntry = {
 }
 
 export type StateDomain =
+  | 'distribution'
+  | 'distribution_effect'
   | 'freshness'
   | 'source'
   | 'integration'
@@ -33,6 +35,36 @@ export type StateDomain =
 const unknownEntry: StateEntry = { tone: 'unknown', label: 'Неизвестно' }
 
 const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
+  distribution: {
+    pending: { tone: 'attention', label: 'Ожидает' },
+    processed: { tone: 'ok', label: 'Обработано' },
+    ignored: { tone: 'off', label: 'Пропущено' },
+    blocked: { tone: 'error', label: 'Заблокировано' },
+    delivering: { tone: 'attention', label: 'Доставляется' },
+    acknowledged: { tone: 'ok', label: 'Доставка подтверждена' },
+    queued: { tone: 'attention', label: 'В очереди' },
+    prechecking: { tone: 'attention', label: 'Проверка условий' },
+    applying: { tone: 'attention', label: 'Назначение отправляется' },
+    confirming: { tone: 'attention', label: 'Результат проверяется' },
+    outcome_unknown: { tone: 'unknown', label: 'Исход назначения неизвестен' },
+    succeeded: { tone: 'ok', label: 'Назначение подтверждено' },
+    no_change: { tone: 'ok', label: 'Изменение не требуется' },
+    rejected: { tone: 'error', label: 'Отклонено' },
+    conflict: { tone: 'action', label: 'Конфликт текущего состояния' },
+    cancelled: { tone: 'off', label: 'Отменено' },
+    scanning: { tone: 'attention', label: 'Сверка событий' },
+    completed: { tone: 'ok', label: 'Завершено' },
+    active: { tone: 'ok', label: 'Связь активна' },
+    disabled: { tone: 'off', label: 'Связь отключена' },
+    revoked: { tone: 'off', label: 'Связь отозвана' },
+    unknown: { tone: 'unknown', label: 'Неизвестно' },
+  },
+  distribution_effect: {
+    no_attempt: { tone: 'off', label: 'Не отправлялся' },
+    in_flight: { tone: 'attention', label: 'Отправляется' },
+    unknown: { tone: 'unknown', label: 'Неизвестен' },
+    settled: { tone: 'ok', label: 'Выяснен' },
+  },
   freshness: {
     fresh: { tone: 'ok', label: 'Актуально' },
     stale: { tone: 'attention', label: 'Данные устарели' },

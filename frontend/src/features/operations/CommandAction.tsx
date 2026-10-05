@@ -35,6 +35,7 @@ export type CommandField = {
   options?: { value: string; label: string }[]
 }
 type Props = {
+  intentScope?: string
   spec: CommandSpec
   fields?: CommandField[]
   payload?: Record<string, unknown>
@@ -51,12 +52,17 @@ export function CommandAction(props: Props) {
   const me = useQuery({ queryKey: keys.me, queryFn: fetchMe })
   if (!me.data?.permissions.includes(props.spec.permission)) return null
   return (
-    <CommandControl key={`${me.data.id}:${props.spec.path}`} {...props} employeeId={me.data.id} />
+    <CommandControl
+      key={`${me.data.id}:${props.spec.path}:${props.intentScope ?? ''}`}
+      {...props}
+      employeeId={me.data.id}
+    />
   )
 }
 
 function CommandControl({
   spec,
+  intentScope,
   fields = [],
   payload = {},
   buildPayload,
@@ -68,7 +74,7 @@ function CommandControl({
   reasonAsTooltip = false,
   emphasis = 'default',
 }: Props & { employeeId: string }) {
-  const storageKey = intentStorageKey(employeeId, spec.path)
+  const storageKey = intentStorageKey(employeeId, spec.path, intentScope)
   const [intent, setIntentState] = useState<CommandIntent | null>(() => readIntent(storageKey))
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<unknown>(null)

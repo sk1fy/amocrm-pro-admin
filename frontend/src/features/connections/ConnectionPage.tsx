@@ -1,3 +1,4 @@
+import { DistributionSection } from './DistributionSection'
 import { lookupState } from '../../states'
 import { RefreshStatus } from '../../components/RefreshStatus'
 import { useState, type ReactNode } from 'react'
@@ -67,6 +68,7 @@ const tabs: Array<{ id: ConnectionSection; label: string }> = [
   { id: 'auth', label: 'Авторизация' },
   { id: 'webhook', label: 'Webhook' },
   { id: 'activity', label: 'Activity' },
+  { id: 'distribution', label: 'Распределение сделок' },
   { id: 'jobs', label: 'Задачи' },
   { id: 'history', label: 'История' },
   { id: 'tech', label: 'Технические данные' },
@@ -198,6 +200,9 @@ export function ConnectionPage() {
           onRetry={refetch}
           settingsAvailable={settingsAvailable}
         />
+      ) : null}
+      {section === 'distribution' ? (
+        <DistributionSection backend={backend} connectionId={connectionId} accountId={accountId} />
       ) : null}
       {section === 'jobs' ? <JobsSection card={card} hideSource={hide} onRetry={refetch} /> : null}
       {section === 'history' ? (

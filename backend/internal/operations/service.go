@@ -48,6 +48,10 @@ func Permission(target, command string) string {
 			return rbac.WebhooksReconcile
 		case "check":
 			return rbac.ConnectionsCheck
+		case "distribution-pause", "distribution-resume":
+			return rbac.ConnectionsDisable
+		case "distribution-reconcile", "distribution-delivery-retry":
+			return rbac.OperationsRetry
 		case "pilot-enable", "pilot-disable":
 			return rbac.ActivityPilot
 		case "activity-configure":
@@ -109,6 +113,9 @@ func (s *Service) Execute(ctx context.Context, input Submit) (Operation, error) 
 	}
 	commander, ok := backend.(adapter.CommandBackend)
 	if !ok || !backend.Capabilities().Commands {
+		return Operation{}, adapter.ErrUnsupported
+	}
+	if strings.HasPrefix(input.Request.Command, "distribution-") && !backend.Capabilities().DistributionCommands {
 		return Operation{}, adapter.ErrUnsupported
 	}
 	var payload map[string]json.RawMessage
@@ -217,6 +224,19 @@ func preflight(ctx context.Context, b adapter.Backend, actor adapter.Actor, c ad
 		}
 		if obs.Data == nil {
 			return adapter.ErrUnavailable
+		}
+		if strings.HasPrefix(c.Command, "distribution-") {
+			d, ok := b.(adapter.DistributionBackend)
+			if !ok || !b.Capabilities().DistributionCommands {
+				return adapter.ErrUnsupported
+			}
+			facts, err := d.GetDistribution(ctx, actor, c.TargetID)
+			if err != nil {
+				return err
+			}
+			if facts.Data == nil || facts.Freshness != adapter.FreshnessFresh {
+				return adapter.ErrUnsupported
+			}
 		}
 		state := obs.Data.Connection.Status.Canonical
 		if c.Command == "enable" && state != adapter.StatusDisabled {
@@ -396,7 +416,8 @@ func changedFields(payload map[string]json.RawMessage) []string {
 		"initial_days", "retention_days", "expected_updated_at", "kind", "from", "to",
 		"name", "employee_ids", "display_window", "panel_id", "revision",
 		"source_pipeline_id", "source_status_id", "target_pipeline_id",
-		"target_status_id", "expected_revision",
+		"target_status_id", "expected_revision", "expected_paused", "operation_id",
+		"expected_result_version", "message_id", "expected_attempts",
 	} {
 		if _, ok := payload[key]; ok {
 			fields = append(fields, key)

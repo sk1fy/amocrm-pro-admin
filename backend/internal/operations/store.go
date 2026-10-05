@@ -207,6 +207,24 @@ func (s *Store) Finish(ctx context.Context, previous Operation, result adapter.C
 	return got, tx.Commit(ctx)
 }
 func copySafeResultValue(key string, value any) (any, bool) {
+	switch key {
+	case "assignment_state", "external_effect_state", "evidence":
+		v, ok := value.(string)
+		if !ok {
+			return nil, false
+		}
+		allowed := map[string][]string{
+			"assignment_state":      {"queued", "prechecking", "applying", "confirming", "outcome_unknown", "succeeded", "no_change", "rejected", "conflict", "cancelled"},
+			"external_effect_state": {"no_attempt", "in_flight", "unknown", "settled"},
+			"evidence":              {"no_request_sent", "observed_state_only", "response_and_observation"},
+		}
+		for _, known := range allowed[key] {
+			if v == known {
+				return v, true
+			}
+		}
+		return "unknown", true
+	}
 	switch v := value.(type) {
 	case nil:
 		return nil, true
@@ -246,7 +264,8 @@ func safeResult(result adapter.CommandResult) map[string]any {
 		"service", "pilot", "command_id", "initial_days", "retention_days", "updated_at", "kind",
 		"from", "to", "operation_id", "delivery_state", "state", "revision", "panel_id", "name",
 		"employee_ids", "lag_seconds", "expected_revision", "rule_id", "source_pipeline_id",
-		"source_status_id", "target_pipeline_id", "target_status_id",
+		"source_status_id", "target_pipeline_id", "target_status_id", "paused", "message_id", "result_version", "expected_attempts",
+		"assignment_state", "external_effect_state", "evidence",
 	} {
 		value, ok := result.Result[key]
 		if !ok {

@@ -8,7 +8,7 @@ import (
 
 func TestCommandPermissionMatrix(t *testing.T) {
 	for _, target := range []string{"installation", "integration", "job", "delivery"} {
-		for _, cmd := range []string{"create", "update", "rotate-secret", "set-service", "enable", "disable", "revoke", "uninstall", "reconcile", "check", "pilot-enable", "pilot-disable", "retry", "activity-configure", "activity-sync", "activity-panel-create", "activity-panel-patch", "activity-panel-rotate", "lead-status-configure"} {
+		for _, cmd := range []string{"create", "update", "rotate-secret", "set-service", "enable", "disable", "revoke", "uninstall", "reconcile", "check", "pilot-enable", "pilot-disable", "retry", "activity-configure", "activity-sync", "activity-panel-create", "activity-panel-patch", "activity-panel-rotate", "lead-status-configure", "distribution-pause", "distribution-resume", "distribution-reconcile", "distribution-delivery-retry"} {
 			p := Permission(target, cmd)
 			if p == "" {
 				continue
@@ -51,5 +51,27 @@ func TestSafeResultKeepsActivityFieldsAndDropsSecrets(t *testing.T) {
 	}
 	if _, ok := got["share_url"]; ok {
 		t.Fatal("share_url leaked")
+	}
+}
+
+func TestSafeResultPreservesDistributionEvidenceWithoutRawData(t *testing.T) {
+	got := safeResult(adapter.CommandResult{State: "succeeded", Result: map[string]any{
+		"assignment_state": "outcome_unknown", "external_effect_state": "unknown",
+		"evidence": "observed_state_only", "payload": map[string]any{"private": "value"},
+	}})
+	if len(got) != 3 || got["assignment_state"] != "outcome_unknown" || got["external_effect_state"] != "unknown" || got["evidence"] != "observed_state_only" {
+		t.Fatalf("assignment outcome lost: %v", got)
+	}
+	for _, field := range []string{"assignment_state", "external_effect_state", "evidence"} {
+		for _, raw := range []string{"future_state", "Bearer sensitive-value"} {
+			got = safeResult(adapter.CommandResult{Result: map[string]any{field: raw}})
+			if got[field] != "unknown" {
+				t.Fatalf("unsafe or unknown %s returned: %v", field, got)
+			}
+		}
+		got = safeResult(adapter.CommandResult{Result: map[string]any{field: map[string]any{"secret": "private"}}})
+		if len(got) != 0 {
+			t.Fatalf("unexpected nested result: %v", got)
+		}
 	}
 }

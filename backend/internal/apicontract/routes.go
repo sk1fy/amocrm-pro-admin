@@ -53,7 +53,10 @@ var (
 	ViewPatch                = Route{Method: http.MethodPatch, Path: "/api/v1/views/{id}"}
 	ViewDelete               = Route{Method: http.MethodDelete, Path: "/api/v1/views/{id}"}
 
-	Routes = []Route{
+	Distribution      = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/distribution"}
+	DistributionTrace = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/distribution/trace"}
+	Routes            = []Route{
+		Distribution, DistributionTrace,
 		ConnectionCommand, IntegrationCreateCommand, IntegrationCommand, JobRetry, DeliveryRetry, AdminOperations, AdminOperation,
 		AuthLogin,
 		AuthLogout,
