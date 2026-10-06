@@ -183,7 +183,7 @@ make bench-admin                                  # 10^4/10^5
 
 Нагрузочные данные — `deploy/fixtures/load-core-installations.sql`
 (scratch-БД пилота), результаты и EXPLAIN —
-[../reviews/stage-4-load-2026-09-13.md](../reviews/stage-4-load-2026-09-13.md).
+[нагрузочный отчёт](../reviews/stage-4-load-2026-09-13.md).
 Демонстрация этапа 4 — [demo-stage-4.md](demo-stage-4.md).
 
 ## Проверки

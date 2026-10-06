@@ -21,14 +21,6 @@
 | [0014](0014-admin-db-retention.md) | Retention и объём admin DB | принято |
 | [0015](0015-connection-diagnostics-ux.md) | Диагностика подключения в UI | принято |
 | [0016](0016-atomic-employee-access.md) | Атомарное изменение доступа сотрудников | принято |
-
-Следующее ожидаемое решение — фоновая актуальность состояния
-подключений, если patch-план
-[connection-state-freshness.md](../plan/connection-state-freshness.md)
-потребует изменения модели свежести или проверки amoCRM.
-
-- [ADR-0017: актуальность состояния](0017-connection-state-freshness.md).
-
-- [ADR-0018: диагностика распределения](0018-distribution-diagnostics.md).
-
-- [ADR-0019: совместимость DP диагностики](0019-digital-pipeline-diagnostics.md).
+| [0017](0017-connection-state-freshness.md) | Актуальность состояния установок | принято |
+| [0018](0018-distribution-diagnostics.md) | Диагностика распределения | принято |
+| [0019](0019-digital-pipeline-diagnostics.md) | Совместимость DP диагностики | решение зафиксировано |

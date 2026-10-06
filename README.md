@@ -21,8 +21,9 @@ amoCRM, проверка подключённых виджетов, диагно
 эксплуатационные инструменты. Связка с Core и server observability проверены на
 целевом сервере 14 сентября 2026 года.
 
-Текущая следующая работа — устранение неоднозначности и устаревания состояния
-подключений: [connection-state-freshness.md](docs/plan/connection-state-freshness.md).
+Актуальность состояния подключений реализована; условия внешнего rollout —
+в [connection-state-freshness.md](docs/plan/connection-state-freshness.md).
+Сохранённые планы и границы приёмки — в [индексе](docs/plan/README.md).
 Запуск: [local-run.md](docs/runbooks/local-run.md), эксплуатация:
 [operator.md](docs/runbooks/operator.md).
 
@@ -33,7 +34,7 @@ amoCRM, проверка подключённых виджетов, диагно
 | Агент-разработчик | [AGENTS.md](AGENTS.md) → [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) |
 | Индекс документации | [docs/README.md](docs/README.md) |
 | Обзор решений, завершённые этапы и patch-планы | [docs/plan/README.md](docs/plan/README.md) |
-| Ближайшая работа | [docs/plan/connection-state-freshness.md](docs/plan/connection-state-freshness.md) |
+| Внешняя приёмка и rollout | [docs/plan/README.md](docs/plan/README.md) |
 | Как устроено размещение и границы | [docs/design/architecture.md](docs/design/architecture.md) |
 | Экраны и переходы | [docs/design/screens.md](docs/design/screens.md) |
 | Словарь состояний | [docs/design/states.md](docs/design/states.md) |

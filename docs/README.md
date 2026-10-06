@@ -1,37 +1,46 @@
 # Документация
 
-Этапы 1–4 завершены. Живые документы описывают текущее приложение;
-планируемое — только в `plan/`. Исторические планы, reviews и ADR не
-удаляются: на них ссылаются отчёты приёмки.
+Действующие документы описывают реализованное приложение. Код, миграции
+и OpenAPI определяют фактическое поведение; ADR — принятые решения.
+Локальная проверка и приёмка production учитываются отдельно.
 
 ## С чего начать
 
-| Кому | Читать |
+| Задача | Документ |
 | --- | --- |
-| Агент перед работой | [AGENTS.md](../AGENTS.md), [STYLE_GUIDE.md](STYLE_GUIDE.md), [plan/README.md](plan/README.md) |
-| Ближайшая работа | [connection-state-freshness.md](plan/connection-state-freshness.md) |
-| Локальный запуск | [local-run.md](runbooks/local-run.md) |
-| Эксплуатация | [operator.md](runbooks/operator.md) |
+| Правила работы | [AGENTS.md](../AGENTS.md), [STYLE_GUIDE.md](STYLE_GUIDE.md) |
+| Планы и незавершённая внешняя приёмка | [plan/README.md](plan/README.md) |
+| Архитектура | [design/architecture.md](design/architecture.md) |
+| Локальный запуск | [runbooks/local-run.md](runbooks/local-run.md) |
+| Эксплуатация | [runbooks/operator.md](runbooks/operator.md) |
+| Архитектурные решения | [adr/README.md](adr/README.md) |
 
-## Состав `docs/`
+## Контракты и интерфейс
 
-| Каталог | Что здесь | Удалять |
-| --- | --- | --- |
-| [design/](design/architecture.md) | Текущая архитектура, экраны, состояния, источники, роли, API, схема БД, адаптер | нет, обновлять |
-| [adr/](adr/README.md) | Принятые решения | нет; не править задним числом |
-| [plan/](plan/README.md) | Активные patch-планы и исторические этапы 1–4 | этапы не удалять |
-| [runbooks/](runbooks/local-run.md) | Запуск, оператор, новый модуль; `demo-stage-N.md` — сценарии приёмки | нет |
-| [reviews/](reviews/docs-audit-2026-09-19.md) | Датированные проверки | нет |
+- [HTTP API](design/admin-api.md).
+- [Схема БД](design/admin-db-schema.md).
+- [Адаптер Core](design/backend-adapter.md).
+- [Источники данных](design/data-sources.md).
+- [Состояния](design/states.md).
+- [Роли](design/roles.md).
+- [Экраны](design/screens.md).
 
-Правило стайл-гайда: не описывать нереализованное как сделанное и
-наоборот. Планируемое — в `plan/`, сделанное — в `design/` и runbooks.
+## Распределение и внешняя приёмка
 
-Последний аудит этой папки:
-[docs-audit-2026-09-19.md](reviews/docs-audit-2026-09-19.md).
+- [Диагностика и восстановление](runbooks/lead-distribution.md).
+- [Наблюдение, пилот и другие окружения](runbooks/lead-distribution-pilot.md).
+- [РС-09](plan/lead-distribution-diagnostics.md).
+- [Независимое ревью РС-03–10](plan/lead-distribution-review.md).
+- [Синхронизация staging](plan/staging-source-sync.md).
 
-Распределение: [план РС-09](plan/lead-distribution-diagnostics.md),
-[диагностика и восстановление](runbooks/lead-distribution.md).
+## Поддержка документации
 
-Независимое ревью: [РС-03–10](plan/lead-distribution-review.md).
+Аудит структуры и локальных ссылок: 06.10.2026. Завершённые планы этапов,
+дублирующие patch-планы и промежуточные reviews удалены; доступны в истории
+Git. Сохранены инструкции, ADR и документы с внешними условиями приёмки.
+Новые инструкции обновлять в design/runbooks; результаты небольших
+изменений фиксировать в PR/CI. Новый план создавать для конкретной работы,
+а завершённую реализацию не показывать как текущий backlog.
 
-РС-10: [контроль пилота и другие окружения](runbooks/lead-distribution-pilot.md).
+[Нагрузочный отчёт 13.09.2026](reviews/stage-4-load-2026-09-13.md)
+сохранён: содержит измерения больших списков и EXPLAIN для `make bench-admin`.
