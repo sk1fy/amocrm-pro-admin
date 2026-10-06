@@ -45,6 +45,9 @@ func TestClientMapsStatusesAndUnknown(t *testing.T) {
 		case "/admin/v1/installations/missing":
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = io.WriteString(w, `{"error":{"code":"not_found","message":"installation not found","request_id":"x"}}`)
+		case "/admin/v1/installations/forbidden/activity/status":
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = io.WriteString(w, `{"error":{"code":"permission_denied","message":"Activity pilot or capability is disabled","request_id":"x"}}`)
 		case "/admin/v1/backend":
 			w.WriteHeader(http.StatusUnauthorized)
 			_, _ = io.WriteString(w, `{"error":{"code":"unauthenticated","message":"authentication required"}}`)
@@ -82,6 +85,19 @@ func TestClientMapsStatusesAndUnknown(t *testing.T) {
 	_, err = client.Health(ctx, actor)
 	if !errors.Is(err, adapter.ErrUnavailable) {
 		t.Fatalf("401: %v", err)
+	}
+
+	// A 403 is a permission/capability denial, not an authentication failure;
+	// the upstream reason must survive so the UI does not show an auth incident.
+	_, err = client.GetActivitySyncStatus(ctx, actor, "forbidden")
+	if !errors.Is(err, adapter.ErrForbidden) {
+		t.Fatalf("403 should map to forbidden, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "Activity pilot or capability is disabled") {
+		t.Fatalf("403 reason lost: %v", err)
+	}
+	if errors.Is(err, adapter.ErrUnavailable) {
+		t.Fatalf("403 must not be reported as auth/unavailable: %v", err)
 	}
 
 	_, err = client.GetJob(ctx, actor, "x")

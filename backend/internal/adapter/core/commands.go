@@ -50,8 +50,15 @@ func (c *Client) ExecuteCommand(ctx context.Context, actor adapter.Actor, key st
 	if len(body) > maxResponseBytes {
 		return adapter.CommandResult{}, adapter.ErrUnavailable
 	}
-	if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
+	if response.StatusCode == http.StatusUnauthorized {
 		return adapter.CommandResult{}, adapter.Error{Kind: adapter.ErrRejected, Backend: c.desc.Code, Message: "core admin authentication failed"}
+	}
+	if response.StatusCode == http.StatusForbidden {
+		message := coreMessage(body)
+		if message == "" {
+			message = "core request forbidden"
+		}
+		return adapter.CommandResult{}, adapter.Forbidden(c.desc.Code, message)
 	}
 	if response.StatusCode == http.StatusConflict {
 		current := conflictCurrent(body)

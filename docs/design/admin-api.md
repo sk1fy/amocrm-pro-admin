@@ -313,3 +313,10 @@ expected_attempts:integer}`. `distribution-reconcile`:
 Trace `id` — идентификатор строки, может быть составным. `message_id` —
 UUID замороженного конверта; повтор разрешён только при его наличии.
 `operation_id` и `result_version` связывают результат с назначением.
+
+## Расширение диагностики Digital Pipeline (06.10.2026)
+
+Summary распределения содержит необязательный nullable digital_pipeline
+с inbox/triggers типа DistributionBacklog. Null означает отсутствие
+фактов у источника. Права и URL маршрута не изменились; live ключи
+и тела событий не возвращаются. Поля описаны в backend/api/openapi.yaml.

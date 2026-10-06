@@ -25,6 +25,10 @@ type DistributionBacklog struct {
 	States          []DistributionCount `json:"states"`
 	OldestPendingAt *time.Time          `json:"oldest_pending_at"`
 }
+type DistributionDigitalPipeline struct {
+	Inbox    DistributionBacklog `json:"inbox"`
+	Triggers DistributionBacklog `json:"triggers"`
+}
 type DistributionBinding struct {
 	ID                string `json:"id"`
 	CompanyID         string `json:"company_id"`
@@ -36,21 +40,22 @@ type DistributionBinding struct {
 	ServiceAuthorized bool   `json:"service_authorized"`
 }
 type DistributionSummary struct {
-	InstallationID     string               `json:"installation_id"`
-	ModuleEnabled      bool                 `json:"module_enabled"`
-	Paused             bool                 `json:"paused"`
-	AuthorizationState string               `json:"authorization_state"`
-	AuthorizationRaw   string               `json:"authorization_raw,omitempty"`
-	WebhookState       string               `json:"webhook_state"`
-	WebhookRaw         string               `json:"webhook_raw,omitempty"`
-	WebhookCheckedAt   *time.Time           `json:"webhook_checked_at"`
-	Binding            *DistributionBinding `json:"binding"`
-	Events             DistributionBacklog  `json:"events"`
-	Results            DistributionBacklog  `json:"results"`
-	Operations         []DistributionCount  `json:"operations"`
-	HistoricalGaps     int                  `json:"historical_gaps"`
-	TeamQueueState     string               `json:"team_queue_state"`
-	Origin             string               `json:"origin"`
+	InstallationID     string                       `json:"installation_id"`
+	ModuleEnabled      bool                         `json:"module_enabled"`
+	Paused             bool                         `json:"paused"`
+	AuthorizationState string                       `json:"authorization_state"`
+	AuthorizationRaw   string                       `json:"authorization_raw,omitempty"`
+	WebhookState       string                       `json:"webhook_state"`
+	WebhookRaw         string                       `json:"webhook_raw,omitempty"`
+	WebhookCheckedAt   *time.Time                   `json:"webhook_checked_at"`
+	Binding            *DistributionBinding         `json:"binding"`
+	Events             DistributionBacklog          `json:"events"`
+	Results            DistributionBacklog          `json:"results"`
+	Operations         []DistributionCount          `json:"operations"`
+	HistoricalGaps     int                          `json:"historical_gaps"`
+	TeamQueueState     string                       `json:"team_queue_state"`
+	DigitalPipeline    *DistributionDigitalPipeline `json:"digital_pipeline"`
+	Origin             string                       `json:"origin"`
 }
 type DistributionTrace struct {
 	Items      []DistributionTraceItem `json:"items"`

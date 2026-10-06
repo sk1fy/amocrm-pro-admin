@@ -4,7 +4,7 @@ import { usePushSearch, useRouteSearch } from '../../app/hooks'
 import type { ConnectionSearch } from '../../app/search'
 import { fetchDistribution, fetchDistributionTrace, keys } from '../../api/queries'
 import { visibleInterval } from '../../api/queryClient'
-import type { DistributionCount, DistributionTraceItem } from '../../api/types'
+import type { DistributionCount, DistributionSummary, DistributionTraceItem } from '../../api/types'
 import { CopyableId } from '../../components/CopyableId'
 import { DataTable } from '../../components/DataTable'
 import { ErrorState } from '../../components/ErrorState'
@@ -156,6 +156,7 @@ export function DistributionSection({
                   <h4>Назначения Core</h4>
                   <Counts items={data.operations} />
                 </section>
+                <DigitalPipelineDiagnostics data={data.digital_pipeline} />
               </div>
               <div className={page.row}>
                 <CommandAction
@@ -459,4 +460,39 @@ export function distributionCommand(backend: string, id: string, command: string
           : 'Текущие операции и неизвестные результаты продолжают проверяться. Пауза обратима.',
     nextStep: 'После операции обновите диагностику и проверьте подтверждённый результат.',
   }
+}
+
+export function DigitalPipelineDiagnostics({
+  data,
+}: {
+  data: DistributionSummary['digital_pipeline']
+}) {
+  if (!data)
+    return (
+      <section>
+        <h4>Digital Pipeline</h4>
+        <p>Источник не предоставил данные Digital Pipeline.</p>
+      </section>
+    )
+  const empty = data.inbox.states.every((item) => item.count === 0)
+  return (
+    <>
+      <section>
+        <h4>Digital Pipeline: вход триггеров</h4>
+        <Counts items={data.inbox.states} />
+        <p>Самое старое ожидание: {formatTime(data.inbox.oldest_pending_at)}</p>
+        {empty && (
+          <>
+            <p>Входящих событий Digital Pipeline пока нет.</p>
+            <p>Проверьте установку и настройки триггера в amoCRM.</p>
+          </>
+        )}
+      </section>
+      <section>
+        <h4>Digital Pipeline: события в TeamOS</h4>
+        <Counts items={data.triggers.states} />
+        <p>Самое старое ожидание: {formatTime(data.triggers.oldest_pending_at)}</p>
+      </section>
+    </>
+  )
 }

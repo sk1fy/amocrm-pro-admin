@@ -31,6 +31,10 @@ type distributionSummary struct {
 	Operations         map[string]int               `json:"operations"`
 	HistoricalGaps     *int                         `json:"historical_gaps"`
 	TeamQueueState     string                       `json:"team_queue_state"`
+	DigitalPipeline    *struct {
+		Inbox    distributionCounts `json:"inbox"`
+		Triggers distributionCounts `json:"triggers"`
+	} `json:"digital_pipeline"`
 }
 
 func (c *Client) GetDistribution(ctx context.Context, actor adapter.Actor, id string) (adapter.Observation[adapter.DistributionSummary], error) {
@@ -59,6 +63,19 @@ func (c *Client) GetDistribution(ctx context.Context, actor adapter.Actor, id st
 	if *wire.HistoricalGaps < 0 || !validDistributionCounts(wire.Events.States) || !validDistributionCounts(wire.Results.States) || !validDistributionCounts(wire.Operations) {
 		return adapter.Observation[adapter.DistributionSummary]{}, adapter.Unavailable(c.desc.Code, "Источник вернул недопустимые счётчики распределения")
 	}
+	var digitalPipeline *adapter.DistributionDigitalPipeline
+	if wire.DigitalPipeline != nil {
+		dp := wire.DigitalPipeline
+		if dp.Inbox.States == nil || dp.Triggers.States == nil || !validDistributionCounts(dp.Inbox.States) || !validDistributionCounts(dp.Triggers.States) {
+			return adapter.Observation[adapter.DistributionSummary]{}, adapter.Unavailable(c.desc.Code, "Источник вернул неполные счётчики Digital Pipeline")
+		}
+		for _, observed := range []*time.Time{dp.Inbox.OldestPendingAt, dp.Triggers.OldestPendingAt} {
+			if observed != nil && !validDistributionTime(*observed) {
+				return adapter.Observation[adapter.DistributionSummary]{}, adapter.ErrUnavailable
+			}
+		}
+		digitalPipeline = &adapter.DistributionDigitalPipeline{Inbox: mapDistributionCounts(dp.Inbox), Triggers: mapDistributionCounts(dp.Triggers)}
+	}
 	if wire.Binding != nil {
 		if bindingID, e := uuid.Parse(wire.Binding.ID); e != nil || bindingID == uuid.Nil {
 			return adapter.Observation[adapter.DistributionSummary]{}, adapter.ErrUnavailable
@@ -76,7 +93,7 @@ func (c *Client) GetDistribution(ctx context.Context, actor adapter.Actor, id st
 		wire.Binding.State = state.Canonical
 		wire.Binding.Raw = state.Raw
 	}
-	data := adapter.DistributionSummary{InstallationID: id, ModuleEnabled: *wire.ModuleEnabled, Paused: *wire.Paused, AuthorizationState: auth.Canonical, AuthorizationRaw: auth.Raw, WebhookState: webhook.Canonical, WebhookRaw: webhook.Raw, WebhookCheckedAt: wire.WebhookCheckedAt, Binding: wire.Binding, Events: mapDistributionCounts(wire.Events), Results: mapDistributionCounts(wire.Results), Operations: mapDistributionStates(wire.Operations), HistoricalGaps: *wire.HistoricalGaps, TeamQueueState: adapter.StateUnknown, Origin: adapter.OriginReal}
+	data := adapter.DistributionSummary{InstallationID: id, ModuleEnabled: *wire.ModuleEnabled, Paused: *wire.Paused, AuthorizationState: auth.Canonical, AuthorizationRaw: auth.Raw, WebhookState: webhook.Canonical, WebhookRaw: webhook.Raw, WebhookCheckedAt: wire.WebhookCheckedAt, Binding: wire.Binding, Events: mapDistributionCounts(wire.Events), Results: mapDistributionCounts(wire.Results), Operations: mapDistributionStates(wire.Operations), HistoricalGaps: *wire.HistoricalGaps, TeamQueueState: adapter.StateUnknown, DigitalPipeline: digitalPipeline, Origin: adapter.OriginReal}
 	obs := adapter.Fresh(c.desc.Code, wire.ObservedAt, data)
 	if time.Since(wire.ObservedAt) > 15*time.Minute {
 		obs.Freshness = adapter.FreshnessStale

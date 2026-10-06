@@ -166,3 +166,40 @@ func TestDistributionCapabilityProbePreservesSourceFailures(t *testing.T) {
 		})
 	}
 }
+
+func TestDistributionDigitalPipelinePresenceAndValidation(t *testing.T) {
+	for _, tc := range []struct {
+		name                   string
+		dp                     any
+		wantPresent, wantError bool
+	}{
+		{"old Core", nil, false, false},
+		{"confirmed empty", map[string]any{"inbox": map[string]any{"states": map[string]int{}}, "triggers": map[string]any{"states": map[string]int{}}}, true, false},
+		{"incomplete", map[string]any{"inbox": map[string]any{"states": map[string]int{}}}, false, true},
+		{"negative", map[string]any{"inbox": map[string]any{"states": map[string]int{"pending": -1}}, "triggers": map[string]any{"states": map[string]int{}}}, false, true},
+		{"invalid time", map[string]any{"inbox": map[string]any{"states": map[string]int{}, "oldest_pending_at": "0001-01-01T00:00:00Z"}, "triggers": map[string]any{"states": map[string]int{}}}, false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			id := "d1500000-0000-4000-8000-000000000001"
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body := map[string]any{"observed_at": time.Now().UTC(), "installation_id": id, "module_enabled": true, "paused": false, "authorization_state": "valid", "webhook_state": "active", "events": map[string]any{"states": map[string]int{}}, "results": map[string]any{"states": map[string]int{}}, "operations": map[string]int{}, "historical_gaps": 0}
+				if tc.dp != nil {
+					body["digital_pipeline"] = tc.dp
+				}
+				_ = json.NewEncoder(w).Encode(body)
+			}))
+			defer server.Close()
+			c, err := New(Options{BaseURL: server.URL, Token: "fixture", Timeout: time.Second})
+			if err != nil {
+				t.Fatal(err)
+			}
+			obs, err := c.GetDistribution(t.Context(), adapter.Actor{}, id)
+			if (err != nil) != tc.wantError {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if err == nil && (obs.Data.DigitalPipeline != nil) != tc.wantPresent {
+				t.Fatal("missing data became empty confirmed data")
+			}
+		})
+	}
+}
