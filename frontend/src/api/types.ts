@@ -513,6 +513,10 @@ export type DistributionSummary = {
   operations: DistributionCount[]
   historical_gaps: number
   team_queue_state: string
+  digital_pipeline?: {
+    inbox: DistributionBacklog
+    triggers: DistributionBacklog
+  } | null
   origin: string
 }
 export type DistributionTraceItem = {

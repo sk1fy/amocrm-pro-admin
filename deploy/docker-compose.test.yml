@@ -48,6 +48,9 @@ services:
     environment:
       TEST_DATABASE_URL: postgres://admin_test:admin_test@postgres:5432/admin_test?sslmode=disable
       TEST_DATABASE_RESET_ALLOWED: "true"
+      # Packages share one resettable database and the same advisory lock.
+      # Run them sequentially instead of timing out while waiting for the lock.
+      GOFLAGS: "-p=1"
       MIGRATIONS_DIR: /src/migrations
     depends_on:
       postgres:

@@ -373,8 +373,13 @@ func (c *Client) mapStatus(status int, body []byte) error {
 			message = "invalid argument"
 		}
 		return adapter.InvalidArgument(c.desc.Code, message)
-	case http.StatusUnauthorized, http.StatusForbidden:
+	case http.StatusUnauthorized:
 		return adapter.Unavailable(c.desc.Code, "core admin authentication failed")
+	case http.StatusForbidden:
+		if message == "" {
+			message = "core request forbidden"
+		}
+		return adapter.Forbidden(c.desc.Code, message)
 	case http.StatusGatewayTimeout, http.StatusRequestTimeout:
 		return adapter.Timeout(c.desc.Code, "core request timed out")
 	default:

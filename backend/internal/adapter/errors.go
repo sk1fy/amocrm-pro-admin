@@ -10,6 +10,7 @@ var (
 	ErrNotFound        = errors.New("not found")
 	ErrUnsupported     = errors.New("unsupported")
 	ErrInvalidArgument = errors.New("invalid argument")
+	ErrForbidden       = errors.New("forbidden")
 	ErrConflict        = errors.New("conflict")
 	ErrRejected        = errors.New("backend rejected command")
 )
@@ -54,6 +55,13 @@ func InvalidArgument(backend, message string) Error {
 	return Error{Kind: ErrInvalidArgument, Backend: backend, Message: message}
 }
 
+// Forbidden carries a backend authorization/permission denial (HTTP 403).
+// Unlike a 401 it is not an authentication failure; the message preserves the
+// upstream reason (for example a disabled capability).
+func Forbidden(backend, message string) Error {
+	return Error{Kind: ErrForbidden, Backend: backend, Message: message}
+}
+
 type ConflictError struct {
 	Current map[string]any
 	backend string
@@ -89,6 +97,8 @@ func SafeMessage(err error) string {
 		return "backend does not support this capability"
 	case errors.Is(err, ErrInvalidArgument):
 		return "invalid argument"
+	case errors.Is(err, ErrForbidden):
+		return "forbidden"
 	case errors.Is(err, ErrConflict):
 		return "conflict"
 	default:
@@ -105,6 +115,8 @@ func ObsErrorFrom(err error) *ObsError {
 		return &ObsError{Code: ErrorCodeTimeout, Message: SafeMessage(err)}
 	case errors.Is(err, ErrUnsupported):
 		return &ObsError{Code: ErrorCodeUnsupported, Message: SafeMessage(err)}
+	case errors.Is(err, ErrForbidden):
+		return &ObsError{Code: ErrorCodePermissionDenied, Message: SafeMessage(err)}
 	default:
 		return &ObsError{Code: ErrorCodeUnavailable, Message: SafeMessage(err)}
 	}

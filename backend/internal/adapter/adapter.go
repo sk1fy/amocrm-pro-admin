@@ -82,6 +82,8 @@ const (
 	ErrorCodeUnavailable = "backend_unavailable"
 	ErrorCodeTimeout     = "backend_timeout"
 	ErrorCodeUnsupported = "capability_unavailable"
+	// ErrorCodePermissionDenied marks a backend 403 (permission/capability), not an auth failure.
+	ErrorCodePermissionDenied = "permission_denied"
 )
 
 type Descriptor struct {

@@ -2080,6 +2080,14 @@ components:
           items: {$ref: '#/components/schemas/DistributionCount'}
         historical_gaps: {type: integer, minimum: 0}
         team_queue_state: {type: string, enum: [unknown]}
+        digital_pipeline:
+          type: object
+          nullable: true
+          additionalProperties: false
+          required: [inbox, triggers]
+          properties:
+            inbox: {$ref: '#/components/schemas/DistributionBacklog'}
+            triggers: {$ref: '#/components/schemas/DistributionBacklog'}
         origin: {type: string, enum: [real, fixture]}
     DistributionTraceItem:
       type: object
