@@ -82,7 +82,7 @@
 
 Общее с Core (перенимаем его стиль):
 
-- Go версии, указанной в `go.mod` Core (сейчас 1.25); в admin — та же.
+- Go версии, указанной в `go.mod` Core (сейчас 1.26.10); в admin — та же.
 - `gofmt`, `go vet` обязательны; `golangci-lint` в admin с базовым набором
   (`errcheck`, `govet`, `staticcheck`, `ineffassign`, `unused`, `gosec`).
 - Роутер `github.com/go-chi/chi/v5`, БД `github.com/jackc/pgx/v5`, логи
