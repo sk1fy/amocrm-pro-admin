@@ -294,9 +294,9 @@ integration-test`; Activity-части — `make activity-ci`. Host Go там н
 - Не писать документацию о том, что не реализовано, как о реализованном.
   Планируемое — в `plan/`, сделанное — в `design/` и runbooks.
 - Runbooks (`docs/runbooks/`): `local-run.md` (разработка),
-  `operator.md` и `new-module.md` (эксплуатация). `demo-stage-N.md` —
-  исторические сценарии приёмки этапов; актуальный сквозной путь —
-  `operator.md` и `demo-stage-4.md`.
+  `operator.md` и `new-module.md` (эксплуатация). Актуальный сквозной
+  сценарий экранов — `demo-stage-4.md`. Завершённые планы и старые
+  демонстрации удалять после переноса действующих инструкций и задач.
 - Индекс папки — [README.md](README.md).
 
 ## 13. Коммиты и PR
