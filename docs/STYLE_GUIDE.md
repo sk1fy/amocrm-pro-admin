@@ -82,7 +82,7 @@
 
 Общее с Core (перенимаем его стиль):
 
-- Go версии, указанной в `go.mod` Core (сейчас 1.25); в admin — та же.
+- Go версии, указанной в `go.mod` Core (сейчас 1.26.10); в admin — та же.
 - `gofmt`, `go vet` обязательны; `golangci-lint` в admin с базовым набором
   (`errcheck`, `govet`, `staticcheck`, `ineffassign`, `unused`, `gosec`).
 - Роутер `github.com/go-chi/chi/v5`, БД `github.com/jackc/pgx/v5`, логи
@@ -294,9 +294,9 @@ integration-test`; Activity-части — `make activity-ci`. Host Go там н
 - Не писать документацию о том, что не реализовано, как о реализованном.
   Планируемое — в `plan/`, сделанное — в `design/` и runbooks.
 - Runbooks (`docs/runbooks/`): `local-run.md` (разработка),
-  `operator.md` и `new-module.md` (эксплуатация). `demo-stage-N.md` —
-  исторические сценарии приёмки этапов; актуальный сквозной путь —
-  `operator.md` и `demo-stage-4.md`.
+  `operator.md` и `new-module.md` (эксплуатация). Актуальный сквозной
+  сценарий экранов — `demo-stage-4.md`. Завершённые планы и старые
+  демонстрации удалять после переноса действующих инструкций и задач.
 - Индекс папки — [README.md](README.md).
 
 ## 13. Коммиты и PR

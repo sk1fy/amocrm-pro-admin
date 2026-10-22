@@ -27,7 +27,7 @@ services:
       target: migrate
       args:
         BUILD_REVISION: "${BUILD_REVISION:-unknown}"
-        GO_VERSION: "${GO_VERSION:-1.25}"
+        GO_VERSION: "${GO_VERSION:-1.26.10}"
     environment:
       DATABASE_URL: "${DATABASE_URL:-postgres://admin:admin@admin-postgres:5432/admin?sslmode=disable}"
       MIGRATIONS_DIR: /migrations
@@ -50,7 +50,7 @@ services:
       target: admin-api
       args:
         BUILD_REVISION: "${BUILD_REVISION:-unknown}"
-        GO_VERSION: "${GO_VERSION:-1.25}"
+        GO_VERSION: "${GO_VERSION:-1.26.10}"
     init: true
     environment:
       APP_ENV: "${APP_ENV:-development}"
@@ -108,7 +108,7 @@ services:
       target: admin-cli
       args:
         BUILD_REVISION: "${BUILD_REVISION:-unknown}"
-        GO_VERSION: "${GO_VERSION:-1.25}"
+        GO_VERSION: "${GO_VERSION:-1.26.10}"
     environment:
       DATABASE_URL: "${DATABASE_URL:-postgres://admin:admin@admin-postgres:5432/admin?sslmode=disable}"
       DATABASE_TIMEOUT: "${DATABASE_TIMEOUT:-30s}"

@@ -13,8 +13,8 @@ development/e2e, не применять к production.
   (`kind: core-http`, пилот Core) и `fixture` (`kind: fixture`,
   `profile: module`, тестовые данные). Вход — [local-run.md](local-run.md).
 - Детерминированные fixture-подписки даёт `core` с `profile: demo`:
-  fixture-стек пути A из [demo-stage-1.md](demo-stage-1.md) или
-  `make e2e` (`http://127.0.0.1:5174`). В dev-стеке `core-http` не
+  изолированный fixture-стек `make e2e` (`http://127.0.0.1:5174`),
+  описанный в [локальном запуске](local-run.md). В dev-стеке `core-http` не
   объявляет возможность `subscriptions`, поэтому на шаге 2 блок
   «Подписка» покажет то же «Данные подписки недоступны», что и на
   шаге 3, — ожидаемое поведение без источника, а не сбой.

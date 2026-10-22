@@ -22,7 +22,7 @@ amoCRM, проверка подключённых виджетов, диагно
 целевом сервере 14 сентября 2026 года.
 
 Актуальность состояния подключений реализована; условия внешнего rollout —
-в [connection-state-freshness.md](docs/plan/connection-state-freshness.md).
+в [инструкции оператора](docs/runbooks/operator.md#проверки-подключений).
 Сохранённые планы и границы приёмки — в [индексе](docs/plan/README.md).
 Запуск: [local-run.md](docs/runbooks/local-run.md), эксплуатация:
 [operator.md](docs/runbooks/operator.md).

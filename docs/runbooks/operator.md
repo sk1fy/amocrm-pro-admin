@@ -200,8 +200,7 @@ curl --fail --silent --show-error --head https://admin.example.com/
 4. «Система»: бекенд `core` — `available`, ревизия и контракт бекенда.
 5. Проверить, что вход и действие попали в аудит.
 
-Полные сценарии — [demo-stage-1.md](demo-stage-1.md),
-[demo-stage-2.md](demo-stage-2.md), [demo-stage-3.md](demo-stage-3.md).
+Сквозной сценарий экранов — [демонстрация](demo-stage-4.md).
 
 ## 10. Ротация credentials
 
@@ -430,9 +429,6 @@ SQL
 ## 15. Ссылки
 
 - [local-run.md](local-run.md) — локальный dev-стек, e2e, фикстуры.
-- [demo-stage-1.md](demo-stage-1.md) — аккаунты и подключения.
-- [demo-stage-2.md](demo-stage-2.md) — операции и команды.
-- [demo-stage-3.md](demo-stage-3.md) — статистика и настройки модулей.
 - [demo-stage-4.md](demo-stage-4.md) — реестр, подписки, частичная
   доступность, метрики.
 - [new-module.md](new-module.md) — подключение нового модуля/бекенда.
