@@ -42,11 +42,11 @@ test('activity product links account installation to its OAuth integration', asy
     page.locator('dt').filter({ hasText: 'Идентификатор интеграции Core' }),
   ).toBeVisible()
   await expect(
-    page.locator('dt').filter({ hasText: 'OAuth UUID (client_id)' }).locator('+ dd'),
-  ).toContainText(oauthUUID)
+    page.locator('dt').filter({ hasText: 'OAuth UUID (client_id)' }).locator('+ dd code'),
+  ).toHaveAttribute('title', oauthUUID)
   await expect(
-    page.locator('dt').filter({ hasText: 'Идентификатор интеграции Core' }).locator('+ dd'),
-  ).toContainText(integration)
+    page.locator('dt').filter({ hasText: 'Идентификатор интеграции Core' }).locator('+ dd code'),
+  ).toHaveAttribute('title', integration)
 })
 
 test('unavailable account source is not an empty integration installation list', async ({
