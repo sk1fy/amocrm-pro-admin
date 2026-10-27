@@ -13,7 +13,7 @@ test('activity product links account installation to its OAuth integration', asy
     body.data.client_id = oauthUUID
     await route.fulfill({ response, json: body })
   })
-  await page.goto('/accounts/91000001')
+  await page.goto('/accounts/91000001/widgets')
   const form = page.getByTestId('login-form')
   await form.locator('input[name="email"]').fill(email)
   await form.locator('input[name="password"]').fill(password)
