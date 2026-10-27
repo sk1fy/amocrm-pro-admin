@@ -1,3 +1,4 @@
+import { ProductGrants } from '../../components/ProductGrants'
 import { DistributionSection } from './DistributionSection'
 import { lookupState } from '../../states'
 import { RefreshStatus } from '../../components/RefreshStatus'
@@ -165,7 +166,13 @@ export function ConnectionPage() {
         })}
       </nav>
       {section === 'status' ? (
-        <StatusSection card={card} health={health} hideSource={hide} onRetry={refetch} />
+        <StatusSection
+          backend={backend}
+          card={card}
+          health={health}
+          hideSource={hide}
+          onRetry={refetch}
+        />
       ) : null}
       {section === 'auth' ? (
         <AuthSection
@@ -488,11 +495,13 @@ function ConnectionSwitcher({
 }
 
 function StatusSection({
+  backend,
   card,
   health,
   hideSource,
   onRetry,
 }: {
+  backend: string
   card: ConnectionCard
   health: ConnectionHealth
   hideSource: (source: string) => boolean
@@ -520,7 +529,14 @@ function StatusSection({
             <div className={page.stack}>
               <dl className={page.dl}>
                 <dt>Интеграция</dt>
-                <dd>{conn.integration_code}</dd>
+                <dd>
+                  <Link
+                    to="/widgets/$backend/$integrationId"
+                    params={{ backend, integrationId: conn.integration_id }}
+                  >
+                    {conn.integration_code}
+                  </Link>
+                </dd>
                 <dt>Домен</dt>
                 <dd>{formatNull(conn.account_domain)}</dd>
                 <dt>Состояние установки</dt>
@@ -552,27 +568,14 @@ function StatusSection({
           )}
         </Observation>
       </CompactSection>
-      <CompactSection title="Гранты сервисов" defaultOpen={grantsOpen}>
+      <CompactSection title="Доступ к продуктам" defaultOpen={grantsOpen}>
         <Observation
-          title="Гранты сервисов"
+          title="Доступ к продуктам"
           observation={card.grants}
           hideSource={hideSource(card.grants.source)}
           onRetry={onRetry}
         >
-          {(grants) =>
-            grants.length === 0 ? (
-              <p className={page.muted}>Нет грантов</p>
-            ) : (
-              <ul>
-                {grants.map((grant) => (
-                  <li key={grant.service}>
-                    {grant.service}:{' '}
-                    <StatusBadge domain="grant" state={grant.state} raw={grant.raw} />
-                  </li>
-                ))}
-              </ul>
-            )
-          }
+          {(grants) => <ProductGrants grants={grants} />}
         </Observation>
       </CompactSection>
     </>
@@ -808,7 +811,7 @@ function ActivitySection({
       >
         {(raw) => {
           const activity = parseActivity(raw)
-          const pilot = activity.pilot || 'not_configured'
+          const pilot = activity.pilot
           return (
             <div className={page.stack}>
               <p>

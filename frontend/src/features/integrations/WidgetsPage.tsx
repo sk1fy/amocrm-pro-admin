@@ -1,3 +1,4 @@
+import { ProductGrants } from '../../components/ProductGrants'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { usePushSearch, useRouteSearch } from '../../app/hooks'
@@ -86,16 +87,8 @@ export function WidgetsPage() {
                 },
                 {
                   id: 'grants',
-                  header: 'Сервисы',
-                  cell: (row) =>
-                    row.grants.length === 0
-                      ? formatNull(null)
-                      : row.grants.map((grant) => (
-                          <span key={grant.service}>
-                            {grant.service}:{' '}
-                            <StatusBadge domain="grant" state={grant.state} raw={grant.raw} />{' '}
-                          </span>
-                        )),
+                  header: 'Продукты и доступ',
+                  cell: (row) => <ProductGrants grants={row.grants} />,
                 },
                 {
                   id: 'counts',
