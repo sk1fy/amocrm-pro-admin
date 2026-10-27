@@ -1,3 +1,4 @@
+import { ProductGrants } from '../../components/ProductGrants'
 import { VerificationBadge } from '../../components/VerificationBadge'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
@@ -56,6 +57,16 @@ export function AccountWidgets() {
             ),
         },
         {
+          id: 'products',
+          header: 'Продукты и доступ',
+          cell: (obs) =>
+            obs.freshness === 'unavailable' || obs.freshness === 'unknown' ? (
+              <StatusBadge domain="freshness" state={obs.freshness} />
+            ) : (
+              <ProductGrants grants={obs.data?.grants} />
+            ),
+        },
+        {
           id: 'state',
           header: 'Состояние установки',
           cell: (obs) => (
@@ -99,10 +110,17 @@ export function AccountWidgets() {
         },
         {
           id: 'pilot',
-          header: 'Activity',
-          cell: (obs) => (
-            <StatusBadge domain="pilot" state={obs.data?.activity?.pilot || 'not_configured'} />
-          ),
+          header: 'Пилот контроля активности',
+          cell: (obs) =>
+            obs.freshness === 'unavailable' || obs.freshness === 'unknown' ? (
+              <StatusBadge domain="freshness" state={obs.freshness} />
+            ) : (
+              <StatusBadge
+                domain="pilot"
+                state={obs.data?.activity?.pilot}
+                raw={obs.data?.activity?.pilot_raw}
+              />
+            ),
         },
         {
           id: 'problems',

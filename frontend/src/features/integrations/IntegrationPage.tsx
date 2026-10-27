@@ -1,3 +1,4 @@
+import { ProductGrants } from '../../components/ProductGrants'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useRouteParams } from '../../app/hooks'
@@ -8,7 +9,7 @@ import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { Observation } from '../../components/Observation'
 import { PageSkeleton } from '../../components/PageSkeleton'
-import { SourcesBanner } from '../../components/SourcesBanner'
+import { SourcesBanner, allSourcesUnavailable } from '../../components/SourcesBanner'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
 import { formatNull, formatRelativeTime, formatTime, hostFromRedirect } from '../../lib/format'
@@ -61,7 +62,11 @@ export function IntegrationPage() {
               <dl className={page.dl}>
                 <dt>Бекенд</dt>
                 <dd>{item.backend}</dd>
-                <dt>client_id</dt>
+                <dt>Идентификатор интеграции Core</dt>
+                <dd>
+                  <CopyableId value={item.id} label="ID интеграции Core" />
+                </dd>
+                <dt>OAuth UUID (client_id)</dt>
                 <dd>
                   <CopyableId value={item.client_id} label="client_id" />
                 </dd>
@@ -80,15 +85,8 @@ export function IntegrationPage() {
                   <WebhookEvents events={item.webhook_events} />
                 </dd>
               </dl>
-              <h2>Сервисы</h2>
-              <ul>
-                {item.grants.map((grant) => (
-                  <li key={grant.service}>
-                    {grant.service}:{' '}
-                    <StatusBadge domain="grant" state={grant.state} raw={grant.raw} />
-                  </li>
-                ))}
-              </ul>
+              <h2>Доступ к продуктам</h2>
+              <ProductGrants grants={item.grants} />
               <h2>Подключения по состояниям</h2>
               <ul>
                 {Object.entries(item.installations_by_status).map(([status, count]) => (
@@ -106,10 +104,17 @@ export function IntegrationPage() {
                 <ErrorState error={accounts.error} onRetry={() => void accounts.refetch()} />
               ) : null}
               {!accounts.isPending && !accounts.error && connections.length === 0 ? (
-                <EmptyState
-                  title="Нет подключений"
-                  description="У этой интеграции нет установок в ответивших источниках. Это пустой список, а не отказ бекенда."
-                />
+                allSourcesUnavailable(accounts.data?.sources) ? (
+                  <EmptyState
+                    title="Источник недоступен"
+                    description="Подключения нельзя показать, пока бекенд не ответит."
+                  />
+                ) : (
+                  <EmptyState
+                    title="Нет подключений"
+                    description="У этой интеграции нет установок в ответивших источниках."
+                  />
+                )
               ) : null}
               {connections.length > 0 ? (
                 <div className={page.content}>

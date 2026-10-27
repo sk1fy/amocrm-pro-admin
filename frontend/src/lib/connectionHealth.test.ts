@@ -3,6 +3,7 @@ import type { ActivitySync, ConnectionCard, ConnectionIdentity, Observation } fr
 import {
   computeConnectionHealth,
   lastSyncDurationSeconds,
+  parsePilot,
   sectionDefaultOpen,
   syncIdleReason,
   webhookSuccessfulCheckAt,
@@ -230,5 +231,18 @@ describe('sectionDefaultOpen', () => {
     )
     expect(sectionDefaultOpen([], 'status', obs({ id: '1' }, 'stale'))).toBe(true)
     expect(sectionDefaultOpen([], 'status', obs({ id: '1' }))).toBe(false)
+  })
+})
+
+describe('parsePilot', () => {
+  it('preserves an explicit pilot state including not configured', () => {
+    expect(parsePilot(card())).toBe('enabled')
+    expect(parsePilot(card({ activity: obs({ pilot: 'not_configured' }) }))).toBe('not_configured')
+  })
+
+  it('keeps missing pilot data unknown and ignores unavailable cached facts', () => {
+    expect(parsePilot(card({ activity: obs({}) }))).toBe('unknown')
+    expect(parsePilot(card({ activity: obs({ pilot: 'enabled' }, 'unavailable') }))).toBe('unknown')
+    expect(parsePilot(card({ activity: obs({ pilot: 'enabled' }, 'unknown') }))).toBe('unknown')
   })
 })

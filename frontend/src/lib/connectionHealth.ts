@@ -403,7 +403,10 @@ export function groupAudit(items: CoreAudit[]): Array<{ key: string; items: Core
 }
 
 export function parsePilot(card: ConnectionCard): string {
-  return parseActivity(card.activity.data).pilot || 'not_configured'
+  if (card.activity.freshness === 'unavailable' || card.activity.freshness === 'unknown') {
+    return 'unknown'
+  }
+  return parseActivity(card.activity.data).pilot || 'unknown'
 }
 
 export function sectionDefaultOpen(
