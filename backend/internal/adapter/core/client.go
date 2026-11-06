@@ -19,7 +19,15 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
 )
 
-const maxResponseBytes = 8 << 20
+const (
+	maxResponseBytes = 8 << 20
+
+	// DefaultCRMTimeout and MaxCRMTimeout bound the live amoCRM users read
+	// through the Core worker listener. The maximum stays below the Admin API
+	// write timeout (15s) so the handler can still answer with sources.
+	DefaultCRMTimeout = 10 * time.Second
+	MaxCRMTimeout     = 12 * time.Second
+)
 
 type Client struct {
 	desc       adapter.Descriptor
@@ -27,6 +35,15 @@ type Client struct {
 	token      string
 	healthPath string
 	httpClient *http.Client
+	// crm is the Core worker listener that reads amoCRM; nil keeps the
+	// crm-users capability off.
+	crm *endpoint
+}
+
+type endpoint struct {
+	base    *url.URL
+	timeout time.Duration
+	client  *http.Client
 }
 
 type Options struct {
@@ -36,6 +53,10 @@ type Options struct {
 	Timeout    time.Duration
 	HealthPath string
 	HTTPClient *http.Client
+	// CRMBaseURL enables crm-users through the Core worker listener. It uses
+	// the same token as BaseURL.
+	CRMBaseURL string
+	CRMTimeout time.Duration
 }
 
 func New(opts Options) (*Client, error) {
@@ -60,14 +81,11 @@ func New(opts Options) (*Client, error) {
 	}
 	httpClient := opts.HTTPClient
 	if httpClient == nil {
-		httpClient = &http.Client{
-			Timeout: timeout,
-			Transport: &http.Transport{
-				Proxy:                 http.ProxyFromEnvironment,
-				DialContext:           (&net.Dialer{Timeout: timeout}).DialContext,
-				ResponseHeaderTimeout: timeout,
-			},
-		}
+		httpClient = newHTTPClient(timeout)
+	}
+	crm, err := newCRMEndpoint(code, opts)
+	if err != nil {
+		return nil, err
 	}
 	return &Client{
 		desc: adapter.Descriptor{
@@ -78,7 +96,45 @@ func New(opts Options) (*Client, error) {
 		token:      opts.Token,
 		healthPath: healthPath,
 		httpClient: httpClient,
+		crm:        crm,
 	}, nil
+}
+
+func newHTTPClient(timeout time.Duration) *http.Client {
+	return &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			DialContext:           (&net.Dialer{Timeout: timeout}).DialContext,
+			ResponseHeaderTimeout: timeout,
+		},
+	}
+}
+
+func newCRMEndpoint(code string, opts Options) (*endpoint, error) {
+	raw := strings.TrimSpace(opts.CRMBaseURL)
+	if raw == "" {
+		if opts.CRMTimeout != 0 {
+			return nil, fmt.Errorf("core adapter %s: crm_timeout requires crm_base_url", code)
+		}
+		return nil, nil
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return nil, fmt.Errorf("core adapter %s: crm_base_url must be an absolute URL", code)
+	}
+	timeout := opts.CRMTimeout
+	if timeout == 0 {
+		timeout = DefaultCRMTimeout
+	}
+	if timeout < 0 || timeout > MaxCRMTimeout {
+		return nil, fmt.Errorf("core adapter %s: crm_timeout must be in (0, %s]", code, MaxCRMTimeout)
+	}
+	client := opts.HTTPClient
+	if client == nil {
+		client = newHTTPClient(timeout)
+	}
+	return &endpoint{base: parsed, timeout: timeout, client: client}, nil
 }
 
 func (c *Client) Descriptor() adapter.Descriptor { return c.desc }
@@ -87,6 +143,7 @@ func (c *Client) Capabilities() adapter.Capabilities {
 	return adapter.Capabilities{
 		Accounts: true, Connections: true, Integrations: true, Jobs: true, Audit: true, Commands: true, Diagnostics: true,
 		DistributionRead: true, DistributionCommands: true, ActivityDeliveries: true, Settings: true, Stats: true,
+		CRMUsers: c.crm != nil,
 	}
 }
 
@@ -302,10 +359,14 @@ func (c *Client) listJobs(ctx context.Context, actor adapter.Actor, path string,
 }
 
 func (c *Client) get(ctx context.Context, actor adapter.Actor, path string, query url.Values, dest any) error {
-	ctx, cancel := context.WithTimeout(ctx, c.desc.Timeout)
+	return c.getAt(ctx, actor, endpoint{base: c.baseURL, timeout: c.desc.Timeout, client: c.httpClient}, path, query, dest)
+}
+
+func (c *Client) getAt(ctx context.Context, actor adapter.Actor, at endpoint, path string, query url.Values, dest any) error {
+	ctx, cancel := context.WithTimeout(ctx, at.timeout)
 	defer cancel()
 
-	target, err := c.resolve(path, query)
+	target, err := resolveURL(at.base, path, query)
 	if err != nil {
 		return adapter.Unavailable(c.desc.Code, "invalid core url")
 	}
@@ -320,7 +381,7 @@ func (c *Client) get(ctx context.Context, actor adapter.Actor, path string, quer
 		req.Header.Set("X-Request-ID", id.String())
 	}
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := at.client.Do(req)
 	if err != nil {
 		return c.mapTransport(err)
 	}
@@ -342,11 +403,15 @@ func (c *Client) get(ctx context.Context, actor adapter.Actor, path string, quer
 }
 
 func (c *Client) resolve(path string, query url.Values) (string, error) {
+	return resolveURL(c.baseURL, path, query)
+}
+
+func resolveURL(base *url.URL, path string, query url.Values) (string, error) {
 	rel, err := url.Parse(path)
 	if err != nil {
 		return "", err
 	}
-	target := c.baseURL.ResolveReference(rel)
+	target := base.ResolveReference(rel)
 	if query != nil {
 		target.RawQuery = query.Encode()
 	}

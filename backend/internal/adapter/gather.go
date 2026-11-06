@@ -27,6 +27,15 @@ func Capable(backends []Backend, allow func(Capabilities) bool) []Backend {
 }
 
 func Gather[T any](ctx context.Context, backends []Backend, call Call[T]) Gathered[T] {
+	return GatherWithin(ctx, backends, func(backend Backend) time.Duration {
+		return backend.Descriptor().Timeout
+	}, call)
+}
+
+// GatherWithin is Gather with a per-backend timeout chosen by the caller. It
+// serves reads whose budget differs from the backend descriptor, such as a live
+// upstream read through the backend. A non-positive timeout falls back to 5s.
+func GatherWithin[T any](ctx context.Context, backends []Backend, timeoutOf func(Backend) time.Duration, call Call[T]) Gathered[T] {
 	type row struct {
 		code string
 		obs  Observation[T]
@@ -37,7 +46,7 @@ func Gather[T any](ctx context.Context, backends []Backend, call Call[T]) Gather
 	for i, backend := range backends {
 		i, backend := i, backend
 		group.Go(func() error {
-			timeout := backend.Descriptor().Timeout
+			timeout := timeoutOf(backend)
 			if timeout <= 0 {
 				timeout = 5 * time.Second
 			}

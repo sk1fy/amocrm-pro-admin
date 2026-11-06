@@ -98,12 +98,13 @@ type Capabilities struct {
 	Diagnostics, Commands, Settings, Stats           bool
 	ActivityDeliveries, Subscriptions                bool
 	DistributionRead, DistributionCommands           bool
+	CRMUsers                                         bool
 }
 
 // Names returns the enabled capability codes in a fixed order. The codes are
 // part of the v1 contract: adapters and the registry expose them verbatim.
 func (c Capabilities) Names() []string {
-	names := make([]string, 0, 11)
+	names := make([]string, 0, 14)
 	for _, item := range []struct {
 		name    string
 		enabled bool
@@ -121,6 +122,7 @@ func (c Capabilities) Names() []string {
 		{"subscriptions", c.Subscriptions},
 		{"distribution-read", c.DistributionRead},
 		{"distribution-commands", c.DistributionCommands},
+		{"crm-users", c.CRMUsers},
 	} {
 		if item.enabled {
 			names = append(names, item.name)

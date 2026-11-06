@@ -76,6 +76,10 @@ func cloneData(source Data) Data {
 		subscription.Capabilities = append([]string{}, subscription.Capabilities...)
 		out.Subscriptions[id] = subscription
 	}
+	out.CRMUsers = map[int64]adapter.CRMUsers{}
+	for id, v := range source.CRMUsers {
+		out.CRMUsers[id] = cloneCRMUsers(v)
+	}
 	out.ConnectionDetails = map[string]adapter.ConnectionDetail{}
 	for id, v := range source.ConnectionDetails {
 		out.ConnectionDetails[id] = v

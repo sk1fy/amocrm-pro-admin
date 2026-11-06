@@ -338,6 +338,7 @@ func demoData() Data {
 		Stats:           demoStats(now),
 		StatsAccounts:   demoStatsAccounts(),
 		Subscriptions:   demoSubscriptions(now),
+		CRMUsers:        demoCRMUsers(c1, c4),
 	}
 }
 
