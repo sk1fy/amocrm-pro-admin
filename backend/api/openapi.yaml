@@ -435,6 +435,43 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/v1/accounts/{account_id}/crm-users:
+    get:
+      tags: [Accounts]
+      operationId: getAccountCRMUsers
+      summary: amoCRM users of an account read through capable backends.
+      description: |
+        Each backend with the `crm-users` capability reads amoCRM through the
+        process that owns amoCRM traffic and keeps its own short snapshot.
+        Admin API neither caches nor polls. A failed amoCRM read is a
+        `data.state` with `users: null`; a failed backend is a source with
+        status `unavailable`. Empty `items` means no capable source knows the
+        account, never an account without users. Contact fields, groups and
+        rights are not part of the contract.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/AccountID'
+      responses:
+        '200':
+          description: CRM users observations; empty when no source knows the account.
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestID'
+            Cache-Control:
+              description: Always `no-store`.
+              schema: {type: string, enum: [no-store]}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CRMUsersList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/v1/accounts/{account_id}/history:
     get:
       tags: [Accounts]
@@ -1793,6 +1830,82 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AccountSubscription'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceStatus'
+    CRMUser:
+      type: object
+      additionalProperties: false
+      required: [id, name, is_active, is_admin]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        name: {type: string}
+        is_active: {type: boolean}
+        is_admin: {type: boolean}
+    CRMUsers:
+      type: object
+      additionalProperties: false
+      required: [state, connection, fresh_until, retry_after_seconds, users, total]
+      properties:
+        state:
+          type: string
+          description: |
+            `ok` carries the list. `no_authorized_connection`, `auth_error`,
+            `rate_limited`, `incomplete`, `network_error` and
+            `internal_error` mean the list is unknown. A value unknown to
+            the adapter is `unknown` with the original in `raw`.
+          enum: [ok, no_authorized_connection, auth_error, rate_limited, incomplete, network_error, internal_error, unknown]
+        raw: {type: string}
+        connection:
+          description: Installation the users were read through; null when none.
+          type: [object, 'null']
+          additionalProperties: false
+          required: [id, integration_id, integration_code]
+          properties:
+            id: {type: string}
+            integration_id: {type: string}
+            integration_code: {type: string}
+        fresh_until:
+          description: End of the owner's snapshot lifetime; null unless `ok`.
+          type: [string, 'null']
+          format: date-time
+        retry_after_seconds:
+          description: amoCRM retry hint for `rate_limited`.
+          type: [integer, 'null']
+          minimum: 1
+        users:
+          description: Null unless `ok`; an empty array is an account without users.
+          type: [array, 'null']
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/CRMUser'
+        total:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 1000
+    AccountCRMUsers:
+      type: object
+      additionalProperties: false
+      required: [source, observed_at, freshness]
+      properties:
+        source: {type: string}
+        observed_at: {type: string, format: date-time}
+        freshness:
+          type: string
+          enum: [fresh, stale, unavailable, unknown]
+        data:
+          $ref: '#/components/schemas/CRMUsers'
+        error:
+          $ref: '#/components/schemas/ObservationError'
+    CRMUsersList:
+      type: object
+      required: [items, sources]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountCRMUsers'
         sources:
           type: array
           items:
