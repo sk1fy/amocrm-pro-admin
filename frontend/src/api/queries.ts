@@ -23,6 +23,7 @@ import type {
   StatsAccount,
   StatsResponse,
   SubscriptionResponse,
+  CrmUsersResponse,
   ActivityEmployee,
   ActivityPanel,
   ActivitySettings,
@@ -48,6 +49,8 @@ export const keys = {
   accountJobs: (id: string, params: Record<string, string | number | undefined>) =>
     ['account-jobs', id, params] as const,
   subscription: (accountId: string) => ['account-subscription', accountId] as const,
+  // Not in the polling set: every read may reach amoCRM through Core.
+  crmUsers: (accountId: string) => ['account-crm-users', accountId] as const,
   connection: (backend: string, id: string) => ['connection', backend, id] as const,
   connectionJobs: (
     backend: string,
@@ -118,6 +121,10 @@ export function fetchAccountJobs(
 
 export function fetchSubscription(accountId: string): Promise<SubscriptionResponse> {
   return apiGet(`/api/v1/accounts/${encodeURIComponent(accountId)}/subscription`)
+}
+
+export function fetchCrmUsers(accountId: string): Promise<CrmUsersResponse> {
+  return apiGet(`/api/v1/accounts/${encodeURIComponent(accountId)}/crm-users`)
 }
 
 export function fetchConnection(backend: string, id: string): Promise<ConnectionCard> {

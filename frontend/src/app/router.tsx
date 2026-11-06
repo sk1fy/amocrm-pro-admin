@@ -18,6 +18,7 @@ import { AccountsPage } from '../features/accounts/AccountsPage'
 import { AccountLayout } from '../features/accounts/AccountLayout'
 import { AccountOverview } from '../features/accounts/AccountOverview'
 import { AccountWidgets } from '../features/accounts/AccountWidgets'
+import { AccountUsers } from '../features/accounts/AccountUsers'
 import { ConnectionPage } from '../features/connections/ConnectionPage'
 import { SettingsPage } from '../features/connections/SettingsPage'
 import { AccountOperationsPage } from '../features/operations/AccountOperationsPage'
@@ -132,6 +133,12 @@ const accountWidgetsRoute = createRoute({
   component: AccountWidgets,
 })
 
+const accountUsersRoute = createRoute({
+  getParentRoute: () => accountRoute,
+  path: 'users',
+  component: AccountUsers,
+})
+
 const connectionRoute = createRoute({
   getParentRoute: () => accountRoute,
   path: 'widgets/$backend/$connectionId',
@@ -231,6 +238,7 @@ const routeTree = rootRoute.addChildren([
     accountRoute.addChildren([
       accountIndexRoute,
       accountWidgetsRoute,
+      accountUsersRoute,
       connectionSettingsRoute,
       connectionRoute,
       accountOperationsRoute,

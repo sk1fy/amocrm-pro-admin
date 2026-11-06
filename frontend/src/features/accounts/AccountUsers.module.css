@@ -1,0 +1,5 @@
+.unknown {
+  background: var(--tone-unknown-bg);
+  border: 1px solid color-mix(in srgb, var(--tone-unknown) 20%, var(--color-surface));
+  color: var(--tone-unknown);
+}
