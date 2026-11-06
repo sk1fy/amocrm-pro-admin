@@ -153,7 +153,8 @@ volumes:
 networks:
   admin:
     driver: bridge
-  # Isolated bridge shared ONLY with the Core admin listener (core-admin:8083).
+  # Isolated bridge shared ONLY with the Core admin listeners: core-admin:8083
+  # (api) and core-admin-crm:8085 (worker, amoCRM users).
   adminlink:
     external: true
     name: amocrm-admin-link

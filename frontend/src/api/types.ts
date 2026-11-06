@@ -173,6 +173,30 @@ export type SubscriptionResponse = {
   sources: SourceStatus[]
 }
 
+export type CrmUser = {
+  id: number
+  name: string
+  is_active: boolean
+  is_admin: boolean
+}
+
+// users and total are null unless state is ok: null is an unknown list,
+// [] is an account without users.
+export type CrmUsers = {
+  state: string
+  raw?: string
+  connection: { id: string; integration_id: string; integration_code: string } | null
+  fresh_until: string | null
+  retry_after_seconds: number | null
+  users: CrmUser[] | null
+  total: number | null
+}
+
+export type CrmUsersResponse = {
+  items: Observation<CrmUsers>[]
+  sources: SourceStatus[]
+}
+
 export type ConnectionIdentity = {
   id: string
   integration_id: string

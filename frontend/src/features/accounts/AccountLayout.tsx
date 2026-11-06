@@ -20,6 +20,7 @@ export function AccountLayout() {
   const tabs = [
     { to: `/accounts/${accountId}`, label: 'Обзор', exact: true },
     { to: `/accounts/${accountId}/widgets`, label: 'Виджеты', exact: false },
+    { to: `/accounts/${accountId}/users`, label: 'Пользователи', exact: false },
     { to: `/accounts/${accountId}/operations`, label: 'Операции', exact: false },
     { to: `/accounts/${accountId}/history`, label: 'История', exact: false },
   ]

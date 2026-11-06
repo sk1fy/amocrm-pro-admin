@@ -64,6 +64,9 @@ frontend использует `GET /api/v1/me` только для скрыти�
 - Чтение подписки (`GET /api/v1/accounts/{id}/subscription`)
   использует `accounts:read`; отдельного права нет. Бекенд без capability
   `subscriptions` даёт `unknown`, а не ошибку доступа.
+- Список пользователей amoCRM (`GET /api/v1/accounts/{id}/crm-users`)
+  тоже использует `accounts:read`, включая `viewer`. В ответе только ID,
+  имя, активность и признак администратора, без контактов и прав.
 
 ## Actor в Core
 

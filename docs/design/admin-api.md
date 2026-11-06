@@ -50,6 +50,7 @@
 | `GET /api/v1/accounts?q=&product=&connection=&problem=&origin=&limit=&cursor=` | `accounts:read` | Поиск и список. `q` — ID, поддомен, домен или ссылка; Admin API нормализует и передаёт в Core уже id/domain/subdomain. Пост-фильтры (`product`, `connection`, `problem`, `origin`) применяются до пагинации ограниченным сканом (ADR-0007): `total` точен, пока скан завершён и все источники доступны, иначе `null` |
 | `GET /api/v1/accounts/{account_id}` | `accounts:read` | Карточка: домены, агрегат, `connections[]` (каждое — Observation) |
 | `GET /api/v1/accounts/{account_id}/subscription` | `accounts:read` | Блок подписки: `{items: Observation<Subscription>[], sources[]}`; `Subscription{plan,state,expires_at,capabilities}`; опрашиваются только бекенды с capability `subscriptions`; пустой `items` — «данные подписки недоступны» (`unknown`), не «нет подписки» и не ошибка ([ADR-0012](../adr/0012-subscriptions-source.md)) |
+| `GET /api/v1/accounts/{account_id}/crm-users` | `accounts:read` | Вкладка «Пользователи»: `{items: Observation<CRMUsers>[], sources[]}`; `CRMUsers{state, raw?, connection, fresh_until, retry_after_seconds, users, total}`, пользователь — `{id, name, is_active, is_admin}`. Опрашиваются только бекенды с capability `crm-users`, таймаут — `crm_timeout`. `users`/`total` равны `null`, кроме `state=ok`; `[]` — аккаунт без пользователей. `Cache-Control: no-store`, без кэша и polling ([ADR-0020](../adr/0020-account-crm-users.md)) |
 | `GET /api/v1/accounts/{account_id}/history?cursor=` | `audit:read` | Объединённая лента: Core audit по установкам аккаунта + admin audit |
 | `GET /api/v1/connections/{backend}/{connection_id}` | `connections:read` | Карточка подключения: `connection`, `authorization`, `webhook`, `grants[]`, `activity`, `recent_jobs[]`, `recent_audit[]` — каждое отдельным Observation |
 | `GET /api/v1/connections/{backend}/{connection_id}/jobs?status=&type=&cursor=` | `operations:read` | Jobs подключения |
@@ -196,6 +197,19 @@ labels запрещены — [ADR-0013](../adr/0013-admin-metrics.md).
 грантом, например `activity`. Отдельный `integration_id` означает UUID
 OAuth-интеграции; вместе с `backend` используется карточкой интеграции.
 Недоступный источник делает `total` неизвестным (`null`) и без фильтров.
+
+### Пользователи amoCRM (listener worker Core)
+
+`GET /admin/v1/accounts/{account_id}/crm-users` обслуживает не admin
+listener `api`, а listener worker `ADMIN_CRM_HTTP_ADDRESS`
+(`core-admin-crm:8085` в сети `amocrm-admin-link`): в amoCRM ходит
+только worker (ADR-0042 в `amocrm-pro`). Токен и `X-Admin-Actor` те же.
+Ответ `200` всегда содержит `state`, `connection` (установка, через
+которую читали), `fresh_until`, `retry_after_seconds`, `items` и `total`.
+Список есть только при `state=ok`. Снимок живёт в памяти worker 5 минут,
+не больше 1000 пользователей. Аккаунт без установок — `404`. В
+`backends.yaml` адрес задаётся `crm_base_url`, без него Core-адаптер
+возможность `crm-users` не объявляет.
 
 ## Команды
 

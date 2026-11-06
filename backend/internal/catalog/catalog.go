@@ -392,6 +392,8 @@ type yamlBackend struct {
 	TokenEnv    string    `yaml:"token_env"`
 	Timeout     string    `yaml:"timeout"`
 	HealthPath  string    `yaml:"health_path"`
+	CRMBaseURL  string    `yaml:"crm_base_url"`
+	CRMTimeout  string    `yaml:"crm_timeout"`
 	Products    []Product `yaml:"products"`
 }
 
@@ -408,6 +410,18 @@ func buildBackend(cfg yamlBackend, lookup func(string) (string, bool), newCore c
 			return Backend{}, fmt.Errorf("backend %s: timeout must be a positive duration", code)
 		}
 		timeout = parsed
+	}
+	var crmTimeout time.Duration
+	if strings.TrimSpace(cfg.CRMTimeout) != "" {
+		parsed, err := time.ParseDuration(cfg.CRMTimeout)
+		if err != nil || parsed <= 0 {
+			return Backend{}, fmt.Errorf("backend %s: crm_timeout must be a positive duration", code)
+		}
+		crmTimeout = parsed
+	}
+	crmBaseURL := strings.TrimSpace(cfg.CRMBaseURL)
+	if kind != adapter.KindCoreHTTP && (crmBaseURL != "" || crmTimeout != 0) {
+		return Backend{}, fmt.Errorf("backend %s: crm_base_url and crm_timeout are supported only by %s", code, adapter.KindCoreHTTP)
 	}
 	item := Backend{
 		Code:        code,
@@ -441,6 +455,8 @@ func buildBackend(cfg yamlBackend, lookup func(string) (string, bool), newCore c
 			Token:      token,
 			Timeout:    timeout,
 			HealthPath: item.HealthPath,
+			CRMBaseURL: crmBaseURL,
+			CRMTimeout: crmTimeout,
 		})
 		if err != nil {
 			return Backend{}, err

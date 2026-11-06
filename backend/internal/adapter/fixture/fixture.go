@@ -29,6 +29,7 @@ type Data struct {
 	Stats              map[string]adapter.StatsSnapshot
 	StatsAccounts      map[string][]adapter.StatsAccount
 	Subscriptions      map[int64]adapter.Subscription
+	CRMUsers           map[int64]adapter.CRMUsers
 	Health             adapter.Health
 }
 
@@ -62,6 +63,7 @@ func New(opts Options) *Adapter {
 	caps := adapter.Capabilities{
 		Accounts: true, Connections: true, Integrations: true, Jobs: true, Audit: true, Commands: true, Diagnostics: true,
 		DistributionRead: true, DistributionCommands: true, ActivityDeliveries: true, Settings: true, Stats: true, Subscriptions: true,
+		CRMUsers: true,
 	}
 	if opts.Caps != nil {
 		caps = *opts.Caps
@@ -122,6 +124,9 @@ func New(opts Options) *Adapter {
 	}
 	if data.Subscriptions == nil {
 		data.Subscriptions = map[int64]adapter.Subscription{}
+	}
+	if data.CRMUsers == nil {
+		data.CRMUsers = map[int64]adapter.CRMUsers{}
 	}
 	return &Adapter{
 		desc: adapter.Descriptor{

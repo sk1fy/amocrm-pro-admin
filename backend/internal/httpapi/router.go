@@ -128,6 +128,7 @@ func New(deps Dependencies) http.Handler {
 			r.Method(apicontract.Accounts.Method, apicontract.Accounts.Path, http.HandlerFunc(h.listAccounts))
 			r.Method(apicontract.Account.Method, apicontract.Account.Path, http.HandlerFunc(h.getAccount))
 			r.Method(apicontract.AccountSubscription.Method, apicontract.AccountSubscription.Path, http.HandlerFunc(h.getAccountSubscription))
+			r.Method(apicontract.AccountCRMUsers.Method, apicontract.AccountCRMUsers.Path, http.HandlerFunc(h.getAccountCRMUsers))
 		})
 		r.Group(func(r chi.Router) {
 			r.Use(rbac.Require(rbac.ConnectionsRead, deps.Employees))

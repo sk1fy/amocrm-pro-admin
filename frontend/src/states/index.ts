@@ -15,6 +15,8 @@ export type StateDomain =
   | 'integration'
   | 'grant'
   | 'subscription'
+  | 'crm_users'
+  | 'crm_user'
   | 'connection'
   | 'authorization'
   | 'verification'
@@ -90,6 +92,19 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     trial: { tone: 'attention', label: 'Пробный период' },
     expired: { tone: 'error', label: 'Истекла' },
     cancelled: { tone: 'off', label: 'Отменена' },
+  },
+  crm_users: {
+    ok: { tone: 'ok', label: 'Список получен' },
+    no_authorized_connection: { tone: 'action', label: 'Нет авторизованного подключения' },
+    auth_error: { tone: 'action', label: 'amoCRM отклонила доступ' },
+    rate_limited: { tone: 'attention', label: 'Лимит запросов amoCRM' },
+    incomplete: { tone: 'attention', label: 'Список не получен целиком' },
+    network_error: { tone: 'error', label: 'amoCRM не ответила' },
+    internal_error: { tone: 'error', label: 'Ошибка чтения' },
+  },
+  crm_user: {
+    active: { tone: 'ok', label: 'Активен' },
+    inactive: { tone: 'off', label: 'Неактивен' },
   },
   connection: {
     pending: { tone: 'attention', label: 'Ожидает авторизации' },

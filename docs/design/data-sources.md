@@ -29,7 +29,10 @@ Email и пароль вводит сотрудник; данные переда
 | Рекомендуемое действие по типу проблемы | вычисление UI по коду `problem` | — | ссылка `/accounts?problem=` на Обзоре | UI 2026-09-14 |
 | Подписка: `plan`, `state`, `expires_at`, `capabilities` | адаптер `SubscriptionBackend.GetSubscription`; fixture — `Subscriptions` для 91000001/91000002/91000003/91000005 (у 91000004/91000006 факта нет) | Core capability `subscriptions` не объявляет | `GET /api/v1/accounts/{account_id}/subscription` | есть; ADR-0012 |
 | Подписка: правило unknown и границы | опрашиваются только бекенды с capability `subscriptions`; пустой `items` — «данные подписки недоступны», не «нет подписки»; `Subscription` не `Grant` | — | там же | есть; ADR-0012 |
-| Пользователи/контакты аккаунта | надёжного источника нет | — | — | не в этапах 1–4 без нового источника |
+| Пользователи amoCRM: `id`, `name`, `is_active`, `is_admin` | amoCRM `GET /api/v4/users` через worker Core (`amocrm.Client.CRMUsers`), снимок в памяти worker 5 минут; не PostgreSQL; fixture — `CRMUsers` для 91000001 (`ok`) и 91000002 (`rate_limited`), остальные аккаунты — `no_authorized_connection` | `GET /admin/v1/accounts/{account_id}/crm-users` (listener worker `ADMIN_CRM_HTTP_ADDRESS`) | `GET /api/v1/accounts/{account_id}/crm-users` | новый; ADR-0020 |
+| Пользователи amoCRM: состояние чтения, подключение, `fresh_until`, `retry_after_seconds`, `total` | `internal/admincrm` Core: выбор активной установки с OAuth credentials, классификация отказа amoCRM | там же | там же | новый; ADR-0020 |
+| Email, телефоны, группы и права пользователей amoCRM | не читаются: персональные и избыточные данные без решения о доступе | — | — | вне объёма ADR-0020 |
+| Контакты установки (кто установил, телефон из формы) | надёжного источника нет: `installations.installed_by` Core не заполняет, контакты формы установки Core не хранит | — | — | нужен новый источник |
 
 ## Подключение (installation)
 

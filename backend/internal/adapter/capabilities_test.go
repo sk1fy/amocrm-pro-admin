@@ -9,7 +9,8 @@ func TestCapabilitiesNames(t *testing.T) {
 	all := Capabilities{
 		Accounts: true, Connections: true, Integrations: true, Jobs: true, Audit: true,
 		Diagnostics: true, Commands: true, Settings: true, Stats: true,
-		ActivityDeliveries: true, Subscriptions: true,
+		ActivityDeliveries: true, Subscriptions: true, DistributionRead: true,
+		DistributionCommands: true, CRMUsers: true,
 	}
 	tests := []struct {
 		name string
@@ -32,6 +33,11 @@ func TestCapabilitiesNames(t *testing.T) {
 			want: []string{"subscriptions"},
 		},
 		{
+			name: "crm users only",
+			caps: Capabilities{CRMUsers: true},
+			want: []string{"crm-users"},
+		},
+		{
 			name: "module without optional capabilities",
 			caps: Capabilities{Accounts: true, Connections: true, Integrations: true, Audit: true},
 			want: []string{"accounts", "connections", "integrations", "audit"},
@@ -42,6 +48,7 @@ func TestCapabilitiesNames(t *testing.T) {
 			want: []string{
 				"accounts", "connections", "integrations", "jobs", "audit", "diagnostics",
 				"commands", "settings", "stats", "activity-deliveries", "subscriptions",
+				"distribution-read", "distribution-commands", "crm-users",
 			},
 		},
 	}

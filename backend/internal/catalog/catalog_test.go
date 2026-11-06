@@ -71,6 +71,67 @@ backends:
 	}
 }
 
+func TestLoadCoreHTTPCRMUsersListener(t *testing.T) {
+	path := writeYAML(t, `
+version: 1
+backends:
+  - code: core
+    kind: core-http
+    base_url: http://core-admin:8083
+    token_env: CORE_ADMIN_API_TOKEN
+    crm_base_url: http://core-admin-crm:8085
+    crm_timeout: 8s
+`)
+	reg, err := Load(path, Options{
+		LookupEnv: func(string) (string, bool) { return "test-token", true },
+		CoreHTTP: func(opts core.Options) (*core.Client, error) {
+			if opts.CRMBaseURL != "http://core-admin-crm:8085" || opts.CRMTimeout != 8*time.Second {
+				t.Fatalf("opts=%+v", opts)
+			}
+			return core.New(opts)
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	users, ok := adapter.AsCRMUsers(reg.Backends()[0])
+	if !ok || users.CRMUsersTimeout() != 8*time.Second {
+		t.Fatalf("crm users ok=%t", ok)
+	}
+}
+
+func TestLoadRejectsInvalidCRMUsersConfig(t *testing.T) {
+	cases := map[string]string{
+		"bad duration": `
+  - code: core
+    kind: core-http
+    base_url: http://core-admin:8083
+    token_env: CORE_ADMIN_API_TOKEN
+    crm_base_url: http://core-admin-crm:8085
+    crm_timeout: soon`,
+		"above write timeout": `
+  - code: core
+    kind: core-http
+    base_url: http://core-admin:8083
+    token_env: CORE_ADMIN_API_TOKEN
+    crm_base_url: http://core-admin-crm:8085
+    crm_timeout: 14s`,
+		"fixture kind": `
+  - code: fixture
+    kind: fixture
+    crm_base_url: http://core-admin-crm:8085`,
+	}
+	for name, backend := range cases {
+		t.Run(name, func(t *testing.T) {
+			path := writeYAML(t, "version: 1\nbackends:"+backend+"\n")
+			_, err := Load(path, Options{LookupEnv: func(string) (string, bool) { return "test-token", true }})
+			if err == nil || !strings.Contains(err.Error(), "crm_") {
+				t.Fatalf("error=%v", err)
+			}
+		})
+	}
+}
+
 func TestLoadFixtureKind(t *testing.T) {
 	path := writeYAML(t, `
 version: 1

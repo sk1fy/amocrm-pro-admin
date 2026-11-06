@@ -28,6 +28,7 @@ var (
 	Accounts                 = Route{Method: http.MethodGet, Path: "/api/v1/accounts"}
 	Account                  = Route{Method: http.MethodGet, Path: "/api/v1/accounts/{account_id}"}
 	AccountSubscription      = Route{Method: http.MethodGet, Path: "/api/v1/accounts/{account_id}/subscription"}
+	AccountCRMUsers          = Route{Method: http.MethodGet, Path: "/api/v1/accounts/{account_id}/crm-users"}
 	AccountJobs              = Route{Method: http.MethodGet, Path: "/api/v1/accounts/{account_id}/jobs"}
 	AccountHistory           = Route{Method: http.MethodGet, Path: "/api/v1/accounts/{account_id}/history"}
 	Connection               = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}"}
@@ -73,6 +74,7 @@ var (
 		AccountHistory,
 		AccountJobs,
 		AccountSubscription,
+		AccountCRMUsers,
 		Connection,
 		ConnectionJobs,
 		ConnectionAudit,
