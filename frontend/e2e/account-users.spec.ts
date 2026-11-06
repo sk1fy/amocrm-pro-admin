@@ -17,7 +17,13 @@ function usersSection(page: Page) {
     .filter({ has: page.getByRole('heading', { name: 'Пользователи amoCRM' }) })
 }
 
-test('users tab lists amoCRM users read through the connection', async ({ page }) => {
+test('users tab shows the snapshot and keeps its rows after expiry', async ({ page }) => {
+  await page.clock.install()
+  const usersRequests: string[] = []
+  page.on('request', (request) => {
+    const { pathname } = new URL(request.url())
+    if (pathname.endsWith('/crm-users')) usersRequests.push(pathname)
+  })
   await login(page, '/accounts/91000001')
   await page.getByRole('navigation', { name: 'Вкладки аккаунта' }).getByText('Пользователи').click()
   await expect(page).toHaveURL(/\/accounts\/91000001\/users$/)
@@ -38,6 +44,12 @@ test('users tab lists amoCRM users read through the connection', async ({ page }
     ),
   ).toBeVisible()
   await expect(section.getByText(/@/)).toHaveCount(0)
+
+  await expect(section.getByText('Актуально')).toBeVisible()
+  await page.clock.fastForward('05:01')
+  await expect(section.getByText('Данные устарели')).toBeVisible()
+  await expect(admin).toBeVisible()
+  expect(usersRequests).toEqual(['/api/v1/accounts/91000001/crm-users'])
 })
 
 test('rate limit keeps the list unknown and shows the retry hint', async ({ page }) => {
