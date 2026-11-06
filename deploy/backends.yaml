@@ -19,6 +19,10 @@ backends:
     token_env: CORE_ADMIN_API_TOKEN
     timeout: 5s
     health_path: /admin/v1/backend
+    # amoCRM users are read by the Core worker, not by core-admin: only the
+    # worker owns amoCRM traffic. Same token, alias on the same network.
+    crm_base_url: http://core-admin-crm:8085
+    crm_timeout: 10s
     products:
       - code: lead-status
         display_name: "Статусы сделок"
