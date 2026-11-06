@@ -101,6 +101,20 @@ for (const count of [0, null, undefined]) {
       ).toHaveCount(0)
     }
     await expect(page.getByText(/Последняя успешная сверка регистрации/)).toBeVisible()
+    // ADR-0021: one header with the account context; fresh data carries no
+    // freshness badge or source caption, the source stays in the tooltip.
+    const header = page.locator('header').filter({
+      has: page.getByRole('heading', { level: 1, name: 'Подключение fixture-widget', exact: true }),
+    })
+    await expect(
+      header.getByRole('link', { name: 'fixture.amocrm.test', exact: true }),
+    ).toBeVisible()
+    await expect(header.getByText('тестовые данные', { exact: true })).toBeVisible()
+    await expect(page.getByText('Актуально', { exact: true })).toHaveCount(0)
+    await expect(page.getByText(/источник: core/)).toHaveCount(0)
+    await expect(
+      page.locator('strong[title*="источник: core"]').filter({ hasText: 'Webhook' }),
+    ).toHaveCount(1)
     expect(mutations).toBe(0)
   })
 }

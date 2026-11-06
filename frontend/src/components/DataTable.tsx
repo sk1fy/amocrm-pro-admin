@@ -1,5 +1,4 @@
 import { Fragment, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { formatNull } from '../lib/format'
 import styles from './DataTable.module.css'
 
 export type DataTableColumn<T> = {
@@ -27,7 +26,12 @@ export type DataTablePagerProps = {
   onReset?: () => void
   onPrev?: () => void
   resetDisabled?: boolean
+  /** Page size control lives in the pager, not in the filters (ADR-0021). */
+  limit?: number
+  onLimitChange?: (limit: number) => void
 }
+
+const pageSizes = [25, 50, 100]
 
 type Props<T> = {
   columns: DataTableColumn<T>[]
@@ -39,6 +43,8 @@ type Props<T> = {
   onPrev?: () => void
   resetDisabled?: boolean
   total?: number | null
+  limit?: number
+  onLimitChange?: (limit: number) => void
   renderDetail?: (row: T) => ReactNode
   detailLabel?: string
   onRowClick?: (row: T) => void
@@ -64,11 +70,12 @@ function compareSortValues(
 }
 
 export function pagerRangeLabel(rowCount: number, total?: number | null): string {
-  const range = `1–${rowCount}`
-  if (total === undefined) {
+  const range = `Показано ${rowCount}`
+  // An unknown total is not worth a dash in the pager: say only what is shown.
+  if (total === undefined || total === null) {
     return range
   }
-  return `${range} из ${formatNull(total)}`
+  return `${range} из ${total}`
 }
 
 export function DataTablePager({
@@ -79,24 +86,44 @@ export function DataTablePager({
   onReset,
   onPrev,
   resetDisabled,
+  limit,
+  onLimitChange,
 }: DataTablePagerProps) {
-  if (!onNext && !onReset && !onPrev) {
+  if (!onNext && !onReset && !onPrev && !onLimitChange) {
     return null
   }
+  // A single page needs no navigation: show buttons only when there is
+  // somewhere to go (ADR-0021). Callers pass resetDisabled={!cursor}.
+  const navigable = Boolean(nextCursor) || resetDisabled === false || Boolean(onPrev)
   return (
     <div className={styles.pager}>
       <span className={styles.range}>{pagerRangeLabel(rowCount, total)}</span>
-      {onReset ? (
+      {onLimitChange ? (
+        <label className={styles.limit}>
+          <span>На странице</span>
+          <select
+            value={String(limit ?? pageSizes[0])}
+            onChange={(event) => onLimitChange(Number(event.target.value))}
+          >
+            {pageSizes.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      {navigable && onReset ? (
         <button type="button" onClick={onReset} disabled={resetDisabled}>
           В начало
         </button>
       ) : null}
-      {onPrev ? (
+      {navigable && onPrev ? (
         <button type="button" onClick={onPrev}>
           Назад
         </button>
       ) : null}
-      {onNext ? (
+      {navigable && onNext ? (
         <button type="button" onClick={onNext} disabled={!nextCursor}>
           Дальше
         </button>
@@ -115,6 +142,8 @@ export function DataTable<T>({
   onPrev,
   resetDisabled,
   total,
+  limit,
+  onLimitChange,
   renderDetail,
   detailLabel = 'Подробнее',
   onRowClick,
@@ -300,6 +329,8 @@ export function DataTable<T>({
         onReset={onReset}
         onPrev={onPrev}
         resetDisabled={resetDisabled}
+        limit={limit}
+        onLimitChange={onLimitChange}
       />
     </div>
   )

@@ -1,0 +1,74 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3) var(--space-5);
+  min-width: 0;
+}
+
+.toolbar > form {
+  flex: 1 1 36rem;
+  min-width: 0;
+}
+
+.account {
+  display: grid;
+  gap: 2px;
+  min-width: 12rem;
+}
+
+.domains {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.domain {
+  font-weight: 700;
+}
+
+.accountMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.accountId {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.connList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 14rem;
+  max-width: 34rem;
+}
+
+.conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.conn:hover {
+  border-color: #c9cdc5;
+  color: var(--color-text);
+}
+
+.conn > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

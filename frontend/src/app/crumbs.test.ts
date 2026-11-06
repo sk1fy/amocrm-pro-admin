@@ -25,4 +25,28 @@ describe('breadcrumbsFor', () => {
     expect(crumbs[1]?.href).toBe('/system')
     expect(crumbs[2]?.href).toBeUndefined()
   })
+
+  it('names connections and integrations instead of backend codes and UUIDs', () => {
+    const connection = breadcrumbsFor('/accounts/91000001/widgets/core/f1a00000-0000-4000-8000-1')
+    expect(connection.map((crumb) => crumb.label)).toEqual([
+      'Обзор',
+      'Аккаунты',
+      '91000001',
+      'Виджеты',
+      'Подключение',
+    ])
+    const settings = breadcrumbsFor(
+      '/accounts/91000001/widgets/core/f1a00000-0000-4000-8000-1/settings',
+    )
+    expect(settings[4]).toEqual({
+      label: 'Подключение',
+      href: '/accounts/91000001/widgets/core/f1a00000-0000-4000-8000-1',
+      mono: false,
+    })
+    expect(breadcrumbsFor('/widgets/core/abc').map((crumb) => crumb.label)).toEqual([
+      'Обзор',
+      'Виджеты',
+      'Интеграция',
+    ])
+  })
 })

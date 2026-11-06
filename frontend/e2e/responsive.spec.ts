@@ -126,6 +126,9 @@ test('account origin is real by default, explicit filters survive reload and his
   await expect(
     page.getByRole('button', { name: 'Показать все аккаунты, включая тестовые' }),
   ).toBeVisible()
+  // Origin is a secondary filter under «Ещё фильтры» (ADR-0021).
+  await expect(page.getByLabel('Происхождение')).toBeHidden()
+  await page.getByText('Ещё фильтры', { exact: true }).click()
   await page.getByLabel('Происхождение').selectOption('fixture')
   await expect(page).toHaveURL(/origin=fixture/)
   await expect(page.getByRole('link', { name: '91000001', exact: true })).toBeVisible()

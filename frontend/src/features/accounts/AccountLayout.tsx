@@ -5,10 +5,13 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchAccount, keys } from '../../api/queries'
 import type { AccountCard } from '../../api/types'
 import { ErrorState } from '../../components/ErrorState'
+import { OriginTag } from '../../components/OriginTag'
+import { PageHeader } from '../../components/PageHeader'
 import { SourcesBanner } from '../../components/SourcesBanner'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
-import { formatNull } from '../../lib/format'
+import { connectionsCountLabel } from './accountText'
+import styles from './AccountLayout.module.css'
 
 export function AccountLayout() {
   const { accountId } = useRouteParams<{ accountId: string }>()
@@ -24,66 +27,67 @@ export function AccountLayout() {
     { to: `/accounts/${accountId}/operations`, label: 'Операции', exact: false },
     { to: `/accounts/${accountId}/history`, label: 'История', exact: false },
   ]
+  // The connection card renders its own header with the account as context
+  // (ADR-0021): one header per page.
   const connectionPage = /\/widgets\/[^/]+\/[^/]+$/.test(pathname)
+  if (connectionPage) {
+    return (
+      <div className={page.page}>
+        <Outlet />
+      </div>
+    )
+  }
 
+  const data = account.data
   return (
     <div className={page.page}>
-      {!connectionPage ? (
-        <RefreshStatus
-          updatedAt={account.dataUpdatedAt}
-          fetching={account.isFetching}
-          failed={Boolean(account.error)}
-          onRefresh={() => void account.refetch({ cancelRefetch: false })}
-        />
-      ) : null}
       {account.error ? (
         <ErrorState error={account.error} onRetry={() => void account.refetch()} />
       ) : null}
-      {account.data ? (
+      {data ? (
         <>
-          <header className={page.stack}>
-            <p>
-              <Link to="/accounts">Аккаунты</Link>
-            </p>
-            <h1>{account.data.domains[0] ?? `Аккаунт ${account.data.account_id}`}</h1>
-            <div className={page.row}>
-              <span className={page.muted}>Аккаунт {account.data.account_id}</span>
-              <span>подключений: {formatNull(account.data.connections.length)}</span>
-              <StatusBadge domain="account" state={account.data.state} />
-              <StatusBadge domain="origin" state={account.data.origin} />
-            </div>
-            {account.data.state === 'ok' && !accountLooksFine(account.data) ? (
-              <p className={page.muted}>
-                Нельзя считать аккаунт исправным: есть устаревшие данные, недоступный источник или
-                непроверенная авторизация. Смотрите разбивку по подключениям.
-              </p>
-            ) : null}
-            {!connectionPage && account.data.problems.length > 0 ? (
-              <div className={page.row}>
-                {account.data.problems.map((problem) => (
-                  <StatusBadge key={problem} domain="problem" state={problem} />
-                ))}
-              </div>
-            ) : null}
-            <SourcesBanner sources={account.data.sources} />
-          </header>
-          {connectionPage ? null : (
-            <nav className={page.tabs} aria-label="Вкладки аккаунта">
-              {tabs.map((tab) => {
-                const active = tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)
-                return (
-                  <Link
-                    key={tab.to}
-                    to={tab.to}
-                    className={active ? `${page.tab} ${page.tabActive}` : page.tab}
-                    aria-current={active ? 'page' : undefined}
-                  >
-                    {tab.label}
-                  </Link>
-                )
-              })}
-            </nav>
-          )}
+          <PageHeader
+            title={data.domains[0] ?? `Аккаунт ${data.account_id}`}
+            meta={
+              <>
+                <span>ID {data.account_id}</span>
+                {data.domains.length > 1 ? (
+                  <span title={data.domains.join(', ')}>
+                    ещё доменов: {data.domains.length - 1}
+                  </span>
+                ) : null}
+                <span>{connectionsCountLabel(data.connections.length)}</span>
+                {data.state === 'ok' ? null : <StatusBadge domain="account" state={data.state} />}
+                <OriginTag origin={data.origin} />
+              </>
+            }
+            refresh={
+              <RefreshStatus
+                updatedAt={account.dataUpdatedAt}
+                fetching={account.isFetching}
+                failed={Boolean(account.error)}
+                onRefresh={() => void account.refetch({ cancelRefetch: false })}
+                sources={data.sources}
+              />
+            }
+          />
+          <AccountNotes account={data} />
+          <SourcesBanner sources={data.sources} />
+          <nav className={page.tabs} aria-label="Вкладки аккаунта">
+            {tabs.map((tab) => {
+              const active = tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)
+              return (
+                <Link
+                  key={tab.to}
+                  to={tab.to}
+                  className={active ? `${page.tab} ${page.tabActive}` : page.tab}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  {tab.label}
+                </Link>
+              )
+            })}
+          </nav>
         </>
       ) : account.isPending ? (
         <div className={page.skeleton} />
@@ -91,6 +95,29 @@ export function AccountLayout() {
       <Outlet />
     </div>
   )
+}
+
+/** Why the account needs attention, in one line instead of a row of badges. */
+function AccountNotes({ account }: { account: AccountCard }) {
+  if (account.problems.length > 0) {
+    return (
+      <div className={styles.notes} role="note">
+        <span className={styles.notesLabel}>Требует внимания:</span>
+        {account.problems.map((problem) => (
+          <StatusBadge key={problem} domain="problem" state={problem} />
+        ))}
+      </div>
+    )
+  }
+  if (account.state === 'ok' && !accountLooksFine(account)) {
+    return (
+      <p className={styles.hint}>
+        Нельзя считать аккаунт исправным: есть устаревшие данные, недоступный источник или
+        непроверенная авторизация. Смотрите разбивку по подключениям.
+      </p>
+    )
+  }
+  return null
 }
 
 function accountLooksFine(account: AccountCard): boolean {

@@ -136,10 +136,10 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     internal_error: { tone: 'error', label: 'Внутренняя ошибка проверки' },
   },
   webhook: {
-    pending: { tone: 'attention', label: 'Ожидает регистрации (reconcile)' },
+    pending: { tone: 'attention', label: 'Ожидает регистрации' },
     active: { tone: 'ok', label: 'Зарегистрирована' },
     disabled: { tone: 'off', label: 'Отключена' },
-    unregistered: { tone: 'off', label: 'Снята (uninstall)' },
+    unregistered: { tone: 'off', label: 'Снята при удалении' },
     error: { tone: 'error', label: 'Ошибка регистрации' },
   },
   pilot: {

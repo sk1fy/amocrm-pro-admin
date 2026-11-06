@@ -13,6 +13,7 @@ import { DataTable } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { Observation } from '../../components/Observation'
+import { PageHeader } from '../../components/PageHeader'
 import { RefreshStatus } from '../../components/RefreshStatus'
 import {
   SourcesBanner,
@@ -63,7 +64,11 @@ function UsersTable({ users }: { users: CrmUser[] }) {
           id: 'active',
           header: 'Статус',
           cell: (user) => (
-            <StatusBadge domain="crm_user" state={user.is_active ? 'active' : 'inactive'} />
+            <StatusBadge
+              domain="crm_user"
+              state={user.is_active ? 'active' : 'inactive'}
+              variant="text"
+            />
           ),
           sortValue: (user) => (user.is_active ? 0 : 1),
         },
@@ -99,6 +104,7 @@ function CrmUsersCard({
           state={data.state}
           raw={data.raw}
           testId="crm-users-state"
+          calm
         />
         {known ? <span>Всего: {data.total ?? data.users?.length}</span> : null}
         {known && data.fresh_until ? (
@@ -228,16 +234,19 @@ export function AccountUsers() {
   })
   return (
     <section className={page.stack}>
-      <h2>Пользователи amoCRM</h2>
-      <p className={page.muted}>
-        Читаются из amoCRM через Core при открытии вкладки и по кнопке «Обновить». Email, телефоны,
-        группы и права не показываются.
-      </p>
-      <RefreshStatus
-        updatedAt={users.dataUpdatedAt}
-        fetching={users.isFetching}
-        failed={Boolean(users.error) && Boolean(users.data)}
-        onRefresh={() => void users.refetch({ cancelRefetch: false })}
+      <PageHeader
+        as="h2"
+        title="Пользователи amoCRM"
+        description="Читаются из amoCRM при открытии вкладки и по кнопке обновления. Email, телефоны, группы и права не показываются."
+        refresh={
+          <RefreshStatus
+            updatedAt={users.dataUpdatedAt}
+            fetching={users.isFetching}
+            failed={Boolean(users.error) && Boolean(users.data)}
+            onRefresh={() => void users.refetch({ cancelRefetch: false })}
+            sources={users.data?.sources}
+          />
+        }
       />
       {users.isPending ? (
         <div className={page.skeleton} />

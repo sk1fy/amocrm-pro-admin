@@ -1,13 +1,10 @@
-import { ProductGrants } from '../../components/ProductGrants'
-import { DistributionSection } from './DistributionSection'
-import { lookupState } from '../../states'
-import { RefreshStatus } from '../../components/RefreshStatus'
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useRouteParams, useRouteSearch } from '../../app/hooks'
 import { fetchAccount, fetchBackends, fetchConnection, keys } from '../../api/queries'
 import type {
+  AccountCard,
   AccountConnectionCard,
   ConnectionCard,
   CoreAudit,
@@ -22,7 +19,11 @@ import { DetailDrawer } from '../../components/DetailDrawer'
 import { ErrorState } from '../../components/ErrorState'
 import { IncidentBanner } from '../../components/IncidentBanner'
 import { Observation } from '../../components/Observation'
+import { OriginTag } from '../../components/OriginTag'
+import { PageHeader } from '../../components/PageHeader'
 import { PageSkeleton } from '../../components/PageSkeleton'
+import { ProductGrants } from '../../components/ProductGrants'
+import { RefreshStatus } from '../../components/RefreshStatus'
 import { StatusBadge } from '../../components/StatusBadge'
 import { TechnicalDetails } from '../../components/TechnicalDetails'
 import page from '../../components/page.module.css'
@@ -39,14 +40,6 @@ import {
   type ConnectionHealth,
   type ConnectionSection,
 } from '../../lib/connectionHealth'
-import { observationDependsOnIncident } from '../../lib/incidents'
-import {
-  actorLabel,
-  auditLabel,
-  groupWebhookEvents,
-  jobLabel,
-  webhookEventLabel,
-} from '../../lib/labels'
 import {
   formatAttempts,
   formatDateLong,
@@ -57,10 +50,20 @@ import {
   formatTime,
   sameInstant,
 } from '../../lib/format'
+import { observationDependsOnIncident } from '../../lib/incidents'
+import {
+  actorLabel,
+  auditLabel,
+  groupWebhookEvents,
+  jobLabel,
+  webhookEventLabel,
+} from '../../lib/labels'
 import { exploreURL } from '../../lib/observability'
+import { lookupState } from '../../states'
 import { CommandAction } from '../operations/CommandAction'
 import { connectionCommand } from '../operations/commands'
 import { RetryDelivery } from '../operations/RetryActions'
+import { DistributionSection } from './DistributionSection'
 import { resolveConnectionModule } from './modules/registry'
 import styles from './connection.module.css'
 
@@ -75,6 +78,12 @@ const tabs: Array<{ id: ConnectionSection; label: string }> = [
   { id: 'tech', label: 'Технические данные' },
 ]
 
+const connectionRoute = '/accounts/$accountId/widgets/$backend/$connectionId'
+
+function sectionLabel(section: ConnectionSection): string {
+  return tabs.find((tab) => tab.id === section)?.label ?? section
+}
+
 export function ConnectionPage() {
   const { accountId, backend, connectionId } = useRouteParams<{
     accountId: string
@@ -86,23 +95,65 @@ export function ConnectionPage() {
     queryKey: keys.connection(backend, connectionId),
     queryFn: () => fetchConnection(backend, connectionId),
   })
+  const account = useQuery({
+    queryKey: keys.account(accountId),
+    queryFn: () => fetchAccount(accountId),
+  })
   const backends = useQuery({ queryKey: keys.backends, queryFn: fetchBackends })
+  const [resultSlot, setResultSlot] = useState<HTMLDivElement | null>(null)
   const settingsAvailable =
     resolveConnectionModule(backend, backends.data?.items).kind === 'activity'
 
   if (query.isPending) {
     return <PageSkeleton label="Загрузка подключения…" />
   }
-  if (query.error && !query.data) {
-    return <ErrorState error={query.error} onRetry={() => void query.refetch()} />
-  }
   const card = query.data
-  if (!card) {
-    return null
+  const identity = card?.connection.data
+  const domain = identity?.account_domain ?? account.data?.domains[0]
+  const health = card ? computeConnectionHealth(card) : null
+  const header = (
+    <PageHeader
+      title={card ? `Подключение ${identity?.integration_code ?? 'без названия'}` : 'Подключение'}
+      meta={
+        <>
+          <Link to="/accounts/$accountId" params={{ accountId }}>
+            {domain ?? `Аккаунт ${accountId}`}
+          </Link>
+          {domain ? <span>ID {accountId}</span> : null}
+          {health ? <StatusBadge domain="connection_health" state={health.state} calm /> : null}
+          <OriginTag origin={identity?.origin ?? account.data?.origin} />
+        </>
+      }
+      actions={
+        <ConnectionSwitcher
+          accountId={accountId}
+          backend={backend}
+          connectionId={connectionId}
+          account={account.data}
+        />
+      }
+      refresh={
+        <RefreshStatus
+          updatedAt={query.dataUpdatedAt}
+          fetching={query.isFetching}
+          failed={Boolean(query.error)}
+          onRefresh={() => void query.refetch({ cancelRefetch: false })}
+        />
+      }
+    />
+  )
+  if (!card || !health) {
+    return (
+      <div className={page.page}>
+        {header}
+        {query.error ? (
+          <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+        ) : null}
+      </div>
+    )
   }
-  const health = computeConnectionHealth(card)
+
   const section = search.section ?? health.defaultSection
-  const identity = card.connection.data
   const refetch = () => void query.refetch()
   const hide = (source: string) => source === health.pageSource
   const dependent = (observation: ConnectionCard['activity']) =>
@@ -115,21 +166,7 @@ export function ConnectionPage() {
 
   return (
     <div className={page.page}>
-      <header className={page.header}>
-        <div className={page.heading}>
-          <h2>Подключение {identity?.integration_code ?? 'без названия'}</h2>
-          <Link to="/accounts/$accountId" params={{ accountId }}>
-            К обзору аккаунта
-          </Link>
-        </div>
-        <ConnectionSwitcher accountId={accountId} backend={backend} connectionId={connectionId} />
-      </header>
-      <RefreshStatus
-        updatedAt={query.dataUpdatedAt}
-        fetching={query.isFetching}
-        failed={Boolean(query.error)}
-        onRefresh={() => void query.refetch({ cancelRefetch: false })}
-      />
+      {header}
       <HealthSummary
         card={card}
         health={health}
@@ -140,21 +177,25 @@ export function ConnectionPage() {
       {health.coreAuthIncident ? (
         <IncidentBanner incident={health.coreAuthIncident} onRetry={refetch} />
       ) : null}
-      <ConnectionToolbar
-        accountId={accountId}
-        backend={backend}
-        connectionId={connectionId}
-        card={card}
-        settingsAvailable={settingsAvailable}
-        onInspect={refetch}
-      />
+      <div className={styles.commands}>
+        <ConnectionActions
+          accountId={accountId}
+          backend={backend}
+          connectionId={connectionId}
+          card={card}
+          settingsAvailable={settingsAvailable}
+          onInspect={refetch}
+          resultTarget={resultSlot}
+        />
+        <div ref={setResultSlot} className={styles.results} />
+      </div>
       <nav className={page.tabs} aria-label="Разделы подключения">
         {tabs.map((tab) => {
           const active = section === tab.id
           return (
             <Link
               key={tab.id}
-              to="/accounts/$accountId/widgets/$backend/$connectionId"
+              to={connectionRoute}
               params={{ accountId, backend, connectionId }}
               search={{ section: tab.id }}
               className={active ? `${page.tab} ${page.tabActive}` : page.tab}
@@ -174,25 +215,9 @@ export function ConnectionPage() {
           onRetry={refetch}
         />
       ) : null}
-      {section === 'auth' ? (
-        <AuthSection
-          accountId={accountId}
-          backend={backend}
-          connectionId={connectionId}
-          card={card}
-          hideSource={hide}
-          onRetry={refetch}
-        />
-      ) : null}
+      {section === 'auth' ? <AuthSection card={card} hideSource={hide} onRetry={refetch} /> : null}
       {section === 'webhook' ? (
-        <WebhookSection
-          accountId={accountId}
-          backend={backend}
-          connectionId={connectionId}
-          card={card}
-          hideSource={hide}
-          onRetry={refetch}
-        />
+        <WebhookSection card={card} hideSource={hide} onRetry={refetch} />
       ) : null}
       {section === 'activity' ? (
         <ActivitySection
@@ -205,7 +230,6 @@ export function ConnectionPage() {
           grafana={backends.data?.observability.grafana_base_url}
           loki={backends.data?.observability.loki_base_url}
           onRetry={refetch}
-          settingsAvailable={settingsAvailable}
         />
       ) : null}
       {section === 'distribution' ? (
@@ -231,6 +255,10 @@ export function ConnectionPage() {
   )
 }
 
+/**
+ * What needs attention and where to fix it, then the state of each part as
+ * quiet text. The overall state is in the page header.
+ */
 function HealthSummary({
   card,
   health,
@@ -239,26 +267,43 @@ function HealthSummary({
   connectionId,
 }: {
   card: ConnectionCard
-  health: ReturnType<typeof computeConnectionHealth>
+  health: ConnectionHealth
   accountId: string
   backend: string
   connectionId: string
 }) {
-  const items: Array<{ section: ConnectionSection; label: string; node: ReactNode }> = [
+  const params = { accountId, backend, connectionId }
+  const checkAt =
+    card.authorization_check?.data?.observed_at ?? card.authorization_check?.observed_at
+  const facets: Array<{ section: ConnectionSection; label: string; node: ReactNode }> = [
     {
       section: 'auth',
       label: 'Авторизация',
-      node: <StatusBadge domain="authorization" state={card.authorization.data?.state} />,
+      node: (
+        <StatusBadge
+          domain="authorization"
+          state={card.authorization.data?.state}
+          raw={card.authorization.data?.raw}
+          variant="text"
+        />
+      ),
     },
     {
       section: 'webhook',
       label: 'Webhook',
-      node: <StatusBadge domain="webhook" state={card.webhook.data?.status} />,
+      node: (
+        <StatusBadge
+          domain="webhook"
+          state={card.webhook.data?.status}
+          raw={card.webhook.data?.raw}
+          variant="text"
+        />
+      ),
     },
     {
       section: 'activity',
       label: 'Activity',
-      node: <StatusBadge domain="pilot" state={parsePilot(card)} />,
+      node: <StatusBadge domain="pilot" state={parsePilot(card)} variant="text" />,
     },
     {
       section: 'activity',
@@ -268,75 +313,74 @@ function HealthSummary({
           domain="sync"
           state={card.activity_sync.data?.state}
           raw={card.activity_sync.data?.raw}
+          variant="text"
         />
       ),
     },
+    {
+      section: 'auth',
+      label: 'Проверка amoCRM',
+      node: (
+        <time dateTime={checkAt} title={formatTime(checkAt)}>
+          {formatRelativeTime(checkAt)}
+        </time>
+      ),
+    },
   ]
-  const checkAt =
-    card.authorization_check?.data?.observed_at ?? card.authorization_check?.observed_at
   return (
-    <section className={styles.summary}>
-      <div className={page.row}>
-        <StatusBadge domain="connection_health" state={health.state} />
-        <StatusBadge
-          domain="connection"
-          state={card.connection.data?.state}
-          raw={card.connection.data?.raw}
-        />
-        <span className={page.muted}>источник: {health.pageSource}</span>
-      </div>
+    <section className={styles.summary} aria-label="Состояние подключения">
       {health.problems.length > 0 ? (
         <div className={styles.problemCenter}>
-          <h3>Требуют внимания — {health.problems.length}</h3>
+          <h2 className={styles.summaryTitle}>Требует внимания</h2>
           <ul className={styles.problems}>
             {health.problems.map((problem) => (
               <li key={problem.id}>
                 <Link
-                  to="/accounts/$accountId/widgets/$backend/$connectionId"
-                  params={{ accountId, backend, connectionId }}
+                  to={connectionRoute}
+                  params={params}
                   search={{ section: problem.section }}
+                  className={styles.problem}
                 >
                   <span>{problem.title}</span>
-                  <span className={styles.problemAction}>Подробнее →</span>
+                  <span className={styles.problemTarget}>{sectionLabel(problem.section)} →</span>
                 </Link>
               </li>
             ))}
           </ul>
         </div>
-      ) : health.reasons.length > 0 ? (
-        <p className={page.muted}>{health.reasons.join(' · ')}</p>
       ) : (
-        <p className={page.muted}>Активных проблем нет.</p>
+        <p className={styles.noProblems}>Активных проблем нет.</p>
       )}
-      <nav className={styles.summaryNav} aria-label="Сводка здоровья">
-        {items.map((item) => (
+      <nav className={styles.facets} aria-label="Сводка здоровья">
+        {facets.map((facet) => (
           <Link
-            key={`${item.section}-${item.label}`}
-            to="/accounts/$accountId/widgets/$backend/$connectionId"
-            params={{ accountId, backend, connectionId }}
-            search={{ section: item.section }}
+            key={facet.label}
+            to={connectionRoute}
+            params={params}
+            search={{ section: facet.section }}
+            className={styles.facet}
           >
-            {item.label}: {item.node}
+            <span className={styles.facetLabel}>{facet.label}</span>
+            {facet.node}
           </Link>
         ))}
-        <p className={styles.secondary}>
-          Последняя проверка amoCRM:{' '}
-          <time dateTime={checkAt} title={formatTime(checkAt)}>
-            {formatRelativeTime(checkAt)}
-          </time>
-        </p>
       </nav>
     </section>
   )
 }
 
-function ConnectionToolbar({
+/**
+ * One action bar: the check first, then the state change and webhook repair
+ * that fit the current state; rare and destructive commands under «Ещё».
+ */
+function ConnectionActions({
   accountId,
   backend,
   connectionId,
   card,
   settingsAvailable,
   onInspect,
+  resultTarget,
 }: {
   accountId: string
   backend: string
@@ -344,82 +388,86 @@ function ConnectionToolbar({
   card: ConnectionCard
   settingsAvailable: boolean
   onInspect: () => void
+  resultTarget: Element | null
 }) {
   const state = card.connection.data?.state
   const webhook = card.webhook.data
   const showEnable = state === 'disabled'
   const showDisable = Boolean(state && state !== 'disabled' && state !== 'uninstalled')
   const showReconcile = webhook?.status !== 'active' || webhook?.confirmed_destinations === 0
-  const cmd = (command: string, label?: string) => {
-    const spec = connectionCommand(backend, connectionId, command, accountId)
-    return label ? { ...spec, label } : spec
-  }
+  const cmd = (command: string) => connectionCommand(backend, connectionId, command, accountId)
   return (
-    <div className={styles.toolbar}>
-      <div className={styles.group}>
-        <p className={styles.groupLabel}>Диагностика</p>
+    <div className={styles.actionBar} role="group" aria-label="Действия с подключением">
+      <CommandAction
+        spec={cmd('check')}
+        layout="inline"
+        emphasis="primary"
+        onInspect={onInspect}
+        resultTarget={resultTarget}
+      />
+      {showEnable ? (
         <CommandAction
-          spec={cmd('check')}
+          spec={cmd('enable')}
           layout="inline"
-          emphasis="primary"
           onInspect={onInspect}
+          resultTarget={resultTarget}
         />
-      </div>
-      {showEnable || showDisable ? (
-        <div className={styles.group}>
-          <p className={styles.groupLabel}>Состояние</p>
-          {showEnable ? (
-            <CommandAction spec={cmd('enable')} layout="inline" onInspect={onInspect} />
-          ) : null}
-          {showDisable ? (
-            <CommandAction spec={cmd('disable')} layout="inline" onInspect={onInspect} />
-          ) : null}
-        </div>
+      ) : null}
+      {showDisable ? (
+        <CommandAction
+          spec={cmd('disable')}
+          layout="inline"
+          onInspect={onInspect}
+          resultTarget={resultTarget}
+        />
       ) : null}
       {showReconcile ? (
-        <div className={styles.group}>
-          <p className={styles.groupLabel}>Webhook</p>
-          <CommandAction spec={cmd('reconcile')} layout="inline" onInspect={onInspect} />
-        </div>
+        <CommandAction
+          spec={cmd('reconcile')}
+          layout="inline"
+          onInspect={onInspect}
+          resultTarget={resultTarget}
+        />
       ) : null}
       {settingsAvailable ? (
-        <div className={styles.group}>
-          <p className={styles.groupLabel}>Activity</p>
-          <Link
-            to="/accounts/$accountId/widgets/$backend/$connectionId/settings"
-            params={{ accountId, backend, connectionId }}
-          >
-            Настройки Activity и lead-status
-          </Link>
-        </div>
-      ) : null}
-      <ActionMenu>
         <Link
-          to="/operations/admin"
-          search={{ backend, target_type: 'installation', target_id: connectionId }}
+          to="/accounts/$accountId/widgets/$backend/$connectionId/settings"
+          params={{ accountId, backend, connectionId }}
+          className={styles.actionLink}
+          title="Настройки Activity и lead-status"
         >
-          История команд этого подключения
+          Настройки Activity
         </Link>
-        <div className={styles.danger}>
-          <p>
-            Опасная зона. Сброс авторизации не отзывает доступ в amoCRM. Удаление может снять
-            webhook лишь частично.
-          </p>
-          <CommandAction
-            spec={cmd('revoke')}
-            layout="inline"
-            emphasis="danger"
-            disabled={!state || ['disabled', 'uninstalled'].includes(state)}
-            onInspect={onInspect}
-          />
-          <CommandAction
-            spec={cmd('uninstall')}
-            layout="inline"
-            emphasis="danger"
-            onInspect={onInspect}
-          />
-        </div>
-      </ActionMenu>
+      ) : null}
+      <div className={styles.more}>
+        <ActionMenu>
+          <Link
+            to="/operations/admin"
+            search={{ backend, target_type: 'installation', target_id: connectionId }}
+          >
+            История команд подключения
+          </Link>
+          <div className={styles.danger}>
+            <p>
+              Сброс авторизации не отзывает доступ в amoCRM. Удаление может снять webhook лишь
+              частично.
+            </p>
+            <CommandAction
+              spec={cmd('revoke')}
+              layout="inline"
+              emphasis="danger"
+              disabled={!state || ['disabled', 'uninstalled'].includes(state)}
+              onInspect={onInspect}
+            />
+            <CommandAction
+              spec={cmd('uninstall')}
+              layout="inline"
+              emphasis="danger"
+              onInspect={onInspect}
+            />
+          </div>
+        </ActionMenu>
+      </div>
     </div>
   )
 }
@@ -428,17 +476,15 @@ function ConnectionSwitcher({
   accountId,
   backend,
   connectionId,
+  account,
 }: {
   accountId: string
   backend: string
   connectionId: string
+  account: AccountCard | undefined
 }) {
   const navigate = useNavigate()
-  const account = useQuery({
-    queryKey: keys.account(accountId),
-    queryFn: () => fetchAccount(accountId),
-  })
-  const items = (account.data?.connections ?? [])
+  const items = (account?.connections ?? [])
     .map((obs) => obs.data)
     .filter((item): item is AccountConnectionCard => Boolean(item))
   if (items.length < 2) {
@@ -449,45 +495,53 @@ function ConnectionSwitcher({
   )
   const prev = index > 0 ? items[index - 1] : undefined
   const next = index >= 0 && index < items.length - 1 ? items[index + 1] : undefined
+  // The backend matters only when two connections share an integration code.
+  const optionLabel = (item: AccountConnectionCard) =>
+    items.filter((other) => other.integration_code === item.integration_code).length > 1
+      ? `${item.integration_code} · ${item.backend}`
+      : item.integration_code
   return (
     <div className={styles.switcher}>
       {prev ? (
         <Link
-          to="/accounts/$accountId/widgets/$backend/$connectionId"
+          to={connectionRoute}
           params={{ accountId, backend: prev.backend, connectionId: prev.connection_id }}
+          className={styles.step}
+          aria-label="Предыдущее подключение"
+          title={`Предыдущее подключение: ${optionLabel(prev)}`}
         >
-          Предыдущее подключение
+          ←
         </Link>
       ) : null}
-      <label>
-        Подключение
-        <select
-          aria-label="Другие подключения аккаунта"
-          value={`${backend}:${connectionId}`}
-          onChange={(event) => {
-            const [nextBackend, nextId] = event.target.value.split(':')
-            void navigate({
-              to: '/accounts/$accountId/widgets/$backend/$connectionId',
-              params: { accountId, backend: nextBackend, connectionId: nextId },
-            })
-          }}
-        >
-          {items.map((item) => (
-            <option
-              key={`${item.backend}:${item.connection_id}`}
-              value={`${item.backend}:${item.connection_id}`}
-            >
-              {item.integration_code} · {item.backend}
-            </option>
-          ))}
-        </select>
-      </label>
+      <select
+        aria-label="Другие подключения аккаунта"
+        value={`${backend}:${connectionId}`}
+        onChange={(event) => {
+          const [nextBackend, nextId] = event.target.value.split(':')
+          void navigate({
+            to: connectionRoute,
+            params: { accountId, backend: nextBackend, connectionId: nextId },
+          })
+        }}
+      >
+        {items.map((item) => (
+          <option
+            key={`${item.backend}:${item.connection_id}`}
+            value={`${item.backend}:${item.connection_id}`}
+          >
+            {optionLabel(item)}
+          </option>
+        ))}
+      </select>
       {next ? (
         <Link
-          to="/accounts/$accountId/widgets/$backend/$connectionId"
+          to={connectionRoute}
           params={{ accountId, backend: next.backend, connectionId: next.connection_id }}
+          className={styles.step}
+          aria-label="Следующее подключение"
+          title={`Следующее подключение: ${optionLabel(next)}`}
         >
-          Следующее подключение
+          →
         </Link>
       ) : null}
     </div>
@@ -513,64 +567,53 @@ function StatusSection({
     <>
       <CompactSection title="Идентификация" defaultOpen={identityOpen}>
         <Observation
-          title="Идентификация"
           observation={card.connection}
           hideSource={hideSource(card.connection.source)}
           onRetry={onRetry}
-          status={
-            <StatusBadge
-              domain="connection"
-              state={card.connection.data?.state}
-              raw={card.connection.data?.raw}
-            />
-          }
         >
           {(conn) => (
-            <div className={page.stack}>
-              <dl className={page.dl}>
-                <dt>Интеграция</dt>
-                <dd>
-                  <Link
-                    to="/widgets/$backend/$integrationId"
-                    params={{ backend, integrationId: conn.integration_id }}
-                  >
-                    {conn.integration_code}
-                  </Link>
-                </dd>
-                <dt>Домен</dt>
-                <dd>{formatNull(conn.account_domain)}</dd>
-                <dt>Состояние установки</dt>
-                <dd>
-                  <StatusBadge domain="connection" state={conn.state} raw={conn.raw} />
-                </dd>
-                <dt>Создано</dt>
-                <dd>
-                  <time dateTime={conn.created_at} title={formatTime(conn.created_at)}>
-                    {formatDateLong(conn.created_at)}
-                  </time>
-                </dd>
-                {sameInstant(conn.created_at, conn.updated_at) ? null : (
-                  <>
-                    <dt>Обновлено</dt>
-                    <dd>
-                      <time dateTime={conn.updated_at} title={formatTime(conn.updated_at)}>
-                        {formatRelativeTime(conn.updated_at)}
-                      </time>
-                    </dd>
-                  </>
-                )}
-                <dt>Происхождение</dt>
-                <dd>
-                  <StatusBadge domain="origin" state={conn.origin} />
-                </dd>
-              </dl>
-            </div>
+            <dl className={page.dl}>
+              <dt>Интеграция</dt>
+              <dd>
+                <Link
+                  to="/widgets/$backend/$integrationId"
+                  params={{ backend, integrationId: conn.integration_id }}
+                >
+                  {conn.integration_code}
+                </Link>
+              </dd>
+              <dt>Домен</dt>
+              <dd>{formatNull(conn.account_domain)}</dd>
+              <dt>Состояние установки</dt>
+              <dd>
+                <StatusBadge domain="connection" state={conn.state} raw={conn.raw} calm />
+              </dd>
+              <dt>Установлено</dt>
+              <dd>
+                <time dateTime={conn.created_at} title={formatTime(conn.created_at)}>
+                  {formatDateLong(conn.created_at)}
+                </time>
+              </dd>
+              {sameInstant(conn.created_at, conn.updated_at) ? null : (
+                <>
+                  <dt>Изменено</dt>
+                  <dd>
+                    <time dateTime={conn.updated_at} title={formatTime(conn.updated_at)}>
+                      {formatRelativeTime(conn.updated_at)}
+                    </time>
+                  </dd>
+                </>
+              )}
+              <dt>Происхождение</dt>
+              <dd>
+                <StatusBadge domain="origin" state={conn.origin} calm />
+              </dd>
+            </dl>
           )}
         </Observation>
       </CompactSection>
       <CompactSection title="Доступ к продуктам" defaultOpen={grantsOpen}>
         <Observation
-          title="Доступ к продуктам"
           observation={card.grants}
           hideSource={hideSource(card.grants.source)}
           onRetry={onRetry}
@@ -583,16 +626,10 @@ function StatusSection({
 }
 
 function AuthSection({
-  accountId,
-  backend,
-  connectionId,
   card,
   hideSource,
   onRetry,
 }: {
-  accountId: string
-  backend: string
-  connectionId: string
   card: ConnectionCard
   hideSource: (source: string) => boolean
   onRetry: () => void
@@ -607,14 +644,30 @@ function AuthSection({
         observation={card.authorization}
         hideSource={hideSource(card.authorization.source)}
         onRetry={onRetry}
-        status={<StatusBadge domain="authorization" state={card.authorization.data?.state} />}
+        status={
+          <StatusBadge
+            domain="authorization"
+            state={card.authorization.data?.state}
+            raw={card.authorization.data?.raw}
+            calm
+          />
+        }
       >
         {(auth) => (
           <div className={page.stack}>
-            <p>Учётные данные: {auth.credentials_present ? 'присутствуют' : 'нет'}</p>
-            {auth.unverified ? <p>Фактическая авторизация не проверена.</p> : null}
-            <p>{formatExpiry(auth.expires_at)}</p>
-            <p className={styles.secondary}>Действует до {formatTime(auth.expires_at)}</p>
+            <dl className={page.dl}>
+              <dt>Учётные данные</dt>
+              <dd>{auth.credentials_present ? 'есть' : 'нет'}</dd>
+              <dt>Срок действия</dt>
+              <dd>
+                <time dateTime={auth.expires_at ?? undefined} title={formatTime(auth.expires_at)}>
+                  {formatExpiry(auth.expires_at)}
+                </time>
+              </dd>
+            </dl>
+            {auth.unverified ? (
+              <p className={styles.note}>Фактическая авторизация не проверена запросом к amoCRM.</p>
+            ) : null}
             <TechnicalDetails>
               <p>Версия учётных данных: {formatNull(auth.credential_version ?? null)}</p>
               <p>Версия ключа: {formatNull(auth.key_version ?? null)}</p>
@@ -630,9 +683,9 @@ function AuthSection({
           onRetry={onRetry}
           status={
             staleOrUnknown ? (
-              <span>Требуется повторная проверка</span>
+              <span className={styles.note}>Требуется повторная проверка</span>
             ) : (
-              <StatusBadge domain="verification" state={check.data?.classification} />
+              <StatusBadge domain="verification" state={check.data?.classification} calm />
             )
           }
         >
@@ -640,32 +693,25 @@ function AuthSection({
             <div className={page.stack}>
               {staleOrUnknown ? (
                 <p className={styles.secondary}>
-                  Последняя завершённая проверка:{' '}
-                  <span>
-                    {lookupState('verification', result.classification).label} (исторический
-                    результат)
-                  </span>{' '}
-                  ·{' '}
+                  Последний результат: {lookupState('verification', result.classification).label},{' '}
                   <time dateTime={result.observed_at} title={formatTime(result.observed_at)}>
                     {formatRelativeTime(result.observed_at)}
                   </time>
+                  . Запустите «Проверить подключение», чтобы обновить.
                 </p>
               ) : (
-                <time dateTime={result.observed_at} title={formatTime(result.observed_at)}>
-                  {formatRelativeTime(result.observed_at)}
-                </time>
+                <dl className={page.dl}>
+                  <dt>Проверено</dt>
+                  <dd>
+                    <time dateTime={result.observed_at} title={formatTime(result.observed_at)}>
+                      {formatRelativeTime(result.observed_at)}
+                    </time>
+                  </dd>
+                </dl>
               )}
               {result.retry_after ? (
                 <p>Повторно можно через {formatDurationSeconds(result.retry_after)}.</p>
               ) : null}
-              <CommandAction
-                spec={{
-                  ...connectionCommand(backend, connectionId, 'check', accountId),
-                  label: 'Проверить сейчас',
-                }}
-                layout="inline"
-                onInspect={onRetry}
-              />
             </div>
           )}
         </Observation>
@@ -675,16 +721,10 @@ function AuthSection({
 }
 
 function WebhookSection({
-  accountId,
-  backend,
-  connectionId,
   card,
   hideSource,
   onRetry,
 }: {
-  accountId: string
-  backend: string
-  connectionId: string
   card: ConnectionCard
   hideSource: (source: string) => boolean
   onRetry: () => void
@@ -700,6 +740,7 @@ function WebhookSection({
           domain="webhook"
           state={card.webhook.data?.status}
           raw={card.webhook.data?.raw}
+          calm
         />
       }
     >
@@ -712,42 +753,43 @@ function WebhookSection({
             status={hook.status}
           />
           {hook.last_error ? (
-            <p>Последняя ошибка: {hook.last_error}</p>
-          ) : (
-            <p className={page.muted}>
-              {hook.checked_at
-                ? 'Последняя сверка не содержит ошибки'
-                : 'Сверка регистрации ещё не зафиксирована'}
-            </p>
-          )}
-          <p>Адресов в локальном реестре: {formatNull(hook.confirmed_destinations ?? null)}</p>
-          <p className={styles.secondary}>
-            Число адресов, учтённых Core для этой установки. Реестр не подтверждает текущую подписку
-            в amoCRM или доставку событий.
-          </p>
-          {hook.confirmed_destinations == null ? (
+            <p className={styles.note}>Последняя ошибка: {hook.last_error}</p>
+          ) : null}
+          <div className={styles.registry}>
+            <p>Адресов в локальном реестре: {formatNull(hook.confirmed_destinations ?? null)}</p>
+            {hook.confirmed_destinations == null ? (
+              <p className={styles.secondary}>
+                Источник не передал число адресов в локальном реестре.
+              </p>
+            ) : null}
+            {hook.confirmed_destinations === 0 && hook.status === 'active' ? (
+              <p className={styles.secondary}>
+                В локальном реестре нет адресов. У подписки, созданной до появления реестра, это
+                возможно и при рабочей доставке. Сверьте регистрацию в amoCRM; при необходимости
+                запустите «Восстановить webhook».
+              </p>
+            ) : null}
             <p className={styles.secondary}>
-              Источник не передал число адресов в локальном реестре.
+              Число адресов, учтённых Core для этой установки. Реестр не подтверждает текущую
+              подписку в amoCRM или доставку событий.
             </p>
-          ) : null}
-          {hook.confirmed_destinations === 0 && hook.status === 'active' ? (
-            <p className={styles.secondary}>
-              В локальном реестре нет адресов. У подписки, созданной до появления реестра, это
-              возможно и при рабочей доставке. Сверьте регистрацию в amoCRM; при необходимости
-              запустите восстановление.
-            </p>
-          ) : null}
-          {hook.confirmed_destinations === 0 && hook.status === 'active' ? (
-            <CommandAction
-              spec={connectionCommand(backend, connectionId, 'reconcile', accountId)}
-              layout="inline"
-              onInspect={onRetry}
-            />
-          ) : null}
+          </div>
         </div>
       )}
     </Observation>
   )
+}
+
+function eventsCount(count: number): string {
+  const mod10 = count % 10
+  const mod100 = count % 100
+  if (mod10 === 1 && mod100 !== 11) {
+    return `${count} событие`
+  }
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return `${count} события`
+  }
+  return `${count} событий`
 }
 
 function WebhookEvents({ events }: { events: string[] }) {
@@ -757,20 +799,43 @@ function WebhookEvents({ events }: { events: string[] }) {
   const groups = groupWebhookEvents(events)
   return (
     <details className={styles.events}>
-      <summary>{events.length} событий</summary>
+      <summary>Подписка на {eventsCount(events.length)}</summary>
       {groups.map((group) => (
         <div key={group.group}>
           <strong>{group.group}</strong>
           <ul>
             {group.items.map((code) => (
-              <li key={code}>
-                {webhookEventLabel(code)} <span className={styles.code}>{code}</span>
+              <li key={code} title={code}>
+                {webhookEventLabel(code)}
               </li>
             ))}
           </ul>
         </div>
       ))}
     </details>
+  )
+}
+
+function WebhookCheckedAt({
+  checkedAt,
+  lastError,
+  status,
+}: {
+  status?: string
+  checkedAt?: string | null
+  lastError?: string | null
+}) {
+  const successAt = webhookSuccessfulCheckAt(checkedAt, lastError, status)
+  if (!checkedAt) {
+    return <p className={styles.secondary}>Сверка регистрации ещё не зафиксирована.</p>
+  }
+  return (
+    <p>
+      {successAt ? 'Последняя успешная сверка регистрации ' : 'Последняя сверка регистрации '}
+      <time dateTime={checkedAt} title={formatTime(checkedAt)}>
+        {formatRelativeTime(checkedAt)}
+      </time>
+    </p>
   )
 }
 
@@ -784,7 +849,6 @@ function ActivitySection({
   grafana,
   loki,
   onRetry,
-  settingsAvailable,
 }: {
   accountId: string
   backend: string
@@ -795,7 +859,6 @@ function ActivitySection({
   grafana?: string
   loki?: string
   onRetry: () => void
-  settingsAvailable: boolean
 }) {
   const activityHint = dependent(card.activity)
   const syncHint = dependent(card.activity_sync)
@@ -807,40 +870,23 @@ function ActivitySection({
         hideSource={hideSource(card.activity.source)}
         onRetry={onRetry}
         dependentHint={activityHint}
-        status={<StatusBadge domain="pilot" state={parsePilot(card)} />}
+        status={<StatusBadge domain="pilot" state={parsePilot(card)} calm />}
       >
-        {(raw) => {
-          const activity = parseActivity(raw)
-          const pilot = activity.pilot
-          return (
-            <div className={page.stack}>
-              <p>
-                <StatusBadge domain="pilot" state={pilot} />
-              </p>
-              {settingsAvailable ? (
-                <Link
-                  to="/accounts/$accountId/widgets/$backend/$connectionId/settings"
-                  params={{ accountId, backend, connectionId }}
-                >
-                  Открыть настройки
-                </Link>
-              ) : null}
-              {pilot === 'enabled' ? (
-                <CommandAction
-                  spec={connectionCommand(backend, connectionId, 'pilot-disable', accountId)}
-                  layout="inline"
-                  onInspect={onRetry}
-                />
-              ) : (
-                <CommandAction
-                  spec={connectionCommand(backend, connectionId, 'pilot-enable', accountId)}
-                  layout="inline"
-                  onInspect={onRetry}
-                />
-              )}
-            </div>
+        {(raw) =>
+          parseActivity(raw).pilot === 'enabled' ? (
+            <CommandAction
+              spec={connectionCommand(backend, connectionId, 'pilot-disable', accountId)}
+              layout="inline"
+              onInspect={onRetry}
+            />
+          ) : (
+            <CommandAction
+              spec={connectionCommand(backend, connectionId, 'pilot-enable', accountId)}
+              layout="inline"
+              onInspect={onRetry}
+            />
           )
-        }}
+        }
       </Observation>
       <DeliveriesBlock
         card={card}
@@ -861,63 +907,67 @@ function ActivitySection({
             domain="sync"
             state={card.activity_sync.data?.state}
             raw={card.activity_sync.data?.raw}
+            calm
           />
         }
       >
-        {(sync) => (
-          <div className={page.stack}>
-            <p>{syncIdleReason(sync)}</p>
-            <p>Задержка: {formatDurationSeconds(sync.lag_seconds ?? null)}</p>
-            {lastSyncDurationSeconds(sync) !== null ? (
-              <p>
-                Длительность последнего синка:{' '}
-                {formatDurationSeconds(lastSyncDurationSeconds(sync))}
-              </p>
-            ) : null}
-            <ol className={styles.timeline}>
-              <li>
-                Последнее событие получено:{' '}
-                <time
-                  dateTime={sync.last_event_at ?? undefined}
-                  title={formatTime(sync.last_event_at)}
-                >
-                  {formatRelativeTime(sync.last_event_at)}
-                </time>
-              </li>
-              <li>
-                Последний успех:{' '}
-                <time
-                  dateTime={sync.last_success_at ?? undefined}
-                  title={formatTime(sync.last_success_at)}
-                >
-                  {formatRelativeTime(sync.last_success_at)}
-                </time>
-              </li>
-              <li>
-                Проверено по{' '}
-                <time
-                  dateTime={sync.verified_through ?? undefined}
-                  title={formatTime(sync.verified_through)}
-                >
-                  {formatDateLong(sync.verified_through)}
-                </time>
-              </li>
-            </ol>
-            {sync.reauth_required ? <p>Требуется повторная авторизация клиента.</p> : null}
-            <TechnicalDetails>
-              <p>
-                Диапазон: {formatTime(sync.verified_from)} — {formatTime(sync.verified_through)}
-              </p>
-              <p>Код ошибки: {formatNull(sync.error_code || null)}</p>
-              <ObservabilityLinks
-                grafana={grafana}
-                loki={loki}
-                accountId={card.connection.data?.account_id ?? accountId}
-                installationId={connectionId}
-              />
-            </TechnicalDetails>
-          </div>
-        )}
+        {(sync) => {
+          const duration = lastSyncDurationSeconds(sync)
+          return (
+            <div className={page.stack}>
+              <p>{syncIdleReason(sync)}</p>
+              <dl className={page.dl}>
+                <dt>Задержка</dt>
+                <dd>{formatDurationSeconds(sync.lag_seconds ?? null)}</dd>
+                {duration !== null ? (
+                  <>
+                    <dt>Последний синк длился</dt>
+                    <dd>{formatDurationSeconds(duration)}</dd>
+                  </>
+                ) : null}
+                <dt>Последнее событие</dt>
+                <dd>
+                  <time
+                    dateTime={sync.last_event_at ?? undefined}
+                    title={formatTime(sync.last_event_at)}
+                  >
+                    {formatRelativeTime(sync.last_event_at)}
+                  </time>
+                </dd>
+                <dt>Последний успех</dt>
+                <dd>
+                  <time
+                    dateTime={sync.last_success_at ?? undefined}
+                    title={formatTime(sync.last_success_at)}
+                  >
+                    {formatRelativeTime(sync.last_success_at)}
+                  </time>
+                </dd>
+                <dt>Проверено по</dt>
+                <dd>
+                  <time
+                    dateTime={sync.verified_through ?? undefined}
+                    title={formatTime(sync.verified_through)}
+                  >
+                    {formatDateLong(sync.verified_through)}
+                  </time>
+                </dd>
+              </dl>
+              <TechnicalDetails>
+                <p>
+                  Диапазон: {formatTime(sync.verified_from)} — {formatTime(sync.verified_through)}
+                </p>
+                <p>Код ошибки: {formatNull(sync.error_code || null)}</p>
+                <ObservabilityLinks
+                  grafana={grafana}
+                  loki={loki}
+                  accountId={card.connection.data?.account_id ?? accountId}
+                  installationId={connectionId}
+                />
+              </TechnicalDetails>
+            </div>
+          )
+        }}
       </Observation>
     </>
   )
@@ -955,11 +1005,13 @@ function DeliveriesBlock({
         }
         const grouped = groupDeliveries(deliveries)
         const rows = showAll ? grouped : grouped.slice(0, 5)
+        const retryable = rows.some((row) => row.retry_allowed === true)
         return (
           <div className={page.stack}>
             <DataTable
               rows={rows}
               rowKey={(row) => row.command_id}
+              onRowClick={(row) => setSelected(row)}
               columns={[
                 {
                   id: 'delivery',
@@ -974,7 +1026,9 @@ function DeliveriesBlock({
                 {
                   id: 'status',
                   header: 'Статус',
-                  cell: (row) => <StatusBadge domain="delivery" state={row.status} raw={row.raw} />,
+                  cell: (row) => (
+                    <StatusBadge domain="delivery" state={row.status} raw={row.raw} calm />
+                  ),
                 },
                 {
                   id: 'time',
@@ -993,27 +1047,22 @@ function DeliveriesBlock({
                       ? formatNull(null)
                       : formatAttempts(row.attempts, row.max_attempts),
                 },
-                {
-                  id: 'retry',
-                  header: '',
-                  cell: (row) => (
-                    <RetryDelivery
-                      backend={backend}
-                      connectionId={connectionId}
-                      delivery={row}
-                      onInspect={onRetry}
-                    />
-                  ),
-                },
-                {
-                  id: 'open',
-                  header: '',
-                  cell: (row) => (
-                    <button type="button" onClick={() => setSelected(row)}>
-                      Подробнее
-                    </button>
-                  ),
-                },
+                ...(retryable
+                  ? [
+                      {
+                        id: 'retry',
+                        header: '',
+                        cell: (row: Delivery) => (
+                          <RetryDelivery
+                            backend={backend}
+                            connectionId={connectionId}
+                            delivery={row}
+                            onInspect={onRetry}
+                          />
+                        ),
+                      },
+                    ]
+                  : []),
               ]}
             />
             {grouped.length > 5 && !showAll ? (
@@ -1027,27 +1076,32 @@ function DeliveriesBlock({
               onClose={() => setSelected(null)}
             >
               {selected ? (
-                <dl className={page.dl}>
-                  <dt>ID</dt>
-                  <dd>
+                <div className={page.stack}>
+                  <dl className={page.dl}>
+                    <dt>Доставка</dt>
+                    <dd>
+                      {selected.action} → {selected.target}
+                    </dd>
+                    <dt>Итог</dt>
+                    <dd>
+                      <StatusBadge domain="delivery" state={selected.status} raw={selected.raw} />
+                    </dd>
+                    <dt>Попытки</dt>
+                    <dd>{formatAttempts(selected.attempts, selected.max_attempts)}</dd>
+                    <dt>Повтор</dt>
+                    <dd>
+                      {selected.retry_reason ||
+                        (selected.retry_allowed ? 'доступен' : formatNull(null))}
+                    </dd>
+                    <dt>Создана</dt>
+                    <dd>{formatTime(selected.created_at)}</dd>
+                    <dt>Обновлена</dt>
+                    <dd>{formatTime(selected.updated_at)}</dd>
+                  </dl>
+                  <TechnicalDetails>
                     <CopyableId value={selected.command_id} label="ID доставки" />
-                  </dd>
-                  <dt>Создана</dt>
-                  <dd>{formatTime(selected.created_at)}</dd>
-                  <dt>Обновлена</dt>
-                  <dd>{formatTime(selected.updated_at)}</dd>
-                  <dt>Итог</dt>
-                  <dd>
-                    <StatusBadge domain="delivery" state={selected.status} raw={selected.raw} />
-                  </dd>
-                  <dt>Попытки</dt>
-                  <dd>{formatAttempts(selected.attempts, selected.max_attempts)}</dd>
-                  <dt>Повтор</dt>
-                  <dd>
-                    {selected.retry_reason ||
-                      (selected.retry_allowed ? 'доступен' : formatNull(null))}
-                  </dd>
-                </dl>
+                  </TechnicalDetails>
+                </div>
               ) : null}
             </DetailDrawer>
           </div>
@@ -1099,8 +1153,7 @@ function JobsSection({
         const rows = showAll ? sorted : sorted.slice(0, 8)
         return (
           <div className={page.stack}>
-            <p className={styles.secondary}>Последние фоновые задачи подключения.</p>
-            <p className={styles.secondary}>
+            <p className={styles.summaryLine}>
               {[...grouped.entries()]
                 .map(([type, count]) => `${jobLabel(type)} ×${count}`)
                 .join(' · ')}
@@ -1108,21 +1161,18 @@ function JobsSection({
             <DataTable
               rows={rows}
               rowKey={(job) => job.id}
+              onRowClick={(job) => setSelected(job)}
               columns={[
                 {
                   id: 'job',
                   header: 'Задача',
-                  cell: (job) => (
-                    <span>
-                      {jobLabel(job.type)}
-                      <span className={styles.secondary}> {job.type}</span>
-                    </span>
-                  ),
+                  cell: (job) => jobLabel(job.type),
+                  title: (job) => job.type,
                 },
                 {
                   id: 'status',
                   header: 'Статус',
-                  cell: (job) => <StatusBadge domain="job" state={job.status} raw={job.raw} />,
+                  cell: (job) => <StatusBadge domain="job" state={job.status} raw={job.raw} calm />,
                 },
                 {
                   id: 'time',
@@ -1133,15 +1183,6 @@ function JobsSection({
                     </time>
                   ),
                 },
-                {
-                  id: 'open',
-                  header: '',
-                  cell: (job) => (
-                    <button type="button" onClick={() => setSelected(job)}>
-                      Подробнее
-                    </button>
-                  ),
-                },
               ]}
             />
             {sorted.length > 8 && !showAll ? (
@@ -1149,27 +1190,30 @@ function JobsSection({
                 Показать все ({sorted.length})
               </button>
             ) : null}
-            <DetailDrawer title="Задача" open={Boolean(selected)} onClose={() => setSelected(null)}>
+            <DetailDrawer
+              title={selected ? jobLabel(selected.type) : 'Задача'}
+              open={Boolean(selected)}
+              onClose={() => setSelected(null)}
+            >
               {selected ? (
-                <dl className={page.dl}>
-                  <dt>Задача</dt>
-                  <dd>
-                    {jobLabel(selected.type)}
-                    <div className={styles.code}>{selected.type}</div>
-                  </dd>
-                  <dt>Статус</dt>
-                  <dd>
-                    <StatusBadge domain="job" state={selected.status} raw={selected.raw} />
-                  </dd>
-                  <dt>Попытки</dt>
-                  <dd>{formatAttempts(selected.attempts, selected.max_attempts)}</dd>
-                  <dt>Ошибка</dt>
-                  <dd>{formatNull(selected.last_error_message)}</dd>
-                  <dt>ID</dt>
-                  <dd>
+                <div className={page.stack}>
+                  <dl className={page.dl}>
+                    <dt>Статус</dt>
+                    <dd>
+                      <StatusBadge domain="job" state={selected.status} raw={selected.raw} />
+                    </dd>
+                    <dt>Попытки</dt>
+                    <dd>{formatAttempts(selected.attempts, selected.max_attempts)}</dd>
+                    <dt>Обновлена</dt>
+                    <dd>{formatTime(selected.updated_at)}</dd>
+                    <dt>Ошибка</dt>
+                    <dd>{formatNull(selected.last_error_message)}</dd>
+                  </dl>
+                  <TechnicalDetails>
+                    <p>Тип: {selected.type}</p>
                     <CopyableId value={selected.id} label="ID задачи" />
-                  </dd>
-                </dl>
+                  </TechnicalDetails>
+                </div>
               ) : null}
             </DetailDrawer>
           </div>
@@ -1205,8 +1249,7 @@ function HistorySection({
         const rows = showAll ? items : items.slice(0, 8)
         return (
           <div className={page.stack}>
-            <p className={styles.secondary}>Изменения подключения и действия пользователей.</p>
-            <p className={styles.secondary}>
+            <p className={styles.summaryLine}>
               {grouped
                 .map((group) => `${auditLabel(group.key)} ×${group.items.length}`)
                 .join(' · ')}
@@ -1214,31 +1257,19 @@ function HistorySection({
             <DataTable
               rows={rows}
               rowKey={(item) => String(item.id)}
+              onRowClick={(item) => setSelected(item)}
               columns={[
                 {
                   id: 'action',
                   header: 'Событие',
-                  cell: (item) => (
-                    <span>
-                      {auditLabel(item.action)}
-                      <span className={styles.secondary}> {item.action}</span>
-                    </span>
-                  ),
+                  cell: (item) => auditLabel(item.action),
+                  title: (item) => item.action,
                 },
                 {
                   id: 'actor',
                   header: 'Кто',
-                  cell: (item) => (
-                    <span>
-                      {actorLabel(item.actor_type)}
-                      {item.actor_id ? <span className={styles.code}> {item.actor_id}</span> : null}
-                    </span>
-                  ),
-                },
-                {
-                  id: 'object',
-                  header: 'Объект',
-                  cell: (item) => formatNull(item.object_type),
+                  cell: (item) => actorLabel(item.actor_type),
+                  title: (item) => item.actor_id ?? actorLabel(item.actor_type),
                 },
                 {
                   id: 'time',
@@ -1249,15 +1280,6 @@ function HistorySection({
                     </time>
                   ),
                 },
-                {
-                  id: 'open',
-                  header: '',
-                  cell: (item) => (
-                    <button type="button" onClick={() => setSelected(item)}>
-                      Подробнее
-                    </button>
-                  ),
-                },
               ]}
             />
             {items.length > 8 && !showAll ? (
@@ -1266,26 +1288,28 @@ function HistorySection({
               </button>
             ) : null}
             <DetailDrawer
-              title="Событие"
+              title={selected ? auditLabel(selected.action) : 'Событие'}
               open={Boolean(selected)}
               onClose={() => setSelected(null)}
             >
               {selected ? (
-                <dl className={page.dl}>
-                  <dt>Действие</dt>
-                  <dd>
-                    {auditLabel(selected.action)}
-                    <div className={styles.code}>{selected.action}</div>
-                  </dd>
-                  <dt>Субъект</dt>
-                  <dd>
-                    {actorLabel(selected.actor_type)} {formatNull(selected.actor_id)}
-                  </dd>
-                  <dt>Объект</dt>
-                  <dd>
-                    {formatNull(selected.object_type)} {formatNull(selected.object_id)}
-                  </dd>
-                </dl>
+                <div className={page.stack}>
+                  <dl className={page.dl}>
+                    <dt>Кто</dt>
+                    <dd>
+                      {actorLabel(selected.actor_type)} {formatNull(selected.actor_id)}
+                    </dd>
+                    <dt>Когда</dt>
+                    <dd>{formatTime(selected.created_at)}</dd>
+                    <dt>Объект</dt>
+                    <dd>
+                      {formatNull(selected.object_type)} {formatNull(selected.object_id)}
+                    </dd>
+                  </dl>
+                  <TechnicalDetails>
+                    <p>Код события: {selected.action}</p>
+                  </TechnicalDetails>
+                </div>
               ) : null}
             </DetailDrawer>
           </div>
@@ -1309,36 +1333,6 @@ function CompactSection({
       <summary>{title}</summary>
       {children}
     </details>
-  )
-}
-
-function WebhookCheckedAt({
-  checkedAt,
-  lastError,
-  status,
-}: {
-  status?: string
-  checkedAt?: string | null
-  lastError?: string | null
-}) {
-  const successAt = webhookSuccessfulCheckAt(checkedAt, lastError, status)
-  if (successAt) {
-    return (
-      <p className={styles.secondary}>
-        Последняя успешная сверка регистрации{' '}
-        <time dateTime={successAt} title={formatTime(successAt)}>
-          {formatRelativeTime(successAt)}
-        </time>
-      </p>
-    )
-  }
-  return (
-    <p className={styles.secondary}>
-      Последняя сверка регистрации{' '}
-      <time dateTime={checkedAt ?? undefined} title={formatTime(checkedAt)}>
-        {formatRelativeTime(checkedAt)}
-      </time>
-    </p>
   )
 }
 
@@ -1390,10 +1384,12 @@ function TechSection({
             )}
             <dt>Происхождение</dt>
             <dd>
-              <StatusBadge domain="origin" state={item.origin} />
+              <StatusBadge domain="origin" state={item.origin} calm />
             </dd>
-            <dt>Источник наблюдения</dt>
-            <dd>{card.connection.source}</dd>
+            <dt>Источник данных</dt>
+            <dd>
+              {card.connection.source} · {formatTime(card.connection.observed_at)}
+            </dd>
           </dl>
         )}
       </Observation>

@@ -35,7 +35,10 @@ describe('AccountSubscription', () => {
     const badge = screen.getByTestId('subscription-badge')
     expect(badge.textContent).toBe('Активна')
     expect(badge.className).toMatch(/ok/)
-    expect(screen.getByText('источник: core')).toBeInTheDocument()
+    expect(screen.getByText('Профи').closest('section')).toHaveAttribute(
+      'title',
+      expect.stringContaining('источник: core'),
+    )
     expect(screen.getByText(/Действует до:/).textContent).toContain(formatTime(active.expires_at))
     expect(screen.getByText(/Возможности:/).textContent).toContain('lead-status, activity')
   })

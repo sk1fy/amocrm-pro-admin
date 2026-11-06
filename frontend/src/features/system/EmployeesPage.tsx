@@ -4,7 +4,9 @@ import { isForbidden } from '../../api/client'
 import { DataTable } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
+import { PageHeader } from '../../components/PageHeader'
 import { PageSkeleton } from '../../components/PageSkeleton'
+import { RefreshStatus } from '../../components/RefreshStatus'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
 import { formatTime } from '../../lib/format'
@@ -15,7 +17,20 @@ export function EmployeesPage() {
   const list = useQuery({ queryKey: keys.employees, queryFn: fetchEmployees })
   return (
     <div className={page.page}>
-      <h1>Сотрудники</h1>
+      <PageHeader
+        title="Сотрудники"
+        description="Учётные записи админки и их роли."
+        refresh={
+          list.data ? (
+            <RefreshStatus
+              updatedAt={list.dataUpdatedAt}
+              fetching={list.isFetching}
+              failed={Boolean(list.error)}
+              onRefresh={() => void list.refetch({ cancelRefetch: false })}
+            />
+          ) : null
+        }
+      />
       <SystemNav />
       {list.isPending ? <PageSkeleton label="Загрузка сотрудников…" /> : null}
       {list.error ? (
@@ -46,7 +61,7 @@ export function EmployeesPage() {
             {
               id: 'status',
               header: 'Статус',
-              cell: (row) => <StatusBadge domain="employee_status" state={row.status} />,
+              cell: (row) => <StatusBadge domain="employee_status" state={row.status} calm />,
             },
             { id: 'updated', header: 'Обновлён', cell: (row) => formatTime(row.updated_at) },
           ]}

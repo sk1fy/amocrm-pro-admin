@@ -1,0 +1,29 @@
+.body {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.section {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.section h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.account {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+}
+
+.muted {
+  color: var(--color-muted);
+  font-size: 12.5px;
+}

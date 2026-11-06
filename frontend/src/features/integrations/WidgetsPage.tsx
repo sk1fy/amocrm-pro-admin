@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ProductGrants } from '../../components/ProductGrants'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
@@ -7,18 +8,23 @@ import { fetchIntegrations, keys } from '../../api/queries'
 import { DataTable } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
+import { PageHeader } from '../../components/PageHeader'
 import { PageSkeleton } from '../../components/PageSkeleton'
+import { RefreshStatus } from '../../components/RefreshStatus'
 import { SourcesBanner, allSourcesUnavailable } from '../../components/SourcesBanner'
 import { SourcesCaption } from '../../components/SourcesCaption'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
-import { formatNull, hostFromRedirect } from '../../lib/format'
 import { CreateIntegration } from './IntegrationCommands'
+import { ConnectionCounts } from './ConnectionCounts'
 import { WebhookEvents } from './WebhookEvents'
+import commandStyles from './IntegrationCommands.module.css'
+import styles from './WidgetsPage.module.css'
 
 export function WidgetsPage() {
   const search = useRouteSearch<CursorSearch>()
   const pushSearch = usePushSearch()
+  const [resultSlot, setResultSlot] = useState<HTMLDivElement | null>(null)
   const list = useQuery({
     queryKey: keys.integrations({ cursor: search.cursor, limit: 25 }),
     queryFn: () => fetchIntegrations({ cursor: search.cursor, limit: 25 }),
@@ -26,20 +32,28 @@ export function WidgetsPage() {
 
   return (
     <div className={page.page}>
-      <header className={page.header}>
-        <div className={page.heading}>
-          <h1 className={page.title}>Виджеты</h1>
-          <p className={page.description}>
-            Каталог интеграций: состояние, сервисы, подключения и события webhook.
-          </p>
-        </div>
-        <CreateIntegration />
-      </header>
+      <PageHeader
+        title="Виджеты"
+        description="Интеграции amoCRM: продукты, подключения и события webhook."
+        actions={<CreateIntegration resultTarget={resultSlot} />}
+        refresh={
+          <RefreshStatus
+            updatedAt={list.dataUpdatedAt}
+            fetching={list.isFetching}
+            failed={Boolean(list.error) && list.data !== undefined}
+            onRefresh={() => void list.refetch({ cancelRefetch: false })}
+            sources={list.data?.sources}
+          />
+        }
+      />
+      <div ref={setResultSlot} className={commandStyles.results} />
       <SourcesBanner sources={list.data?.sources} />
       {list.isPending ? (
         <PageSkeleton label="Загрузка каталога интеграций…" variant="list" />
       ) : null}
-      {list.error ? <ErrorState error={list.error} onRetry={() => void list.refetch()} /> : null}
+      {list.error && !list.data ? (
+        <ErrorState error={list.error} onRetry={() => void list.refetch()} />
+      ) : null}
       {list.data && list.data.items.length === 0 ? (
         allSourcesUnavailable(list.data.sources) ? (
           <EmptyState
@@ -61,6 +75,8 @@ export function WidgetsPage() {
               rows={list.data.items}
               rowKey={(row) => `${row.backend}:${row.id}`}
               nextCursor={list.data.next_cursor}
+              total={list.data.total}
+              resetDisabled={!search.cursor}
               onReset={() => pushSearch('/widgets', { ...search, cursor: undefined })}
               onNext={() =>
                 pushSearch('/widgets', { ...search, cursor: list.data?.next_cursor ?? undefined })
@@ -68,55 +84,36 @@ export function WidgetsPage() {
               columns={[
                 {
                   id: 'code',
-                  header: 'Код',
+                  header: 'Интеграция',
+                  sortValue: (row) => row.code,
+                  title: (row) => `${row.code} · ${row.backend}`,
                   cell: (row) => (
-                    <Link
-                      to="/widgets/$backend/$integrationId"
-                      params={{ backend: row.backend, integrationId: row.id }}
-                    >
-                      {row.code}
-                    </Link>
-                  ),
-                },
-                {
-                  id: 'state',
-                  header: 'Состояние',
-                  cell: (row) => (
-                    <StatusBadge domain="integration" state={row.state} raw={row.raw} />
+                    <span className={styles.name}>
+                      <Link
+                        to="/widgets/$backend/$integrationId"
+                        params={{ backend: row.backend, integrationId: row.id }}
+                      >
+                        {row.code}
+                      </Link>
+                      {row.state === 'active' ? null : (
+                        <StatusBadge domain="integration" state={row.state} raw={row.raw} calm />
+                      )}
+                    </span>
                   ),
                 },
                 {
                   id: 'grants',
-                  header: 'Продукты и доступ',
+                  header: 'Продукты',
                   cell: (row) => <ProductGrants grants={row.grants} />,
                 },
                 {
                   id: 'counts',
                   header: 'Подключения',
-                  cell: (row) =>
-                    Object.keys(row.installations_by_status).length === 0 ? (
-                      formatNull(0)
-                    ) : (
-                      <span className={page.row}>
-                        {Object.entries(row.installations_by_status).map(([status, count]) => (
-                          <span key={status} className={page.row}>
-                            <StatusBadge domain="connection" state={status} />
-                            <span className={page.muted}>{formatNull(count)}</span>
-                          </span>
-                        ))}
-                      </span>
-                    ),
-                },
-                {
-                  id: 'redirect',
-                  header: 'Хост редиректа',
-                  cell: (row) => (
-                    <span title={row.redirect_uri}>{hostFromRedirect(row.redirect_uri)}</span>
-                  ),
+                  cell: (row) => <ConnectionCounts counts={row.installations_by_status} />,
                 },
                 {
                   id: 'events',
-                  header: 'Webhook',
+                  header: 'Webhook-события',
                   cell: (row) => <WebhookEvents events={row.webhook_events} />,
                 },
               ]}

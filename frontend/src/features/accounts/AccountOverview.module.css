@@ -1,0 +1,48 @@
+.card {
+  display: grid;
+  gap: var(--space-3);
+  text-decoration: none;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.name {
+  color: var(--color-link);
+  font-size: 15px;
+}
+
+/* Label above value: a card is narrow, side by side the badges wrap. */
+.facts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.facts dt {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.facts dt:not(:first-child) {
+  margin-top: 6px;
+}
+
+.facts dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.error {
+  color: var(--tone-error);
+  font-size: 13px;
+}

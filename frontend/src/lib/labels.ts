@@ -7,6 +7,15 @@ const jobLabels: Record<string, string> = {
   'activity.sync': 'Синхронизация Activity',
   'activity.deliver': 'Доставка команды Activity',
   'activity.command_deliver': 'Доставка команды Activity',
+  'admin.distribution_reconcile': 'Сверка распределения',
+  'admin.webhook_unregister': 'Снятие webhook',
+  'widget.ping': 'Проверка виджета',
+  'distribution.normalize_event': 'Разбор события распределения',
+  'distribution.assign_responsible': 'Назначение ответственного',
+  'distribution.dp_trigger': 'Запуск из цифровой воронки',
+  'workflow.lead.set_status': 'Смена статуса сделки',
+  'workflow.lead.status_transition': 'Переход сделки по статусам',
+  'workflow.rule.lead_status.configure': 'Настройка правила статусов',
 }
 
 const auditLabels: Record<string, string> = {

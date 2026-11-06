@@ -37,6 +37,11 @@ test('activity product links account installation to its OAuth integration', asy
   await integrationLink.click()
   await expect(page).toHaveURL(new RegExp(`/widgets/core/${integration}$`))
   await expect(page.getByText('Контроль активности 2.0')).toBeVisible()
+  // Identifiers live under «Технические данные» (ADR-0021).
+  await page
+    .locator('summary')
+    .filter({ hasText: /^Технические данные$/ })
+    .click()
   await expect(page.locator('dt').filter({ hasText: 'OAuth UUID (client_id)' })).toBeVisible()
   await expect(
     page.locator('dt').filter({ hasText: 'Идентификатор интеграции Core' }),

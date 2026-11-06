@@ -1,5 +1,6 @@
 import { backendIntervals, visibleInterval } from '../../api/queryClient'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { isApiError } from '../../api/client'
@@ -46,6 +47,12 @@ type Props = {
   layout?: 'stack' | 'inline'
   reasonAsTooltip?: boolean
   emphasis?: 'default' | 'primary' | 'danger'
+  /**
+   * Renders progress and the compact result into this element instead of
+   * under the button, so a row of command buttons keeps its shape (the
+   * connection action bar). `null` while the target is not mounted yet.
+   */
+  resultTarget?: Element | null
 }
 
 export function CommandAction(props: Props) {
@@ -73,6 +80,7 @@ function CommandControl({
   layout = 'stack',
   reasonAsTooltip = false,
   emphasis = 'default',
+  resultTarget,
 }: Props & { employeeId: string }) {
   const storageKey = intentStorageKey(employeeId, spec.path, intentScope)
   const [intent, setIntentState] = useState<CommandIntent | null>(() => readIntent(storageKey))
@@ -164,31 +172,19 @@ function CommandControl({
     dialog.current?.showModal()
   }
 
-  return (
-    <div className={layout === 'inline' ? styles.inline : page.stack}>
-      <button
-        type="button"
-        onClick={open}
-        disabled={disabled || !canStart}
-        title={disabledReason}
-        className={
-          emphasis === 'primary'
-            ? styles.primary
-            : emphasis === 'danger'
-              ? styles.danger
-              : undefined
-        }
-      >
-        {operation?.state === 'partial' && spec.command === 'uninstall'
-          ? 'Повторить удаление'
-          : spec.label}
-      </button>
-      {disabledReason && !reasonAsTooltip ? (
-        <span className={page.muted}>{disabledReason}</span>
-      ) : null}
+  const detached = resultTarget !== undefined
+  const awaitingReceipt = Boolean(intent && !operation && !submitting)
+  const hasFeedback =
+    submitting ||
+    Boolean(error) ||
+    awaitingReceipt ||
+    Boolean(operationQuery.error) ||
+    Boolean(operation)
+  const feedback = (
+    <>
       {submitting ? <p role="status">Команда отправляется…</p> : null}
       {error ? <ErrorState error={error} /> : null}
-      {intent && !operation && !submitting ? (
+      {awaitingReceipt ? (
         <section className={page.card}>
           <StatusBadge domain="operation" state="unknown_outcome" />
           <p>
@@ -222,8 +218,51 @@ function CommandControl({
         <ErrorState error={operationQuery.error} onRetry={() => void operationQuery.refetch()} />
       ) : null}
       {operation ? (
-        <OperationView operation={operation} compact={layout === 'inline'} onInspect={onInspect} />
+        <OperationView
+          operation={operation}
+          compact={layout === 'inline' || detached}
+          // A finished command has already refreshed the object
+          // (observeOperation): the detached result offers inspection only
+          // while the outcome is in doubt.
+          onInspect={detached && operation.state === 'succeeded' ? undefined : onInspect}
+        />
       ) : null}
+    </>
+  )
+
+  return (
+    <div className={layout === 'inline' ? styles.inline : page.stack}>
+      <button
+        type="button"
+        onClick={open}
+        disabled={disabled || !canStart}
+        title={disabledReason}
+        className={
+          emphasis === 'primary'
+            ? styles.primary
+            : emphasis === 'danger'
+              ? styles.danger
+              : undefined
+        }
+      >
+        {operation?.state === 'partial' && spec.command === 'uninstall'
+          ? 'Повторить удаление'
+          : spec.label}
+      </button>
+      {disabledReason && !reasonAsTooltip ? (
+        <span className={page.muted}>{disabledReason}</span>
+      ) : null}
+      {detached
+        ? resultTarget && hasFeedback
+          ? createPortal(
+              <div className={styles.result}>
+                <p className={styles.resultCaption}>{spec.label}</p>
+                {feedback}
+              </div>,
+              resultTarget,
+            )
+          : null
+        : feedback}
       <dialog
         ref={dialog}
         className={styles.dialog}

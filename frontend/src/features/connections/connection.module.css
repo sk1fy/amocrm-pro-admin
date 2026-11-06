@@ -1,7 +1,8 @@
+/* Health summary: problems first, then quiet facets (ADR-0015, ADR-0021). */
 .summary {
   min-width: 0;
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
   padding: 1rem 1.25rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -9,50 +10,133 @@
   box-shadow: var(--shadow-sm);
 }
 
-.summaryNav,
-.problems {
+.summaryTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.problemCenter {
   display: grid;
   gap: var(--space-2);
 }
 
-.summaryNav a,
-.problems a {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-}
-
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  align-items: flex-start;
-}
-
-.group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: flex-start;
-}
-
-.groupLabel {
-  width: 100%;
+.problems {
+  display: grid;
+  gap: var(--space-1);
+  list-style: none;
   margin: 0;
+  padding: 0;
+}
+
+.problem {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-4);
+  padding: var(--space-1) 0;
+  color: var(--color-text);
+  font-size: 13.5px;
+}
+
+.problem:hover {
+  color: var(--color-link-hover);
+}
+
+.problemTarget {
+  color: var(--color-link);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.noProblems {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13.5px;
+}
+
+.facets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.facet {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-2);
+  min-width: 0;
+  color: var(--color-text);
+  font-size: 12.5px;
+}
+
+.facet:hover .facetLabel {
+  color: var(--color-link-hover);
+}
+
+.facetLabel {
   color: var(--color-subtle);
-  font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+}
+
+.facet time {
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* One action bar; results of its commands are shown under it. */
+.commands {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.actionBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.actionLink:hover {
+  background: var(--color-border-soft);
+}
+
+.more {
+  margin-left: auto;
+}
+
+.results {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 36rem;
+  min-width: 0;
+}
+
+.results:empty {
+  display: none;
 }
 
 .danger {
   display: grid;
   gap: var(--space-2);
-  padding: var(--space-3);
-  border: 1px solid color-mix(in srgb, var(--tone-error) 35%, var(--color-border));
-  border-radius: var(--radius);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-soft);
 }
 
 .danger p {
@@ -61,26 +145,49 @@
   color: var(--color-muted);
 }
 
+/* Compact switcher between connections of the account. */
 .switcher {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
   align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  max-width: 100%;
 }
 
-.switcher label {
-  display: flex;
-  gap: var(--space-2);
-  align-items: center;
-  font-size: 13px;
+.switcher select {
+  min-width: 0;
+  max-width: 100%;
 }
 
-.timeline {
+.step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: var(--radius);
+  color: var(--color-muted);
+  font-size: 15px;
+}
+
+.step:hover {
+  color: var(--color-text);
+  background: var(--color-border-soft);
+}
+
+/* Healthy blocks are collapsed under a quiet heading, not a nested card. */
+.compact {
   display: grid;
-  gap: 0.35rem;
-  margin: 0;
-  padding-left: 1.1rem;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.compact > summary {
+  width: fit-content;
+  cursor: pointer;
+  padding-block: var(--space-1);
   font-size: 13.5px;
+  font-weight: 600;
 }
 
 .secondary {
@@ -89,12 +196,18 @@
   font-size: 12.5px;
 }
 
-.code {
-  font-family: var(--mono);
-  font-size: 12px;
+.note {
+  margin: 0;
+  color: var(--tone-attention);
+  font-size: 13px;
 }
 
-.events {
+.events summary {
+  width: fit-content;
+  cursor: pointer;
+}
+
+.events[open] {
   display: grid;
   gap: var(--space-2);
 }
@@ -104,22 +217,25 @@
   padding-left: 1.1rem;
 }
 
-.compact {
-  padding: 0.85rem 1.25rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-}
-
-.compact[open] {
+.registry {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border-soft);
 }
 
-.compact summary {
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 13.5px;
+.summaryLine {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12.5px;
+}
+
+/* Shared with the Activity settings page. */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-start;
 }
 
 .listSkeleton {
@@ -143,69 +259,12 @@
   font-size: 13px;
 }
 
-.summaryNav {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-  border-top: 1px solid var(--color-border-soft);
-  padding-top: var(--space-3);
-}
-.summaryNav a {
-  align-content: start;
-  font-size: 12.5px;
-}
-.summaryNav > p {
-  grid-column: 1 / -1;
-}
-.problems {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.problemCenter {
-  display: grid;
-  gap: var(--space-2);
-}
-.problems a {
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-4);
-}
-.problemAction {
-  font-size: 12px;
-  white-space: nowrap;
-}
-.toolbar {
-  align-items: flex-start;
-  gap: var(--space-4);
-}
-.group {
-  min-width: 0;
-  max-width: 100%;
-}
-.group:has(section[aria-label='Результат операции']) {
-  flex: 0 1 28rem;
-}
-.switcher {
-  min-width: 0;
-  max-width: 100%;
-  font-size: 12px;
-}
-.switcher label {
-  min-width: 0;
-  max-width: 100%;
-  flex-wrap: wrap;
-}
-.switcher select {
-  min-width: 0;
-  max-width: 100%;
-}
-.compact {
-  min-width: 0;
-}
 @media (max-width: 540px) {
-  .summary,
-  .compact {
+  .summary {
     padding: var(--space-4);
   }
-  .switcher {
-    gap: var(--space-2);
+
+  .more {
+    margin-left: 0;
   }
 }

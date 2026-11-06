@@ -82,7 +82,7 @@ describe('Activity MVP registration', () => {
 
   it('does not infer a product from a matching integration code without grants', async () => {
     renderAccount(connection({ integration_code: 'activity', grants: [], activity: undefined }))
-    expect(await screen.findByText('Нет грантов')).toBeInTheDocument()
+    expect(await screen.findByText('Нет продуктов')).toBeInTheDocument()
     expect(screen.queryByText('Контроль активности 2.0')).not.toBeInTheDocument()
     expect(screen.queryByText('Пилот не настроен')).not.toBeInTheDocument()
     const row = screen.getAllByRole('row')[1]
@@ -93,7 +93,7 @@ describe('Activity MVP registration', () => {
     renderAccount(connection({ grants: undefined }))
     await screen.findByText('fixture-activity')
     expect(screen.getByText('Нет данных')).toBeInTheDocument()
-    expect(screen.queryByText('Нет грантов')).not.toBeInTheDocument()
+    expect(screen.queryByText('Нет продуктов')).not.toBeInTheDocument()
   })
 
   it('does not display cached product or pilot facts when the source is unavailable', async () => {
@@ -102,6 +102,6 @@ describe('Activity MVP registration', () => {
     expect(screen.getAllByText('Источник недоступен').length).toBeGreaterThanOrEqual(2)
     expect(screen.queryByText('Контроль активности 2.0')).not.toBeInTheDocument()
     expect(screen.queryByText('Пилот включён')).not.toBeInTheDocument()
-    expect(screen.queryByText('Нет грантов')).not.toBeInTheDocument()
+    expect(screen.queryByText('Нет продуктов')).not.toBeInTheDocument()
   })
 })

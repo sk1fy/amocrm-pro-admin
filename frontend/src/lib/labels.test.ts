@@ -12,6 +12,7 @@ import {
 describe('labels', () => {
   it('localizes known job and audit codes', () => {
     expect(jobLabel('admin.connection_check')).toBe('Проверка подключения')
+    expect(jobLabel('distribution.normalize_event')).toBe('Разбор события распределения')
     expect(auditLabel('admin.command.succeeded')).toBe('Команда администратора выполнена')
     expect(auditLabel('auth.login_failed')).toBe('Неуспешный вход')
     expect(actorLabel('admin')).toBe('Сотрудник админки')

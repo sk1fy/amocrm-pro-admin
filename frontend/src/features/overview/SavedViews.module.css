@@ -1,10 +1,6 @@
 .wrap {
   display: grid;
-  gap: 10px;
-  padding: 12px 14px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
+  gap: 8px;
 }
 
 .active {
@@ -38,12 +34,14 @@
   gap: var(--space-3);
 }
 .toolbar > label {
-  flex: 0 1 24rem;
+  flex: 0 1 14rem;
   min-width: 0;
 }
 .manage {
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
 }
 .wrap {
   min-width: 0;

@@ -12,6 +12,7 @@ import page from '../../components/page.module.css'
 import styles from './OperationView.module.css'
 import { formatNull, formatTime } from '../../lib/format'
 import { jobPending, operationPending, safeOperationURL } from './commands'
+import { jobTitle } from './jobText'
 
 function numberField(value: unknown): number | null {
   return typeof value === 'number' ? value : null
@@ -53,16 +54,12 @@ function JobObservation({
           Обновляется состояние задачи…
         </p>
       ) : null}
-      <Observation
-        title={`Задача ${jobId}`}
-        observation={query.data}
-        onRetry={() => void query.refetch()}
-      >
+      <Observation title="Задача" observation={query.data} onRetry={() => void query.refetch()}>
         {({ job }) => (
           <div className={page.stack}>
             <div className={page.row}>
-              <span>{job.type}</span>
-              <StatusBadge domain="job" state={job.status} raw={job.raw} />
+              <span title={job.type}>{jobTitle(job.type)}</span>
+              <StatusBadge domain="job" state={job.status} raw={job.raw} calm />
             </div>
             <p>
               Попытки: {formatNull(job.attempts)}/{formatNull(job.max_attempts)}
@@ -148,10 +145,10 @@ export function OperationView({
       ) : null}
     </>
   )
+  // ADR-0021: the source goes to the tooltip, the time stays visible.
   const metadata = (
-    <p className={page.muted}>
-      Обновлено: <time dateTime={operation.updated_at}>{formatTime(operation.updated_at)}</time> ·
-      источник: {formatNull(operation.backend)}
+    <p className={page.muted} title={`Источник: ${formatNull(operation.backend)}`}>
+      Обновлено: <time dateTime={operation.updated_at}>{formatTime(operation.updated_at)}</time>
     </p>
   )
   return (
@@ -162,14 +159,16 @@ export function OperationView({
     >
       <div className={page.row}>
         {distributionVerification ? <span>Команда проверки:</span> : null}
-        <StatusBadge domain="operation" state={operation.state} />
+        <StatusBadge domain="operation" state={operation.state} calm />
         {link ? (
-          <Link to="/operations/admin/$operationId" params={{ operationId: operation.id }}>
-            {compact ? 'Открыть операцию' : `Операция ${operation.id}`}
+          <Link
+            to="/operations/admin/$operationId"
+            params={{ operationId: operation.id }}
+            title={`Операция ${operation.id}`}
+          >
+            Открыть операцию
           </Link>
-        ) : (
-          <span>{operation.id}</span>
-        )}
+        ) : null}
       </div>
       {operationPending(operation.state) ? (
         <p role="status">

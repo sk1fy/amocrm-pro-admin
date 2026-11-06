@@ -79,7 +79,6 @@ describe('AccountUsers', () => {
     render(<CrmUsersList accountId="91000001" items={[observation(snapshot)]} />)
 
     expect(screen.getByText('Данные устарели')).toBeInTheDocument()
-    expect(screen.queryByText('Актуально')).not.toBeInTheDocument()
     expect(screen.getByText('Fixture User A')).toBeInTheDocument()
   })
 
@@ -90,7 +89,7 @@ describe('AccountUsers', () => {
 
     vi.setSystemTime(new Date('2026-11-06T10:04:58Z'))
     await act(() => vi.advanceTimersByTimeAsync(1000))
-    expect(screen.getByText('Актуально')).toBeInTheDocument()
+    expect(screen.queryByText('Данные устарели')).not.toBeInTheDocument()
 
     await act(() => vi.advanceTimersByTimeAsync(1000))
     expect(screen.getByText('Данные устарели')).toBeInTheDocument()
@@ -164,11 +163,11 @@ describe('AccountUsers', () => {
       </QueryClientProvider>,
     )
     await act(() => vi.advanceTimersByTimeAsync(999))
-    expect(screen.getByText('Актуально')).toBeInTheDocument()
+    expect(screen.getByText('Fixture User A')).toBeInTheDocument()
+    expect(screen.queryByText('Данные устарели')).not.toBeInTheDocument()
 
     await act(() => vi.advanceTimersByTimeAsync(1))
     expect(screen.getByText('Данные устарели')).toBeInTheDocument()
-    expect(screen.queryByText('Актуально')).not.toBeInTheDocument()
     expect(screen.getByText('Fixture User A')).toBeInTheDocument()
     expect(fetchCrmUsers).toHaveBeenCalledTimes(1)
   })

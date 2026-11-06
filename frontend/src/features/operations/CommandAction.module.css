@@ -71,3 +71,20 @@
 .dialog {
   overflow-wrap: anywhere;
 }
+
+/* Detached result (resultTarget): command name above the compact result. */
+.result {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.resultCaption {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.result > section:hover {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}

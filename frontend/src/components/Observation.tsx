@@ -23,7 +23,20 @@ export function Observation<T>({
   dependentHint,
   children,
 }: Props<T>) {
-  const caption = (
+  const fresh = observation.freshness === 'fresh'
+  const tooltip = `Обновлено ${formatTime(observation.observed_at)} · источник: ${observation.source}`
+  // ADR-0021: fresh data needs no badge or caption; observed_at and the
+  // source stay in the tooltip. Deviations keep the visible mark.
+  const caption = fresh ? (
+    title || status ? (
+      <div className={styles.caption}>
+        <div className={styles.head}>
+          {title ? <strong title={tooltip}>{title}</strong> : <span />}
+          {status ? <div className={styles.status}>{status}</div> : null}
+        </div>
+      </div>
+    ) : null
+  ) : (
     <div className={styles.caption}>
       <div className={styles.head}>
         {title ? <strong>{title}</strong> : <span />}
@@ -77,7 +90,7 @@ export function Observation<T>({
 
   const data = observation.data
   return (
-    <section className={`${styles.block} ${styles.card}`}>
+    <section className={`${styles.block} ${styles.card}`} title={caption ? undefined : tooltip}>
       {caption}
       {data === null || data === undefined ? null : children ? children(data) : null}
     </section>

@@ -24,13 +24,14 @@ export function SubscriptionCard({ data }: { data: Subscription }) {
           state={data.state}
           raw={data.raw}
           testId="subscription-badge"
+          calm
         />
       </div>
-      <p>
+      <p className={page.muted}>
         Действует до:{' '}
         <time dateTime={data.expires_at ?? undefined}>{formatTime(data.expires_at)}</time>
       </p>
-      <p>
+      <p className={page.muted}>
         Возможности:{' '}
         {data.capabilities.length > 0 ? data.capabilities.join(', ') : formatNull(null)}
       </p>

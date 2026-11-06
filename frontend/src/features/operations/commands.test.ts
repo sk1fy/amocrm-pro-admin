@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { connectionCommand, jobPending, operationPending, safeOperationURL } from './commands'
+import {
+  commandTitle,
+  connectionCommand,
+  jobPending,
+  operationObjectLabel,
+  operationPending,
+  safeOperationURL,
+} from './commands'
 import { createRequestKey, intentStorageKey, readIntent, writeIntent } from './intents'
 
 afterEach(() => vi.unstubAllGlobals())
@@ -70,5 +77,20 @@ describe('operation safety', () => {
     expect(
       connectionCommand('core', 'installation-one', 'activity-panel-rotate').nextStep,
     ).toContain('не из этой админки')
+  })
+  it('names commands by the button that started them and keeps unknown codes', () => {
+    expect(commandTitle('installation', 'check')).toBe('Проверить подключение')
+    expect(commandTitle('installation', 'distribution-reconcile')).toBe(
+      'Проверить результат назначения',
+    )
+    expect(commandTitle('integration', 'rotate-secret')).toBe('Заменить секрет')
+    expect(commandTitle('job', 'retry')).toBe('Повторить задачу')
+    expect(commandTitle('installation', 'future-command')).toBe('future-command')
+    expect(operationObjectLabel({ target_type: 'integration', target_id: 'new' })).toBe(
+      'Новая интеграция',
+    )
+    expect(operationObjectLabel({ target_type: 'installation', target_id: 'id' })).toBe(
+      'Подключение',
+    )
   })
 })

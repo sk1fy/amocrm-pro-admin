@@ -51,7 +51,8 @@ test('known subscription shows plan, active state, expiry, capabilities and sour
   await expect(section.getByTestId('subscription-badge')).toHaveText('Активна')
   await expect(section.getByText(/Действует до:/)).toContainText(/\d{2}\.\d{2}\.\d{4}/)
   await expect(section.getByText(/Возможности:/)).toContainText('lead-status, activity')
-  await expect(section.getByText('источник: core')).toBeVisible()
+  // ADR-0021: fresh data keeps observed_at and the source in the tooltip.
+  await expect(section.locator('[title*="источник: core"]').first()).toBeAttached()
   await expect(section.locator('time').first()).toBeVisible()
 })
 
@@ -81,8 +82,8 @@ test('merged account shows connections from both backends with fixture origin', 
   await expect(
     page.locator('a[href="/accounts/91000002/widgets/core/f1a00000-0000-4000-8000-000000000004"]'),
   ).toBeVisible()
-  await expect(page.getByText('источник: fixture')).toBeVisible()
-  await expect(page.getByText('источник: core').first()).toBeVisible()
+  await expect(page.locator('[title*="источник: fixture"]').first()).toBeAttached()
+  await expect(page.locator('[title*="источник: core"]').first()).toBeAttached()
   await expect(page.getByText('тестовые данные', { exact: true })).toBeVisible()
 
   await moduleLink.click()

@@ -45,7 +45,7 @@ test('users tab shows the snapshot and keeps its rows after expiry', async ({ pa
   ).toBeVisible()
   await expect(section.getByText(/@/)).toHaveCount(0)
 
-  await expect(section.getByText('Актуально')).toBeVisible()
+  await expect(section.getByText('Данные устарели')).toHaveCount(0)
   await page.clock.fastForward('05:01')
   await expect(section.getByText('Данные устарели')).toBeVisible()
   await expect(admin).toBeVisible()

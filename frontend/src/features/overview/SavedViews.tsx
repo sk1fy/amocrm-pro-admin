@@ -110,7 +110,7 @@ export function SavedViews({ section, current, columns, onLoad }: Props) {
   return (
     <div className={styles.wrap}>
       <div className={styles.toolbar}>
-        <FilterField label="Сохранённые представления">
+        <FilterField label="Сохранённые виды">
           <select
             aria-label="Сохранённые представления"
             value={selectedId}
@@ -121,7 +121,7 @@ export function SavedViews({ section, current, columns, onLoad }: Props) {
               if (view) onLoad(view.params)
             }}
           >
-            <option value="">Выбрать</option>
+            <option value="">Не выбран</option>
             {items.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name}
@@ -134,6 +134,7 @@ export function SavedViews({ section, current, columns, onLoad }: Props) {
         {canWrite ? (
           <button
             type="button"
+            data-variant="ghost"
             aria-expanded={editing}
             aria-controls={`view-editor-${section}`}
             onClick={() => setEditing((value) => !value)}

@@ -4,7 +4,9 @@ import { fetchSessions, keys, revokeSession } from '../../api/queries'
 import { DataTable } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
+import { PageHeader } from '../../components/PageHeader'
 import { PageSkeleton } from '../../components/PageSkeleton'
+import { RefreshStatus } from '../../components/RefreshStatus'
 import page from '../../components/page.module.css'
 import { formatNull, formatTime } from '../../lib/format'
 import { SystemNav } from './SystemPage'
@@ -42,7 +44,20 @@ export function SessionsPage() {
 
   return (
     <div className={page.page}>
-      <h1>Мои сессии</h1>
+      <PageHeader
+        title="Мои сессии"
+        description="Входы в админку с ваших устройств."
+        refresh={
+          list.data ? (
+            <RefreshStatus
+              updatedAt={list.dataUpdatedAt}
+              fetching={list.isFetching}
+              failed={Boolean(list.error)}
+              onRefresh={() => void list.refetch({ cancelRefetch: false })}
+            />
+          ) : null
+        }
+      />
       <SystemNav />
       {list.isPending ? <PageSkeleton label="Загрузка сессий…" /> : null}
       {list.error ? <ErrorState error={list.error} onRetry={() => void list.refetch()} /> : null}

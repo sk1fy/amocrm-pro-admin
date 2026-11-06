@@ -7,6 +7,8 @@ import { DataTable } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { FilterBar, FilterField, type FilterChip } from '../../components/FilterBar'
+import { PageHeader } from '../../components/PageHeader'
+import { RefreshStatus } from '../../components/RefreshStatus'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
 import { formatNull, formatTime } from '../../lib/format'
@@ -66,27 +68,42 @@ export function AuditPage() {
 
   return (
     <div className={page.page}>
-      <h1>Аудит</h1>
+      <PageHeader
+        title="Аудит"
+        description="Действия сотрудников и входы в админку."
+        refresh={
+          <RefreshStatus
+            updatedAt={list.dataUpdatedAt}
+            fetching={list.isFetching}
+            failed={Boolean(list.error) && list.data !== undefined}
+            onRefresh={() => void list.refetch({ cancelRefetch: false })}
+          />
+        }
+      />
       <SystemNav />
-      <p className={page.row}>
-        <button
-          type="button"
-          onClick={() => setSearch({ action: 'auth.login_failed', cursor: undefined })}
-        >
-          Ошибки
-        </button>
-        <button
-          type="button"
-          onClick={() => setSearch({ action: 'employee.update', cursor: undefined })}
-        >
-          Действия сотрудников
-        </button>
-      </p>
       <FilterBar
         chips={chips}
         onRemoveChip={(id) => setSearch({ [id]: undefined, cursor: undefined })}
         onReset={() => pushSearch('/system/audit', {})}
         onSubmit={(event) => event.preventDefault()}
+        aside={
+          <>
+            <button
+              type="button"
+              aria-pressed={search.action === 'auth.login_failed'}
+              onClick={() => setSearch({ action: 'auth.login_failed', cursor: undefined })}
+            >
+              Ошибки входа
+            </button>
+            <button
+              type="button"
+              aria-pressed={search.action === 'employee.update'}
+              onClick={() => setSearch({ action: 'employee.update', cursor: undefined })}
+            >
+              Действия сотрудников
+            </button>
+          </>
+        }
       >
         <FilterField label="Сотрудник">
           <select
@@ -124,7 +141,10 @@ export function AuditPage() {
           Список сотрудников недоступен. Фильтр по сотруднику скрыт для выбора.
         </p>
       ) : null}
-      {list.error ? <ErrorState error={list.error} onRetry={() => void list.refetch()} /> : null}
+      {list.isPending ? <div className={page.skeleton} /> : null}
+      {list.error && !list.data ? (
+        <ErrorState error={list.error} onRetry={() => void list.refetch()} />
+      ) : null}
       {list.data && list.data.items.length === 0 ? <EmptyState title="Нет записей" /> : null}
       {list.data && list.data.items.length > 0 ? (
         <DataTable
@@ -188,7 +208,7 @@ export function AuditPage() {
                 isFailedAudit(row.action, row.outcome) ? (
                   <StatusBadge domain="audit_outcome" state={row.outcome || 'failed'} />
                 ) : (
-                  <StatusBadge domain="audit_outcome" state={row.outcome} />
+                  <StatusBadge domain="audit_outcome" state={row.outcome} calm />
                 ),
             },
           ]}
