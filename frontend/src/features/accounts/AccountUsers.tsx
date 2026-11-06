@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { useCallback, useSyncExternalStore } from 'react'
 import { useRouteParams } from '../../app/hooks'
 import { fetchCrmUsers, keys } from '../../api/queries'
 import type {
@@ -77,14 +78,16 @@ function UsersTable({ users }: { users: CrmUser[] }) {
   )
 }
 
-export function CrmUsersCard({
+function CrmUsersCard({
   data,
   accountId,
   backend,
+  snapshotExpired,
 }: {
   data: CrmUsers
   accountId: string
   backend: string
+  snapshotExpired: boolean
 }) {
   const known = data.state === 'ok' && data.users !== null
   const hint = unknownListHints[data.state] ?? 'Источник вернул неизвестное состояние.'
@@ -100,7 +103,7 @@ export function CrmUsersCard({
         {known ? <span>Всего: {data.total ?? data.users?.length}</span> : null}
         {known && data.fresh_until ? (
           <span className={page.muted}>
-            Снимок Core актуален до{' '}
+            {snapshotExpired ? 'Срок актуальности снимка Core истёк в' : 'Снимок Core актуален до'}{' '}
             <time dateTime={data.fresh_until}>{formatTime(data.fresh_until)}</time>
           </span>
         ) : null}
@@ -133,6 +136,52 @@ export function CrmUsersCard({
   )
 }
 
+function CrmUsersObservation({
+  accountId,
+  observation,
+  onRetry,
+}: {
+  accountId: string
+  observation: ObservationType<CrmUsers>
+  onRetry?: () => void
+}) {
+  const { data, freshness } = observation
+  const deadline = freshness === 'fresh' && data?.state === 'ok' ? data.fresh_until : null
+  const expiresAt = deadline === null ? Number.POSITIVE_INFINITY : Date.parse(deadline)
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      if (!Number.isFinite(expiresAt)) return () => {}
+
+      let timer: number | undefined
+      function notifyAtExpiry() {
+        const remaining = expiresAt - Date.now()
+        if (remaining > 0) timer = window.setTimeout(notifyAtExpiry, remaining)
+        else onChange()
+      }
+      notifyAtExpiry()
+      return () => window.clearTimeout(timer)
+    },
+    [expiresAt],
+  )
+  const expired = useSyncExternalStore(subscribe, () => Date.now() >= expiresAt)
+
+  return (
+    <Observation
+      observation={expired ? { ...observation, freshness: 'stale' } : observation}
+      onRetry={onRetry}
+    >
+      {(data) => (
+        <CrmUsersCard
+          data={data}
+          accountId={accountId}
+          backend={observation.source}
+          snapshotExpired={expired}
+        />
+      )}
+    </Observation>
+  )
+}
+
 export function CrmUsersList({
   accountId,
   items,
@@ -151,9 +200,12 @@ export function CrmUsersList({
       {partial ? <SourcesBanner sources={sources} /> : null}
       {items.length > 0 ? (
         items.map((obs) => (
-          <Observation key={`${obs.source}:${obs.observed_at}`} observation={obs} onRetry={onRetry}>
-            {(data) => <CrmUsersCard data={data} accountId={accountId} backend={obs.source} />}
-          </Observation>
+          <CrmUsersObservation
+            key={`${obs.source}:${obs.observed_at}`}
+            accountId={accountId}
+            observation={obs}
+            onRetry={onRetry}
+          />
         ))
       ) : allUnavailable ? (
         <EmptyState title="Источник недоступен" />
@@ -172,7 +224,6 @@ export function AccountUsers() {
   const users = useQuery({
     queryKey: keys.crmUsers(accountId),
     queryFn: () => fetchCrmUsers(accountId),
-    // Core keeps a five-minute snapshot; a remount must not re-read it sooner.
     staleTime: 60_000,
   })
   return (
