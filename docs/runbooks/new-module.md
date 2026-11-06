@@ -17,6 +17,7 @@ Runbook для разработчика. Контракт адаптера за�
 | `SettingsBackend` | если настройки (`settings`) |
 | `StatsBackend` | если статистика (`stats`) |
 | `SubscriptionBackend` | если подписки (`subscriptions`) |
+| `CRMUsersBackend` | если пользователи amoCRM (`crm-users`) |
 
 `adapter.Backend` — это `Descriptor` (`Code`, `Kind`,
 `ContractVersion`, `Timeout`), `Capabilities`, `Health` и чтение

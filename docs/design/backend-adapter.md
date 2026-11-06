@@ -28,7 +28,8 @@
 Коды `Capabilities.Names()` в фиксированном порядке: `accounts`,
 `connections`, `integrations`, `jobs`, `audit`, `diagnostics`,
 `commands`, `settings`, `stats`, `activity-deliveries`,
-`subscriptions`. Возможность — единственный источник истины о
+`subscriptions`, `distribution-read`, `distribution-commands`,
+`crm-users`. Возможность — единственный источник истины о
 доступности функции. Адаптер может объявить возможность, но не
 реализовать интерфейс — тогда функция недоступна: опциональные
 интерфейсы проверяются вместе с возможностью. Read-only бекенд без
@@ -261,6 +262,18 @@ OAuth и не хранит переданные секреты.
 «данные подписки недоступны», а не «нет подписки». Решение и
 отклонённые варианты — [ADR-0012](../adr/0012-subscriptions-source.md).
 
+## Пользователи amoCRM (v1)
+
+Опциональный `CRMUsersBackend` с `GetCRMUsers(ctx, actor, accountID)` и
+`CRMUsersTimeout()`, возможность `crm-users`, проверка через
+`AsCRMUsers`. `CRMUsers{State, Connection, FreshUntil, RetryAfter, Users,
+Total}`; `Users` и `Total` заданы только при `State=ok`, неизвестное
+состояние → `unknown` + `Raw`. Отказ amoCRM — наблюдение с состоянием,
+битый или медленный ответ бекенда — ошибка источника. Handler вызывает
+`GatherWithin` с таймаутом возможности, а не дескриптора. Core-адаптер
+объявляет возможность только при `crm_base_url`. Решение —
+[ADR-0020](../adr/0020-account-crm-users.md).
+
 ## Уточнения чтения
 
 - `ConnectionSummary` сохраняет полные `AuthorizationDetails` и
@@ -285,6 +298,8 @@ backends:
     token_env: CORE_ADMIN_API_TOKEN
     timeout: 5s
     health_path: /admin/v1/backend
+    crm_base_url: http://core-admin-crm:8085
+    crm_timeout: 10s
     products:
       - code: lead-status
         display_name: "Статусы сделок"
@@ -304,7 +319,10 @@ backends:
 которой берётся токен; отсутствующая переменная — ошибка старта, а не
 значение по умолчанию. `base_url` и `token_env` обязательны для
 `core-http`; `timeout` (по умолчанию 5s) — таймаут адаптера;
-`health_path` по умолчанию `/admin/v1/backend`. `products` задают коды
+`health_path` по умолчанию `/admin/v1/backend`. `crm_base_url` — listener
+worker Core для `crm-users` (тот же токен); без него возможность выключена.
+`crm_timeout` по умолчанию 10s, не больше 12s, только вместе с
+`crm_base_url` и только для `core-http`. `products` задают коды
 каталога — ключ связи бекенда со сценариями.
 
 `kind: fixture` — тестовый адаптер (`profile: demo|module`, при
