@@ -27,7 +27,8 @@ func (h *api) listIntegrations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	actor := adminActor(r)
-	gathered := adapter.Gather(r.Context(), backends, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Integration]], error) {
+	pending := accounts.PendingBackends(backends, cursors)
+	gathered := adapter.Gather(r.Context(), pending, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Integration]], error) {
 		return backend.ListIntegrations(ctx, actor, adapter.PageFilter{
 			Limit:  limit,
 			Cursor: cursors[backend.Descriptor().Code],
@@ -38,20 +39,18 @@ func (h *api) listIntegrations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	items := make([]integrationDTO, 0)
-	next := map[string]string{}
+	next := accounts.NewContinuation(cursors)
 	for _, obs := range gathered.Items {
 		if obs.Data == nil {
 			continue
 		}
-		if obs.Data.NextCursor != nil && *obs.Data.NextCursor != "" {
-			next[obs.Source] = *obs.Data.NextCursor
-		}
+		next.Advance(obs.Source, obs.Data.NextCursor)
 		for _, item := range obs.Data.Items {
 			items = append(items, toIntegrationDTO(obs.Source, item))
 		}
 	}
 	httpx.WriteJSON(w, http.StatusOK, sourcedListResponse{
-		Items: items, NextCursor: accounts.EncodeCursors(next), Sources: gathered.Sources,
+		Items: items, NextCursor: next.Encode(pending), Sources: gathered.Sources,
 	})
 }
 
