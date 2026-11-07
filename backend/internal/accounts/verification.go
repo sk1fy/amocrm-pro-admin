@@ -36,6 +36,9 @@ func (s *Service) verificationAccounts(ctx context.Context, actor adapter.Actor,
 					return page, adapter.Unavailable(code, "account data unavailable")
 				}
 				page.ObservedAt = obs.ObservedAt
+				if f.Verification != "unknown" && !reportsChecks(obs.Data.Items) {
+					return page, adapter.Unsupported(code, "Бекенд не сообщает проверки доступа amoCRM, фильтр по проверке для него недоступен")
+				}
 				for _, account := range obs.Data.Items {
 					item := Aggregate(account, code, false)
 					if !matchAggregated(item, ListFilter{Verification: f.Verification}) {
@@ -98,4 +101,19 @@ func (s *Service) verificationAccounts(ctx context.Context, actor adapter.Actor,
 		}
 	}
 	return ListResult{Items: items, NextCursor: next, Sources: sources}, err
+}
+
+// reportsChecks tells whether a source returns authorization_check. A Core
+// with the field always sends an object; nil means a source without the
+// capability, where ok/stale/failed can never match and an empty list would
+// read as "no such accounts".
+func reportsChecks(accounts []adapter.Account) bool {
+	for _, account := range accounts {
+		for _, conn := range account.Connections {
+			if conn.AuthorizationCheck == nil {
+				return false
+			}
+		}
+	}
+	return true
 }

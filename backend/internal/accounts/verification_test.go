@@ -52,29 +52,53 @@ func TestVerificationLegacyScanIsBoundedAndContinues(t *testing.T) {
 	if len(seen) != 1005 {
 		t.Fatalf("lost rows %d", len(seen))
 	}
-	cursor = ""
-	totalCalls := 0
-	for page := 0; page < 10; page++ {
+	// A source without authorization_check cannot answer ok/stale/failed: it is
+	// reported as lacking the capability after one native page, not as an
+	// empty result or a long empty scan.
+	for _, filter := range []string{"ok", "stale", "failed"} {
 		before := backend.calls
-		got, err := s.ListAccounts(t.Context(), adapter.Actor{}, ListFilter{Verification: "ok", Limit: 17, Cursor: cursor})
+		got, err := s.ListAccounts(t.Context(), adapter.Actor{}, ListFilter{Verification: filter, Limit: 17})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(got.Items) != 0 {
-			t.Fatal("unknown became green")
+		if len(got.Items) != 0 || got.NextCursor != nil {
+			t.Fatalf("%s: unknown became a match or continued: %+v", filter, got)
 		}
-		delta := backend.calls - before
-		totalCalls += delta
-		if delta > verificationScanPages {
-			t.Fatal("unbounded empty scan")
+		if delta := backend.calls - before; delta != 1 {
+			t.Fatalf("%s: native reads %d", filter, delta)
 		}
-		if got.NextCursor == nil {
-			break
+		source := requireSourceStatus(t, got.Sources, "core", adapter.SourceUnavailable)
+		if source.Error == nil || source.Error.Code != adapter.ErrorCodeUnsupported {
+			t.Fatalf("%s: source error %+v", filter, source.Error)
 		}
-		cursor = *got.NextCursor
 	}
-	if totalCalls != 11 {
-		t.Fatalf("failed scan skipped or repeated pages %d", totalCalls)
+}
+
+func TestVerificationKeepsCapableSourceWhenAnotherLacksChecks(t *testing.T) {
+	now := time.Now().UTC()
+	verified := &adapter.Verification{Classification: "verified_ok", Freshness: "fresh", ObservedAt: &now}
+	capable := fixture.New(fixture.Options{Code: "a", Data: fixture.Data{Accounts: []adapter.Account{{AccountID: 1, LastActivityAt: now, Connections: []adapter.ConnectionSummary{{ID: "a-1", Status: adapter.MapConnectionStatus("active"), AuthorizationCheck: verified}}}}}})
+	legacy := &legacyVerification{Backend: fixture.New(fixture.Options{Code: "z", Data: fixture.Data{Accounts: []adapter.Account{{AccountID: 2, LastActivityAt: now, Connections: []adapter.ConnectionSummary{{ID: "z-2", Status: adapter.MapConnectionStatus("active")}}}}}})}
+	got, err := New([]adapter.Backend{capable, legacy}, nil).ListAccounts(t.Context(), adapter.Actor{}, ListFilter{Verification: "ok", Limit: 25})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Items) != 1 || got.Items[0].AccountID != 1 {
+		t.Fatalf("items %+v", got.Items)
+	}
+	requireSourceStatus(t, got.Sources, "a", adapter.SourceAvailable)
+	source := requireSourceStatus(t, got.Sources, "z", adapter.SourceUnavailable)
+	if source.Error == nil || source.Error.Code != adapter.ErrorCodeUnsupported {
+		t.Fatalf("source error %+v", source.Error)
+	}
+	unknown, err := New([]adapter.Backend{capable, legacy}, nil).ListAccounts(t.Context(), adapter.Actor{}, ListFilter{Verification: "unknown", Limit: 25})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, source := range unknown.Sources {
+		if source.Status != adapter.SourceAvailable {
+			t.Fatalf("unknown filter marked %+v", source)
+		}
 	}
 }
 func TestVerificationCombinesBackendFactsWithoutBreakingNativeCursor(t *testing.T) {
