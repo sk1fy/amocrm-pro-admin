@@ -133,8 +133,9 @@ func TestLoginFailureUniformity(t *testing.T) {
 	missing := doJSON(t, router, http.MethodPost, "/api/v1/auth/login", loginBody("missing@example.invalid", testPassword), "")
 	wrong := doJSON(t, router, http.MethodPost, "/api/v1/auth/login", loginBody(emp.Email, "wrong-password"), "")
 	blocked := doJSON(t, router, http.MethodPost, "/api/v1/auth/login", loginBody(disabled.Email, testPassword), "")
-	bodies := []string{missing.Body.String(), wrong.Body.String(), blocked.Body.String()}
-	for i, rec := range []*httptest.ResponseRecorder{missing, wrong, blocked} {
+	oversized := doJSON(t, router, http.MethodPost, "/api/v1/auth/login", loginBody(strings.Repeat("a", 4096)+"@example.invalid", testPassword), "")
+	bodies := []string{missing.Body.String(), wrong.Body.String(), blocked.Body.String(), oversized.Body.String()}
+	for i, rec := range []*httptest.ResponseRecorder{missing, wrong, blocked, oversized} {
 		if rec.Code != http.StatusUnauthorized {
 			t.Fatalf("status[%d]=%d %s", i, rec.Code, rec.Body.String())
 		}
@@ -143,8 +144,16 @@ func TestLoginFailureUniformity(t *testing.T) {
 			t.Fatalf("body[%d]=%s", i, bodies[i])
 		}
 	}
-	if extractMessage(t, missing) != extractMessage(t, wrong) || extractMessage(t, wrong) != extractMessage(t, blocked) {
-		t.Fatalf("messages differ: %q %q %q", extractMessage(t, missing), extractMessage(t, wrong), extractMessage(t, blocked))
+	if extractMessage(t, missing) != extractMessage(t, wrong) || extractMessage(t, wrong) != extractMessage(t, blocked) ||
+		extractMessage(t, blocked) != extractMessage(t, oversized) {
+		t.Fatalf("messages differ: %q %q %q %q", extractMessage(t, missing), extractMessage(t, wrong), extractMessage(t, blocked), extractMessage(t, oversized))
+	}
+	var longest int
+	if err := pool.QueryRow(ctx, `SELECT max(char_length(actor_email)) FROM admin_audit_log WHERE action = $1`, audit.ActionLoginFailed).Scan(&longest); err != nil {
+		t.Fatal(err)
+	}
+	if longest != auth.MaxEmailLength {
+		t.Fatalf("longest audited login email = %d, want %d", longest, auth.MaxEmailLength)
 	}
 }
 
