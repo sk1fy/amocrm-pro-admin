@@ -9,6 +9,7 @@ import (
 	"net/netip"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -81,6 +82,10 @@ func NewService(pool *pgxpool.Pool, timeout, absoluteTTL, idleTTL time.Duration,
 
 func (s *Service) Login(ctx context.Context, email, password, ip, userAgent string) (string, Account, error) {
 	email = NormalizeEmail(email)
+	if utf8.RuneCountInString(email) > MaxEmailLength {
+		_ = Verify(password, dummyPasswordHash())
+		return "", Account{}, ErrInvalidCredentials
+	}
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
 
@@ -353,18 +358,39 @@ func (s *Service) lookupByEmail(ctx context.Context, email string) (Account, *st
 	return account, hash, nil
 }
 
+// MaxEmailLength is the longest accepted address (RFC 5321 path limit).
+const MaxEmailLength = 254
+
 func NormalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
+}
+
+// TruncateEmail bounds an untrusted address before it becomes a rate-limit
+// key or an audit value.
+func TruncateEmail(email string) string {
+	if utf8.RuneCountInString(email) <= MaxEmailLength {
+		return email
+	}
+	return string([]rune(email)[:MaxEmailLength])
 }
 
 func ClientIP(r *http.Request) string {
 	return ClientIPFrom(r, false)
 }
 
+// ClientIPFrom returns the client address. With trustProxy it reads the
+// rightmost X-Forwarded-For entry: the one trusted proxy in front of the API
+// appends (or writes) the address it saw, while entries to its left come from
+// the client and are ignored (ADR-0022). An unparsable rightmost entry is not
+// replaced by an entry further left; X-Real-IP is used only without
+// X-Forwarded-For.
 func ClientIPFrom(r *http.Request, trustProxy bool) string {
 	if trustProxy {
-		if ip := firstForwardedIP(r.Header.Values("X-Forwarded-For")); ip != "" {
-			return ip
+		if entry, ok := lastForwardedEntry(r.Header.Values("X-Forwarded-For")); ok {
+			if ip := parseClientIP(entry); ip != "" {
+				return ip
+			}
+			return peerIP(r.RemoteAddr)
 		}
 		if ip := firstHeaderIP(r.Header.Values("X-Real-IP")); ip != "" {
 			return ip
@@ -373,15 +399,17 @@ func ClientIPFrom(r *http.Request, trustProxy bool) string {
 	return peerIP(r.RemoteAddr)
 }
 
-func firstForwardedIP(values []string) string {
-	for _, value := range values {
-		for _, entry := range strings.Split(value, ",") {
-			if ip := parseClientIP(entry); ip != "" {
-				return ip
-			}
+// lastForwardedEntry returns the last comma-separated entry of the last
+// non-blank X-Forwarded-For header line.
+func lastForwardedEntry(values []string) (string, bool) {
+	for i := len(values) - 1; i >= 0; i-- {
+		if strings.TrimSpace(values[i]) == "" {
+			continue
 		}
+		entries := strings.Split(values[i], ",")
+		return entries[len(entries)-1], true
 	}
-	return ""
+	return "", false
 }
 
 func firstHeaderIP(values []string) string {

@@ -44,8 +44,14 @@ dc --profile tools run --rm admin-cli employee revoke-sessions \
 - Reverse proxy terminates TLS и маршрутизирует:
   - `https://admin.example.com/` → `127.0.0.1:5173` (frontend, SPA);
   - `https://admin.example.com/api/` → `127.0.0.1:8090` (admin-api).
-  Proxy передаёт `X-Forwarded-For`/`X-Real-IP`; `TRUST_PROXY_HEADERS=true`
-  ([ADR-0006](../adr/0006-trusted-proxy-headers.md)). Оба порта
+  Proxy **перезаписывает** `X-Forwarded-For` адресом клиента
+  (`proxy_set_header X-Forwarded-For $remote_addr;`, не
+  `$proxy_add_x_forwarded_for`) и выставляет `X-Real-IP`;
+  `TRUST_PROXY_HEADERS=true`. Admin API берёт правое значение
+  `X-Forwarded-For`, поэтому перед этим прокси не должно быть других
+  прокси или балансировщиков: иначе лимит входа и аудит увидят их адрес
+  ([ADR-0006](../adr/0006-trusted-proxy-headers.md),
+  [ADR-0022](../adr/0022-rightmost-forwarded-address.md)). Оба порта
   публикуются только на loopback: management listener `:8092` и
   PostgreSQL наружу не выходят.
 - Docker Engine и Compose с поддержкой `!reset`/`!override` (v2.24+ или

@@ -187,6 +187,11 @@ func (s *Store) Finish(ctx context.Context, previous Operation, result adapter.C
 	if terminal(state) {
 		finished = time.Now().UTC()
 	}
+	// A repeated unknown_outcome carries no new fact; keep finished_at and
+	// updated_at so retention can prune it.
+	if current.State == "unknown_outcome" && state == current.State && bytes.Equal(current.Result, raw) && sameError(current.Error, result.Error) {
+		return current, nil
+	}
 	observed := result.ObservedAt
 	if observed.IsZero() {
 		observed = time.Now().UTC()
@@ -206,6 +211,13 @@ func (s *Store) Finish(ctx context.Context, previous Operation, result adapter.C
 	}
 	return got, tx.Commit(ctx)
 }
+func sameError(a, b *adapter.ObsError) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.Code == b.Code && a.Message == b.Message
+}
+
 func copySafeResultValue(key string, value any) (any, bool) {
 	switch key {
 	case "assignment_state", "external_effect_state", "evidence":

@@ -35,6 +35,7 @@
 - [Регистрация MVP контроля активности](activity-mvp-registration.md).
 - [Пользователи amoCRM в карточке аккаунта](account-crm-users.md).
 - [Спокойный интерфейс админки](calm-interface.md).
+- [Исправления по аудиту 2026-11-07](audit-fixes.md).
 
 ## Новая работа
 

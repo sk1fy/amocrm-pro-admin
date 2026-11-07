@@ -112,7 +112,8 @@ func (s *Service) ListAccounts(ctx context.Context, actor adapter.Actor, filter 
 	if hasPostFilter(filter) || scanMode {
 		return s.scanAccounts(ctx, actor, filter, query, backends, scanOffset, limit)
 	}
-	gathered := adapter.Gather(ctx, backends, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Account]], error) {
+	pending := PendingBackends(backends, cursors)
+	gathered := adapter.Gather(ctx, pending, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Account]], error) {
 		return backend.ListAccounts(ctx, actor, adapter.AccountFilter{
 			Query:         query.CoreQ(),
 			IntegrationID: filter.IntegrationID,
@@ -124,21 +125,20 @@ func (s *Service) ListAccounts(ctx context.Context, actor adapter.Actor, filter 
 		return ListResult{}, adapter.ErrInvalidArgument
 	}
 
-	totalKnown := !sourceUnavailable(gathered.Sources)
+	// A finished source is not read again, so its total is not known here.
+	totalKnown := !sourceUnavailable(gathered.Sources) && len(pending) == len(backends)
 	total := 0
 	unavailable := sourceUnavailable(gathered.Sources)
 	merged := map[int64]*Aggregated{}
 	order := make([]int64, 0)
-	next := map[string]string{}
+	next := NewContinuation(cursors)
 	for _, obs := range gathered.Items {
 		backend := obs.Source
 		if obs.Data == nil {
 			totalKnown = false
 			continue
 		}
-		if obs.Data.NextCursor != nil && *obs.Data.NextCursor != "" {
-			next[backend] = *obs.Data.NextCursor
-		}
+		next.Advance(backend, obs.Data.NextCursor)
 		if obs.Data.Total == nil {
 			totalKnown = false
 		} else {
@@ -179,7 +179,7 @@ func (s *Service) ListAccounts(ctx context.Context, actor adapter.Actor, filter 
 	if totalKnown {
 		totalPtr = &total
 	}
-	return ListResult{Items: items, NextCursor: EncodeCursors(next), Total: totalPtr, Sources: gathered.Sources}, nil
+	return ListResult{Items: items, NextCursor: next.Encode(pending), Total: totalPtr, Sources: gathered.Sources}, nil
 }
 
 // scanAccounts walks backend pages while a post-filter is active so that
@@ -195,13 +195,22 @@ func (s *Service) scanAccounts(
 	offset, limit int,
 ) (ListResult, error) {
 	pageCursors := map[string]string{}
+	// A source whose last page was read is not read again: restarting it would
+	// merge its connections into the same accounts twice.
+	exhausted := map[string]bool{}
 	sources := []adapter.SourceStatus{}
 	unavailable := false
 	merged := map[int64]*Aggregated{}
 	order := make([]int64, 0)
 	complete := false
 	for page := 0; page < maxScanAccounts/scanPageSize; page++ {
-		gathered := adapter.Gather(ctx, backends, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Account]], error) {
+		pending := make([]adapter.Backend, 0, len(backends))
+		for _, backend := range backends {
+			if !exhausted[backend.Descriptor().Code] {
+				pending = append(pending, backend)
+			}
+		}
+		gathered := adapter.Gather(ctx, pending, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Account]], error) {
 			return backend.ListAccounts(ctx, actor, adapter.AccountFilter{
 				Query:         query.CoreQ(),
 				IntegrationID: filter.IntegrationID,
@@ -248,7 +257,7 @@ func (s *Service) scanAccounts(
 				pageCursors[obs.Source] = *obs.Data.NextCursor
 				more = true
 			} else {
-				delete(pageCursors, obs.Source)
+				exhausted[obs.Source] = true
 			}
 		}
 		if !more {

@@ -95,9 +95,10 @@ Prometheus.
 `make up` поднимает PostgreSQL, мигратор, Admin API и frontend
 (nginx на `http://127.0.0.1:5173`, прокси `/api` на Admin API). Compose
 выставляет `TRUST_PROXY_HEADERS=true`, потому что перед API всегда стоит
-nginx и передаёт `X-Real-IP`/`X-Forwarded-For`; при прямом доступе к `:8090`
-без прокси переменная должна быть `false`
-([ADR-0006](../adr/0006-trusted-proxy-headers.md)).
+nginx и перезаписывает `X-Real-IP`/`X-Forwarded-For`; при прямом доступе
+к `:8090` без прокси переменная должна быть `false`
+([ADR-0006](../adr/0006-trusted-proxy-headers.md),
+[ADR-0022](../adr/0022-rightmost-forwarded-address.md)).
 
 ```sh
 cp .env.example .env            # CORE_ADMIN_API_TOKEN нужен для core-http

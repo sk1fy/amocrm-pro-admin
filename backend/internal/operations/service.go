@@ -83,6 +83,10 @@ func Permission(target, command string) string {
 }
 func (s *Service) authorize(ctx context.Context, id uuid.UUID, permission string) (rbac.Employee, error) {
 	employee, err := s.employees.Get(ctx, id)
+	if err != nil && !errors.Is(err, rbac.ErrEmployeeNotFound) {
+		// An admin DB failure is not a permission decision.
+		return employee, adapter.Unavailable("admin", "admin database unavailable")
+	}
 	if err != nil || employee.Status != auth.StatusActive || permission == "" || !rbac.Allows(employee.Role, permission) {
 		return employee, ErrForbidden
 	}
@@ -163,7 +167,7 @@ func (s *Service) Execute(ctx context.Context, input Submit) (Operation, error) 
 	result, err := commander.ExecuteCommand(execution, actor, operation.ID.String(), input.Request)
 	if err != nil {
 		state := "unknown_outcome"
-		if errors.Is(err, adapter.ErrRejected) || errors.Is(err, adapter.ErrInvalidArgument) || errors.Is(err, adapter.ErrNotFound) || errors.Is(err, adapter.ErrConflict) || errors.Is(err, adapter.ErrUnsupported) {
+		if errors.Is(err, adapter.ErrRejected) || errors.Is(err, adapter.ErrInvalidArgument) || errors.Is(err, adapter.ErrNotFound) || errors.Is(err, adapter.ErrConflict) || errors.Is(err, adapter.ErrUnsupported) || errors.Is(err, adapter.ErrForbidden) {
 			state = "failed"
 		}
 		preserved := result.Result
@@ -207,6 +211,9 @@ func commandError(err error) *adapter.ObsError {
 		code = "backend_timeout"
 	case errors.Is(err, adapter.ErrUnsupported):
 		code = "capability_unavailable"
+	case errors.Is(err, adapter.ErrForbidden):
+		// Core refused before accepting the command; it keeps no receipt.
+		code = adapter.ErrorCodePermissionDenied
 	}
 	message := adapter.SafeMessage(err)
 	if code == "forbidden" {
@@ -337,6 +344,11 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (Operation, error) {
 	result, err := commander.GetCommand(ctx, adapter.EmployeeActor(operation.EmployeeID), operation.ID.String())
 	if err != nil {
 		// The receipt can arrive later. Never redispatch a lost body (notably secrets).
+		// An unknown_outcome stays as recorded: rewriting it on every poll would
+		// refresh finished_at/updated_at and keep it out of retention forever.
+		if operation.State == "unknown_outcome" {
+			return operation, nil
+		}
 		if operation.State == "running" || operation.State == "accepted" || errors.Is(err, adapter.ErrNotFound) {
 			return s.persist(operation, adapter.CommandResult{State: "unknown_outcome", Error: commandError(err)})
 		}

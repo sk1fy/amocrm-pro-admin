@@ -108,8 +108,11 @@ func (h *api) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email := auth.NormalizeEmail(body.Email)
+	// Login rejects longer addresses; the limiter key and the audit value
+	// stay bounded either way.
+	boundedEmail := auth.TruncateEmail(email)
 	ip := h.clientIP(r)
-	if !h.limiter.Allow(ip, email) {
+	if !h.limiter.Allow(ip, boundedEmail) {
 		httpx.WriteError(w, r, httpx.RateLimited("too many attempts"))
 		return
 	}
@@ -120,7 +123,7 @@ func (h *api) login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_ = h.audit.Record(r.Context(), audit.Event{
-			ActorEmail: email,
+			ActorEmail: boundedEmail,
 			Action:     audit.ActionLoginFailed,
 			Outcome:    audit.OutcomeDenied,
 			RequestID:  httpx.RequestIDFromContext(r.Context()),
@@ -157,6 +160,10 @@ func (h *api) logout(w http.ResponseWriter, r *http.Request) {
 func (h *api) me(w http.ResponseWriter, r *http.Request) {
 	principal, _ := auth.PrincipalFromContext(r.Context())
 	emp, err := h.employees.Get(r.Context(), principal.EmployeeID)
+	if err != nil && !errors.Is(err, rbac.ErrEmployeeNotFound) {
+		httpx.WriteError(w, r, httpx.Internal())
+		return
+	}
 	if err != nil || emp.Status != auth.StatusActive {
 		httpx.WriteError(w, r, httpx.Unauthenticated("authentication required"))
 		return
@@ -223,6 +230,10 @@ func (h *api) createEmployee(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSpace(body.Name)
 	if email == "" || name == "" {
 		httpx.WriteError(w, r, httpx.InvalidArgument("email and name are required"))
+		return
+	}
+	if utf8.RuneCountInString(email) > auth.MaxEmailLength {
+		httpx.WriteError(w, r, httpx.InvalidArgument("email must be at most 254 characters"))
 		return
 	}
 	if !rbac.ValidRole(body.Role) {

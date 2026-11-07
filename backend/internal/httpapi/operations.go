@@ -43,7 +43,8 @@ func (h *api) listJobs(w http.ResponseWriter, r *http.Request) {
 		}
 		since = &parsed
 	}
-	gathered := adapter.Gather(r.Context(), backends, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Job]], error) {
+	pending := accounts.PendingBackends(backends, cursors)
+	gathered := adapter.Gather(r.Context(), pending, func(ctx context.Context, backend adapter.Backend) (adapter.Observation[adapter.Page[adapter.Job]], error) {
 		return backend.ListJobs(ctx, actor, adapter.JobFilter{
 			Status: status, Type: jobType, Since: since, Limit: limit, Cursor: cursors[backend.Descriptor().Code],
 		})
@@ -53,20 +54,18 @@ func (h *api) listJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	items := make([]jobDTO, 0)
-	next := map[string]string{}
+	next := accounts.NewContinuation(cursors)
 	for _, obs := range gathered.Items {
 		if obs.Data == nil {
 			continue
 		}
-		if obs.Data.NextCursor != nil && *obs.Data.NextCursor != "" {
-			next[obs.Source] = *obs.Data.NextCursor
-		}
+		next.Advance(obs.Source, obs.Data.NextCursor)
 		for _, item := range obs.Data.Items {
 			items = append(items, toJobDTO(item))
 		}
 	}
 	httpx.WriteJSON(w, http.StatusOK, sourcedListResponse{
-		Items: items, NextCursor: accounts.EncodeCursors(next), Sources: gathered.Sources,
+		Items: items, NextCursor: next.Encode(pending), Sources: gathered.Sources,
 	})
 }
 
