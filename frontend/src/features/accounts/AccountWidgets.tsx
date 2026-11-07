@@ -9,8 +9,8 @@ import { EmptyState } from '../../components/EmptyState'
 import { allSourcesUnavailable } from '../../components/SourcesBanner'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
-import { formatNull, formatRelativeTime, formatTime } from '../../lib/format'
-import { widgetProblems } from '../../lib/connectionHealth'
+import { formatNull, formatTime } from '../../lib/format'
+import styles from './AccountWidgets.module.css'
 
 export function AccountWidgets() {
   const { accountId } = useRouteParams<{ accountId: string }>()
@@ -39,66 +39,64 @@ export function AccountWidgets() {
       columns={[
         {
           id: 'integration',
-          header: 'Интеграция',
-          cell: (obs) =>
-            obs.data ? (
-              <Link
-                to="/accounts/$accountId/widgets/$backend/$connectionId"
-                params={{
-                  accountId,
-                  backend: obs.data.backend,
-                  connectionId: obs.data.connection_id,
-                }}
-              >
-                {formatNull(obs.data.integration_code)}
-              </Link>
-            ) : (
-              formatNull(null)
-            ),
-        },
-        {
-          id: 'products',
-          header: 'Продукты и доступ',
-          cell: (obs) =>
-            obs.freshness === 'unavailable' || obs.freshness === 'unknown' ? (
-              <StatusBadge domain="freshness" state={obs.freshness} />
-            ) : (
-              <ProductGrants grants={obs.data?.grants} />
-            ),
-        },
-        {
-          id: 'state',
-          header: 'Состояние установки',
+          header: 'Виджет',
+          title: (obs) => `Данные на ${formatTime(obs.observed_at)} · источник: ${obs.source}`,
           cell: (obs) => (
-            <StatusBadge
-              domain="connection"
-              state={obs.data?.state}
-              raw={obs.data?.raw}
-              testId="connection-badge"
-            />
+            <div className={styles.widget}>
+              {obs.data ? (
+                <Link
+                  className={styles.name}
+                  to="/accounts/$accountId/widgets/$backend/$connectionId"
+                  params={{
+                    accountId,
+                    backend: obs.data.backend,
+                    connectionId: obs.data.connection_id,
+                  }}
+                >
+                  {formatNull(obs.data.integration_code)}
+                </Link>
+              ) : (
+                formatNull(null)
+              )}
+              {obs.freshness === 'unavailable' || obs.freshness === 'unknown' ? (
+                <StatusBadge domain="freshness" state={obs.freshness} />
+              ) : (
+                <ProductGrants grants={obs.data?.grants} />
+              )}
+            </div>
           ),
         },
         {
-          id: 'verification',
-          header: 'Проверка amoCRM',
+          id: 'state',
+          header: 'Установка',
           cell: (obs) => (
-            <VerificationBadge
-              verification={obs.data?.authorization_check}
-              unavailable={obs.freshness === 'unavailable'}
-            />
+            <div className={page.stack}>
+              <StatusBadge
+                domain="connection"
+                state={obs.data?.state}
+                raw={obs.data?.raw}
+                testId="connection-badge"
+                calm
+              />
+              {obs.freshness === 'stale' ? (
+                <StatusBadge domain="freshness" state="stale" variant="text" />
+              ) : null}
+            </div>
           ),
         },
         {
           id: 'authorization',
-          header: 'Локальная авторизация',
+          header: 'Авторизация',
           cell: (obs) =>
             obs.data ? (
-              <span className={page.row}>
-                <StatusBadge domain="authorization" state={obs.data.authorization?.state} />
-                {obs.data.authorization?.unverified ? (
-                  <span className={page.muted}>не проверено запросом к amoCRM</span>
-                ) : null}
-              </span>
+              <div className={page.stack}>
+                <StatusBadge domain="authorization" state={obs.data.authorization?.state} calm />
+                <VerificationBadge
+                  verification={obs.data.authorization_check}
+                  unavailable={obs.freshness === 'unavailable'}
+                  variant="text"
+                />
+              </div>
             ) : (
               formatNull(null)
             ),
@@ -106,11 +104,11 @@ export function AccountWidgets() {
         {
           id: 'webhook',
           header: 'Webhook',
-          cell: (obs) => <StatusBadge domain="webhook" state={obs.data?.webhook?.status} />,
+          cell: (obs) => <StatusBadge domain="webhook" state={obs.data?.webhook?.status} calm />,
         },
         {
           id: 'pilot',
-          header: 'Пилот контроля активности',
+          header: 'Контроль активности',
           cell: (obs) =>
             obs.freshness === 'unavailable' || obs.freshness === 'unknown' ? (
               <StatusBadge domain="freshness" state={obs.freshness} />
@@ -119,28 +117,9 @@ export function AccountWidgets() {
                 domain="pilot"
                 state={obs.data?.activity?.pilot}
                 raw={obs.data?.activity?.pilot_raw}
+                calm
               />
             ),
-        },
-        {
-          id: 'problems',
-          header: 'Проблемы',
-          cell: (obs) => {
-            if (!obs.data) {
-              return formatNull(null)
-            }
-            const problems = widgetProblems(obs.data)
-            return problems.length > 0 ? problems.join('; ') : 'Нет'
-          },
-        },
-        {
-          id: 'observed',
-          header: 'Обновлено',
-          cell: (obs) => (
-            <time dateTime={obs.observed_at} title={formatTime(obs.observed_at)}>
-              {formatRelativeTime(obs.observed_at)}
-            </time>
-          ),
         },
       ]}
     />

@@ -3,9 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { fetchCatalog, fetchMe, keys } from '../../api/queries'
 import type { Integration } from '../../api/types'
-import page from '../../components/page.module.css'
+import { ActionMenu } from '../../components/ActionMenu'
 import { CommandAction, type CommandField } from '../operations/CommandAction'
 import { splitValues, type CommandSpec } from '../operations/commands'
+import styles from './IntegrationCommands.module.css'
 
 function integrationSpec(
   backend: string,
@@ -61,7 +62,7 @@ const parameterPayload = (data: FormData) => ({
   webhook_events: splitValues(data.get('webhook_events')),
 })
 
-export function CreateIntegration() {
+export function CreateIntegration({ resultTarget }: { resultTarget?: Element | null }) {
   const me = useQuery({ queryKey: keys.me, queryFn: fetchMe })
   const catalog = useQuery({ queryKey: keys.catalog, queryFn: fetchCatalog })
   const [draftBackend, setDraftBackend] = useState('')
@@ -69,23 +70,26 @@ export function CreateIntegration() {
   const backend = draftBackend || backends[0]?.code || ''
   if (!me.data?.permissions.includes('integrations:write')) return null
   return (
-    <div className={page.actions}>
+    <div className={styles.create}>
       {backends.length > 1 ? (
-        <label className={page.label}>
-          Бекенд
-          <select value={backend} onChange={(event) => setDraftBackend(event.target.value)}>
-            {backends.map((item) => (
-              <option key={item.code} value={item.code}>
-                {item.display_name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <select
+          aria-label="Бекенд новой интеграции"
+          title="Бекенд, в котором будет создана интеграция"
+          value={backend}
+          onChange={(event) => setDraftBackend(event.target.value)}
+        >
+          {backends.map((item) => (
+            <option key={item.code} value={item.code}>
+              {item.display_name}
+            </option>
+          ))}
+        </select>
       ) : null}
       {backend ? (
         <CommandAction
           layout="inline"
           emphasis="primary"
+          resultTarget={resultTarget}
           spec={integrationSpec(backend, 'new', 'create', 'Создать интеграцию')}
           fields={[
             { name: 'code', label: 'Код интеграции', required: true },
@@ -112,31 +116,65 @@ export function CreateIntegration() {
   )
 }
 
+/**
+ * Header actions of the integration card (ADR-0021): one primary command,
+ * only the toggle that applies to the current state, rarer commands in
+ * «Ещё». Results render into `resultTarget` under the header.
+ */
 export function IntegrationCommands({
   item,
   onInspect,
+  resultTarget,
 }: {
   item: Integration
   onInspect: () => void
+  resultTarget?: Element | null
 }) {
   const catalog = useQuery({ queryKey: keys.catalog, queryFn: fetchCatalog })
   const services = catalog.data?.products ?? []
   return (
-    <section className={page.stack} aria-label="Управление интеграцией">
-      <Link
-        to="/operations/admin"
-        search={{ backend: item.backend, target_type: 'integration', target_id: item.id }}
-      >
-        История команд интеграции
-      </Link>
-      <div className={page.row}>
+    <>
+      <CommandAction
+        layout="inline"
+        emphasis="primary"
+        resultTarget={resultTarget}
+        spec={integrationSpec(item.backend, item.id, 'update', 'Изменить параметры')}
+        fields={parameters(item)}
+        buildPayload={parameterPayload}
+        onInspect={onInspect}
+      />
+      {item.state === 'disabled' ? (
         <CommandAction
-          spec={integrationSpec(item.backend, item.id, 'update', 'Изменить параметры')}
-          fields={parameters(item)}
-          buildPayload={parameterPayload}
+          layout="inline"
+          resultTarget={resultTarget}
+          spec={integrationSpec(
+            item.backend,
+            item.id,
+            'enable',
+            'Включить интеграцию',
+            'integrations:enable',
+          )}
           onInspect={onInspect}
         />
+      ) : null}
+      {item.state === 'active' ? (
         <CommandAction
+          layout="inline"
+          resultTarget={resultTarget}
+          spec={integrationSpec(
+            item.backend,
+            item.id,
+            'disable',
+            'Отключить интеграцию',
+            'integrations:disable',
+          )}
+          onInspect={onInspect}
+        />
+      ) : null}
+      <ActionMenu>
+        <CommandAction
+          layout="inline"
+          resultTarget={resultTarget}
           spec={integrationSpec(
             item.backend,
             item.id,
@@ -156,28 +194,8 @@ export function IntegrationCommands({
           onInspect={onInspect}
         />
         <CommandAction
-          spec={integrationSpec(
-            item.backend,
-            item.id,
-            'enable',
-            'Включить интеграцию',
-            'integrations:enable',
-          )}
-          disabled={item.state !== 'disabled'}
-          onInspect={onInspect}
-        />
-        <CommandAction
-          spec={integrationSpec(
-            item.backend,
-            item.id,
-            'disable',
-            'Отключить интеграцию',
-            'integrations:disable',
-          )}
-          disabled={item.state !== 'active'}
-          onInspect={onInspect}
-        />
-        <CommandAction
+          layout="inline"
+          resultTarget={resultTarget}
           spec={integrationSpec(item.backend, item.id, 'set-service', 'Настроить сервис')}
           fields={[
             {
@@ -206,7 +224,13 @@ export function IntegrationCommands({
           })}
           onInspect={onInspect}
         />
-      </div>
-    </section>
+        <Link
+          to="/operations/admin"
+          search={{ backend: item.backend, target_type: 'integration', target_id: item.id }}
+        >
+          История команд интеграции
+        </Link>
+      </ActionMenu>
+    </>
   )
 }

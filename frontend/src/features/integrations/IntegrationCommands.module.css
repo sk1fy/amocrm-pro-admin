@@ -1,0 +1,20 @@
+.create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Command receipts under the page header (CommandAction resultTarget). */
+.results {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 36rem;
+  min-width: 0;
+}
+
+.results:empty {
+  display: none;
+}

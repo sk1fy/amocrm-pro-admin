@@ -4,13 +4,15 @@ import { useState } from 'react'
 import { fetchJob, keys } from '../../api/queries'
 import type { Job } from '../../api/types'
 import { CopyableId } from '../../components/CopyableId'
-import { DataTable } from '../../components/DataTable'
+import { DataTable, type DataTableColumn } from '../../components/DataTable'
 import { DetailDrawer } from '../../components/DetailDrawer'
 import { ErrorState } from '../../components/ErrorState'
 import { Observation } from '../../components/Observation'
 import { StatusBadge } from '../../components/StatusBadge'
+import { TechnicalDetails } from '../../components/TechnicalDetails'
 import { formatDurationSeconds, formatNull, formatTime } from '../../lib/format'
-import { actorLabel, jobLabel } from '../../lib/labels'
+import { actorLabel } from '../../lib/labels'
+import { jobTitle } from './jobText'
 import styles from './JobsTable.module.css'
 import { RetryJob } from './RetryActions'
 
@@ -21,12 +23,17 @@ export type JobRow = {
 
 type Props = {
   rows: JobRow[]
+  /** Account context: the widget column names the connection of this account. */
   accountId?: string
+  /** Connection id → widget code, from the account card. */
+  widgetNames?: ReadonlyMap<string, string>
   nextCursor?: string | null
   onNext?: () => void
   onReset?: () => void
   resetDisabled?: boolean
   total?: number | null
+  limit?: number
+  onLimitChange?: (limit: number) => void
 }
 
 const attemptStatuses = new Set(['retry', 'failed', 'dead', 'processing'])
@@ -50,6 +57,10 @@ export function jobDurationLabel(job: Job): string {
     return formatNull(null)
   }
   return formatDurationSeconds(Math.round((finished - started) / 1000))
+}
+
+function attemptsLabel(job: Job): string {
+  return `${formatNull(job.attempts)}/${formatNull(job.max_attempts)}`
 }
 
 function formatAttemptDuration(value: number | null | undefined): string {
@@ -85,7 +96,6 @@ export function JobAttempts({ backend, jobId }: { backend: string; jobId: string
                 <th scope="col">№</th>
                 <th scope="col">Исход</th>
                 <th scope="col">Начало</th>
-                <th scope="col">Завершение</th>
                 <th scope="col">Длительность</th>
                 <th scope="col">Ошибка</th>
               </tr>
@@ -95,10 +105,16 @@ export function JobAttempts({ backend, jobId }: { backend: string; jobId: string
                 <tr key={attempt.id}>
                   <td>{formatNull(attempt.attempt)}</td>
                   <td>
-                    <StatusBadge domain="job_outcome" state={attempt.outcome} raw={attempt.raw} />
+                    <StatusBadge
+                      domain="job_outcome"
+                      state={attempt.outcome}
+                      raw={attempt.raw}
+                      calm
+                    />
                   </td>
-                  <td>{formatTime(attempt.started_at)}</td>
-                  <td>{formatTime(attempt.finished_at)}</td>
+                  <td title={`Завершение: ${formatTime(attempt.finished_at)}`}>
+                    {formatTime(attempt.started_at)}
+                  </td>
                   <td>{formatAttemptDuration(attempt.duration_ms)}</td>
                   <td>{formatNull(attempt.error_message)}</td>
                 </tr>
@@ -111,68 +127,130 @@ export function JobAttempts({ backend, jobId }: { backend: string; jobId: string
   )
 }
 
-function JobDetailBody({ row, accountId }: { row: JobRow; accountId?: string }) {
+/** Link to the job's connection: the widget name in account context. */
+function JobConnection({
+  row,
+  accountId,
+  widgetNames,
+}: {
+  row: JobRow
+  accountId?: string
+  widgetNames?: ReadonlyMap<string, string>
+}) {
   const job = row.job
   const targetAccountId = job.account_id ?? accountId
+  if (job.installation_id && row.backend && targetAccountId) {
+    const name = widgetNames?.get(job.installation_id)
+    const label = accountId ? (name ?? 'Подключение') : targetAccountId
+    return (
+      <Link
+        to="/accounts/$accountId/widgets/$backend/$connectionId"
+        params={{
+          accountId: targetAccountId,
+          backend: row.backend,
+          connectionId: job.installation_id,
+        }}
+        title={
+          accountId ? 'Открыть подключение' : `Открыть подключение аккаунта ${targetAccountId}`
+        }
+      >
+        {label}
+      </Link>
+    )
+  }
+  if (!accountId && job.account_id) {
+    return (
+      <Link to="/accounts/$accountId" params={{ accountId: job.account_id }}>
+        {job.account_id}
+      </Link>
+    )
+  }
+  return <>{formatNull(null)}</>
+}
+
+function JobDetailBody({
+  row,
+  accountId,
+  widgetNames,
+}: {
+  row: JobRow
+  accountId?: string
+  widgetNames?: ReadonlyMap<string, string>
+}) {
+  const job = row.job
+  const failed = jobShowsError(job.status)
   return (
     <div className={styles.detail}>
+      <div className={styles.summary}>
+        <StatusBadge domain="job" state={job.status} raw={job.raw} calm />
+        <RetryJob backend={row.backend} job={job} />
+        {failed && job.retry_allowed === false && job.retry_reason ? (
+          <span className={styles.muted}>Повтор недоступен: {job.retry_reason}</span>
+        ) : null}
+      </div>
+      {failed ? <p className={styles.error}>{formatNull(job.last_error_message)}</p> : null}
       <dl>
-        <dt>Задача</dt>
+        <dt>{accountId ? 'Виджет' : 'Аккаунт'}</dt>
         <dd>
-          {jobLabel(job.type)} <span className={styles.muted}>{job.type}</span>
+          <JobConnection row={row} accountId={accountId} widgetNames={widgetNames} />
         </dd>
-        <dt>Идентификатор</dt>
-        <dd>
-          <CopyableId value={job.id} label="задачи" />
-        </dd>
-        <dt>Статус</dt>
-        <dd>
-          <StatusBadge domain="job" state={job.status} raw={job.raw} />
-        </dd>
-        <dt>Актор</dt>
-        <dd>
-          {actorLabel(job.actor_type)}
-          {job.actor_id ? ` · ${job.actor_id}` : ''}
-        </dd>
-        <dt>Ресурс</dt>
-        <dd>
-          {formatNull(job.resource_type)}
-          {job.resource_id ? ` · ${job.resource_id}` : ''}
-        </dd>
-        <dt>Создано</dt>
+        <dt>Создание</dt>
         <dd>{formatTime(job.created_at)}</dd>
-        <dt>Обновлено</dt>
-        <dd>{formatTime(job.updated_at)}</dd>
-        <dt>Завершено</dt>
+        <dt>Окончание</dt>
         <dd>{formatTime(job.finished_at)}</dd>
         <dt>Длительность</dt>
         <dd>{jobDurationLabel(job)}</dd>
-        <dt>Попытки</dt>
-        <dd>
-          {jobShowsAttempts(job.status)
-            ? `${formatNull(job.attempts)}/${formatNull(job.max_attempts)}`
-            : formatNull(null)}
-        </dd>
-        <dt>Ошибка</dt>
-        <dd>{jobShowsError(job.status) ? formatNull(job.last_error_message) : formatNull(null)}</dd>
+        {jobShowsAttempts(job.status) ? (
+          <>
+            <dt>Попытки</dt>
+            <dd>{attemptsLabel(job)}</dd>
+          </>
+        ) : null}
       </dl>
-      {job.installation_id && row.backend && targetAccountId ? (
-        <Link
-          to="/accounts/$accountId/widgets/$backend/$connectionId"
-          params={{
-            accountId: targetAccountId,
-            backend: row.backend,
-            connectionId: job.installation_id,
-          }}
-        >
-          Открыть подключение
-        </Link>
-      ) : null}
-      {row.backend ? (
-        <JobAttempts backend={row.backend} jobId={job.id} />
-      ) : (
-        <p className={styles.muted}>Бекенд не определён</p>
-      )}
+      <section className={styles.section} aria-label="Попытки выполнения">
+        <h3>Попытки выполнения</h3>
+        {row.backend ? (
+          <JobAttempts backend={row.backend} jobId={job.id} />
+        ) : (
+          <p className={styles.muted}>
+            Бекенд задачи не определён: выберите бекенд в фильтре, чтобы увидеть попытки.
+          </p>
+        )}
+      </section>
+      <TechnicalDetails summary="Технические данные">
+        <dl>
+          <dt>Код задачи</dt>
+          <dd>
+            <code>{job.type}</code>
+          </dd>
+          <dt>Идентификатор</dt>
+          <dd>
+            <CopyableId value={job.id} label="задачи" />
+          </dd>
+          <dt>Бекенд</dt>
+          <dd>{formatNull(row.backend)}</dd>
+          <dt>Инициатор</dt>
+          <dd>
+            {actorLabel(job.actor_type)}
+            {job.actor_id ? ` · ${job.actor_id}` : ''}
+          </dd>
+          <dt>Ресурс</dt>
+          <dd>
+            {formatNull(job.resource_type)}
+            {job.resource_id ? ` · ${job.resource_id}` : ''}
+          </dd>
+          {job.last_error_code ? (
+            <>
+              <dt>Код ошибки</dt>
+              <dd>
+                <code>{job.last_error_code}</code>
+              </dd>
+            </>
+          ) : null}
+          <dt>Обновлено</dt>
+          <dd>{formatTime(job.updated_at)}</dd>
+        </dl>
+      </TechnicalDetails>
     </div>
   )
 }
@@ -180,13 +258,82 @@ function JobDetailBody({ row, accountId }: { row: JobRow; accountId?: string }) 
 export function JobsTable({
   rows,
   accountId,
+  widgetNames,
   nextCursor,
   onNext,
   onReset,
   resetDisabled,
   total,
+  limit,
+  onLimitChange,
 }: Props) {
   const [selected, setSelected] = useState<JobRow | null>(null)
+  const closeDrawer = () => setSelected(null)
+  // Optional columns appear only when some row needs them (ADR-0021).
+  const showAttempts = rows.some((row) => jobShowsAttempts(row.job.status))
+  const showErrors = rows.some((row) => jobShowsError(row.job.status))
+  const columns: DataTableColumn<JobRow>[] = [
+    {
+      id: 'type',
+      header: 'Задача',
+      ellipsis: true,
+      title: (row) => row.job.type,
+      sortValue: (row) => jobTitle(row.job.type),
+      cell: (row) => <span className={styles.task}>{jobTitle(row.job.type)}</span>,
+    },
+    {
+      id: 'status',
+      header: 'Статус',
+      nowrap: true,
+      sortValue: (row) => row.job.status,
+      cell: (row) => <StatusBadge domain="job" state={row.job.status} raw={row.job.raw} calm />,
+    },
+    {
+      id: 'connection',
+      header: accountId ? 'Виджет' : 'Аккаунт',
+      nowrap: true,
+      cell: (row) => <JobConnection row={row} accountId={accountId} widgetNames={widgetNames} />,
+    },
+  ]
+  if (showAttempts) {
+    columns.push({
+      id: 'attempts',
+      header: 'Попытки',
+      nowrap: true,
+      title: (row) => (jobShowsAttempts(row.job.status) ? 'Сделано попыток из допустимых' : ''),
+      cell: (row) => (jobShowsAttempts(row.job.status) ? attemptsLabel(row.job) : ''),
+    })
+  }
+  if (showErrors) {
+    columns.push({
+      id: 'error',
+      header: 'Ошибка',
+      ellipsis: true,
+      title: (row) => (jobShowsError(row.job.status) ? (row.job.last_error_message ?? '') : ''),
+      cell: (row) =>
+        jobShowsError(row.job.status) ? (
+          <span className={styles.errorText}>{formatNull(row.job.last_error_message)}</span>
+        ) : (
+          ''
+        ),
+    })
+  }
+  columns.push(
+    {
+      id: 'duration',
+      header: 'Длительность',
+      nowrap: true,
+      sortValue: (row) => row.job.finished_at ?? '',
+      cell: (row) => jobDurationLabel(row.job),
+    },
+    {
+      id: 'updated',
+      header: 'Обновлено',
+      nowrap: true,
+      sortValue: (row) => row.job.updated_at,
+      cell: (row) => formatTime(row.job.updated_at),
+    },
+  )
   return (
     <>
       <DataTable
@@ -197,107 +344,19 @@ export function JobsTable({
         onReset={onReset}
         resetDisabled={resetDisabled}
         total={total}
+        limit={limit}
+        onLimitChange={onLimitChange}
         onRowClick={(row) => setSelected(row)}
-        columns={[
-          {
-            id: 'actions',
-            header: 'Действия',
-            nowrap: true,
-            width: '8rem',
-            cell: (row) => (
-              <div className={styles.actions}>
-                <button type="button" onClick={() => setSelected(row)}>
-                  Подробнее
-                </button>
-                <RetryJob backend={row.backend} job={row.job} />
-              </div>
-            ),
-          },
-          {
-            id: 'type',
-            header: 'Задача',
-            ellipsis: true,
-            title: (row) => `${jobLabel(row.job.type)} ${row.job.type}`,
-            sortValue: (row) => jobLabel(row.job.type),
-            cell: (row) => (
-              <span>
-                {jobLabel(row.job.type)}
-                <span className={styles.muted}> {row.job.type}</span>
-              </span>
-            ),
-          },
-          {
-            id: 'status',
-            header: 'Статус',
-            nowrap: true,
-            sortValue: (row) => row.job.status,
-            cell: (row) => <StatusBadge domain="job" state={row.job.status} raw={row.job.raw} />,
-          },
-          {
-            id: 'attempts',
-            header: 'Попытки',
-            nowrap: true,
-            cell: (row) =>
-              jobShowsAttempts(row.job.status)
-                ? `${formatNull(row.job.attempts)}/${formatNull(row.job.max_attempts)}`
-                : formatNull(null),
-          },
-          {
-            id: 'duration',
-            header: 'Длительность',
-            nowrap: true,
-            sortValue: (row) => row.job.finished_at ?? '',
-            cell: (row) => jobDurationLabel(row.job),
-          },
-          {
-            id: 'updated',
-            header: 'Обновлено',
-            nowrap: true,
-            sortValue: (row) => row.job.updated_at,
-            cell: (row) => formatTime(row.job.updated_at),
-          },
-          {
-            id: 'error',
-            header: 'Ошибка',
-            ellipsis: true,
-            title: (row) =>
-              jobShowsError(row.job.status) ? (row.job.last_error_message ?? '') : '',
-            cell: (row) =>
-              jobShowsError(row.job.status)
-                ? formatNull(row.job.last_error_message)
-                : formatNull(null),
-          },
-          {
-            id: 'link',
-            header: 'Подключение',
-            nowrap: true,
-            cell: (row) => {
-              const targetAccountId = row.job.account_id ?? accountId
-              if (row.job.installation_id && row.backend && targetAccountId) {
-                return (
-                  <Link
-                    to="/accounts/$accountId/widgets/$backend/$connectionId"
-                    params={{
-                      accountId: targetAccountId,
-                      backend: row.backend,
-                      connectionId: row.job.installation_id,
-                    }}
-                  >
-                    открыть
-                  </Link>
-                )
-              }
-              return formatNull(null)
-            },
-          },
-        ]}
+        columns={columns}
       />
       <DetailDrawer
-        title={selected ? jobLabel(selected.job.type) : 'Задача'}
+        title={selected ? jobTitle(selected.job.type) : 'Задача'}
         open={Boolean(selected)}
-        onClose={() => setSelected(null)}
+        onClose={closeDrawer}
       >
-        {selected ? <JobDetailBody row={selected} accountId={accountId} /> : null}
+        {selected ? (
+          <JobDetailBody row={selected} accountId={accountId} widgetNames={widgetNames} />
+        ) : null}
       </DetailDrawer>
     </>
   )

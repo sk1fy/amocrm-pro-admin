@@ -1,0 +1,33 @@
+.group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-self: end;
+  max-width: 100%;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-2);
+}
+
+.option {
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.option:hover {
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.active,
+.active:hover {
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}

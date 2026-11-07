@@ -1,5 +1,4 @@
 import type {
-  AccountConnectionCard,
   ActivitySync,
   ConnectionCard,
   ConnectionIdentity,
@@ -448,26 +447,4 @@ export function webhookSuccessfulCheckAt(
     return null
   }
   return checkedAt
-}
-
-export function widgetProblems(conn: AccountConnectionCard): string[] {
-  const items: string[] = []
-  if (conn.state === 'reauth_required') {
-    items.push('Нужна повторная авторизация')
-  }
-  if (conn.state === 'error') {
-    items.push('Ошибка установки')
-  }
-  if (conn.state === 'disabled') {
-    items.push('Отключено')
-  }
-  if (conn.authorization?.state === 'missing') {
-    items.push('Нет учётных данных')
-  } else if (conn.authorization?.unverified) {
-    items.push('Авторизация не проверена')
-  }
-  if (conn.webhook?.status === 'error') {
-    items.push('Ошибка webhook')
-  }
-  return items
 }

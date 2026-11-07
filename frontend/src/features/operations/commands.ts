@@ -1,3 +1,5 @@
+import type { AdminOperation } from '../../api/types'
+
 export type CommandSpec = {
   path: string
   backend: string
@@ -159,6 +161,64 @@ export function connectionCommand(
     path: `/api/v1/connections/${encodeURIComponent(backend)}/${encodeURIComponent(id)}/commands/${command}`,
     object: `Подключение ${id}${accountId ? ` · аккаунт ${accountId}` : ''} · ${backend}`,
   }
+}
+
+const otherCommandLabels: Record<string, Record<string, string>> = {
+  integration: {
+    create: 'Создать интеграцию',
+    update: 'Изменить параметры',
+    'rotate-secret': 'Заменить секрет',
+    enable: 'Включить интеграцию',
+    disable: 'Отключить интеграцию',
+    'set-service': 'Настроить сервис',
+  },
+  installation: {
+    'distribution-pause': 'Приостановить новые назначения',
+    'distribution-resume': 'Возобновить новые назначения',
+    'distribution-reconcile': 'Проверить результат назначения',
+    'distribution-delivery-retry': 'Повторить доставку',
+  },
+  job: { retry: 'Повторить задачу' },
+  delivery: { retry: 'Повторить доставку' },
+}
+
+/**
+ * Human name of an admin command (the label of the button that started it).
+ * Unknown commands keep their code: it is the only honest name we have.
+ */
+export function commandTitle(targetType: string, command: string): string {
+  const known = otherCommandLabels[targetType]?.[command]
+  if (known) return known
+  if (targetType === 'installation') {
+    try {
+      return connectionCommand('', '', command).label
+    } catch {
+      return command
+    }
+  }
+  return command
+}
+
+const targetTypeLabels: Record<string, string> = {
+  installation: 'Подключение',
+  integration: 'Интеграция',
+  job: 'Задача',
+  delivery: 'Доставка',
+}
+
+export function targetTypeLabel(targetType: string): string {
+  return targetTypeLabels[targetType] ?? targetType
+}
+
+export const targetTypes = Object.keys(targetTypeLabels)
+
+export function operationObjectLabel(
+  operation: Pick<AdminOperation, 'target_type' | 'target_id'>,
+): string {
+  if (operation.target_type === 'integration' && operation.target_id === 'new') {
+    return 'Новая интеграция'
+  }
+  return targetTypeLabel(operation.target_type)
 }
 
 export function splitValues(value: FormDataEntryValue | null): string[] {

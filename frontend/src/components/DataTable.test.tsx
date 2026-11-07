@@ -95,14 +95,35 @@ describe('DataTable', () => {
         total={146}
       />,
     )
-    expect(screen.getByText('1–2 из 146')).toBeInTheDocument()
+    expect(screen.getByText('Показано 2 из 146')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'В начало' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Дальше' })).toBeEnabled()
   })
 
   it('renders a dash when total is null', () => {
-    expect(pagerRangeLabel(25, null)).toBe('1–25 из —')
-    expect(pagerRangeLabel(25, 0)).toBe('1–25 из 0')
-    expect(pagerRangeLabel(25)).toBe('1–25')
+    expect(pagerRangeLabel(25, null)).toBe('Показано 25')
+    expect(pagerRangeLabel(25, 0)).toBe('Показано 25 из 0')
+    expect(pagerRangeLabel(25)).toBe('Показано 25')
+  })
+
+  it('hides navigation on a single page and keeps the page size control', () => {
+    const sizes: number[] = []
+    render(
+      <DataTable
+        columns={columns}
+        rows={rows}
+        rowKey={(row) => row.id}
+        nextCursor={null}
+        onNext={() => undefined}
+        onReset={() => undefined}
+        resetDisabled
+        limit={25}
+        onLimitChange={(value) => sizes.push(value)}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: 'Дальше' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'В начало' })).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('На странице'), { target: { value: '50' } })
+    expect(sizes).toEqual([50])
   })
 })

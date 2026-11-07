@@ -1,0 +1,9 @@
+.widget {
+  display: grid;
+  gap: 6px;
+  min-width: 12rem;
+}
+
+.name {
+  font-weight: 700;
+}

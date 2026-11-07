@@ -6,6 +6,8 @@ import { DataTable } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
 import { ErrorState } from '../../components/ErrorState'
 import { FilterBar, FilterField } from '../../components/FilterBar'
+import { PageHeader } from '../../components/PageHeader'
+import { RefreshStatus } from '../../components/RefreshStatus'
 import { SourcesBanner } from '../../components/SourcesBanner'
 import page from '../../components/page.module.css'
 import { formatNull } from '../../lib/format'
@@ -31,7 +33,19 @@ export function StatsAccountsPage() {
 
   return (
     <div className={page.page}>
-      <h1>Аккаунты статистики</h1>
+      <PageHeader
+        title="Аккаунты статистики"
+        description="Аккаунты, из которых сложился показатель на обзоре."
+        refresh={
+          <RefreshStatus
+            updatedAt={list.dataUpdatedAt}
+            fetching={list.isFetching}
+            failed={Boolean(list.error) && list.data !== undefined}
+            onRefresh={() => void list.refetch({ cancelRefetch: false })}
+            sources={list.data?.sources}
+          />
+        }
+      />
       <FilterBar
         onSubmit={(event) => {
           event.preventDefault()
@@ -85,7 +99,9 @@ export function StatsAccountsPage() {
           })
         }
       />
-      {list.error ? <ErrorState error={list.error} onRetry={() => void list.refetch()} /> : null}
+      {list.error && !list.data ? (
+        <ErrorState error={list.error} onRetry={() => void list.refetch()} />
+      ) : null}
       <SourcesBanner sources={list.data?.sources} />
       {list.isPending ? <div className={page.skeleton} /> : null}
       {list.data && list.data.items.length === 0 ? (
@@ -96,6 +112,8 @@ export function StatsAccountsPage() {
           rows={list.data.items}
           rowKey={(row) => `${row.backend}:${row.installation_id}`}
           nextCursor={list.data.next_cursor}
+          total={list.data.total}
+          resetDisabled={!search.cursor}
           onNext={() =>
             pushSearch('/stats/accounts', {
               ...search,

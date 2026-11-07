@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { fetchBackends, fetchMe, keys } from '../../api/queries'
 import { ErrorState } from '../../components/ErrorState'
+import { PageHeader } from '../../components/PageHeader'
 import page from '../../components/page.module.css'
 import { exploreURL } from '../../lib/observability'
 import { BackendRegistry } from './BackendRegistry'
@@ -37,34 +38,35 @@ export function SystemNav() {
 
 export function SystemPage() {
   const backends = useQuery({ queryKey: keys.backends, queryFn: fetchBackends })
+  const observability = backends.data?.observability
+  const grafana = exploreURL(observability?.grafana_base_url, 'now-6h', 'now', '')
+  const loki = exploreURL(observability?.loki_base_url, 'now-6h', 'now', '')
   return (
     <div className={page.page}>
-      <RefreshStatus
-        updatedAt={backends.dataUpdatedAt}
-        fetching={backends.isFetching}
-        failed={Boolean(backends.error)}
-        onRefresh={() => void backends.refetch({ cancelRefetch: false })}
+      <PageHeader
+        title="Система"
+        description="Бекенды админки, сотрудники, сессии и аудит."
+        actions={
+          grafana || loki ? (
+            <>
+              {grafana ? <a href={grafana}>Grafana</a> : null}
+              {loki ? <a href={loki}>Loki</a> : null}
+            </>
+          ) : null
+        }
+        refresh={
+          <RefreshStatus
+            updatedAt={backends.dataUpdatedAt}
+            fetching={backends.isFetching}
+            failed={Boolean(backends.error) && backends.data !== undefined}
+            onRefresh={() => void backends.refetch({ cancelRefetch: false })}
+          />
+        }
       />
-      <h1>Система</h1>
       <SystemNav />
       {backends.isPending ? <div className={page.skeleton} /> : null}
-      {backends.error ? (
+      {backends.error && !backends.data ? (
         <ErrorState error={backends.error} onRetry={() => void backends.refetch()} />
-      ) : null}
-      {backends.data?.observability.grafana_base_url ||
-      backends.data?.observability.loki_base_url ? (
-        <p className={page.row}>
-          {exploreURL(backends.data.observability.grafana_base_url, 'now-6h', 'now', '') ? (
-            <a href={exploreURL(backends.data.observability.grafana_base_url, 'now-6h', 'now', '')}>
-              Grafana
-            </a>
-          ) : null}
-          {exploreURL(backends.data.observability.loki_base_url, 'now-6h', 'now', '') ? (
-            <a href={exploreURL(backends.data.observability.loki_base_url, 'now-6h', 'now', '')}>
-              Loki
-            </a>
-          ) : null}
-        </p>
       ) : null}
       {backends.data ? <BackendRegistry items={backends.data.items} /> : null}
     </div>

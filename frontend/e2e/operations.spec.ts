@@ -159,7 +159,9 @@ test('operator confirms scope once and follows a persisted diagnostic operation'
   expect(posts[0]).toMatch(/^[0-9a-f-]{36}$/)
   await page.locator('a[href="/operations/admin/operation-check"]').click()
   await page.reload()
-  await expect(page.getByRole('heading', { name: 'Операция operation-check' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Операция «Проверить подключение»', exact: true }),
+  ).toBeVisible()
   await expect(page.getByText('Ошибка авторизации amoCRM', { exact: true })).toBeVisible()
   await expect(page.locator(`time[datetime="${timestamp}"]`).first()).toBeVisible()
 })
@@ -290,8 +292,17 @@ test('server retry eligibility leaves unsafe jobs read-only', async ({ page }) =
     }),
   )
   await page.goto('/operations')
-  await expect(page.getByRole('button', { name: 'Повторить задачу', exact: true })).toHaveCount(0)
+  // A type without a description keeps its code as the visible name.
   await expect(page.getByText('unsafe.fixture', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Повторить задачу', exact: true })).toHaveCount(0)
+  // ADR-0021: actions live in the job card opened from the row.
+  await page.getByText('unsafe.fixture', { exact: true }).click()
+  const card = page.getByRole('dialog', { name: 'unsafe.fixture', exact: true })
+  await expect(card).toBeVisible()
+  await expect(card.getByRole('button', { name: 'Повторить задачу', exact: true })).toHaveCount(0)
+  await expect(
+    card.getByText('Повтор недоступен: Тип задачи не поддерживает безопасный повтор'),
+  ).toBeVisible()
 })
 
 test('unknown operation outcome offers inspection without blind resubmission', async ({ page }) => {
@@ -351,10 +362,18 @@ test('eligible job retry uses the command endpoint and an idempotency key', asyn
     })
   })
   await page.goto('/operations')
-  await page.getByRole('button', { name: 'Повторить задачу', exact: true }).click()
-  await expect(page.getByRole('dialog').getByText(/Задача eligible-job/)).toBeVisible()
-  await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить' }).click()
-  await expect(page.locator('a[href="/operations/admin/retry-operation"]')).toBeVisible()
+  // No action column: the row opens the job card, retry is inside it.
+  await expect(page.getByRole('button', { name: 'Повторить задачу', exact: true })).toHaveCount(0)
+  await expect(page.locator('td[title="webhook.reconcile"]')).toBeVisible()
+  await page.getByText('Восстановление webhook', { exact: true }).click()
+  const card = page.getByRole('dialog', { name: 'Восстановление webhook', exact: true })
+  await card.getByRole('button', { name: 'Повторить задачу', exact: true }).click()
+  const confirm = page.getByRole('dialog', { name: 'Повторить задачу', exact: true })
+  await expect(confirm.getByText(/Задача eligible-job/)).toBeVisible()
+  await confirm.getByRole('button', { name: 'Подтвердить' }).click()
+  // Closing the nested command dialog must not close the job card.
+  await expect(card).toBeVisible()
+  await expect(card.locator('a[href="/operations/admin/retry-operation"]')).toBeVisible()
   expect(requestKey).toMatch(/^[0-9a-f-]{36}$/)
 })
 

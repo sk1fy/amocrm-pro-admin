@@ -34,6 +34,7 @@
 
 - [Регистрация MVP контроля активности](activity-mvp-registration.md).
 - [Пользователи amoCRM в карточке аккаунта](account-crm-users.md).
+- [Спокойный интерфейс админки](calm-interface.md).
 
 ## Новая работа
 

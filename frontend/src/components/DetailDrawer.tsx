@@ -26,7 +26,16 @@ export function DetailDrawer({ title, open, onClose, children }: Props) {
   }, [open])
 
   return (
-    <dialog ref={dialog} className={styles.drawer} aria-labelledby={titleId} onClose={onClose}>
+    <dialog
+      ref={dialog}
+      className={styles.drawer}
+      aria-labelledby={titleId}
+      onClose={(event) => {
+        // React bubbles `close` from a nested dialog (command confirmation):
+        // only the drawer's own close dismisses it.
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
       <header className={styles.head}>
         <h2 id={titleId}>{title}</h2>
         <button type="button" onClick={onClose}>

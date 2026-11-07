@@ -146,6 +146,7 @@ export function BackendRegistry({ items }: { items: BackendRegistryEntry[] }) {
                 domain="source"
                 state={entry.status}
                 testId={`backend-status-${entry.backend}`}
+                calm
               />
             ),
           },

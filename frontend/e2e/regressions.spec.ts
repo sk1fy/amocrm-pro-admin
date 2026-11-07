@@ -123,7 +123,9 @@ test('account jobs follow the cursor and preserve filters across reload', async 
     return route.fulfill({ json: { items: [], sources: [source] } })
   })
   await page.goto('/accounts/91000002/operations?status=failed&type=webhook&limit=25')
-  await expect(page.getByText('webhook.reconcile', { exact: true })).toBeVisible()
+  // ADR-0021: the job name is human, the type code stays in the tooltip.
+  await expect(page.getByText('Восстановление webhook', { exact: true })).toBeVisible()
+  await expect(page.locator('td[title="webhook.reconcile"]')).toBeVisible()
   await expect(page.getByRole('row')).toHaveCount(26)
   await page.getByRole('button', { name: 'Дальше', exact: true }).click()
   await expect(page.getByText('older-job', { exact: true })).toBeVisible()
@@ -138,7 +140,7 @@ test('account jobs follow the cursor and preserve filters across reload', async 
   await page.reload()
   await expect(page.getByText('older-job', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'В начало', exact: true }).click()
-  await expect(page.getByText('webhook.reconcile', { exact: true })).toBeVisible()
+  await expect(page.getByText('Восстановление webhook', { exact: true })).toBeVisible()
   expect(new URL(page.url()).searchParams.has('cursor')).toBe(false)
 })
 
@@ -177,7 +179,9 @@ test('unavailable attempts show their source error and can be retried', async ({
     return route.fulfill({ json: { items: [], sources: [source] } })
   })
   await page.goto('/operations')
-  await page.getByRole('button', { name: 'Подробнее' }).click()
+  // The row opens the job card; there is no «Подробнее» column (ADR-0021).
+  await page.getByText('Восстановление webhook', { exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Восстановление webhook' })).toBeVisible()
   await expect(page.getByText('Источник недоступен', { exact: true })).toBeVisible()
   await expect(page.getByText('Время ожидания источника истекло')).toBeVisible()
   await expect(page.getByText('Попыток нет', { exact: true })).toHaveCount(0)
@@ -250,8 +254,12 @@ test('integration card requests its connections separately from product grants',
     return route.fulfill({ json: { items: [] } })
   })
   await page.goto('/widgets/core/integration-one')
-  await expect(page.locator('code[title="connection-target"]')).toBeVisible()
-  await expect(page.locator('code[title="connection-unrelated"]')).toHaveCount(0)
+  // Connections are listed by account and open the connection card; IDs
+  // are not shown in the table (ADR-0021).
+  await expect(
+    page.locator('a[href="/accounts/91000002/widgets/core/connection-target"]'),
+  ).toBeVisible()
+  await expect(page.locator('a[href*="connection-unrelated"]')).toHaveCount(0)
   expect(Object.fromEntries(accountRequest!.searchParams)).toEqual({
     integration_id: 'integration-one',
     backend: 'core',

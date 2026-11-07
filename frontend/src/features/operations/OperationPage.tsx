@@ -6,11 +6,14 @@ import { fetchAdminOperation, fetchConnection, keys } from '../../api/queries'
 import type { AdminOperation } from '../../api/types'
 import { CopyableId } from '../../components/CopyableId'
 import { ErrorState } from '../../components/ErrorState'
+import { PageHeader } from '../../components/PageHeader'
+import { RefreshStatus } from '../../components/RefreshStatus'
+import { TechnicalDetails } from '../../components/TechnicalDetails'
 import page from '../../components/page.module.css'
+import { formatTime } from '../../lib/format'
 import { CommandAction } from './CommandAction'
-import { connectionCommand, operationPending } from './commands'
+import { commandTitle, connectionCommand, operationObjectLabel, operationPending } from './commands'
 import { OperationView } from './OperationView'
-import { OperationsNav } from './OperationsNav'
 
 function OperationTarget({ operation }: { operation: AdminOperation }) {
   const connection = useQuery({
@@ -53,6 +56,12 @@ function OperationTarget({ operation }: { operation: AdminOperation }) {
   )
 }
 
+export function operationTitle(operation: AdminOperation | undefined): string {
+  return operation
+    ? `Операция «${commandTitle(operation.target_type, operation.command)}»`
+    : 'Операция'
+}
+
 export function OperationPage() {
   const { operationId } = useRouteParams<{ operationId: string }>()
   const query = useQuery({
@@ -66,24 +75,36 @@ export function OperationPage() {
   const operation = query.data?.operation
   return (
     <div className={page.page}>
-      <h1>Операция {operationId}</h1>
-      <OperationsNav />
+      <PageHeader
+        title={operationTitle(operation)}
+        meta={
+          operation ? (
+            <>
+              <span>{operationObjectLabel(operation)}</span>
+              <span>
+                запущена{' '}
+                <time dateTime={operation.created_at}>{formatTime(operation.created_at)}</time>
+              </span>
+            </>
+          ) : null
+        }
+        refresh={
+          <RefreshStatus
+            updatedAt={query.dataUpdatedAt}
+            fetching={query.isFetching}
+            failed={Boolean(query.error) && query.data !== undefined}
+            onRefresh={() => void query.refetch({ cancelRefetch: false })}
+          />
+        }
+      />
       {query.isPending ? <div className={page.skeleton} /> : null}
-      {query.error ? <ErrorState error={query.error} onRetry={() => void query.refetch()} /> : null}
+      {query.error && !query.data ? (
+        <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+      ) : null}
       {operation ? (
         <>
-          <p className={page.row}>
-            {operation.command} · {operation.backend} · {operation.target_type}{' '}
-            <CopyableId value={operation.target_id} label="объекта" />
-          </p>
-          <p>
-            <CopyableId value={operation.id} label="операции" />
-          </p>
           <OperationView operation={operation} link={false} />
           <OperationTarget operation={operation} />
-          <button type="button" onClick={() => void query.refetch()}>
-            Обновить результат
-          </button>
           {operation.state === 'partial' &&
           operation.target_type === 'installation' &&
           operation.command === 'uninstall' ? (
@@ -94,6 +115,30 @@ export function OperationPage() {
               }}
             />
           ) : null}
+          <TechnicalDetails summary="Технические данные">
+            <dl className={page.dl}>
+              <dt>Операция</dt>
+              <dd>
+                <CopyableId value={operation.id} label="операции" />
+              </dd>
+              <dt>Команда</dt>
+              <dd>
+                <code>{operation.command}</code>
+              </dd>
+              <dt>Бекенд</dt>
+              <dd>{operation.backend}</dd>
+              <dt>Объект</dt>
+              <dd>
+                {operation.target_type} <CopyableId value={operation.target_id} label="объекта" />
+              </dd>
+              <dt>Сотрудник</dt>
+              <dd>
+                <CopyableId value={operation.employee_id} label="сотрудника" />
+              </dd>
+              <dt>Обновлена</dt>
+              <dd>{formatTime(operation.updated_at)}</dd>
+            </dl>
+          </TechnicalDetails>
         </>
       ) : null}
     </div>

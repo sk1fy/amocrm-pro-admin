@@ -9,6 +9,7 @@ import { CopyableId } from '../../components/CopyableId'
 import { DataTable } from '../../components/DataTable'
 import { ErrorState } from '../../components/ErrorState'
 import { Observation } from '../../components/Observation'
+import { OriginTag } from '../../components/OriginTag'
 import { PageSkeleton } from '../../components/PageSkeleton'
 import { StatusBadge } from '../../components/StatusBadge'
 import page from '../../components/page.module.css'
@@ -82,7 +83,7 @@ export function DistributionSection({
         <Observation title="Распределение сделок" observation={summary.data} onRetry={inspect}>
           {(data) => (
             <div className={`${page.stack} ${styles.content}`}>
-              <StatusBadge domain="origin" state={data.origin} />
+              <OriginTag origin={data.origin} />
               <dl className={`${page.dl} ${styles.facts}`}>
                 <dt>Модуль Core</dt>
                 <dd>{data.module_enabled ? 'Разрешён' : 'Выключен'}</dd>
@@ -94,11 +95,17 @@ export function DistributionSection({
                     domain="authorization"
                     state={data.authorization_state}
                     raw={data.authorization_raw}
+                    calm
                   />
                 </dd>
                 <dt>Webhook</dt>
                 <dd>
-                  <StatusBadge domain="webhook" state={data.webhook_state} raw={data.webhook_raw} />{' '}
+                  <StatusBadge
+                    domain="webhook"
+                    state={data.webhook_state}
+                    raw={data.webhook_raw}
+                    calm
+                  />{' '}
                   · {formatTime(data.webhook_checked_at)}
                 </dd>
                 <dt>Связь TeamOS</dt>
