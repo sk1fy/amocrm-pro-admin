@@ -2,6 +2,7 @@ package rbac
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -89,6 +90,11 @@ var matrix = map[string]map[string]bool{
 	RoleAdmin: permissionSet(AllPermissions),
 }
 
+// ErrEmployeeNotFound is returned by an employee lookup when the employee does
+// not exist. Any other lookup error is an infrastructure failure, not a reason
+// to treat the session as unauthenticated.
+var ErrEmployeeNotFound = errors.New("employee not found")
+
 type employeeLookup interface {
 	Get(ctx context.Context, id uuid.UUID) (Employee, error)
 }
@@ -136,6 +142,10 @@ func Require(permission string, lookup employeeLookup) func(http.Handler) http.H
 				return
 			}
 			emp, err := lookup.Get(r.Context(), principal.EmployeeID)
+			if err != nil && !errors.Is(err, ErrEmployeeNotFound) {
+				httpx.WriteError(w, r, httpx.Internal())
+				return
+			}
 			if err != nil || emp.Status != auth.StatusActive {
 				httpx.WriteError(w, r, httpx.Unauthenticated("authentication required"))
 				return

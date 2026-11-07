@@ -43,6 +43,10 @@ func (h *api) submitCommand(w http.ResponseWriter, r *http.Request) {
 	// Authorize before parsing a body or touching a backend; service repeats the DB
 	// check immediately before dispatch as well.
 	employee, err := h.employees.Get(r.Context(), principal.EmployeeID)
+	if err != nil && !errors.Is(err, rbac.ErrEmployeeNotFound) {
+		httpx.WriteError(w, r, httpx.Internal())
+		return
+	}
 	permission := operations.Permission(targetType, command)
 	if err != nil || employee.Status != auth.StatusActive || !rbac.Allows(employee.Role, permission) {
 		httpx.WriteError(w, r, httpx.Forbidden("insufficient permissions"))

@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("employee not found")
+	ErrNotFound = rbac.ErrEmployeeNotFound
 	ErrConflict = errors.New("employee already exists")
 )
 

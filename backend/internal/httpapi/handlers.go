@@ -157,6 +157,10 @@ func (h *api) logout(w http.ResponseWriter, r *http.Request) {
 func (h *api) me(w http.ResponseWriter, r *http.Request) {
 	principal, _ := auth.PrincipalFromContext(r.Context())
 	emp, err := h.employees.Get(r.Context(), principal.EmployeeID)
+	if err != nil && !errors.Is(err, rbac.ErrEmployeeNotFound) {
+		httpx.WriteError(w, r, httpx.Internal())
+		return
+	}
 	if err != nil || emp.Status != auth.StatusActive {
 		httpx.WriteError(w, r, httpx.Unauthenticated("authentication required"))
 		return

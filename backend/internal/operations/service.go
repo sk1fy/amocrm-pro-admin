@@ -83,6 +83,10 @@ func Permission(target, command string) string {
 }
 func (s *Service) authorize(ctx context.Context, id uuid.UUID, permission string) (rbac.Employee, error) {
 	employee, err := s.employees.Get(ctx, id)
+	if err != nil && !errors.Is(err, rbac.ErrEmployeeNotFound) {
+		// An admin DB failure is not a permission decision.
+		return employee, adapter.Unavailable("admin", "admin database unavailable")
+	}
 	if err != nil || employee.Status != auth.StatusActive || permission == "" || !rbac.Allows(employee.Role, permission) {
 		return employee, ErrForbidden
 	}
