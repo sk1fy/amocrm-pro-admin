@@ -82,7 +82,8 @@
 
 Общее с Core (перенимаем его стиль):
 
-- Go версии, указанной в `go.mod` Core (сейчас 1.26.10); в admin — та же.
+- Go той же минорной версии, что и Core, с актуальным security-патчем.
+  Версия Admin закреплена в `backend/go.mod`, Makefile и Docker.
 - `gofmt`, `go vet` обязательны; `golangci-lint` в admin с базовым набором
   (`errcheck`, `govet`, `staticcheck`, `ineffassign`, `unused`, `gosec`).
 - Роутер `github.com/go-chi/chi/v5`, БД `github.com/jackc/pgx/v5`, логи
