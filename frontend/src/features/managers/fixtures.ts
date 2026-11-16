@@ -1,7 +1,7 @@
 import type { Section } from './sections'
 
 export type Tone = 'blue' | 'green' | 'amber' | 'red' | 'gray'
-export type Cell = string | { text: string; note?: string; tone?: Tone }
+export type Cell = string | { text: string; note?: string; tone?: Tone; line?: 'FREE' | 'TOP' }
 
 export type DemoRow = {
   id: string
@@ -123,7 +123,7 @@ export const installs = clients.map(
         text: dateLabel(installationDates[index]),
         note: ['10:40', '10:12', '16:20', '14:05', '11:30', '08:45'][index],
       },
-      { text: widgets[index], note: index % 2 ? 'FREE' : 'TOP' },
+      { text: widgets[index], line: index % 2 ? 'FREE' : 'TOP' },
       { text: client.domain, note: client.name },
       client.id,
       {
@@ -222,7 +222,7 @@ export const boards: Record<Section, Board> = {
       row(
         `widget-${index}`,
         [
-          { text: widget, note: index % 2 ? 'FREE' : 'TOP' },
+          { text: widget, line: index % 2 ? 'FREE' : 'TOP' },
           String(128 - index * 13),
           String(91 - index * 8),
           String(76 - index * 7),

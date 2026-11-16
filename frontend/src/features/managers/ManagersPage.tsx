@@ -35,6 +35,11 @@ function CellValue({ value }: { value: Cell }) {
   if (typeof value === 'string') return value
   return (
     <>
+      {value.line ? (
+        <span className={styles.line} data-line={value.line}>
+          {value.line}
+        </span>
+      ) : null}
       <span className={value.tone ? styles.pill : undefined} data-tone={value.tone}>
         {value.text}
       </span>
@@ -48,7 +53,7 @@ function matches(row: DemoRow, query: string) {
   return (
     !term ||
     row.cells.some((cell) =>
-      (typeof cell === 'string' ? cell : `${cell.text} ${cell.note ?? ''}`)
+      (typeof cell === 'string' ? cell : `${cell.text} ${cell.note ?? ''} ${cell.line ?? ''}`)
         .toLocaleLowerCase('ru')
         .includes(term),
     )

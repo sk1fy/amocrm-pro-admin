@@ -18,8 +18,12 @@ function isSection(value: unknown): value is Section {
 }
 
 export function managersSearch(search: Record<string, unknown>) {
+  const { section, client } = search
   return {
-    section: isSection(search.section) ? search.section : 'installs',
-    client: typeof search.client === 'string' ? search.client : undefined,
+    section: isSection(section) ? section : 'installs',
+    client:
+      typeof client === 'string' || (typeof client === 'number' && Number.isSafeInteger(client))
+        ? String(client)
+        : undefined,
   }
 }
