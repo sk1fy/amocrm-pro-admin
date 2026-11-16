@@ -106,7 +106,7 @@ export function AccountProfile({
   return (
     <>
       <nav className={styles.crumbs} aria-label="Хлебные крошки">
-        <Link to="/managers" search={{ section, client: undefined }}>
+        <Link to="/managers" search={(previous) => ({ ...previous, section, client: undefined })}>
           {sections[section].title}
         </Link>
         <span aria-hidden="true">›</span>

@@ -25,6 +25,15 @@ export function AccountDrafts({ children }: { children: ReactNode }) {
 export function DraftAccount({ id, children }: { id: string; children: ReactNode }) {
   return <Account.Provider value={id}>{children}</Account.Provider>
 }
+export function useReadAccountDraft() {
+  const drafts = useContext(Drafts)
+  if (!drafts) throw new Error('AccountDrafts required')
+  return <T,>(id: string, name: string, fallback: T): T => {
+    const key = `${id}:${name}`
+    return Object.hasOwn(drafts.values, key) ? (drafts.values[key] as T) : fallback
+  }
+}
+
 export function useAccountDraft<T>(
   name: string,
   initial: T | (() => T),

@@ -1,15 +1,52 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
-import { boards, clients, installs, dateLabel, type DemoRow } from './fixtures'
+import { boards, installs, dateLabel, type DemoRow } from './fixtures'
+import { demoClients, findDemoClient } from './clientDirectory'
 import type { DemoEvent } from './accountFixtures'
+import { invoiceSnapshot, type InvoiceSeller, type InvoiceKind } from './invoiceFixtures'
+import { snapshotBonuses, snapshotReceipts } from './paymentFixtures'
 import type { Section } from './sections'
 
 export type Block = 'clients' | 'pay' | 'partners' | 'admin'
-export type Employee = { id: string; name: string; blocks: Block[] }
+export type Employee = {
+  id: string
+  name: string
+  blocks: Block[]
+  phone: string
+  added: string
+  demo?: true
+}
 export const initialStaff: Employee[] = [
-  { id: 'max', name: 'Максим', blocks: ['admin'] },
-  { id: 'anna', name: 'Анна', blocks: ['clients'] },
-  { id: 'olga', name: 'Ольга', blocks: ['pay'] },
-  { id: 'irina', name: 'Ирина', blocks: ['clients', 'partners'] },
+  {
+    id: 'max',
+    name: 'Максим',
+    blocks: ['admin'],
+    phone: '+7 (921) 600-15-17',
+    added: '2026-01-10',
+  },
+  {
+    id: 'anna',
+    name: 'Анна',
+    blocks: ['clients'],
+    phone: '+7 (921) 600-22-01',
+    added: '2026-06-02',
+    demo: true,
+  },
+  {
+    id: 'olga',
+    name: 'Ольга',
+    blocks: ['pay'],
+    phone: '+7 (921) 600-22-02',
+    added: '2026-08-14',
+    demo: true,
+  },
+  {
+    id: 'irina',
+    name: 'Ирина',
+    blocks: ['clients', 'partners'],
+    phone: '+7 (921) 600-22-03',
+    added: '2026-10-01',
+    demo: true,
+  },
 ]
 export const blockSections: Record<Block, readonly Section[]> = {
   clients: ['installs', 'clients', 'widgets', 'market'],
@@ -40,7 +77,25 @@ export type Invoice = {
   installation?: string
   until?: string
   receipt?: string
+  kind?: InvoiceKind
+  seller?: InvoiceSeller
+  by?: string
+  deal?: string
+  paidAt?: string
+  statementId?: string
+  opened?: string
+  method?: 'card' | 'invoice'
+  payer?: string
+  payerInn?: string
+  downloads?: number
+  legalEntities?: number
+  cardUntil?: string
+  legacy?: true
+  snapshot?: true
 }
+export type StatementAttribution =
+  | { client: string; partner?: never; by: string }
+  | { partner: string; client?: never; by: string }
 export type SessionEvent = DemoEvent & { client: string }
 export type DemoState = {
   accounts: Record<string, AccountState>
@@ -48,6 +103,7 @@ export type DemoState = {
   invoices: Invoice[]
   events: SessionEvent[]
   staff: Employee[]
+  statementAttributions: Record<string, StatementAttribution>
 }
 export const today = '2026-11-16'
 export const cellText = (cell: DemoRow['cells'][number]) =>
@@ -55,16 +111,18 @@ export const cellText = (cell: DemoRow['cells'][number]) =>
 export const money = (amount: number) => `${amount.toLocaleString('ru-RU')} ₽`
 export function initialState(): DemoState {
   return {
+    statementAttributions: {},
     accounts: Object.fromEntries(
-      clients.map((client) => [
+      demoClients.map((client) => [
         client.id,
         {
           owner: client.owner,
           note: '',
-          subscribed: client.owner === 'Наш клиент' && client.health !== 'Лицензия истекла',
+          subscribed:
+            client.owner === 'Наш клиент' && client.bucket !== 'expired' && !client.suspended,
           subscriptionTill: client.till,
-          bonus: client.id === '91001001' ? 2400 : 0,
-          bonusUntil: '2026-12-01',
+          bonus: client.id === '91001001' ? 2400 : (snapshotBonuses.get(client.id)?.amount ?? 0),
+          bonusUntil: snapshotBonuses.get(client.id)?.next || '2026-12-01',
           bonusHistory: [],
           companies: [],
         },
@@ -73,20 +131,26 @@ export function initialState(): DemoState {
     rows: [...installs],
     events: [],
     staff: initialStaff,
-    invoices: boards.invoices.rows.map((row) => ({
-      id: row.id,
-      number: cellText(row.cells[0]),
-      client: row.client!,
-      description: cellText(row.cells[2]),
-      amount: Number(cellText(row.cells[3]).replace(/\D/g, '')),
-      bonus: 0,
-      date:
-        typeof row.cells[0] === 'object' && row.cells[0].note
-          ? row.cells[0].note.split('.').reverse().join('-')
-          : today,
-      state:
-        row.group === 'Оплачены' ? 'paid' : row.group === 'Аннулированы' ? 'cancelled' : 'open',
-    })),
+    invoices: [
+      ...invoiceSnapshot,
+      ...boards.invoices.rows.map(
+        (row): Invoice => ({
+          id: row.id,
+          legacy: true,
+          number: cellText(row.cells[0]),
+          client: row.client!,
+          description: cellText(row.cells[2]),
+          amount: Number(cellText(row.cells[3]).replace(/\D/g, '')),
+          bonus: 0,
+          date:
+            typeof row.cells[0] === 'object' && row.cells[0].note
+              ? row.cells[0].note.split('.').reverse().join('-')
+              : today,
+          state:
+            row.group === 'Оплачены' ? 'paid' : row.group === 'Аннулированы' ? 'cancelled' : 'open',
+        }),
+      ),
+    ],
   }
 }
 export function can(employee: Employee, block: Block) {
@@ -99,13 +163,36 @@ export function canView(employee: Employee, section: Section) {
     employee.blocks.some((block) => blockSections[block].includes(section))
   )
 }
+function staffPhoneKey(phone: string) {
+  return phone.replace(/\D/g, '').replace(/^[78](?=\d{10}$)/, '')
+}
+
+export function staffDraftError(staff: readonly Employee[], name: string, phone: string) {
+  if (!name.trim()) return 'Укажите имя сотрудника.'
+  if (!/^\+?[\d ()-]+$/.test(phone) || !/^\d{7,15}$/.test(staffPhoneKey(phone))) {
+    return 'Введите действительный номер телефона.'
+  }
+  if (staff.some((entry) => staffPhoneKey(entry.phone) === staffPhoneKey(phone))) {
+    return 'Сотрудник с таким телефоном уже есть.'
+  }
+  return ''
+}
+
 export type Action =
   | { type: 'account'; client: string; patch: Partial<AccountState>; block: Block; title: string }
   | { type: 'install'; id: string; patch: Partial<DemoRow>; title: string }
   | { type: 'renew'; id: string; until: string; reason: string; detail: string; bonus: number }
   | { type: 'invoice'; invoice: Invoice }
   | { type: 'settle' | 'cancel'; id: string }
+  | { type: 'reconcileReceipt'; id: string; statementId: string }
+  | {
+      type: 'identifyReceipt'
+      statementId: string
+      target: { client: string } | { partner: string }
+    }
   | { type: 'staff'; id: string; blocks: Block[] }
+  | { type: 'addStaff'; id: string; name: string; phone: string; block: Exclude<Block, 'admin'> }
+  | { type: 'removeStaff'; id: string }
 
 export function transition(state: DemoState, actor: Employee, action: Action): DemoState {
   const block =
@@ -113,7 +200,7 @@ export function transition(state: DemoState, actor: Employee, action: Action): D
       ? action.block
       : action.type === 'install'
         ? 'clients'
-        : action.type === 'staff'
+        : action.type === 'staff' || action.type === 'addStaff' || action.type === 'removeStaff'
           ? 'admin'
           : 'pay'
   if (!can(actor, block)) return state
@@ -139,17 +226,32 @@ export function transition(state: DemoState, actor: Employee, action: Action): D
       ...next.events,
     ],
   })
-  if (action.type === 'staff') {
-    if (
-      !action.blocks.includes('admin') &&
-      state.staff.find((s) => s.id === action.id)?.blocks.includes('admin') &&
-      state.staff.filter((s) => s.blocks.includes('admin')).length === 1
-    )
+  if (action.type === 'addStaff') {
+    const name = action.name.trim()
+    const phone = action.phone.trim()
+    if (staffDraftError(state.staff, name, phone) || state.staff.some((s) => s.id === action.id)) {
       return state
+    }
     return {
       ...state,
-      staff: state.staff.map((s) => (s.id === action.id ? { ...s, blocks: action.blocks } : s)),
+      staff: [...state.staff, { id: action.id, name, phone, blocks: [action.block], added: today }],
     }
+  }
+  if (action.type === 'staff' || action.type === 'removeStaff') {
+    const employee = state.staff.find((s) => s.id === action.id)
+    if (!employee) return state
+    const lastAdmin =
+      employee.blocks.includes('admin') &&
+      state.staff.filter((s) => s.blocks.includes('admin')).length === 1
+    if (action.type === 'removeStaff') {
+      if (lastAdmin || employee.id === actor.id) return state
+      return { ...state, staff: state.staff.filter((s) => s.id !== employee.id) }
+    }
+    if (lastAdmin && !action.blocks.includes('admin')) return state
+    const staff = state.staff.map((s) =>
+      s.id === employee.id ? { ...s, blocks: action.blocks } : s,
+    )
+    return { ...state, staff }
   }
   if (action.type === 'account') {
     const account = state.accounts[action.client]
@@ -247,15 +349,54 @@ export function transition(state: DemoState, actor: Employee, action: Action): D
       'payment',
     )
   }
+  const statement =
+    action.type === 'identifyReceipt' || action.type === 'reconcileReceipt'
+      ? snapshotReceipts.find(
+          (record) => record.id === action.statementId && record.state === 'unmatched',
+        )
+      : undefined
+  if (action.type === 'identifyReceipt' || action.type === 'reconcileReceipt') {
+    if (
+      !statement ||
+      state.statementAttributions[statement.id] ||
+      state.invoices.some((item) => item.statementId === statement.id)
+    )
+      return state
+  }
+  if (action.type === 'identifyReceipt') {
+    if (!statement) return state
+    if ('client' in action.target && !state.accounts[action.target.client]) return state
+    if ('partner' in action.target && !action.target.partner.trim()) return state
+    const next = {
+      ...state,
+      statementAttributions: {
+        ...state.statementAttributions,
+        [action.statementId]: { ...action.target, by: actor.name },
+      },
+    }
+    return 'client' in action.target
+      ? log(next, action.target.client, 'Поступление разобрано', money(statement.amount), 'payment')
+      : next
+  }
   const invoice = state.invoices.find((v) => v.id === action.id)
   if (!invoice || invoice.state !== 'open') return state
-  const paid = action.type === 'settle'
-  const receipt = `${paid ? 'Оплата' : 'Отмена'} ${invoice.id} · ${actor.name} · ${dateLabel(today)} · деньги: ${money(paid ? invoice.amount - invoice.bonus : 0)} · бонусы: ${money(invoice.bonus)}`
+  if (statement && Math.round((invoice.amount - invoice.bonus) * 100) !== statement.amount * 100)
+    return state
+  const paid = action.type !== 'cancel'
+  const paidAt = statement?.date ?? today
+  const receipt = `${paid ? 'Оплата' : 'Отмена'} ${invoice.id} · ${actor.name} · ${dateLabel(paidAt)} · деньги: ${money(paid ? invoice.amount - invoice.bonus : 0)} · бонусы: ${money(invoice.bonus)}`
   let next = {
     ...state,
     invoices: state.invoices.map((v) =>
       v.id === invoice.id
-        ? { ...v, state: paid ? ('paid' as const) : ('cancelled' as const), receipt }
+        ? {
+            ...v,
+            state: paid ? ('paid' as const) : ('cancelled' as const),
+            paidAt: paid ? paidAt : undefined,
+            statementId: statement?.id,
+            method: statement?.method ?? (paid ? (v.method ?? 'invoice') : v.method),
+            receipt,
+          }
         : v,
     ),
   }
@@ -333,7 +474,7 @@ export function invoiceRows(invoices: readonly Invoice[]): DemoRow[] {
             : 'Ждём оплату',
     cells: [
       v.number ?? v.id,
-      clients.find((c) => c.id === v.client)?.name ?? '—',
+      findDemoClient(v.client)?.name ?? '—',
       v.description,
       money(v.amount),
       v.bonus ? `Бонусы ${money(v.bonus)}` : 'Банковский перевод',

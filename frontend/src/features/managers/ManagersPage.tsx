@@ -3,13 +3,23 @@ import { Link, useSearch } from '@tanstack/react-router'
 import { BrandLogo } from '../../components/BrandLogo'
 import { DataTable, type DataTableColumn } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
-import { boards, clients, marketPresence, type DemoRow } from './fixtures'
-import { DemoSession, useDemo, can, canView, invoiceRows } from './DemoSession'
-import { InvoiceActions, InvoiceDrawer } from './Finance'
-import { WidgetsBoard, MarketBoard, StaffBoard, PaymentsBoard, StatsBoard } from './SectionBoards'
-import { PartnersBoard, PartnerEntry } from './Partners'
+import { boards, type DemoRow } from './fixtures'
+import { DemoSession, useDemo, can, canView, today } from './DemoSession'
+import { InvoiceDrawer } from './Finance'
+import { WidgetsBoard } from './WidgetsBoard'
+import { MarketBoard } from './MarketBoard'
+import { StaffBoard } from './StaffBoard'
+import { StatsBoard } from './StatsBoard'
+import { PartnerEntry, usePartnerPaymentRequests } from './Partners'
+import { PartnersBoard } from './PartnersBoard'
+import { PaymentsBoard, useUnreviewedPaymentCount } from './PaymentsBoard'
 import { AccountDrafts, DraftAccount, useAccountDraft } from './AccountDrafts'
 import { AccountProfile } from './AccountProfile'
+import { ClientsBoard } from './ClientsBoard'
+import { InvoicesBoard } from './InvoicesBoard'
+import { FeedBoard } from './FeedBoard'
+import { isInvoiceStale } from './invoiceFixtures'
+import { findDemoClient } from './clientDirectory'
 import { portraitTopics } from './portraitTopics'
 import { CellValue } from './CellValue'
 import { sections, type Section } from './sections'
@@ -29,14 +39,6 @@ const icons = {
   chart: 'M4 20h16M6 16v-4m6 4V6m6 10V9',
   feed: 'M4 6h16M4 12h16M4 18h10',
   person: 'M5 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2m-3-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',
-}
-
-const clientColumns: Partial<Record<Section, number>> = {
-  installs: 2,
-  clients: 0,
-  invoices: 1,
-  payments: 1,
-  feed: 2,
 }
 
 function matches(row: DemoRow, query: string) {
@@ -72,11 +74,13 @@ export function ManagersPage() {
 function ManagerWorkspace() {
   const { state, actor, actorId, selectActor, dispatch } = useDemo()
   const { section, client } = useSearch({ from: '/managers' })
+  const [partnerPaymentRequests] = usePartnerPaymentRequests()
+  const unreviewedPayments = useUnreviewedPaymentCount()
   const [topics, setTopics] = useAccountDraft('/portraitTopics', portraitTopics)
   const [menuOpen, setMenuOpen] = useState(() => window.innerWidth >= 1440)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const menuButton = useRef<HTMLButtonElement>(null)
-  const customer = clients.find((item) => item.id === client)
+  const customer = findDemoClient(client)
   const rows = state.rows
   const check = (id: string, value: boolean) =>
     dispatch({
@@ -90,8 +94,22 @@ function ManagerWorkspace() {
     })
   const uncheckedCount = rows.filter((item) => item.group === 'Непроверенные').length
 
+  const sectionOverview = section !== 'installs' && !client
+  const counts: Partial<Record<Section, number>> = {
+    installs: uncheckedCount,
+    payments: unreviewedPayments,
+    partners: partnerPaymentRequests.filter((request) => request.status === 'pending').length,
+    invoices: state.invoices.filter((invoice) => !invoice.legacy && isInvoiceStale(invoice, today))
+      .length,
+  }
+
   return (
-    <div className={styles.shell} data-menu-open={menuOpen} data-mobile-open={mobileMenuOpen}>
+    <div
+      className={styles.shell}
+      data-overview={sectionOverview || undefined}
+      data-menu-open={menuOpen}
+      data-mobile-open={mobileMenuOpen}
+    >
       <header className={styles.topbar}>
         <button
           type="button"
@@ -110,7 +128,7 @@ function ManagerWorkspace() {
         <span className={styles.product}>Сервер виджетов</span>
         <div className={styles.profile}>
           <label>
-            Войти как{' '}
+            {sectionOverview ? 'Вы вошли как ' : 'Войти как '}
             <select
               aria-label="Демо-сотрудник"
               value={actorId}
@@ -127,6 +145,11 @@ function ManagerWorkspace() {
             Сменить кабинет
           </Link>
         </div>
+        {sectionOverview ? (
+          <span className={styles.demoServer} title="Статус в демо-данных">
+            w.rkrs.ru · работает
+          </span>
+        ) : null}
       </header>
       <aside id="manager-nav" className={styles.sidebar}>
         <button
@@ -145,12 +168,7 @@ function ManagerWorkspace() {
             .filter((key) => canView(actor, key))
             .map((key) => {
               const item = sections[key]
-              const count =
-                key === 'installs'
-                  ? uncheckedCount
-                  : key === 'invoices'
-                    ? state.invoices.filter((v) => v.state === 'open').length
-                    : 0
+              const count = counts[key] ?? 0
               return (
                 <Link
                   key={key}
@@ -182,6 +200,7 @@ function ManagerWorkspace() {
                   {count > 0 ? (
                     <span className={styles.menuCount} aria-hidden="true">
                       {count}
+                      {key === 'partners' ? ' запр.' : ''}
                     </span>
                   ) : null}
                 </Link>
@@ -190,7 +209,11 @@ function ManagerWorkspace() {
         </nav>
       </aside>
       <main className={styles.main}>
-        <div className={styles.demo}>Демо-данные. Изменения действуют до обновления страницы.</div>
+        <div className={styles.demo}>
+          {sectionOverview
+            ? 'Демо-данные: виджеты, компании, партнёры, люди и телефоны выдуманы. Правки и кнопки работают только в этой вкладке.'
+            : 'Демо-данные. Изменения действуют до обновления страницы.'}
+        </div>
         {customer ? (
           <DraftAccount id={customer.id}>
             <AccountProfile
@@ -217,6 +240,8 @@ function ManagerWorkspace() {
             title="Нет доступа к разделу"
             description="Выберите доступный раздел или смените демо-сотрудника."
           />
+        ) : section === 'clients' ? (
+          <ClientsBoard />
         ) : section === 'widgets' ? (
           <WidgetsBoard />
         ) : section === 'market' ? (
@@ -225,50 +250,16 @@ function ManagerWorkspace() {
           <StaffBoard />
         ) : section === 'partners' ? (
           <PartnersBoard />
+        ) : section === 'invoices' ? (
+          <InvoicesBoard />
         ) : section === 'payments' ? (
           <PaymentsBoard />
         ) : section === 'stats' ? (
           <StatsBoard />
+        ) : section === 'feed' ? (
+          <FeedBoard />
         ) : (
-          <BoardView
-            key={section}
-            section={section}
-            rows={
-              section === 'installs'
-                ? rows
-                : section === 'invoices'
-                  ? invoiceRows(state.invoices)
-                  : section === 'feed'
-                    ? [
-                        ...state.events.map((e) => ({
-                          id: e.id,
-                          client: e.client,
-                          cells: [
-                            e.date,
-                            e.title + ' · ' + e.details,
-                            clients.find((c) => c.id === e.client)?.name ?? '—',
-                            e.actor,
-                          ],
-                        })),
-                        ...boards.feed.rows,
-                      ]
-                    : section === 'clients'
-                      ? boards.clients.rows.map((r) => ({
-                          ...r,
-                          group:
-                            r.client && state.accounts[r.client].owner === 'Запрет работы'
-                              ? 'Запрет работы'
-                              : r.group === 'Запрет работы'
-                                ? 'Нет данных'
-                                : r.group,
-                          cells: r.cells.map((c, i) =>
-                            i === 5 && r.client ? state.accounts[r.client].owner : c,
-                          ),
-                        }))
-                      : []
-            }
-            check={check}
-          />
+          <InstallationsBoard rows={rows} check={check} />
         )}
       </main>
       <InvoiceDrawer />
@@ -276,45 +267,35 @@ function ManagerWorkspace() {
   )
 }
 
-function BoardView({
-  section,
+function InstallationsBoard({
   rows,
   check,
 }: {
-  section: Section
   rows: readonly DemoRow[]
   check: (id: string, checked: boolean) => void
 }) {
-  const { actor, state } = useDemo()
-  const { market } = useSearch({ from: '/managers' })
-  const board = boards[section]
+  const { actor } = useDemo()
+  const board = boards.installs
   const [group, setGroup] = useState(board.filters?.[0] ?? '')
   const [query, setQuery] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const [tariff, setTariff] = useState('')
-  const [owner, setOwner] = useState('')
   const candidates = rows.filter(
     (row) =>
-      matches(row, query) &&
-      (!owner || (row.client && state.accounts[row.client].owner === owner)) &&
-      (!market || (!!row.client && !!marketPresence[market]?.accounts.includes(row.client))) &&
-      (!from || (row.date ?? '') >= from) &&
-      (!to || (row.date ?? '') <= to) &&
-      (!tariff || row.cells[3] === tariff),
+      matches(row, query) && (!from || (row.date ?? '') >= from) && (!to || (row.date ?? '') <= to),
   )
-  const showAll = !group || group === 'Все' || group === 'Все виджеты'
-  const visible = candidates.filter((row) => showAll || row.group === group)
+  const visible = candidates.filter((row) => !group || row.group === group)
   const columns: DataTableColumn<DemoRow>[] = board.columns.map((header, index) => ({
     id: header,
     header,
     cell: (row) => (
       <>
-        {row.client &&
-        (clientColumns[section] === index ||
-          (section === 'installs' && index === 3) ||
-          (section === 'clients' && index === 1)) ? (
-          <Link className={styles.rowLink} to="/managers" search={{ section, client: row.client }}>
+        {row.client && (index === 2 || index === 3) ? (
+          <Link
+            className={styles.rowLink}
+            to="/managers"
+            search={{ section: 'installs', client: row.client }}
+          >
             <CellValue value={row.cells[index]} />
           </Link>
         ) : (
@@ -323,13 +304,7 @@ function BoardView({
       </>
     ),
   }))
-  if (section === 'invoices')
-    columns.push({
-      id: 'actions',
-      header: 'Действия',
-      cell: (row) => <InvoiceActions id={row.id} />,
-    })
-  if (section === 'installs' && can(actor, 'clients')) {
+  if (can(actor, 'clients')) {
     columns.push({
       id: 'check',
       header: 'Проверка',
@@ -355,75 +330,25 @@ function BoardView({
   return (
     <>
       <header>
-        <h1>{sections[section].title}</h1>
+        <h1>{sections.installs.title}</h1>
         <p className={styles.description}>{board.description}</p>
       </header>
-      {section === 'stats' ? <Statistics /> : null}
-      <div className={section === 'installs' ? styles.installControls : styles.controls}>
+      <div className={styles.installControls}>
         {board.filters ? (
-          <div
-            className={section === 'clients' ? styles.summary : styles.tabs}
-            aria-label="Фильтр по состоянию"
-            role="group"
-          >
-            {section === 'clients'
-              ? board.filters.map((filter) => {
-                  const inGroup = rows.filter((row) => filter === 'Все' || row.group === filter)
-                  return (
-                    <div className={styles.ownerCard} key={filter}>
-                      <button
-                        type="button"
-                        aria-pressed={group === filter && !owner}
-                        onClick={() => {
-                          setGroup(filter)
-                          setOwner('')
-                        }}
-                      >
-                        {filter} <strong>{inGroup.length}</strong>
-                      </button>
-                      {['Наш клиент', 'Клиент партнёра', 'Без партнёра', 'Запрет работы'].map(
-                        (value) => (
-                          <button
-                            type="button"
-                            key={value}
-                            aria-pressed={group === filter && owner === value}
-                            onClick={() => {
-                              setGroup(filter)
-                              setOwner(value)
-                            }}
-                          >
-                            <span>{value}</span>
-                            <b>
-                              {
-                                inGroup.filter(
-                                  (row) => row.client && state.accounts[row.client].owner === value,
-                                ).length
-                              }
-                            </b>
-                          </button>
-                        ),
-                      )}
-                    </div>
-                  )
-                })
-              : board.filters.map((filter) => (
-                  <button
-                    key={filter}
-                    type="button"
-                    aria-pressed={group === filter}
-                    onClick={() => setGroup(filter)}
-                  >
-                    {filter}
-                    <span className={styles.count}>
-                      {
-                        candidates.filter(
-                          (row) =>
-                            filter === 'Все' || filter === 'Все виджеты' || row.group === filter,
-                        ).length
-                      }
-                    </span>
-                  </button>
-                ))}
+          <div className={styles.tabs} aria-label="Фильтр по состоянию" role="group">
+            {board.filters.map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                aria-pressed={group === filter}
+                onClick={() => setGroup(filter)}
+              >
+                {filter}
+                <span className={styles.count}>
+                  {candidates.filter((row) => row.group === filter).length}
+                </span>
+              </button>
+            ))}
           </div>
         ) : null}
         <div className={styles.filters}>
@@ -433,8 +358,6 @@ function BoardView({
               setFrom('')
               setTo('')
               setQuery('')
-              setTariff('')
-              setOwner('')
               setGroup(board.filters?.[0] ?? '')
             }}
           >
@@ -451,42 +374,11 @@ function BoardView({
               </label>
             </>
           ) : null}
-          {section === 'clients' ? (
-            <label>
-              Чей клиент
-              <select value={owner} onChange={(e) => setOwner(e.target.value)}>
-                <option value="">Все</option>
-                {['Без партнёра', 'Наш клиент', 'Клиент партнёра', 'Запрет работы'].map((o) => (
-                  <option key={o}>{o}</option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          {market ? (
-            <Link to="/managers" search={{ section: 'clients', client: undefined }}>
-              Сбросить фильтр amoМаркета
-            </Link>
-          ) : null}
-          {section === 'clients' ? (
-            <label>
-              Тариф
-              <select value={tariff} onChange={(event) => setTariff(event.target.value)}>
-                <option value="">Все тарифы</option>
-                {[...new Set(clients.map((client) => client.tariff))].map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
-              </select>
-            </label>
-          ) : null}
           <input
             type="search"
             className={styles.search}
             aria-label="Поиск"
-            placeholder={
-              section === 'installs' || section === 'clients'
-                ? 'Телефон, ID, поддомен, название, имя или email'
-                : 'Поиск по разделу'
-            }
+            placeholder="Телефон, ID, поддомен, название, имя или email"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -501,39 +393,5 @@ function BoardView({
         />
       )}
     </>
-  )
-}
-
-function Statistics() {
-  const counts = [18, 26, 22, 34, 29, 40]
-  return (
-    <div className={styles.statistics}>
-      <div className={styles.summary}>
-        {[
-          ['Новые аккаунты', '74'],
-          ['Новые установки', '169'],
-          ['Оплатили', '28'],
-        ].map(([label, value]) => (
-          <div key={label}>
-            <strong>{value}</strong>
-            <span>{label}</span>
-          </div>
-        ))}
-      </div>
-      <section className={styles.chart}>
-        <h2>Новые установки по неделям</h2>
-        <ul>
-          {counts.map((count, index) => (
-            <li key={index} aria-label={`Неделя ${index + 1}: ${count}`}>
-              <span>{count}</span>
-              <span className={styles.barTrack} aria-hidden="true">
-                <span className={styles.bar} style={{ height: `${(count / 40) * 100}%` }} />
-              </span>
-              <small>{index + 1} нед.</small>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
   )
 }

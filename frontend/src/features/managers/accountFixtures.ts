@@ -1,11 +1,5 @@
-import {
-  dateLabel,
-  boards,
-  marketPresence,
-  type clients,
-  type Cell,
-  type DemoRow,
-} from './fixtures'
+import { clients, dateLabel, type Cell, type DemoRow } from './fixtures'
+import { legacyMarketWidgets, marketWidgets } from './marketFixtures'
 
 export type DemoClient = (typeof clients)[number]
 
@@ -79,6 +73,7 @@ export function accountTabData(
       added: '2024-06-30',
     },
   ]
+  const accountId = Number(client.id)
   const seen: SeenWidget[] = [
     ...installs.map((install) => ({
       code: `rkrs_demo_${install.id.slice(8)}`,
@@ -87,22 +82,34 @@ export function accountTabData(
       firstSeen: install.date ?? '',
       gone: false,
     })),
-    ...boards.market.rows
-      .filter((r) => marketPresence[r.id].accounts.includes(client.id))
-      .map((r) => ({
-        code: marketPresence[r.id].code,
-        name: cellText(r.cells[0]),
-        owner: 'Сторонний',
-        firstSeen: '2026-10-03',
-        gone: false,
+    ...[...marketWidgets, ...Object.values(legacyMarketWidgets)]
+      .filter((widget) => widget.accounts.includes(accountId) || widget.removed.includes(accountId))
+      .filter((widget) => !installs.some((install) => cellText(install.cells[1]) === widget.name))
+      .map((widget) => ({
+        code: widget.code,
+        name: widget.name,
+        owner:
+          widget.settings.mark === 'ours'
+            ? widget.code === 'rkrs_colors' || widget.code === 'rkrs_dadata'
+              ? 'Наш (старый сервер)'
+              : 'Наш новый'
+            : widget.settings.mark === 'partner'
+              ? 'Партнёрка'
+              : 'Сторонний',
+        firstSeen: widget.firstSeen,
+        gone: widget.removed.includes(accountId),
       })),
-    {
-      code: 'demo_old_export',
-      name: 'Экспорт сделок',
-      owner: 'Наш (старый сервер)',
-      firstSeen: '2026-09-11',
-      gone: true,
-    },
+    ...(clients.some(({ id }) => id === client.id)
+      ? [
+          {
+            code: 'demo_old_export',
+            name: 'Экспорт сделок',
+            owner: 'Наш (старый сервер)',
+            firstSeen: '2026-09-11',
+            gone: true,
+          },
+        ]
+      : []),
   ]
   const events: DemoEvent[] = [
     ...installs.map(

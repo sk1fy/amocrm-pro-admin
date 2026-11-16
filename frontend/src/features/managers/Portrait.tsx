@@ -2,9 +2,8 @@ import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useAccountDraft } from './AccountDrafts'
 import { Panel } from './AccountPanel'
 import { formatDate, type DemoClient } from './accountFixtures'
-import { boards, marketPresence, type DemoRow } from './fixtures'
-import { cellText } from './DemoSession'
-import type { MarketSetting } from './SectionBoards'
+import type { DemoRow } from './fixtures'
+import { marketMarkLabels, marketWidgets, type MarketSetting } from './marketFixtures'
 import type { PortraitTopic } from './portraitTopics'
 import { PortraitTemplate } from './PortraitTemplate'
 import styles from './Portrait.module.css'
@@ -505,6 +504,10 @@ export function Portrait({
   setAnswered: (count: number) => void
 }) {
   const [marketSettings] = useAccountDraft<Record<string, MarketSetting>>('/marketSettings', {})
+  const mappedWidgets = marketWidgets
+    .filter((widget) => widget.accounts.includes(Number(client.id)))
+    .map((widget) => ({ ...widget, settings: marketSettings[widget.code] ?? widget.settings }))
+    .filter(({ settings }) => settings.inPortrait && settings.mark !== 'unknown')
   const [warmth, setWarmth] = useAccountDraft<Record<string, string[]>>('warmth', {})
   const pro = topics
     .filter((topic) => topic.pro && warmth[topic.id]?.includes('пользуется'))
@@ -554,20 +557,11 @@ export function Portrait({
             </span>
             <div className={styles.topicName}>
               <h3>{topic.title}</h3>
-              {boards.market.rows
-                .filter(
-                  (row) =>
-                    marketPresence[row.id].accounts.includes(client.id) &&
-                    (marketSettings[row.id]?.topic ??
-                      (row.id === 'market-1'
-                        ? 'telephony'
-                        : row.id === 'market-2'
-                          ? 'messengers'
-                          : '')) === topic.id,
-                )
-                .map((row) => (
-                  <p className={styles.noteState} key={row.id}>
-                    {cellText(row.cells[0])} · {marketSettings[row.id]?.mark ?? 'Сторонний'}
+              {mappedWidgets
+                .filter(({ settings }) => settings.category === topic.category)
+                .map(({ code, name, settings }) => (
+                  <p className={styles.noteState} key={code}>
+                    {name} · {marketMarkLabels[settings.mark]}
                   </p>
                 ))}
               <span className={styles.noteState} data-known={Boolean(noted || answered)}>
@@ -615,6 +609,23 @@ export function Portrait({
           </section>
         )
       })}
+      {mappedWidgets.length ? (
+        <section className={styles.marketWidgets} aria-label="Партнёрские виджеты у клиента">
+          <h3>Партнёрские виджеты у клиента</h3>
+          <ul>
+            {mappedWidgets.map(({ code, name, settings, firstSeen }) => (
+              <li key={code}>
+                <strong>{name}</strong>
+                <small>
+                  {[settings.category, 'стоит с ' + formatDate(firstSeen)]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </small>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </Panel>
   )
 }

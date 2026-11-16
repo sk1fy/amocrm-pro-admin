@@ -1,154 +1,28 @@
 import { useState } from 'react'
 import { Link, useSearch, useNavigate } from '@tanstack/react-router'
-import { DetailDrawer } from '../../components/DetailDrawer'
-import { Panel, Table, Filters } from './AccountPanel'
+import { Panel, Table } from './AccountPanel'
 import { useAccountDraft } from './AccountDrafts'
-import { boards, clients, dateLabel } from './fixtures'
-import { can, cellText, money, today, useDemo } from './DemoSession'
+import { boards, dateLabel } from './fixtures'
+import { demoClients, findDemoClient } from './clientDirectory'
+import {
+  partnerDirectoryDate,
+  partnerPaymentRequests,
+  partnerWidgets,
+  seedPartners,
+  type Partner,
+} from './partnerDirectory'
+import { cellText, money, today, useDemo } from './DemoSession'
 import styles from './AccountPanels.module.css'
 import page from './ManagersPage.module.css'
 
-export type Partner = {
-  id: string
-  name: string
-  accounts: string[]
-  proTill: string
-  bonus: number
-  approved: boolean
-  promos: string[]
-  request: string
-  operations: string[]
-  legal: string
-}
-const seedPartners: Partner[] = boards.partners.rows.map((r, i) => ({
-  id: r.id,
-  name: cellText(r.cells[0]),
-  accounts: i === 0 ? ['91001002'] : i === 1 ? ['91001005'] : [],
-  proTill: i === 2 ? '' : '2027-03-31',
-  bonus: i === 0 ? 48200 : 1200,
-  approved: i !== 1,
-  promos: [],
-  request: i === 1 ? 'Доступ TOP' : '',
-  operations: [],
-  legal: '',
-}))
+export type { Partner } from './partnerDirectory'
+
 export function usePartners() {
   return useAccountDraft<Partner[]>('/partners', seedPartners)
 }
 
-export function PartnersBoard() {
-  const { actor } = useDemo()
-  const [partners, setPartners] = usePartners()
-  const [filter, setFilter] = useState('Все')
-  const [selected, setSelected] = useState('')
-  const current = partners.find((p) => p.id === selected)
-  const rows = partners.filter((p) =>
-    filter === 'Все' || filter === 'Заявки'
-      ? filter === 'Все' || !!p.request
-      : !p.proTill || p.proTill <= '2026-12-16',
-  )
-  return (
-    <>
-      <h1>Партнёры</h1>
-      <Filters
-        filters={['Все', 'Заявки', 'Истекает PRO'].map((label) => ({ label }))}
-        active={filter}
-        change={setFilter}
-      />
-      <Table
-        columns={['Партнёр', 'Клиентов', 'PRO до', 'Бонусы']}
-        rows={rows.map((p) => ({
-          id: p.id,
-          cells: [
-            p.name,
-            String(p.accounts.length),
-            p.proTill ? dateLabel(p.proTill) : '—',
-            money(p.bonus),
-          ],
-        }))}
-      />
-      <div className={styles.stack}>
-        {rows.map((p) => (
-          <Panel
-            key={p.id}
-            title={p.name}
-            hint={`${p.accounts.length} клиентов · бонусы ${money(p.bonus)}`}
-            action={
-              <button type="button" onClick={() => setSelected(p.id)}>
-                Открыть партнёра
-              </button>
-            }
-          >
-            <p>
-              PRO: {p.proTill ? `до ${dateLabel(p.proTill)}` : 'Не подключён'} ·{' '}
-              {p.approved ? 'Одобрен' : 'На проверке'}
-            </p>
-            {p.request ? <p>Заявка: {p.request}</p> : null}
-          </Panel>
-        ))}
-      </div>
-      <DetailDrawer
-        title={current?.name ?? 'Партнёр'}
-        open={!!current}
-        onClose={() => setSelected('')}
-      >
-        {current ? (
-          <>
-            <p>Баланс {money(current.bonus)}. Клиенты закреплены за партнёром.</p>
-            <Link
-              to="/managers"
-              search={{
-                section: 'partners',
-                client: undefined,
-                mode: 'partner',
-                partner: current.id,
-              }}
-            >
-              Открыть партнёрский кабинет
-            </Link>
-            {current.accounts.map((id) => (
-              <p key={id}>
-                <Link to="/managers" search={{ section: 'partners', client: id }}>
-                  {clients.find((c) => c.id === id)?.name ?? id}
-                </Link>
-              </p>
-            ))}
-            <form
-              className={styles.stack}
-              onSubmit={(e) => {
-                e.preventDefault()
-                if (!can(actor, 'partners')) return
-                const f = new FormData(e.currentTarget)
-                setPartners((ps) =>
-                  ps.map((p) =>
-                    p.id === current.id
-                      ? {
-                          ...p,
-                          proTill: String(f.get('until')),
-                          approved: f.has('approved'),
-                          request: f.has('approved') ? '' : p.request,
-                        }
-                      : p,
-                  ),
-                )
-                setSelected('')
-              }}
-            >
-              <label>
-                PRO до
-                <input name="until" type="date" defaultValue={current.proTill} />
-              </label>
-              <label>
-                <input type="checkbox" name="approved" defaultChecked={current.approved} /> Одобрить
-                доступ TOP
-              </label>
-              <button type="submit">Сохранить партнёра</button>
-            </form>
-          </>
-        ) : null}
-      </DetailDrawer>
-    </>
-  )
+export function usePartnerPaymentRequests() {
+  return useAccountDraft('/partnerPaymentRequests', partnerPaymentRequests)
 }
 
 const views = [
@@ -168,6 +42,7 @@ function PartnerWorkspace() {
   const { view, partner: requestedPartner } = useSearch({ from: '/managers' })
   const navigate = useNavigate()
   const [partners, setPartners] = usePartners()
+  const [paymentRequests] = usePartnerPaymentRequests()
   const partnerId =
     requestedPartner && partners.some((p) => p.id === requestedPartner)
       ? requestedPartner
@@ -175,8 +50,20 @@ function PartnerWorkspace() {
   const partner = partners.find((p) => p.id === partnerId)!
   const [message, setMessage] = useState('')
   const currentView = views.find((v) => v === view) ?? 'Мои виджеты'
-  const pro = !!partner.proTill && partner.proTill >= today
-  const mine = clients.filter((c) => partner.accounts.includes(c.id))
+  const asOf = partner.id.startsWith('directory-') ? partnerDirectoryDate : today
+  const pro = !!partner.proTill && partner.proTill >= asOf
+  const mine = demoClients.filter((c) => partner.accounts.includes(c.id))
+  const ownRequests = paymentRequests.filter((r) => r.partner === partnerId)
+  const cabinetOptions = partners.filter((p) => p.id.startsWith('partner-') || p.id === partnerId)
+  const snapshots = partnerWidgets.filter(
+    ([index, account]) => `directory-${index}` === partnerId && partner.accounts.includes(account),
+  )
+  const requestStatus = {
+    allowed: 'Оплата через партнёра разрешена',
+    denied: 'Оплата через партнёра недоступна',
+    pending: 'Запрос отправлен',
+  } as const
+
   const update = (patch: Partial<Partner>) =>
     setPartners((ps) => ps.map((p) => (p.id === partnerId ? { ...p, ...patch } : p)))
   return (
@@ -201,7 +88,7 @@ function PartnerWorkspace() {
               setMessage('')
             }}
           >
-            {partners.map((p) => (
+            {cabinetOptions.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
@@ -278,16 +165,31 @@ function PartnerWorkspace() {
         {currentView === 'Мои виджеты' ? (
           <Table
             columns={['Аккаунт', 'Виджет', 'Оплачен до']}
-            rows={state.rows
-              .filter((r) => partner.accounts.includes(r.client ?? ''))
-              .map((r) => ({
-                id: r.id,
-                cells: [
-                  r.client ?? '—',
-                  cellText(r.cells[1]),
-                  r.paidUntil ? cellText(r.paidUntil) : '—',
-                ],
-              }))}
+            rows={[
+              ...state.rows
+                .filter((r) => partner.accounts.includes(r.client ?? ''))
+                .map((r) => ({
+                  id: r.id,
+                  cells: [
+                    r.client ?? '—',
+                    cellText(r.cells[1]),
+                    r.paidUntil ? cellText(r.paidUntil) : '—',
+                  ],
+                })),
+              ...snapshots.map(([, account, widget, until]) => {
+                const request = ownRequests.find(
+                  (r) => r.account === account && r.widget === widget,
+                )
+                return {
+                  id: account + widget,
+                  cells: [
+                    findDemoClient(account)?.domain ?? account,
+                    request ? { text: widget, note: requestStatus[request.status] } : widget,
+                    dateLabel(until),
+                  ],
+                }
+              }),
+            ]}
           />
         ) : null}
         {currentView === 'Мои клиенты' ? (
@@ -379,12 +281,13 @@ function PartnerWorkspace() {
               disabled={partner.bonus < 12000}
               onClick={() => {
                 if (partner.bonus < 12000) return
-                const base = new Date((pro ? partner.proTill : today) + 'T00:00:00Z')
+                const base = new Date((pro ? partner.proTill : asOf) + 'T00:00:00Z')
                 base.setUTCFullYear(base.getUTCFullYear() + 1)
                 const until = base.toISOString().slice(0, 10)
                 update({
                   bonus: partner.bonus - 12000,
                   proTill: until,
+                  proTrial: false,
                   operations: [
                     `PRO до ${dateLabel(until)} · −12 000 бонусов · без денежного платежа`,
                     ...partner.operations,
@@ -409,6 +312,16 @@ function PartnerWorkspace() {
                   ? 'Заявка ожидает решения менеджера.'
                   : 'Заявок пока нет.'}
             </p>
+            {ownRequests.length ? (
+              <ul>
+                {ownRequests.map((request) => (
+                  <li key={request.id}>
+                    {findDemoClient(request.account)?.domain ?? request.account} · {request.widget}{' '}
+                    · {requestStatus[request.status]}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             <form
               className={styles.stack}
               onSubmit={(e) => {

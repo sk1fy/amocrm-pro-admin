@@ -2,10 +2,13 @@ import { expect, test } from '@playwright/test'
 
 test('workspace choice opens the manager demo without sending credentials', async ({ page }) => {
   let apiRequests = 0
-  await page.route('**/api/**', (route) => {
-    apiRequests++
-    return route.abort()
-  })
+  await page.route(
+    (url) => url.pathname.startsWith('/api/'),
+    (route) => {
+      apiRequests++
+      return route.abort()
+    },
+  )
 
   await page.goto('/login?next=/accounts/91000001')
   await expect(page.getByRole('radio', { name: 'core-admin' })).toBeChecked()
@@ -63,7 +66,16 @@ test('manager sections have test data and client cards can be opened directly', 
   ]) {
     await navigation.getByRole('link', { name: section, exact: true }).click()
     await expect(page.getByRole('heading', { name: section, exact: true })).toBeVisible()
-    await expect(page.getByRole('table').getByRole('row').nth(1)).toBeVisible()
+    if (section === 'Лента событий') {
+      await expect(
+        page.getByRole('list', { name: 'События' }).getByRole('listitem').first(),
+      ).toBeVisible()
+    } else if (section === 'Статистика') {
+      await page.getByLabel('Таблица: Новые установки по неделям').click()
+      await expect(page.getByRole('table', { name: 'Новые установки по неделям' })).toBeVisible()
+    } else {
+      await expect(page.getByRole('table').first().getByRole('row').nth(1)).toBeVisible()
+    }
   }
 
   await page.setViewportSize({ width: 375, height: 850 })
@@ -123,10 +135,13 @@ test('installation phone search and date filters narrow the demo list together',
 
 test('account tabs show distinct demo panels and preserve a company draft', async ({ page }) => {
   let apiRequests = 0
-  await page.route('**/api/**', (route) => {
-    apiRequests++
-    return route.abort()
-  })
+  await page.route(
+    (url) => url.pathname.startsWith('/api/'),
+    (route) => {
+      apiRequests++
+      return route.abort()
+    },
+  )
   await page.goto('/managers?section=installs&client=91001001')
   const tabs = page.getByRole('group', { name: 'Разделы карточки' })
   await expect(page.getByRole('heading', { name: 'Наши виджеты', exact: true })).toBeVisible()

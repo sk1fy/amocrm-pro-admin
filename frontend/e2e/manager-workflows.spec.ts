@@ -5,10 +5,13 @@ test('invoice reserves bonuses, settles once, and remains visible across account
   page,
 }) => {
   let requests = 0
-  await page.route('**/api/**', (route) => {
-    requests++
-    return route.abort()
-  })
+  await page.route(
+    (url) => url.pathname.startsWith('/api/'),
+    (route) => {
+      requests++
+      return route.abort()
+    },
+  )
   await page.goto('/managers?section=clients&client=91001001')
   await page.getByRole('button', { name: /^Счета и компании/ }).click()
   await page.getByRole('button', { name: /Выставить счёт/ }).click()
@@ -103,21 +106,37 @@ test('partner has seven scoped views and PRO purchase changes its own balance', 
   await expect(nav.getByRole('link', { name: 'Уведомления', exact: true })).toBeVisible()
 })
 
-test('market mapping reaches only matching portrait topics and client presence filter', async ({
+test('market filters, client drilldown and portrait use the same widget settings', async ({
   page,
 }) => {
   await page.goto('/managers?section=market')
-  const row = page.getByRole('row').filter({ hasText: 'Телефония' })
-  await row.getByRole('button', { name: 'Изменить' }).click()
-  const drawer = page.getByRole('dialog')
-  await drawer.getByLabel('Тема портрета').selectOption('calls')
-  await drawer.getByLabel('Отметка').selectOption('Конкурент')
-  await drawer.getByRole('button', { name: 'Сохранить сопоставление' }).click()
-  await row.getByRole('link', { name: 'Показать клиентов' }).click()
-  await expect(page).toHaveURL(/market=market-1/)
-  await page.getByRole('link', { name: '91001001', exact: true }).click()
+  const market = page.getByRole('region', { name: 'amoМаркет' })
+  const search = market.getByRole('searchbox', { name: 'Поиск виджета' })
+  await search.fill('amo_wazzup')
+  const row = market.getByRole('row').filter({ hasText: 'amo_wazzup' })
+  const portraitSwitch = row.getByRole('switch', { name: 'В портрет: Wazzup' })
+  await expect(portraitSwitch).toBeChecked()
+  await row.getByRole('button', { name: 'Неизвестно', exact: true }).click()
+  await expect(portraitSwitch).toHaveCount(0)
+  await row.getByRole('button', { name: 'Партнёрский', exact: true }).click()
+  await expect(portraitSwitch).toBeChecked()
+
+  await row.getByLabel('Категория: Wazzup').fill('Телефония')
+  await row.getByLabel('Категория: Wazzup').press('Tab')
+  await market.getByLabel('Категория', { exact: true }).selectOption('Мессенджеры')
+  await expect(row).toHaveCount(0)
+  await market.getByLabel('Категория', { exact: true }).selectOption('Телефония')
+  await row.getByRole('link', { name: /Показать клиентов с виджетом Wazzup/ }).click()
+  await expect(page).toHaveURL(/market=amo_wazzup/)
+  await page.getByRole('link', { name: '31421329', exact: true }).click()
   await page.getByRole('button', { name: /^Портрет клиента/ }).click()
-  await expect(page.getByRole('region', { name: 'Звонки', exact: true })).toContainText(
-    'Телефония · Конкурент',
+  await expect(page.getByRole('region', { name: 'Телефония', exact: true })).toContainText(
+    'Wazzup · Партнёрский',
+  )
+  await expect(page.getByRole('region', { name: 'Мессенджеры', exact: true })).not.toContainText(
+    'Wazzup',
+  )
+  await expect(page.getByRole('region', { name: 'Партнёрские виджеты у клиента' })).toContainText(
+    'Wazzup',
   )
 })

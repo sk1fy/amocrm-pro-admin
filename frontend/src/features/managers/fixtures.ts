@@ -402,32 +402,7 @@ export const boards: Record<Section, Board> = {
       'Отметка',
       'В портрет',
     ],
-    rows: [
-      row('market-1', [
-        { text: 'Телефония', note: 'demo_telephony' },
-        '32',
-        '8',
-        '14.08.2026',
-        'Связь',
-        'Да',
-      ]),
-      row('market-2', [
-        { text: 'Мессенджеры', note: 'demo_messenger' },
-        '24',
-        '3',
-        '20.08.2026',
-        'Коммуникации',
-        'Да',
-      ]),
-      row('market-3', [
-        { text: 'Уведомления', note: 'demo_notifications' },
-        '16',
-        '5',
-        '02.09.2026',
-        'Автоматизация',
-        '—',
-      ]),
-    ],
+    rows: [],
   },
   partners: {
     description: 'Партнёры, их клиенты, установки и бонусы.',
@@ -699,10 +674,4 @@ export const boards: Record<Section, Board> = {
       ]),
     ],
   },
-}
-
-export const marketPresence: Record<string, { code: string; accounts: readonly string[] }> = {
-  'market-1': { code: 'demo_telephony', accounts: clients.map((c) => c.id) },
-  'market-2': { code: 'demo_messenger', accounts: ['91001001', '91001002'] },
-  'market-3': { code: 'demo_notifications', accounts: ['91001003'] },
 }
