@@ -1,7 +1,10 @@
 import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useAccountDraft } from './AccountDrafts'
 import { Panel } from './AccountPanel'
 import { formatDate, type DemoClient } from './accountFixtures'
-import type { DemoRow } from './fixtures'
+import { boards, marketPresence, type DemoRow } from './fixtures'
+import { cellText } from './DemoSession'
+import type { MarketSetting } from './SectionBoards'
 import type { PortraitTopic } from './portraitTopics'
 import { PortraitTemplate } from './PortraitTemplate'
 import styles from './Portrait.module.css'
@@ -43,7 +46,7 @@ function Choices({
   options: readonly string[]
   onChange?: (value: string) => void
 }) {
-  const [value, setValue] = useState(options.at(-1))
+  const [value, setValue] = useAccountDraft(`choice:${label}`, options.at(-1))
   return (
     <div className={styles.choices} role="group" aria-label={label}>
       {options.map((option, index) => (
@@ -68,9 +71,12 @@ function Company({ client }: { client: DemoClient }) {
   const nicheId = useId()
   const nicheOptionsId = useId()
   const [showNiches, setShowNiches] = useState(false)
-  const [niche, setNiche] = useState(client.domain === 'sever-logistics' ? 'Логистика' : '')
-  const [audit, setAudit] = useState(false)
-  const [features, setFeatures] = useState<string[]>([])
+  const [niche, setNiche] = useAccountDraft(
+    'niche',
+    client.domain === 'sever-logistics' ? 'Логистика' : '',
+  )
+  const [audit, setAudit] = useAccountDraft('audit', false)
+  const [features, setFeatures] = useAccountDraft<string[]>('features', [])
   return (
     <div className={styles.columns}>
       <div>
@@ -192,7 +198,7 @@ type Person = {
 }
 
 function People({ client }: { client: DemoClient }) {
-  const [people, setPeople] = useState<Person[]>(() =>
+  const [people, setPeople] = useAccountDraft<Person[]>('people', () =>
     client.id === '91001002' ? [{ id: 0, name: 'Андрей', phone: '', url: '', roles: [] }] : [],
   )
   const nextId = useRef(1)
@@ -347,7 +353,7 @@ function Deployment({
   topCurrent: boolean
   pro: readonly string[]
 }) {
-  const installed = { FREE: new Set<string>(), TOP: new Set<string>() }
+  const installed = { FREE: new Set<string>(), TOP: new Set<string>(), PRO: new Set<string>() }
   for (const row of rows) {
     const widget = row.cells[1]
     if (typeof widget !== 'string' && widget.line) installed[widget.line].add(widget.text)
@@ -498,11 +504,12 @@ export function Portrait({
   answered: number
   setAnswered: (count: number) => void
 }) {
-  const [warmth, setWarmth] = useState<Record<string, string[]>>({})
+  const [marketSettings] = useAccountDraft<Record<string, MarketSetting>>('/marketSettings', {})
+  const [warmth, setWarmth] = useAccountDraft<Record<string, string[]>>('warmth', {})
   const pro = topics
     .filter((topic) => topic.pro && warmth[topic.id]?.includes('пользуется'))
     .map((topic) => topic.leader?.replace(/^наш /, '') || topic.title)
-  const [answers, setAnswers] = useState<Record<string, TopicAnswer>>({})
+  const [answers, setAnswers] = useAccountDraft<Record<string, TopicAnswer>>('answers', {})
 
   function updateAnswer(id: string, change: TopicAnswer) {
     const next = { ...answers, [id]: { ...answers[id], ...change } }
@@ -547,6 +554,22 @@ export function Portrait({
             </span>
             <div className={styles.topicName}>
               <h3>{topic.title}</h3>
+              {boards.market.rows
+                .filter(
+                  (row) =>
+                    marketPresence[row.id].accounts.includes(client.id) &&
+                    (marketSettings[row.id]?.topic ??
+                      (row.id === 'market-1'
+                        ? 'telephony'
+                        : row.id === 'market-2'
+                          ? 'messengers'
+                          : '')) === topic.id,
+                )
+                .map((row) => (
+                  <p className={styles.noteState} key={row.id}>
+                    {cellText(row.cells[0])} · {marketSettings[row.id]?.mark ?? 'Сторонний'}
+                  </p>
+                ))}
               <span className={styles.noteState} data-known={Boolean(noted || answered)}>
                 {marked.includes('пользуется')
                   ? 'пользуется'

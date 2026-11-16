@@ -107,7 +107,13 @@ export function LoginPage() {
               Открыть демо для менеджеров
             </Link>
           ) : workspace === 'partners' ? (
-            <p className={styles.intro}>Кабинет партнёров готовится.</p>
+            <Link
+              to="/managers"
+              search={{ section: 'partners', client: undefined, mode: 'partner' }}
+              className={styles.demoLink}
+            >
+              Открыть демо для партнёров
+            </Link>
           ) : (
             <form
               className={styles.form}

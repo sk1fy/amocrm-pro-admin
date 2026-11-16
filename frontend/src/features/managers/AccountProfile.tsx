@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { boards, dateLabel, type DemoRow } from './fixtures'
+import { dateLabel, type DemoRow } from './fixtures'
 import { sections, type Section } from './sections'
+import { useDemo, can, invoiceRows as makeInvoiceRows } from './DemoSession'
+import { useAccountDraft } from './AccountDrafts'
 import { Audit } from './AccountInsights'
 import { Portrait } from './Portrait'
 import type { PortraitTopic } from './portraitTopics'
@@ -36,22 +38,60 @@ export function AccountProfile({
   check: (id: string, checked: boolean) => void
 }) {
   const [tab, setTab] = useState<(typeof clientTabs)[number]>(clientTabs[0])
-  const [status, setStatus] = useState(client.owner)
-  const [note, setNote] = useState('')
+  const { state, actor, dispatch } = useDemo()
+  const account = state.accounts[client.id]
+  const status = account.owner
+  const setStatus = (owner: string) =>
+    dispatch({
+      type: 'account',
+      client: client.id,
+      patch: { owner },
+      block: 'clients',
+      title: 'Статус клиента изменён',
+    })
+  const note = account.note
+  const setNote = (note: string) =>
+    dispatch({
+      type: 'account',
+      client: client.id,
+      patch: { note },
+      block: 'clients',
+      title: 'Примечание изменено',
+    })
   const [editingNote, setEditingNote] = useState(false)
   const [refreshed, setRefreshed] = useState(false)
-  const [subscribed, setSubscribed] = useState(
-    client.owner === 'Наш клиент' && client.health !== 'Лицензия истекла',
-  )
+  const subscribed = account.subscribed
   const [subscribing, setSubscribing] = useState(false)
-  const [bonus, setBonus] = useState(client.id === '91001001' ? 2400 : 0)
+  const bonus = account.bonus
+  const bonusHistory = account.bonusHistory
   const [bonusAction, setBonusAction] = useState<'history' | 'add' | 'remove' | null>(null)
-  const [bonusHistory, setBonusHistory] = useState<number[]>([])
   const expiresIn = Math.round((Date.parse(client.till) - Date.parse('2026-11-16')) / 86400000)
-  const accountRows = rows.filter((item) => item.client === client.id)
-  const invoiceRows = boards.invoices.rows.filter((item) => item.client === client.id)
-  const [portraitAnswers, setPortraitAnswers] = useState(0)
-  const { events, users, seen } = accountTabData(client, accountRows, invoiceRows)
+  const accountRows = rows
+    .filter((item) => item.client === client.id)
+    .map((item) => {
+      const tier = typeof item.cells[1] === 'object' ? item.cells[1].line : undefined
+      const paidText =
+        typeof item.paidUntil === 'object' ? item.paidUntil.text : (item.paidUntil ?? '')
+      const paidDate = paidText.split('.').reverse().join('-')
+      return account.subscribed && tier === 'TOP' && account.subscriptionTill > paidDate
+        ? {
+            ...item,
+            paidUntil: { text: dateLabel(account.subscriptionTill), note: 'Подписка · все TOP' },
+          }
+        : item
+    })
+  const invoiceRows = makeInvoiceRows(state.invoices.filter((item) => item.client === client.id))
+  const [portraitAnswers, setPortraitAnswers] = useAccountDraft('portraitCount', 0)
+  const {
+    events: fixtureEvents,
+    users,
+    seen,
+  } = accountTabData(
+    client,
+    accountRows,
+    invoiceRows.filter((i) => i.id.startsWith('invoice-')),
+  )
+  const events = [...state.events.filter((e) => e.client === client.id), ...fixtureEvents]
   const activeUsers = users.filter((user) => user.active).length
   const tabCounts = {
     'Наши виджеты': `${accountRows.length}/${accountRows.length}`,
@@ -94,12 +134,16 @@ export function AccountProfile({
           </div>
           <label className={styles.clientStatus}>
             Статус клиента
-            <select value={status} onChange={(event) => setStatus(event.target.value)}>
+            <select
+              disabled={!can(actor, 'clients')}
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+            >
               {['Без партнёра', 'Наш клиент', 'Клиент партнёра', 'Запрет работы'].map((value) => (
                 <option key={value}>{value}</option>
               ))}
             </select>
-            <small>До выхода из карточки · демо</small>
+            <small>До обновления страницы · демо</small>
           </label>
         </header>
         <div className={styles.statbar}>
@@ -136,10 +180,18 @@ export function AccountProfile({
               >
                 История бонусов
               </button>
-              <button type="button" onClick={() => setBonusAction('add')}>
+              <button
+                type="button"
+                disabled={!can(actor, 'pay')}
+                onClick={() => setBonusAction('add')}
+              >
                 + Пополнить
               </button>
-              <button type="button" disabled={!bonus} onClick={() => setBonusAction('remove')}>
+              <button
+                type="button"
+                disabled={!bonus || !can(actor, 'pay')}
+                onClick={() => setBonusAction('remove')}
+              >
                 − Списать
               </button>
             </div>
@@ -189,8 +241,13 @@ export function AccountProfile({
               )
                 return
               const delta = bonusAction === 'remove' ? -amount : amount
-              setBonus(bonus + delta)
-              setBonusHistory((history) => [...history, delta])
+              dispatch({
+                type: 'account',
+                client: client.id,
+                block: 'pay',
+                title: `${delta > 0 ? 'Бонусы пополнены' : 'Бонусы списаны'}: ${String(new FormData(event.currentTarget).get('reason'))}`,
+                patch: { bonus: bonus + delta, bonusHistory: [...bonusHistory, delta] },
+              })
               setBonusAction(null)
             }}
           >
@@ -203,6 +260,10 @@ export function AccountProfile({
                 max={bonusAction === 'remove' ? bonus : 10000000}
                 required
               />
+            </label>
+            <label>
+              Основание изменения бонусов
+              <input name="reason" required maxLength={200} />
             </label>
             <button type="submit" data-variant="primary">
               {bonusAction === 'add' ? 'Пополнить в демо' : 'Списать в демо'}
@@ -235,35 +296,75 @@ export function AccountProfile({
           </div>
           <p>
             {subscribed
-              ? `Все TOP-виджеты до ${dateLabel(client.till)} · ${client.seats} пользователей`
+              ? `Все TOP-виджеты до ${dateLabel(account.subscriptionTill)} · ${client.seats} пользователей`
               : 'Каждый виджет работает по своему сроку оплаты или пробного периода.'}
           </p>
           {subscribing ? (
-            <div className={panelStyles.chips}>
-              <button
-                type="button"
-                data-variant="primary"
-                onClick={() => {
-                  setSubscribed(true)
-                  setSubscribing(false)
-                }}
-              >
+            <form
+              className={panelStyles.peopleForm}
+              onSubmit={(event) => {
+                event.preventDefault()
+                const until = String(new FormData(event.currentTarget).get('until'))
+                if (until < '2026-11-16') return
+                dispatch({
+                  type: 'account',
+                  client: client.id,
+                  block: 'pay',
+                  title: 'Подписка TOP обновлена',
+                  patch: { subscribed: true, subscriptionTill: until },
+                })
+                setSubscribing(false)
+              }}
+            >
+              <label>
+                Подписка TOP до
+                <input
+                  name="until"
+                  type="date"
+                  min="2026-11-16"
+                  defaultValue={account.subscriptionTill}
+                  required
+                />
+              </label>
+              <button type="submit" data-variant="primary">
                 Выдать в демо
               </button>
               <button type="button" onClick={() => setSubscribing(false)}>
                 Отмена
               </button>
+            </form>
+          ) : can(actor, 'pay') ? (
+            <div className={panelStyles.chips}>
+              <button type="button" data-variant="primary" onClick={() => setSubscribing(true)}>
+                {subscribed ? 'Изменить подписку' : 'Выдать подписку'}
+              </button>
+              {subscribed ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    dispatch({
+                      type: 'account',
+                      client: client.id,
+                      block: 'pay',
+                      title: 'Подписка TOP отозвана',
+                      patch: { subscribed: false },
+                    })
+                  }
+                >
+                  Отозвать подписку
+                </button>
+              ) : null}
             </div>
-          ) : !subscribed && expiresIn >= 0 ? (
-            <button type="button" data-variant="primary" onClick={() => setSubscribing(true)}>
-              Выдать подписку
-            </button>
           ) : null}
         </section>
         <section className={styles.detailCard}>
           <div className={panelStyles.sectionTitle}>
             <h2>Примечание</h2>
-            <button type="button" onClick={() => setEditingNote((previous) => !previous)}>
+            <button
+              type="button"
+              disabled={!can(actor, 'clients')}
+              onClick={() => setEditingNote((previous) => !previous)}
+            >
               {editingNote ? 'Готово' : note ? 'Изменить' : 'Добавить'}
             </button>
           </div>
@@ -280,7 +381,7 @@ export function AccountProfile({
             </p>
           )}
           {editingNote ? (
-            <small className={styles.note}>Демо-черновик хранится до выхода из карточки.</small>
+            <small className={styles.note}>Сохраняется в демо-сессии до обновления страницы.</small>
           ) : null}
         </section>
       </div>
@@ -301,15 +402,17 @@ export function AccountProfile({
         <OurWidgets rows={accountRows} check={check} />
       </div>
       <div hidden={tab !== 'Портрет клиента'}>
-        <Portrait
-          client={client}
-          rows={accountRows}
-          topCurrent={expiresIn >= 0}
-          topics={topics}
-          changeTopics={changeTopics}
-          answered={portraitAnswers}
-          setAnswered={setPortraitAnswers}
-        />
+        <fieldset disabled={!can(actor, 'clients')} className={panelStyles.readonlyFields}>
+          <Portrait
+            client={client}
+            rows={accountRows}
+            topCurrent={expiresIn >= 0}
+            topics={topics}
+            changeTopics={changeTopics}
+            answered={portraitAnswers}
+            setAnswered={setPortraitAnswers}
+          />
+        </fieldset>
       </div>
       <div hidden={tab !== 'Аудит'}>
         <Audit client={client} showPortrait={() => setTab('Портрет клиента')} />

@@ -1,4 +1,11 @@
-import { dateLabel, type clients, type Cell, type DemoRow } from './fixtures'
+import {
+  dateLabel,
+  boards,
+  marketPresence,
+  type clients,
+  type Cell,
+  type DemoRow,
+} from './fixtures'
 
 export type DemoClient = (typeof clients)[number]
 
@@ -80,20 +87,15 @@ export function accountTabData(
       firstSeen: install.date ?? '',
       gone: false,
     })),
-    {
-      code: 'demo_telephony',
-      name: 'Телефония',
-      owner: 'Сторонний',
-      firstSeen: '2026-10-03',
-      gone: false,
-    },
-    {
-      code: 'demo_livechat',
-      name: 'Онлайн-чат',
-      owner: 'Партнёрский',
-      firstSeen: '2026-10-10',
-      gone: false,
-    },
+    ...boards.market.rows
+      .filter((r) => marketPresence[r.id].accounts.includes(client.id))
+      .map((r) => ({
+        code: marketPresence[r.id].code,
+        name: cellText(r.cells[0]),
+        owner: 'Сторонний',
+        firstSeen: '2026-10-03',
+        gone: false,
+      })),
     {
       code: 'demo_old_export',
       name: 'Экспорт сделок',

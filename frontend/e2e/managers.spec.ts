@@ -11,7 +11,7 @@ test('workspace choice opens the manager demo without sending credentials', asyn
   await expect(page.getByRole('radio', { name: 'core-admin' })).toBeChecked()
   await expect(page.getByTestId('login-form')).toBeVisible()
   await page.getByRole('radio', { name: 'partners' }).check()
-  await expect(page.getByText('Кабинет партнёров готовится.')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Открыть демо для партнёров' })).toBeVisible()
   await expect(page.getByTestId('login-form')).toHaveCount(0)
   await page.getByRole('radio', { name: 'managers' }).check()
   await page.getByRole('link', { name: 'Открыть демо для менеджеров' }).click()
@@ -157,8 +157,10 @@ test('account tabs show distinct demo panels and preserve a company draft', asyn
   await page.getByRole('button', { name: /Выставить счёт/ }).click()
   await page.getByLabel('За что', { exact: true }).fill('Демо-подписка')
   await page.getByLabel('Сумма, ₽', { exact: true }).fill('1200')
-  await page.getByRole('button', { name: 'Создать демо-черновик' }).click()
-  await expect(page.getByRole('row').filter({ hasText: 'Демо-подписка' })).toContainText('Черновик')
+  await page.getByRole('button', { name: 'Выставить демо-счёт' }).click()
+  await expect(page.getByRole('row').filter({ hasText: 'Демо-подписка' })).toContainText(
+    'Ждём оплату',
+  )
   await page.getByLabel('ИНН', { exact: true }).fill('9900000008')
   await page.getByLabel('Название', { exact: true }).fill('ООО Демо')
   await tabs.getByRole('button', { name: /^Наши виджеты/ }).click()

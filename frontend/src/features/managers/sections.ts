@@ -17,9 +17,24 @@ function isSection(value: unknown): value is Section {
   return typeof value === 'string' && Object.hasOwn(sections, value)
 }
 
-export function managersSearch(search: Record<string, unknown>) {
+export function managersSearch(search: Record<string, unknown>): {
+  section: Section
+  client: string | undefined
+  mode?: 'partner'
+  view?: string
+  market?: string
+  partner?: string
+} {
   const { section, client } = search
   return {
+    partner:
+      typeof search.partner === 'string' &&
+      ['partner-1', 'partner-2', 'partner-3'].includes(search.partner)
+        ? search.partner
+        : undefined,
+    mode: search.mode === 'partner' ? 'partner' : undefined,
+    view: typeof search.view === 'string' ? search.view : undefined,
+    market: typeof search.market === 'string' ? search.market : undefined,
     section: isSection(section) ? section : 'installs',
     client:
       typeof client === 'string' || (typeof client === 'number' && Number.isSafeInteger(client))

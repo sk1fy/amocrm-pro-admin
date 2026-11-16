@@ -3,7 +3,12 @@ import { Link, useSearch } from '@tanstack/react-router'
 import { BrandLogo } from '../../components/BrandLogo'
 import { DataTable, type DataTableColumn } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
-import { boards, clients, installs, type DemoRow } from './fixtures'
+import { boards, clients, marketPresence, type DemoRow } from './fixtures'
+import { DemoSession, useDemo, can, canView, invoiceRows } from './DemoSession'
+import { InvoiceActions, InvoiceDrawer } from './Finance'
+import { WidgetsBoard, MarketBoard, StaffBoard, PaymentsBoard, StatsBoard } from './SectionBoards'
+import { PartnersBoard, PartnerEntry } from './Partners'
+import { AccountDrafts, DraftAccount, useAccountDraft } from './AccountDrafts'
 import { AccountProfile } from './AccountProfile'
 import { portraitTopics } from './portraitTopics'
 import { CellValue } from './CellValue'
@@ -49,23 +54,40 @@ function matches(row: DemoRow, query: string) {
   return (
     !term ||
     text.includes(term) ||
-    (digits.length >= 3 && /^[+()\d\s-]+$/.test(term) && phone.includes(digits))
+    (digits.length >= 3 &&
+      /^[+()\d\s-]+$/.test(term) &&
+      phone.replace(/^[78](?=\d{10}$)/, '').includes(digits.replace(/^[78](?=\d{10}$)/, '')))
   )
 }
 
 export function ManagersPage() {
+  const { mode } = useSearch({ from: '/managers' })
+  return (
+    <DemoSession>
+      <AccountDrafts>{mode === 'partner' ? <PartnerEntry /> : <ManagerWorkspace />}</AccountDrafts>
+    </DemoSession>
+  )
+}
+
+function ManagerWorkspace() {
+  const { state, actor, actorId, selectActor, dispatch } = useDemo()
   const { section, client } = useSearch({ from: '/managers' })
-  const [topics, setTopics] = useState(portraitTopics)
-  const [checked, setChecked] = useState<Record<string, boolean>>({})
+  const [topics, setTopics] = useAccountDraft('/portraitTopics', portraitTopics)
   const [menuOpen, setMenuOpen] = useState(() => window.innerWidth >= 1440)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const menuButton = useRef<HTMLButtonElement>(null)
   const customer = clients.find((item) => item.id === client)
-  const rows = installs.map((item) =>
-    item.id in checked
-      ? { ...item, group: checked[item.id] ? 'Проверенные' : 'Непроверенные' }
-      : item,
-  )
+  const rows = state.rows
+  const check = (id: string, value: boolean) =>
+    dispatch({
+      type: 'install',
+      id,
+      patch: {
+        group: value ? 'Проверенные' : 'Непроверенные',
+        checkedBy: value ? actor.name : undefined,
+      },
+      title: value ? 'Установка проверена' : 'Проверка снята',
+    })
   const uncheckedCount = rows.filter((item) => item.group === 'Непроверенные').length
 
   return (
@@ -87,7 +109,20 @@ export function ManagersPage() {
         </span>
         <span className={styles.product}>Сервер виджетов</span>
         <div className={styles.profile}>
-          <span>Менеджер · демо</span>
+          <label>
+            Войти как{' '}
+            <select
+              aria-label="Демо-сотрудник"
+              value={actorId}
+              onChange={(e) => selectActor(e.target.value)}
+            >
+              {state.staff.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <Link to="/login" search={{ next: undefined }}>
             Сменить кабинет
           </Link>
@@ -106,64 +141,68 @@ export function ManagersPage() {
           {menuOpen ? 'Свернуть меню' : null}
         </button>
         <nav className={styles.menu} aria-label="Разделы менеджеров">
-          {sectionKeys.map((key) => {
-            const item = sections[key]
-            const count =
-              key === 'installs'
-                ? uncheckedCount
-                : key === 'invoices'
-                  ? boards.invoices.rows.filter((row) => row.group === 'Без движения').length
-                  : 0
-            return (
-              <Link
-                key={key}
-                to="/managers"
-                search={{ section: key, client: undefined }}
-                aria-current={section === key ? 'page' : undefined}
-                aria-label={item.title}
-                title={item.title}
-                onClick={() => {
-                  if (window.innerWidth <= 760) {
-                    menuButton.current?.focus()
-                    setMobileMenuOpen(false)
-                  }
-                }}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  aria-hidden="true"
+          {sectionKeys
+            .filter((key) => canView(actor, key))
+            .map((key) => {
+              const item = sections[key]
+              const count =
+                key === 'installs'
+                  ? uncheckedCount
+                  : key === 'invoices'
+                    ? state.invoices.filter((v) => v.state === 'open').length
+                    : 0
+              return (
+                <Link
+                  key={key}
+                  to="/managers"
+                  search={{ section: key, client: undefined }}
+                  aria-current={section === key ? 'page' : undefined}
+                  aria-label={item.title}
+                  title={item.title}
+                  onClick={() => {
+                    if (window.innerWidth <= 760) {
+                      menuButton.current?.focus()
+                      setMobileMenuOpen(false)
+                    }
+                  }}
                 >
-                  <path d={icons[item.icon]} strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span className={styles.menuLabel}>
-                  {item.title}
-                  <small>{item.hint}</small>
-                </span>
-                {count > 0 ? (
-                  <span className={styles.menuCount} aria-hidden="true">
-                    {count}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    aria-hidden="true"
+                  >
+                    <path d={icons[item.icon]} strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className={styles.menuLabel}>
+                    {item.title}
+                    <small>{item.hint}</small>
                   </span>
-                ) : null}
-              </Link>
-            )
-          })}
+                  {count > 0 ? (
+                    <span className={styles.menuCount} aria-hidden="true">
+                      {count}
+                    </span>
+                  ) : null}
+                </Link>
+              )
+            })}
         </nav>
       </aside>
       <main className={styles.main}>
         <div className={styles.demo}>Демо-данные. Изменения действуют до обновления страницы.</div>
         {customer ? (
-          <AccountProfile
-            key={customer.id}
-            client={customer}
-            section={section}
-            rows={rows}
-            topics={topics}
-            changeTopics={setTopics}
-            check={(id, value) => setChecked((previous) => ({ ...previous, [id]: value }))}
-          />
+          <DraftAccount id={customer.id}>
+            <AccountProfile
+              key={customer.id}
+              client={customer}
+              section={section}
+              rows={rows}
+              topics={topics}
+              changeTopics={setTopics}
+              check={check}
+            />
+          </DraftAccount>
         ) : client ? (
           <EmptyState
             title="Клиент не найден"
@@ -173,15 +212,66 @@ export function ManagersPage() {
               </Link>
             }
           />
+        ) : !canView(actor, section) ? (
+          <EmptyState
+            title="Нет доступа к разделу"
+            description="Выберите доступный раздел или смените демо-сотрудника."
+          />
+        ) : section === 'widgets' ? (
+          <WidgetsBoard />
+        ) : section === 'market' ? (
+          <MarketBoard />
+        ) : section === 'staff' ? (
+          <StaffBoard />
+        ) : section === 'partners' ? (
+          <PartnersBoard />
+        ) : section === 'payments' ? (
+          <PaymentsBoard />
+        ) : section === 'stats' ? (
+          <StatsBoard />
         ) : (
           <BoardView
             key={section}
             section={section}
-            rows={section === 'installs' ? rows : boards[section].rows}
-            check={(id, value) => setChecked((previous) => ({ ...previous, [id]: value }))}
+            rows={
+              section === 'installs'
+                ? rows
+                : section === 'invoices'
+                  ? invoiceRows(state.invoices)
+                  : section === 'feed'
+                    ? [
+                        ...state.events.map((e) => ({
+                          id: e.id,
+                          client: e.client,
+                          cells: [
+                            e.date,
+                            e.title + ' · ' + e.details,
+                            clients.find((c) => c.id === e.client)?.name ?? '—',
+                            e.actor,
+                          ],
+                        })),
+                        ...boards.feed.rows,
+                      ]
+                    : section === 'clients'
+                      ? boards.clients.rows.map((r) => ({
+                          ...r,
+                          group:
+                            r.client && state.accounts[r.client].owner === 'Запрет работы'
+                              ? 'Запрет работы'
+                              : r.group === 'Запрет работы'
+                                ? 'Нет данных'
+                                : r.group,
+                          cells: r.cells.map((c, i) =>
+                            i === 5 && r.client ? state.accounts[r.client].owner : c,
+                          ),
+                        }))
+                      : []
+            }
+            check={check}
           />
         )}
       </main>
+      <InvoiceDrawer />
     </div>
   )
 }
@@ -195,15 +285,20 @@ function BoardView({
   rows: readonly DemoRow[]
   check: (id: string, checked: boolean) => void
 }) {
+  const { actor, state } = useDemo()
+  const { market } = useSearch({ from: '/managers' })
   const board = boards[section]
   const [group, setGroup] = useState(board.filters?.[0] ?? '')
   const [query, setQuery] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [tariff, setTariff] = useState('')
+  const [owner, setOwner] = useState('')
   const candidates = rows.filter(
     (row) =>
       matches(row, query) &&
+      (!owner || (row.client && state.accounts[row.client].owner === owner)) &&
+      (!market || (!!row.client && !!marketPresence[market]?.accounts.includes(row.client))) &&
       (!from || (row.date ?? '') >= from) &&
       (!to || (row.date ?? '') <= to) &&
       (!tariff || row.cells[3] === tariff),
@@ -228,7 +323,13 @@ function BoardView({
       </>
     ),
   }))
-  if (section === 'installs') {
+  if (section === 'invoices')
+    columns.push({
+      id: 'actions',
+      header: 'Действия',
+      cell: (row) => <InvoiceActions id={row.id} />,
+    })
+  if (section === 'installs' && can(actor, 'clients')) {
     columns.push({
       id: 'check',
       header: 'Проверка',
@@ -240,7 +341,7 @@ function BoardView({
           onClick={() => check(row.id, row.group !== 'Проверенные')}
         >
           {row.group === 'Проверенные' ? (
-            'Вернуть'
+            `Вернуть · ${row.checkedBy ?? 'демо'}`
           ) : (
             <>
               <span aria-hidden="true">✓</span> Проверен
@@ -265,26 +366,80 @@ function BoardView({
             aria-label="Фильтр по состоянию"
             role="group"
           >
-            {board.filters.map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                aria-pressed={group === filter}
-                onClick={() => setGroup(filter)}
-              >
-                {filter}
-                <span className={styles.count}>
-                  {
-                    candidates.filter(
-                      (row) => filter === 'Все' || filter === 'Все виджеты' || row.group === filter,
-                    ).length
-                  }
-                </span>
-              </button>
-            ))}
+            {section === 'clients'
+              ? board.filters.map((filter) => {
+                  const inGroup = rows.filter((row) => filter === 'Все' || row.group === filter)
+                  return (
+                    <div className={styles.ownerCard} key={filter}>
+                      <button
+                        type="button"
+                        aria-pressed={group === filter && !owner}
+                        onClick={() => {
+                          setGroup(filter)
+                          setOwner('')
+                        }}
+                      >
+                        {filter} <strong>{inGroup.length}</strong>
+                      </button>
+                      {['Наш клиент', 'Клиент партнёра', 'Без партнёра', 'Запрет работы'].map(
+                        (value) => (
+                          <button
+                            type="button"
+                            key={value}
+                            aria-pressed={group === filter && owner === value}
+                            onClick={() => {
+                              setGroup(filter)
+                              setOwner(value)
+                            }}
+                          >
+                            <span>{value}</span>
+                            <b>
+                              {
+                                inGroup.filter(
+                                  (row) => row.client && state.accounts[row.client].owner === value,
+                                ).length
+                              }
+                            </b>
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  )
+                })
+              : board.filters.map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    aria-pressed={group === filter}
+                    onClick={() => setGroup(filter)}
+                  >
+                    {filter}
+                    <span className={styles.count}>
+                      {
+                        candidates.filter(
+                          (row) =>
+                            filter === 'Все' || filter === 'Все виджеты' || row.group === filter,
+                        ).length
+                      }
+                    </span>
+                  </button>
+                ))}
           </div>
         ) : null}
         <div className={styles.filters}>
+          <button
+            type="button"
+            onClick={() => {
+              setFrom('')
+              setTo('')
+              setQuery('')
+              setTariff('')
+              setOwner('')
+              setGroup(board.filters?.[0] ?? '')
+            }}
+          >
+            Сбросить фильтры
+          </button>
           {board.dateLabel ? (
             <>
               <label>
@@ -295,6 +450,22 @@ function BoardView({
                 по <input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
               </label>
             </>
+          ) : null}
+          {section === 'clients' ? (
+            <label>
+              Чей клиент
+              <select value={owner} onChange={(e) => setOwner(e.target.value)}>
+                <option value="">Все</option>
+                {['Без партнёра', 'Наш клиент', 'Клиент партнёра', 'Запрет работы'].map((o) => (
+                  <option key={o}>{o}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {market ? (
+            <Link to="/managers" search={{ section: 'clients', client: undefined }}>
+              Сбросить фильтр amoМаркета
+            </Link>
           ) : null}
           {section === 'clients' ? (
             <label>

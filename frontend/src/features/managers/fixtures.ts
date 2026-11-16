@@ -7,7 +7,7 @@ export type Cell =
       text: string
       note?: string
       tone?: Tone
-      line?: 'FREE' | 'TOP'
+      line?: 'FREE' | 'TOP' | 'PRO'
       tags?: readonly string[]
       detail?: string
     }
@@ -21,6 +21,9 @@ export type DemoRow = {
   installedAt?: string
   paidUntil?: Cell
   installationStatus?: Cell
+  needsAuthorization?: boolean
+  reviewed?: boolean
+  checkedBy?: string
   installer?: Cell
 }
 
@@ -263,6 +266,7 @@ export const installs: DemoRow[] = installationCases
       id: `install-${index + 1}`,
       client: client.id,
       date: item.date,
+      needsAuthorization: item.account === 4,
       installedAt: `${item.date}T${item.time.slice(0, 5)}:00+03:00`,
       group: item.checked ? 'Проверенные' : 'Непроверенные',
       installationStatus: {
@@ -377,7 +381,7 @@ export const boards: Record<Section, Board> = {
       row(
         `widget-${index}`,
         [
-          { text: widget, line: index % 2 ? 'FREE' : 'TOP' },
+          { text: widget, line: index === 5 ? 'PRO' : index % 2 ? 'FREE' : 'TOP' },
           String(128 - index * 13),
           String(91 - index * 8),
           String(76 - index * 7),
@@ -695,4 +699,10 @@ export const boards: Record<Section, Board> = {
       ]),
     ],
   },
+}
+
+export const marketPresence: Record<string, { code: string; accounts: readonly string[] }> = {
+  'market-1': { code: 'demo_telephony', accounts: clients.map((c) => c.id) },
+  'market-2': { code: 'demo_messenger', accounts: ['91001001', '91001002'] },
+  'market-3': { code: 'demo_notifications', accounts: ['91001003'] },
 }
