@@ -40,30 +40,53 @@ function CellValue({ value }: { value: Cell }) {
           {value.line}
         </span>
       ) : null}
-      <span className={value.tone ? styles.pill : undefined} data-tone={value.tone}>
-        {value.text}
-      </span>
+      {value.detail ? (
+        <details className={styles.dealDetails}>
+          <summary>{value.text}</summary>
+          <p>{value.detail}</p>
+          <small>Локальный пример · CRM не открывается</small>
+        </details>
+      ) : (
+        <span className={value.tone ? styles.pill : undefined} data-tone={value.tone}>
+          {value.text}
+        </span>
+      )}
       {value.note ? <small className={styles.note}>{value.note}</small> : null}
+      {value.tags?.length ? (
+        <span className={styles.tags}>
+          {value.tags.map((tag) => (
+            <span key={tag}>{tag}</span>
+          ))}
+        </span>
+      ) : null}
     </>
   )
 }
 
 function matches(row: DemoRow, query: string) {
   const term = query.trim().toLocaleLowerCase('ru')
+  const text = row.cells
+    .map((cell) =>
+      typeof cell === 'string'
+        ? cell
+        : `${cell.text} ${cell.note ?? ''} ${cell.line ?? ''} ${cell.tags?.join(' ') ?? ''}`,
+    )
+    .join(' ')
+    .toLocaleLowerCase('ru')
+  const phone = typeof row.cells[4] === 'object' ? row.cells[4].text.replace(/\D/g, '') : ''
+  const digits = term.replace(/\D/g, '')
   return (
     !term ||
-    row.cells.some((cell) =>
-      (typeof cell === 'string' ? cell : `${cell.text} ${cell.note ?? ''} ${cell.line ?? ''}`)
-        .toLocaleLowerCase('ru')
-        .includes(term),
-    )
+    text.includes(term) ||
+    (digits.length >= 3 && /^[+()\d\s-]+$/.test(term) && phone.includes(digits))
   )
 }
 
 export function ManagersPage() {
   const { section, client } = useSearch({ from: '/managers' })
   const [checked, setChecked] = useState<Record<string, boolean>>({})
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(() => window.innerWidth >= 1440)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const menuButton = useRef<HTMLButtonElement>(null)
   const customer = clients.find((item) => item.id === client)
   const rows = installs.map((item) =>
@@ -74,16 +97,16 @@ export function ManagersPage() {
   const uncheckedCount = rows.filter((item) => item.group === 'Непроверенные').length
 
   return (
-    <div className={styles.shell} data-menu-open={menuOpen}>
+    <div className={styles.shell} data-menu-open={menuOpen} data-mobile-open={mobileMenuOpen}>
       <header className={styles.topbar}>
         <button
           type="button"
           ref={menuButton}
-          className={styles.menuButton}
+          className={styles.mobileMenuButton}
           aria-controls="manager-nav"
-          aria-expanded={menuOpen}
+          aria-expanded={mobileMenuOpen}
           aria-label="Меню"
-          onClick={() => setMenuOpen((open) => !open)}
+          onClick={() => setMobileMenuOpen((open) => !open)}
         >
           ☰
         </button>
@@ -99,9 +122,26 @@ export function ManagersPage() {
         </div>
       </header>
       <aside id="manager-nav" className={styles.sidebar}>
+        <button
+          type="button"
+          className={styles.menuButton}
+          aria-controls="manager-nav"
+          aria-expanded={menuOpen}
+          aria-label={menuOpen ? 'Свернуть меню' : 'Развернуть меню'}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span aria-hidden="true">{menuOpen ? '‹' : '›'}</span>
+          {menuOpen ? 'Свернуть меню' : null}
+        </button>
         <nav className={styles.menu} aria-label="Разделы менеджеров">
           {sectionKeys.map((key) => {
             const item = sections[key]
+            const count =
+              key === 'installs'
+                ? uncheckedCount
+                : key === 'invoices'
+                  ? boards.invoices.rows.filter((row) => row.group === 'Без движения').length
+                  : 0
             return (
               <Link
                 key={key}
@@ -111,8 +151,10 @@ export function ManagersPage() {
                 aria-label={item.title}
                 title={item.title}
                 onClick={() => {
-                  if (menuOpen) menuButton.current?.focus()
-                  setMenuOpen(false)
+                  if (window.innerWidth <= 760) {
+                    menuButton.current?.focus()
+                    setMobileMenuOpen(false)
+                  }
                 }}
               >
                 <svg
@@ -128,9 +170,9 @@ export function ManagersPage() {
                   {item.title}
                   <small>{item.hint}</small>
                 </span>
-                {key === 'installs' && uncheckedCount > 0 ? (
+                {count > 0 ? (
                   <span className={styles.menuCount} aria-hidden="true">
-                    {uncheckedCount}
+                    {count}
                   </span>
                 ) : null}
               </Link>
@@ -141,7 +183,13 @@ export function ManagersPage() {
       <main className={styles.main}>
         <div className={styles.demo}>Демо-данные. Изменения действуют до обновления страницы.</div>
         {customer ? (
-          <ClientProfile key={customer.id} client={customer} section={section} />
+          <ClientProfile
+            key={customer.id}
+            client={customer}
+            section={section}
+            rows={rows}
+            check={(id, value) => setChecked((previous) => ({ ...previous, [id]: value }))}
+          />
         ) : client ? (
           <EmptyState
             title="Клиент не найден"
@@ -194,7 +242,9 @@ function BoardView({
     cell: (row) => (
       <>
         {row.client &&
-        (clientColumns[section] === index || (section === 'installs' && index === 3)) ? (
+        (clientColumns[section] === index ||
+          (section === 'installs' && index === 3) ||
+          (section === 'clients' && index === 1)) ? (
           <Link className={styles.rowLink} to="/managers" search={{ section, client: row.client }}>
             <CellValue value={row.cells[index]} />
           </Link>
@@ -212,10 +262,16 @@ function BoardView({
         <button
           type="button"
           className={styles.rowAction}
-          data-variant={row.group === 'Проверенные' ? undefined : 'primary'}
+          data-checked={row.group === 'Проверенные'}
           onClick={() => check(row.id, row.group !== 'Проверенные')}
         >
-          {row.group === 'Проверенные' ? 'Вернуть' : 'Проверен'}
+          {row.group === 'Проверенные' ? (
+            'Вернуть'
+          ) : (
+            <>
+              <span aria-hidden="true">✓</span> Проверен
+            </>
+          )}
         </button>
       ),
     })
@@ -283,7 +339,7 @@ function BoardView({
             aria-label="Поиск"
             placeholder={
               section === 'installs' || section === 'clients'
-                ? 'ID, поддомен, название, имя'
+                ? 'Телефон, ID, поддомен, название, имя или email'
                 : 'Поиск по разделу'
             }
             value={query}
@@ -316,20 +372,41 @@ const clientTabs = [
 function ClientProfile({
   client,
   section,
+  rows,
+  check,
 }: {
   client: (typeof clients)[number]
   section: Section
+  rows: readonly DemoRow[]
+  check: (id: string, checked: boolean) => void
 }) {
   const [tab, setTab] = useState<(typeof clientTabs)[number]>(clientTabs[0])
-  const accountRows = installs.filter((item) => item.client === client.id)
+  const [status, setStatus] = useState(client.owner)
+  const [note, setNote] = useState('Уточнить задачи команды и показать подходящие виджеты.')
+  const [refreshed, setRefreshed] = useState(false)
+  const accountRows = rows.filter((item) => item.client === client.id)
   const invoiceRows = boards.invoices.rows.filter((item) => item.client === client.id)
   const activityRows = boards.feed.rows.filter((item) => item.client === client.id)
   const body = {
     'Наши виджеты': {
-      columns: ['Дата установки', 'Виджет', 'Контакт', 'Сделка'],
+      columns: [
+        'Статус · установлен',
+        'Виджет',
+        'Оплачен до',
+        'Установил',
+        'Сделка',
+        'Контакт из формы активации',
+      ],
       rows: accountRows.map((row) => ({
         ...row,
-        cells: [row.cells[0], row.cells[1], row.cells[4], row.cells[5]],
+        cells: [
+          row.installationStatus ?? '—',
+          row.cells[1],
+          row.paidUntil ?? '—',
+          row.installer ?? '—',
+          row.cells[5],
+          row.cells[4],
+        ],
       })),
     },
     'Портрет клиента': {
@@ -366,41 +443,176 @@ function ClientProfile({
           <div className={styles.avatar} aria-hidden="true">
             {client.name.slice(0, 1)}
           </div>
-          <div>
-            <h1>{client.domain}</h1>
+          <div className={styles.clientTitle}>
+            <div className={styles.nameRow}>
+              <h1>{client.domain}</h1>
+              <span className={styles.idChip}>ID {client.id}</span>
+            </div>
             <p>
-              {client.name} · ID {client.id} · amoCRM до {dateLabel(client.till)}
+              {client.name} · данные обновлены: {client.updated}
             </p>
-          </div>
-          <span
-            className={styles.pill}
-            data-tone={client.health === 'Получаем данные' ? 'green' : 'amber'}
-          >
-            {client.health}
-          </span>
-        </header>
-        <div className={styles.tabs} role="group" aria-label="Разделы карточки">
-          {clientTabs.map((value) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={tab === value}
-              onClick={() => setTab(value)}
+            <span
+              className={styles.pill}
+              data-tone={client.health === 'Получаем данные' ? 'green' : 'amber'}
             >
-              {value}
+              {client.health}
+            </span>
+          </div>
+          <label className={styles.clientStatus}>
+            Статус клиента
+            <select value={status} onChange={(event) => setStatus(event.target.value)}>
+              {['Без партнёра', 'Наш клиент', 'Клиент партнёра', 'Запрет работы'].map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </select>
+            <small>До выхода из карточки · демо</small>
+          </label>
+        </header>
+        <div className={styles.statbar}>
+          <div>
+            <small>Тариф amoCRM</small>
+            <strong>{client.tariff}</strong>
+            <span className={styles.note}>
+              {client.health === 'Лицензия истекла' ? 'Лицензия истекла' : 'Данные демо-аккаунта'}
+            </span>
+          </div>
+          <div>
+            <small>Действует до</small>
+            <strong>{dateLabel(client.till)}</strong>
+            <button className={styles.textButton} onClick={() => setTab('История')}>
+              История продлений →
             </button>
-          ))}
+          </div>
+          <div>
+            <small>Пользователи</small>
+            <button className={styles.metricButton} onClick={() => setTab('Пользователи')}>
+              {client.seats}
+            </button>
+            <span className={styles.note}>В аккаунте amoCRM</span>
+          </div>
+          <div>
+            <small>Бонусы</small>
+            <strong>{client.id === '91001001' ? '2 400 ₽' : '0 ₽'}</strong>
+            <span className={styles.note}>Демонстрационный баланс</span>
+          </div>
+          <div>
+            <button className={styles.refreshButton} onClick={() => setRefreshed(true)}>
+              ↻ Обновить
+            </button>
+            <span role="status" className={styles.note}>
+              {refreshed
+                ? 'Демо-данные актуальны · запрос не отправлялся'
+                : 'Локальный пример обновления'}
+            </span>
+          </div>
         </div>
+        {status !== 'Клиент партнёра' && status !== 'Запрет работы' ? (
+          <div className={styles.nextStep}>
+            <strong>Следующий шаг</strong>
+            <span>Уточнить, как команда работает со сделками</span>
+            <button className={styles.textButton} onClick={() => setTab('Портрет клиента')}>
+              Перейти →
+            </button>
+          </div>
+        ) : null}
       </section>
+      <div className={styles.clientCards}>
+        <section className={styles.detailCard}>
+          <h2>Подписка</h2>
+          <div className={styles.subscription}>
+            <strong>
+              {client.owner === 'Наш клиент'
+                ? 'Все TOP · Наш клиент'
+                : 'Единая подписка не подключена'}
+            </strong>
+            <span
+              className={styles.pill}
+              data-tone={client.owner === 'Наш клиент' ? 'green' : 'gray'}
+            >
+              {client.owner === 'Наш клиент' ? 'Действует' : 'Нет подписки'}
+            </span>
+          </div>
+          <p>
+            {client.owner === 'Наш клиент'
+              ? `Все TOP-виджеты до ${dateLabel(client.till)} · ${client.seats} пользователей`
+              : 'Каждый виджет работает по своему сроку оплаты или пробного периода.'}
+          </p>
+          <small className={styles.note}>
+            Демонстрация условий подписки · управление оплатой не подключено
+          </small>
+        </section>
+        <section className={styles.detailCard}>
+          <label htmlFor="manager-client-note">
+            <h2>Заметка менеджера</h2>
+          </label>
+          <textarea
+            id="manager-client-note"
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            rows={2}
+          />
+          <small className={styles.note}>Черновик сохраняется в карточке до выхода из неё</small>
+        </section>
+      </div>
+      <div className={styles.tabs} role="group" aria-label="Разделы карточки">
+        {clientTabs.map((value) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={tab === value}
+            onClick={() => setTab(value)}
+          >
+            {value}
+            <span className={styles.count}>
+              {value === 'Наши виджеты' || value === 'Установленные виджеты'
+                ? accountRows.length
+                : value === 'Пользователи'
+                  ? client.seats
+                  : value === 'История'
+                    ? activityRows.length
+                    : value === 'Счета и компании'
+                      ? invoiceRows.length
+                      : value === 'Аудит'
+                        ? '1'
+                        : '—'}
+            </span>
+          </button>
+        ))}
+      </div>
       {body?.rows.length ? (
         <DataTable<DemoRow>
           rows={body.rows}
           rowKey={(row) => row.id}
-          columns={body.columns.map((header, index) => ({
-            id: header,
-            header,
-            cell: (row) => <CellValue value={row.cells[index]} />,
-          }))}
+          columns={[
+            ...body.columns.map((header, index) => ({
+              id: header,
+              header,
+              cell: (row: DemoRow) => <CellValue value={row.cells[index]} />,
+            })),
+            ...(tab === 'Наши виджеты'
+              ? [
+                  {
+                    id: 'actions',
+                    header: 'Действия',
+                    cell: (row: DemoRow) => (
+                      <button
+                        className={styles.rowAction}
+                        data-checked={row.group === 'Проверенные'}
+                        onClick={() => check(row.id, row.group !== 'Проверенные')}
+                      >
+                        {row.group === 'Проверенные' ? (
+                          'Вернуть'
+                        ) : (
+                          <>
+                            <span aria-hidden="true">✓</span> Проверен
+                          </>
+                        )}
+                      </button>
+                    ),
+                  },
+                ]
+              : []),
+          ]}
         />
       ) : (
         <EmptyState title="Нет тестовых записей" />

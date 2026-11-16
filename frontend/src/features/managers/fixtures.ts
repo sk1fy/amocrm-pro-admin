@@ -1,7 +1,16 @@
 import type { Section } from './sections'
 
 export type Tone = 'blue' | 'green' | 'amber' | 'red' | 'gray'
-export type Cell = string | { text: string; note?: string; tone?: Tone; line?: 'FREE' | 'TOP' }
+export type Cell =
+  | string
+  | {
+      text: string
+      note?: string
+      tone?: Tone
+      line?: 'FREE' | 'TOP'
+      tags?: readonly string[]
+      detail?: string
+    }
 
 export type DemoRow = {
   id: string
@@ -9,6 +18,10 @@ export type DemoRow = {
   group?: string
   client?: string
   date?: string
+  installedAt?: string
+  paidUntil?: Cell
+  installationStatus?: Cell
+  installer?: Cell
 }
 
 type Board = {
@@ -103,48 +116,189 @@ export const widgets = [
   'Контроль активности',
 ]
 
-const installationDates = [
-  '2026-11-16',
-  '2026-11-16',
-  '2026-11-15',
-  '2026-11-14',
-  '2026-11-12',
-  '2026-11-10',
+const installationCases = [
+  {
+    account: 0,
+    widget: 0,
+    date: '2026-11-16',
+    time: '10:40 · 5 минут назад',
+    tags: [],
+    missing: true,
+    deal: {
+      text: 'Ждём ввода данных · 10 мин',
+      note: 'Затем — письмо установившему',
+      tone: 'blue' as const,
+    },
+  },
+  {
+    account: 1,
+    widget: 1,
+    date: '2026-11-16',
+    time: '10:12 · 33 минуты назад',
+    tags: ['Промокод ATLAS-DEMO'],
+    deal: { text: 'Без сделки', note: 'Клиент партнёра по промокоду' },
+  },
+  {
+    account: 2,
+    widget: 2,
+    date: '2026-11-15',
+    time: '16:20 · вчера',
+    tags: ['Повторная авторизация'],
+    deal: { text: 'Без сделки', note: 'Свяжитесь с клиентом: слетела авторизация' },
+  },
+  {
+    account: 3,
+    widget: 3,
+    date: '2026-11-14',
+    time: '14:05 · 2 дня назад',
+    tags: ['Переустановка'],
+    deal: {
+      text: '№ 880004',
+      note: 'Первичный контакт · 6 900 ₽',
+      detail:
+        'Демо-сделка 880004. Менеджер: Анна Соколова. Следующий шаг: уточнить задачу клиента.',
+    },
+  },
+  {
+    account: 4,
+    widget: 4,
+    date: '2026-11-12',
+    time: '11:30 · 4 дня назад',
+    tags: [],
+    checked: true,
+    deal: {
+      text: '№ 880005',
+      note: 'Успешно реализовано · 9 900 ₽',
+      detail: 'Демо-сделка 880005. Оплата подтверждена в синтетическом наборе данных.',
+    },
+  },
+  {
+    account: 5,
+    widget: 5,
+    date: '2026-11-10',
+    time: '08:45 · 6 дней назад',
+    tags: [],
+    checked: true,
+    missing: true,
+    deal: { text: 'Без сделки', note: 'Запрет работы · писем не шлём' },
+  },
+  {
+    account: 0,
+    widget: 1,
+    date: '2026-11-16',
+    time: '10:25 · 20 минут назад',
+    tags: [],
+    deal: {
+      text: '№ 880007',
+      note: 'Новая заявка · бесплатно',
+      detail: 'Демо-сделка 880007. Контакт: Анна Соколова. Запрос: копирование данных сделки.',
+    },
+  },
+  {
+    account: 0,
+    widget: 3,
+    date: '2026-11-15',
+    time: '12:00 · вчера',
+    tags: ['Переустановка'],
+    deal: {
+      text: '№ 880008',
+      note: 'В работе · 6 900 ₽',
+      detail: 'Демо-сделка 880008. Проверить настройки после переустановки.',
+    },
+  },
+  {
+    account: 1,
+    widget: 0,
+    date: '2026-11-14',
+    time: '09:30 · 2 дня назад',
+    tags: ['Промокод ATLAS-DEMO'],
+    checked: true,
+    deal: { text: 'Без сделки', note: 'Все вопросы через партнёра' },
+  },
+  {
+    account: 2,
+    widget: 4,
+    date: '2026-11-13',
+    time: '17:10 · 3 дня назад',
+    tags: [],
+    missing: true,
+    deal: { text: 'Сделка через 4 ч', note: 'Нет телефона · писем 1 из 2', tone: 'amber' as const },
+  },
+  {
+    account: 3,
+    widget: 0,
+    date: '2026-11-11',
+    time: '15:00 · 5 дней назад',
+    tags: [],
+    checked: true,
+    deal: {
+      text: '№ 880011',
+      note: 'Согласование · 12 000 ₽',
+      detail: 'Демо-сделка 880011. Ожидаем решение клиента по подписке.',
+    },
+  },
+  {
+    account: 4,
+    widget: 2,
+    date: '2026-11-09',
+    time: '11:00 · неделю назад',
+    tags: ['Повторная авторизация'],
+    deal: { text: 'Без сделки', note: 'Нужно восстановить авторизацию' },
+  },
 ]
 
-export const installs = clients.map(
-  (client, index): DemoRow => ({
-    id: `install-${index + 1}`,
-    client: client.id,
-    date: installationDates[index],
-    group: index < 4 ? 'Непроверенные' : 'Проверенные',
-    cells: [
-      {
-        text: dateLabel(installationDates[index]),
-        note: ['10:40', '10:12', '16:20', '14:05', '11:30', '08:45'][index],
+export const installs: DemoRow[] = installationCases
+  .map((item, index): DemoRow => {
+    const client = clients[item.account]
+    const name = [
+      'Анна Соколова',
+      'Олег Миронов',
+      'Ирина Белова',
+      'Лев Орлов',
+      'Ольга Котова',
+      'Демо',
+    ][item.account]
+    const free = item.widget === 1 || item.widget === 2
+    return {
+      id: `install-${index + 1}`,
+      client: client.id,
+      date: item.date,
+      installedAt: `${item.date}T${item.time.slice(0, 5)}:00+03:00`,
+      group: item.checked ? 'Проверенные' : 'Непроверенные',
+      installationStatus: {
+        text: item.account === 4 ? 'Нет связи' : item.missing ? 'Не активирован' : 'Работает',
+        tone: item.account === 4 || item.missing ? 'amber' : 'green',
+        note: dateLabel(item.date),
       },
-      { text: widgets[index], line: index % 2 ? 'FREE' : 'TOP' },
-      { text: client.domain, note: client.name },
-      client.id,
-      {
-        text: [
-          'Анна Соколова',
-          'Олег Миронов',
-          'Ирина Белова',
-          'Лев Орлов',
-          'Ольга Котова',
-          'Демо',
-        ][index],
-        note: client.email,
+      paidUntil: {
+        text: free ? 'Бессрочно' : dateLabel(client.till),
+        note: free
+          ? 'Бесплатный виджет'
+          : client.owner === 'Наш клиент'
+            ? 'Подписка · все TOP'
+            : 'Пробный период',
       },
-      index === 0
-        ? { text: 'Ждём ввода данных', tone: 'blue' }
-        : index === 5
-          ? 'Без сделки'
-          : `№ 8800${index + 1}`,
-    ],
-  }),
-)
+      installer: { text: `ID ${92001001 + item.account}`, note: `${name} · ${client.email}` },
+      cells: [
+        { text: dateLabel(item.date), note: item.time },
+        { text: widgets[item.widget], line: free ? 'FREE' : 'TOP', tags: item.tags },
+        {
+          text: client.domain,
+          note: client.name,
+          tags: [client.owner === 'Клиент партнёра' ? 'Партнёр: Точка CRM' : client.owner],
+        },
+        client.id,
+        item.missing
+          ? { text: 'Не введён', note: `Установил: ${client.email}` }
+          : {
+              text: `+7 (000) 000-10-0${item.account + 1}`,
+              note: `${name} · ${item.account === 1 ? 'Партнёр' : 'Администратор'} · ${client.email}`,
+            },
+        item.deal,
+      ],
+    }
+  })
+  .sort((a, b) => (b.installedAt ?? '').localeCompare(a.installedAt ?? ''))
 
 export function dateLabel(value: string) {
   return value.split('-').reverse().join('.')
@@ -156,7 +310,8 @@ function row(id: string, cells: readonly Cell[], group?: string, client?: string
 
 export const boards: Record<Section, Board> = {
   installs: {
-    description: 'Новые установки виджетов и сделки, которые менеджеру нужно проверить.',
+    description:
+      'Все установки: по каждой создаётся сделка в rakurscrm, кроме промокода и повторной авторизации — там менеджер связывается с клиентом. Тестовые аккаунты («Запрет работы») тоже здесь, с пометкой, но без сделки и писем. Проверили — нажмите «Проверен»: установка уйдёт в «Проверенные». Сверху — самые новые. Нажмите на аккаунт или ID amoCRM, чтобы открыть карточку.',
     columns: [
       'Дата установки ↓',
       'Виджет',
