@@ -18,13 +18,24 @@ async function expectContained(page: Page) {
   ).toBe(true)
 }
 
-for (const width of [375, 768, 1440]) {
+for (const width of [375, 768, 1024, 1440]) {
   test(`operator cards stay within the viewport at ${width}px`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 1000 })
     await login(page)
     await expect(page.getByTestId('overview-stats')).toBeVisible()
     await expectContained(page)
     await page.screenshot({ path: testInfo.outputPath(`overview-${width}.png`), fullPage: true })
+
+    const menu = page.getByRole('button', { name: 'Меню' })
+    const sections = page.getByRole('navigation', { name: 'Разделы' })
+    if (width < 1440) {
+      await expect(menu).toHaveAttribute('aria-expanded', 'false')
+      await menu.click()
+      await expect(menu).toHaveAttribute('aria-expanded', 'true')
+    }
+    await sections.getByRole('link', { name: 'Аккаунты', exact: true }).click()
+    await expect(page).toHaveURL(/\/accounts/)
+    if (width < 1440) await expect(menu).toHaveAttribute('aria-expanded', 'false')
 
     await page.goto('/accounts?origin=fixture')
     await expect(page.getByRole('link', { name: '91000001', exact: true })).toBeVisible()

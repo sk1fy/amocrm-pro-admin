@@ -112,3 +112,39 @@ test('empty bounded verification page allows continuing the search', async ({ pa
   await expect(page).toHaveURL(/cursor=fixture-next/)
   await expect(page.getByRole('link', { name: '91000002' })).toBeVisible()
 })
+
+test('account search distinguishes loading, a failed request and an empty result', async ({
+  page,
+}) => {
+  await page.goto('/login')
+  await page.getByLabel('Email', { exact: true }).fill(email)
+  await page.getByLabel('Пароль', { exact: true }).fill(password)
+  await page.getByRole('button', { name: 'Войти', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Обзор', exact: true })).toBeVisible()
+
+  let releaseFailure: (() => void) | undefined
+  await page.route(
+    '**/api/v1/accounts?**',
+    async (route) => {
+      await new Promise<void>((resolve) => {
+        releaseFailure = resolve
+      })
+      await route.fulfill({
+        status: 503,
+        json: { error: { code: 'unavailable', message: 'Список временно недоступен' } },
+      })
+    },
+    { times: 1 },
+  )
+  await page.goto('/accounts?origin=all&q=no-account-for-visual-check')
+  try {
+    await expect(page.getByText('Загрузка списка аккаунтов…', { exact: true })).toBeVisible()
+    await expect.poll(() => !!releaseFailure).toBe(true)
+  } finally {
+    releaseFailure?.()
+  }
+  await expect(page.getByText('Список временно недоступен', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Повторить', exact: true }).click()
+  await expect(page.getByText('Ничего не найдено', { exact: true })).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})
