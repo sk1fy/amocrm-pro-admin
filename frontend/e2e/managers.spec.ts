@@ -120,3 +120,70 @@ test('installation phone search and date filters narrow the demo list together',
   await expect(rows).toHaveCount(1)
   await expect(rows).toContainText('Копирование в один клик')
 })
+
+test('account tabs show distinct demo panels and preserve a company draft', async ({ page }) => {
+  let apiRequests = 0
+  await page.route('**/api/**', (route) => {
+    apiRequests++
+    return route.abort()
+  })
+  await page.goto('/managers?section=installs&client=91001001')
+  const tabs = page.getByRole('group', { name: 'Разделы карточки' })
+  await expect(page.getByRole('heading', { name: 'Наши виджеты', exact: true })).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: 'Оплачен до' })).toBeVisible()
+  const phone = page.getByRole('textbox', { name: /^Телефон,/ }).first()
+  await phone.fill('+7 (000) 000-00-01')
+
+  await tabs.getByRole('button', { name: /^Портрет клиента/ }).click()
+  await expect(page.getByRole('heading', { name: 'Портрет клиента', exact: true })).toBeVisible()
+  await expect(page.getByLabel('Ниша', { exact: true })).toBeVisible()
+
+  await tabs.getByRole('button', { name: /^Аудит/ }).click()
+  await expect(page.getByRole('heading', { name: 'Аудит клиента' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Дубли контактов' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Воронки amoCRM' })).toBeVisible()
+  await page.getByRole('button', { name: 'Проверить дубли' }).click()
+  await expect(page.getByText(/^Демо-проверка:/)).toBeVisible()
+  await page.getByRole('button', { name: 'Загрузить по периоду' }).click()
+  await expect(page.getByText(/01\.11\.2026.*30\.11\.2026.*сделок/)).toBeVisible()
+
+  await tabs.getByRole('button', { name: /^История/ }).click()
+  await expect(page.getByRole('heading', { name: 'История', exact: true })).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: 'Событие' })).toBeVisible()
+
+  await tabs.getByRole('button', { name: /^Счета и компании/ }).click()
+  await expect(page.getByRole('heading', { name: 'Счета клиента' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Компании', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: /Выставить счёт/ }).click()
+  await page.getByLabel('За что', { exact: true }).fill('Демо-подписка')
+  await page.getByLabel('Сумма, ₽', { exact: true }).fill('1200')
+  await page.getByRole('button', { name: 'Создать демо-черновик' }).click()
+  await expect(page.getByRole('row').filter({ hasText: 'Демо-подписка' })).toContainText('Черновик')
+  await page.getByLabel('ИНН', { exact: true }).fill('9900000008')
+  await page.getByLabel('Название', { exact: true }).fill('ООО Демо')
+  await tabs.getByRole('button', { name: /^Наши виджеты/ }).click()
+  await expect(phone).toHaveValue('+7 (000) 000-00-01')
+  await tabs.getByRole('button', { name: /^Счета и компании/ }).click()
+  await expect(page.getByLabel('Название', { exact: true })).toHaveValue('ООО Демо')
+  await page.getByRole('button', { name: 'Добавить компанию' }).click()
+  await expect(page.getByText('ООО Демо', { exact: true })).toBeVisible()
+
+  await tabs.getByRole('button', { name: /^Пользователи/ }).click()
+  await expect(page.getByRole('heading', { name: 'Пользователи amoCRM' })).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: 'Права' })).toBeVisible()
+  await page.getByRole('button', { name: /^Активные/ }).click()
+  await expect(page.getByRole('cell', { name: 'Деактивирован', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('cell', { name: 'Активен', exact: true }).first()).toBeVisible()
+
+  await tabs.getByRole('button', { name: /^Установленные виджеты/ }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Установленные виджеты', exact: true }),
+  ).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: 'Впервые увидели' })).toBeVisible()
+  await page.getByRole('button', { name: /^Пропали/ }).click()
+  await expect(page.getByRole('cell', { name: 'Стоит', exact: true })).toHaveCount(0)
+
+  await page.setViewportSize({ width: 375, height: 850 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375)
+  expect(apiRequests).toBe(0)
+})
