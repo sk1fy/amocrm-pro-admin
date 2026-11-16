@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { boards, dateLabel, type DemoRow } from './fixtures'
 import { sections, type Section } from './sections'
-import { Audit, Portrait } from './AccountInsights'
+import { Audit } from './AccountInsights'
+import { Portrait } from './Portrait'
+import type { PortraitTopic } from './portraitTopics'
 import { Companies, History, OurWidgets, SeenWidgets, Users } from './AccountRecords'
 import { accountTabData, type DemoClient } from './accountFixtures'
 import styles from './ManagersPage.module.css'
@@ -23,10 +25,14 @@ export function AccountProfile({
   section,
   rows,
   check,
+  topics,
+  changeTopics,
 }: {
   client: DemoClient
   section: Section
   rows: readonly DemoRow[]
+  topics: readonly PortraitTopic[]
+  changeTopics: (topics: readonly PortraitTopic[]) => void
   check: (id: string, checked: boolean) => void
 }) {
   const [tab, setTab] = useState<(typeof clientTabs)[number]>(clientTabs[0])
@@ -49,7 +55,7 @@ export function AccountProfile({
   const activeUsers = users.filter((user) => user.active).length
   const tabCounts = {
     'Наши виджеты': `${accountRows.length}/${accountRows.length}`,
-    'Портрет клиента': `${portraitAnswers}/8`,
+    'Портрет клиента': `${portraitAnswers}/${topics.length}`,
     Аудит: client.health === 'Получаем данные' ? '✓' : '—',
     История: events.length,
     'Счета и компании': invoiceRows.length,
@@ -295,7 +301,15 @@ export function AccountProfile({
         <OurWidgets rows={accountRows} check={check} />
       </div>
       <div hidden={tab !== 'Портрет клиента'}>
-        <Portrait client={client} answered={portraitAnswers} setAnswered={setPortraitAnswers} />
+        <Portrait
+          client={client}
+          rows={accountRows}
+          topCurrent={expiresIn >= 0}
+          topics={topics}
+          changeTopics={changeTopics}
+          answered={portraitAnswers}
+          setAnswered={setPortraitAnswers}
+        />
       </div>
       <div hidden={tab !== 'Аудит'}>
         <Audit client={client} showPortrait={() => setTab('Портрет клиента')} />

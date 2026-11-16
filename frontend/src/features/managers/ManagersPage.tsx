@@ -5,6 +5,7 @@ import { DataTable, type DataTableColumn } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
 import { boards, clients, installs, type DemoRow } from './fixtures'
 import { AccountProfile } from './AccountProfile'
+import { portraitTopics } from './portraitTopics'
 import { CellValue } from './CellValue'
 import { sections, type Section } from './sections'
 import styles from './ManagersPage.module.css'
@@ -54,6 +55,7 @@ function matches(row: DemoRow, query: string) {
 
 export function ManagersPage() {
   const { section, client } = useSearch({ from: '/managers' })
+  const [topics, setTopics] = useState(portraitTopics)
   const [checked, setChecked] = useState<Record<string, boolean>>({})
   const [menuOpen, setMenuOpen] = useState(() => window.innerWidth >= 1440)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -158,6 +160,8 @@ export function ManagersPage() {
             client={customer}
             section={section}
             rows={rows}
+            topics={topics}
+            changeTopics={setTopics}
             check={(id, value) => setChecked((previous) => ({ ...previous, [id]: value }))}
           />
         ) : client ? (

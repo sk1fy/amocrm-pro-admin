@@ -21,8 +21,7 @@
 
 .panelHead,
 .toolbar,
-.bordered,
-.topicHead {
+.bordered {
   padding: 14px 20px;
   border-bottom: 1px solid var(--color-border-soft);
 }
@@ -36,7 +35,6 @@
 .panelHead > span,
 .muted,
 .empty,
-.topicHead span,
 .funnel small {
   color: var(--color-muted);
   font-size: 13px;
@@ -97,8 +95,7 @@
 
 .contact :is(input, select),
 .companyForm :is(input, button),
-.peopleForm :is(input, select, button),
-.portraitGrid input:not([type='checkbox']) {
+.peopleForm :is(input, select, button) {
   min-width: 0;
   width: 100%;
 }
@@ -130,8 +127,7 @@
 }
 
 .companyForm label,
-.peopleForm label,
-.portraitGrid > div > label {
+.peopleForm label {
   display: grid;
   gap: 4px;
   min-width: 0;
@@ -143,83 +139,6 @@
   grid-column: 1 / -1;
   color: var(--tone-error);
   margin: 0;
-}
-
-.portraitGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-bottom: 1px solid var(--color-border-soft);
-}
-
-.portraitGrid > * {
-  min-width: 0;
-  padding: 16px 20px;
-  border-right: 1px solid var(--color-border-soft);
-}
-
-.portraitGrid > div {
-  display: grid;
-  gap: 9px;
-  align-content: start;
-}
-
-.choices,
-.checklist {
-  min-width: 0;
-  margin: 0;
-  border: 0;
-}
-
-.choices {
-  padding: 0;
-}
-
-.choices legend,
-.checklist legend {
-  margin: 0 0 6px;
-  padding: 0;
-  color: var(--color-muted);
-  font-weight: 700;
-  font-size: 12px;
-}
-
-.checklist label {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0 5px 5px 0;
-  padding: 3px 6px;
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius);
-  font-size: 12px;
-}
-
-.checklist input {
-  margin: 0;
-}
-
-.people {
-  margin: 8px 0;
-  padding-left: 20px;
-}
-
-.topic {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1.5fr);
-  align-items: start;
-  gap: 16px;
-  padding: 16px 20px;
-  border-top: 1px solid var(--color-border-soft);
-}
-
-.topic textarea {
-  width: 100%;
-  resize: vertical;
-}
-
-.productName {
-  display: block;
-  margin: 0 0 8px;
 }
 
 .callsGrid {
@@ -265,13 +184,6 @@
 
 @media (max-width: 1060px) {
   .callsGrid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .portraitGrid,
-  .topic {
     grid-template-columns: minmax(0, 1fr);
   }
 }

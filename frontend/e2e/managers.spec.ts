@@ -187,3 +187,78 @@ test('account tabs show distinct demo panels and preserve a company draft', asyn
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375)
   expect(apiRequests).toBe(0)
 })
+
+test('portrait template edits apply immediately across account cards', async ({ page }) => {
+  await page.goto('/managers?section=clients&client=91001002')
+  const portrait = page.getByRole('group', { name: 'Разделы карточки' }).getByRole('button', {
+    name: /^Портрет клиента/,
+  })
+  await portrait.click()
+  await expect(page.getByText('FREE — стоят', { exact: true })).toBeVisible()
+  await expect(page.getByText('TOP — работают', { exact: true })).toBeVisible()
+  await expect(page.getByText('PRO — работают', { exact: true })).toBeVisible()
+  await expect(page.getByText('Андрей', { exact: true })).toBeVisible()
+  const personName = page.getByRole('textbox', { name: 'Имя', exact: true })
+  const addPerson = page.locator('form').filter({ has: personName })
+  await personName.fill('Демо Контакт')
+  await addPerson.getByRole('button', { name: 'Добавить', exact: true }).click()
+  await expect(page.getByText('Демо Контакт', { exact: true })).toBeVisible()
+  await page
+    .getByRole('group', { name: 'Роли: Демо Контакт' })
+    .getByRole('button', {
+      name: 'ЛПР',
+      exact: true,
+    })
+    .click()
+  await expect(page.getByText(/^без человека:/)).not.toContainText('ЛПР')
+
+  const usage = page.getByRole('progressbar', { name: 'PRO — работают' })
+  await page
+    .getByRole('group', { name: 'Теплота: Дубли' })
+    .getByRole('button', {
+      name: 'пользуется',
+      exact: true,
+    })
+    .click()
+  await expect(usage).toHaveAttribute('value', '25')
+
+  const note = page.getByRole('textbox', { name: 'Заметка: Звонки' })
+  await note.fill('Проверяют записи по пятницам')
+  const trigger = page.getByRole('button', { name: 'Шаблон тем', exact: true })
+  await trigger.click()
+  const dialog = page.getByRole('dialog', { name: 'Шаблон тем портрета' })
+  await expect(dialog.getByRole('row')).toHaveCount(9)
+  await expect(dialog.getByRole('button', { name: 'Выше: Звонки', exact: true })).toBeDisabled()
+  await dialog.getByRole('textbox', { name: 'Вопрос: Звонки' }).fill('Кто проверяет записи?')
+  await dialog.getByRole('textbox', { name: 'Лидер: Звонки' }).fill('Демо-телефония')
+  await dialog.getByRole('button', { name: 'Ниже: Звонки', exact: true }).click()
+  await expect(dialog.getByRole('row').nth(2)).toContainText('Звонки')
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(trigger).toBeFocused()
+  await expect(page.getByText('Кто проверяет записи?', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Звонки', exact: true })).toContainText(
+    'Демо-телефония',
+  )
+  await expect(note).toHaveValue('Проверяют записи по пятницам')
+
+  await page
+    .getByRole('navigation', { name: 'Разделы менеджеров' })
+    .getByRole('link', {
+      name: 'Клиенты',
+      exact: true,
+    })
+    .click()
+  await page.getByRole('link', { name: '91001001', exact: true }).click()
+  await portrait.click()
+  await expect(page.getByText('Кто проверяет записи?', { exact: true })).toBeVisible()
+  await expect(note).toHaveValue('')
+  await expect(page.getByText('Демо Контакт', { exact: true })).toHaveCount(0)
+
+  await page.setViewportSize({ width: 375, height: 850 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375)
+  await trigger.click()
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('button', { name: 'Готово', exact: true }).click()
+  await expect(dialog).toBeHidden()
+})
