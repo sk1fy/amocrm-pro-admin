@@ -82,6 +82,45 @@ test('renewal, contact and portrait edits survive account navigation and finance
   ).toHaveCount(0)
 })
 
+test('partner demo opens the handoff cabinet and extends a widget test once', async ({ page }) => {
+  const requests: string[] = []
+  await page.route(
+    (url) => url.pathname.startsWith('/api/'),
+    (route) => {
+      requests.push(route.request().url())
+      return route.abort()
+    },
+  )
+
+  await page.goto('/login')
+  await page.getByRole('radio', { name: 'partners' }).check()
+  await page.getByRole('link', { name: 'Открыть демо для партнёров' }).click()
+  await expect(page.getByRole('heading', { name: 'Кабинет партнёра' })).toBeVisible()
+  await expect(page.getByLabel('Демо-партнёр')).toHaveValue('directory-1')
+  await expect(page.getByText('5 000 ₽', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText(/PRO закончился 27\.10\.2026/)).toBeVisible()
+
+  const table = page.getByRole('table')
+  await expect(table.locator('tbody tr')).toHaveCount(7)
+  await expect(table.getByRole('row').filter({ hasText: 'stroykomplekt' })).toContainText(
+    'запрос отправлен 05.11.2026',
+  )
+  const search = page.getByRole('searchbox', { name: 'Поиск по аккаунту' })
+  await search.fill('31642103')
+  const row = table.getByRole('row').filter({ hasText: 'remtehnika-ekb' })
+  await expect(table.locator('tbody tr')).toHaveCount(1)
+  await expect(row).toContainText('04.01.2027')
+  await row.getByRole('button', { name: 'Тест +7 дн.' }).click()
+  await expect(row).toContainText('11.01.2027')
+  await expect(row.getByRole('button', { name: 'Тест +7 дн.' })).toHaveCount(0)
+  await search.fill('')
+  await expect(table.locator('tbody tr')).toHaveCount(7)
+
+  await page.setViewportSize({ width: 375, height: 850 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(375)
+  expect(requests).toEqual([])
+})
+
 test('partner has seven scoped views and PRO purchase changes its own balance', async ({
   page,
 }) => {
@@ -89,6 +128,7 @@ test('partner has seven scoped views and PRO purchase changes its own balance', 
   await page.getByRole('radio', { name: 'partners' }).check()
   await page.getByRole('link', { name: 'Открыть демо для партнёров' }).click()
   const nav = page.getByRole('navigation', { name: 'Разделы партнёра' })
+  await page.getByLabel('Демо-партнёр').selectOption('partner-1')
   await expect(nav.getByRole('link')).toHaveCount(7)
   await nav.getByRole('link', { name: 'Мои клиенты', exact: true }).click()
   await expect(page.getByRole('table')).toContainText('atlas-studio')

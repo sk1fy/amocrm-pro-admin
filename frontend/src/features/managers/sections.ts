@@ -1,3 +1,4 @@
+import { parsePartnerCabinet, type PartnerCabinetFilters } from './partnerCabinetSearch'
 import { parseStatisticsFilters, type StatisticsFilters } from './statisticsSearch'
 import { parsePaymentFilters, type PaymentFilters } from './paymentsSearch'
 import { parsePartnerDirectory, type PartnerDirectorySearch } from './partnerDirectorySearch'
@@ -82,6 +83,7 @@ export function managersSearch(search: Record<string, unknown>): {
   directory?: ClientDirectorySearch
   partner?: string
   partnerDirectory?: PartnerDirectorySearch
+  partnerCabinet?: PartnerCabinetFilters
   widgetCatalog?: WidgetFilters
   marketCatalog?: MarketFilters
   invoiceFilters?: InvoiceFilters
@@ -99,6 +101,8 @@ export function managersSearch(search: Record<string, unknown>): {
       section === 'invoices' && typeof search.invoice === 'string' ? search.invoice : undefined,
     marketCatalog: section === 'market' ? parseMarketFilters(search.marketCatalog) : undefined,
     widgetCatalog: section === 'widgets' ? parseWidgetFilters(search.widgetCatalog) : undefined,
+    partnerCabinet:
+      search.mode === 'partner' ? parsePartnerCabinet(search.partnerCabinet) : undefined,
     partnerDirectory:
       section === 'partners' ? parsePartnerDirectory(search.partnerDirectory) : undefined,
     partner:

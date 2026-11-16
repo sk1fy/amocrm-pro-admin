@@ -1,3 +1,4 @@
+import type { CabinetOrder, CabinetRenewal } from './partnerCabinetState'
 import { boards } from './fixtures'
 
 export type Partner = {
@@ -25,6 +26,12 @@ export type Partner = {
   lastWidgetPayment?: string
   lastInstall?: readonly [date: string, widget: string]
   directoryClientCount?: number
+  cabinetOrders?: CabinetOrder[]
+  cabinetRenewals?: Record<string, CabinetRenewal>
+  proTrialUsed?: boolean
+  inactivePromos?: string[]
+  max?: boolean
+  notifySettings?: Record<string, boolean>
 }
 
 export const partnerDirectoryDate = '2026-11-06'
@@ -85,6 +92,8 @@ const profiles: Partial<Partner>[] = [
     inn: '7700007910',
     bonus: 5000,
     proTill: '2026-10-27',
+    promos: ['AMO10', 'OLEG-CRM', 'VIDEO-NOV'],
+    inactivePromos: ['VIDEO-NOV'],
     telegram: true,
     login: '2026-11-06',
     loginAge: '0 мин назад',
