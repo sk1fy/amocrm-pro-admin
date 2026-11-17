@@ -422,9 +422,10 @@ Origin кабинета, `X-Requested-With: admin-ui`, UUID в `Idempotency-Key`
 `Location` и, при ограничении частоты, `Retry-After`. Подтверждённое
 фоновое обновление возвращает `202` со `state=platform_operation` и
 таким же локальным `Location`. Повтор использует исходные тело, ключ
-и версию. Ответ `409` различает конфликт ключа и версии по `details.code`.
-`details.current_version` содержит целое значение актуальной версии
-при `version_conflict`.
+и версию. Ответ `409` различает конфликты ключа, версии и состояния по
+`details.code`. Например, `state_conflict` сообщает, что дата аудита уже
+есть или ниша используется. `details.current_version` содержит целое
+значение при `version_conflict` и при наличии версии у `state_conflict`.
 
 ### Состояние менеджерской команды
 

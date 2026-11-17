@@ -582,7 +582,9 @@ paths:
         '503':
           $ref: '#/components/responses/ManagerPlatformUnavailable'
         '409':
-          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          description: >-
+            details.code is idempotency_conflict, version_conflict or state_conflict.
+            An applicable current version is numeric details.current_version.
           content:
             application/json:
               schema:
@@ -667,7 +669,9 @@ paths:
         '503':
           $ref: '#/components/responses/ManagerPlatformUnavailable'
         '409':
-          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          description: >-
+            details.code is idempotency_conflict, version_conflict or state_conflict.
+            An applicable current version is numeric details.current_version.
           content:
             application/json:
               schema:
@@ -939,7 +943,9 @@ paths:
         '503':
           $ref: '#/components/responses/ManagerPlatformUnavailable'
         '409':
-          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          description: >-
+            details.code is idempotency_conflict, version_conflict or state_conflict.
+            An applicable current version is numeric details.current_version.
           content:
             application/json:
               schema:
@@ -1092,7 +1098,9 @@ paths:
         '503':
           $ref: '#/components/responses/ManagerPlatformUnavailable'
         '409':
-          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          description: >-
+            details.code is idempotency_conflict, version_conflict or state_conflict.
+            An applicable current version is numeric details.current_version.
           content:
             application/json:
               schema:
@@ -1180,7 +1188,9 @@ paths:
         '503':
           $ref: '#/components/responses/ManagerPlatformUnavailable'
         '409':
-          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          description: >-
+            details.code is idempotency_conflict, version_conflict or state_conflict.
+            An applicable current version is numeric details.current_version.
           content:
             application/json:
               schema:
@@ -1310,7 +1320,9 @@ paths:
         '503':
           $ref: '#/components/responses/ManagerPlatformUnavailable'
         '409':
-          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          description: >-
+            details.code is idempotency_conflict, version_conflict or state_conflict.
+            An applicable current version is numeric details.current_version.
           content:
             application/json:
               schema:
@@ -1439,7 +1451,9 @@ paths:
         '503':
           $ref: '#/components/responses/ManagerPlatformUnavailable'
         '409':
-          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          description: >-
+            details.code is idempotency_conflict, version_conflict or state_conflict.
+            An applicable current version is numeric details.current_version.
           content:
             application/json:
               schema:
@@ -1524,7 +1538,9 @@ paths:
         '503':
           $ref: '#/components/responses/ManagerPlatformUnavailable'
         '409':
-          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          description: >-
+            details.code is idempotency_conflict, version_conflict or state_conflict.
+            An applicable current version is numeric details.current_version.
           content:
             application/json:
               schema:
@@ -1586,7 +1602,9 @@ paths:
         '503':
           $ref: '#/components/responses/ManagerPlatformUnavailable'
         '409':
-          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          description: >-
+            details.code is idempotency_conflict, version_conflict or state_conflict.
+            An applicable current version is numeric details.current_version.
           content:
             application/json:
               schema:
@@ -1675,7 +1693,9 @@ paths:
         '503':
           $ref: '#/components/responses/ManagerPlatformUnavailable'
         '409':
-          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          description: >-
+            details.code is idempotency_conflict, version_conflict or state_conflict.
+            An applicable current version is numeric details.current_version.
           content:
             application/json:
               schema:

@@ -163,6 +163,11 @@ func writeManagerAccountPeerError(w http.ResponseWriter, r *http.Request, peer *
 		switch peer.Code {
 		case "idempotency_conflict":
 			details = map[string]any{"code": peer.Code}
+		case "state_conflict":
+			details = map[string]any{"code": peer.Code}
+			if peer.Version != nil && *peer.Version > 0 && *peer.Version <= managerplatform.MaxVersion {
+				details["current_version"] = *peer.Version
+			}
 		case "version_conflict":
 			if peer.Version != nil && *peer.Version > 0 && *peer.Version <= managerplatform.MaxVersion {
 				details = map[string]any{"code": peer.Code, "current_version": *peer.Version}

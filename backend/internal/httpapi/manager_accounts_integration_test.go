@@ -60,6 +60,8 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 	var profileID, refreshID uuid.UUID
 	var profileAttempts, refreshAttempts, readCalls int
 	var revokeReadOnPoll bool
+	var auditRecorded bool
+	const auditDay = "2026-10-01"
 	const errorSecret = "private upstream diagnostic"
 	problem := func(w http.ResponseWriter, status int, code string, version int) {
 		errorBody := map[string]any{"code": code, "message": errorSecret, "request_id": uuid.New(), "retryable": false}
@@ -167,6 +169,26 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 			refreshID = *actor.CommandId
 			w.Header().Set("Location", owner+"/operations/"+refreshID.String())
 			httpx.WriteJSON(w, http.StatusAccepted, operation())
+		case "/accounts/" + accountID.String() + "/portrait/audit-dates":
+			var request wire.CreatePortraitAuditDateJSONRequestBody
+			if actor.CommandId == nil || json.NewDecoder(r.Body).Decode(&request) != nil || request.Date.Format(time.DateOnly) != auditDay {
+				t.Error("audit date command lost its actor or date")
+				return
+			}
+			if auditRecorded {
+				if r.Header.Get("If-Match") != `"2"` {
+					t.Error("duplicate audit date did not use the current version")
+				}
+				problem(w, http.StatusConflict, "state_conflict", 2)
+				return
+			}
+			auditRecorded = true
+			w.Header().Set("ETag", `"2"`)
+			httpx.WriteJSON(w, http.StatusOK, map[string]any{
+				"account_id": accountID, "version": 2, "template_version": 1,
+				"company": map[string]any{}, "maturity_signals": []any{}, "topics": []any{},
+				"audit_dates": []any{map[string]any{"id": uuid.New(), "date": auditDay, "note": nil}},
+			})
 		case "/commands/" + profileID.String():
 			httpx.WriteJSON(w, http.StatusOK, map[string]any{"id": profileID, "kind": "account.profile", "state": "completed"})
 		case "/commands/" + refreshID.String():
@@ -265,6 +287,12 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 	conflict := call(http.MethodPatch, accountPath+"/profile", writerCookie, patch, staleKey, "\"1\"", true, http.StatusConflict)
 	if !strings.Contains(conflict.Body.String(), `"current_version":2`) || !strings.Contains(conflict.Body.String(), `"code":"version_conflict"`) {
 		t.Fatalf("unsafe or incomplete conflict: %s", conflict.Body.String())
+	}
+	const auditBody = `{"date":"` + auditDay + `"}`
+	call(http.MethodPost, accountPath+"/portrait/audit-dates", writerCookie, auditBody, uuid.New(), `"1"`, true, http.StatusOK)
+	duplicate := call(http.MethodPost, accountPath+"/portrait/audit-dates", writerCookie, auditBody, uuid.New(), `"2"`, true, http.StatusConflict)
+	if !strings.Contains(duplicate.Body.String(), `"current_version":2`) || !strings.Contains(duplicate.Body.String(), `"code":"state_conflict"`) {
+		t.Fatalf("duplicate audit date lost the typed state conflict: %s", duplicate.Body.String())
 	}
 	const refreshBody = `{"components":["users"],"reason":"fixture refresh"}`
 	ack := call(http.MethodPost, accountPath+"/refresh", writerCookie, refreshBody, refreshKey, "", true, http.StatusAccepted)
