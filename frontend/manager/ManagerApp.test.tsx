@@ -123,7 +123,9 @@ describe('manager installation queue', () => {
       return installationPage(settled ? reviewed : row, 'opaque-next')
     })
     openManager('?section=installations&q=' + accountId + '&limit=25&cursor=opaque%2B%2F%3D&tab=7')
-    await screen.findByRole('button', { name: accountId })
+    await screen.findByRole('heading', { name: 'Установки' })
+    await waitFor(() => expect(screen.queryByText('Загружаем установки…')).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: accountId })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Отметить проверенной' }))
 
     const retry = await screen.findByRole(
@@ -295,13 +297,15 @@ describe('manager installation queue', () => {
       return installationPage(row)
     })
     openManager('?section=installations')
-    await screen.findByRole('button', { name: accountId })
+    await screen.findByText(accountId, { selector: 'button' })
+    expect(screen.getByRole('button', { name: accountId })).toBeVisible()
     fireEvent.change(screen.getByRole('searchbox', { name: 'Аккаунт или продукт' }), {
       target: { value: accountId },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Применить' }))
 
-    expect(await screen.findByRole('button', { name: 'Войти' })).toBeVisible()
+    await screen.findByText('Email', { selector: 'label' })
+    expect(screen.getByRole('button', { name: 'Войти' })).toBeVisible()
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
     expect(new URLSearchParams(window.location.search).get('q')).toBe(accountId)
   })
