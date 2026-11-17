@@ -84,7 +84,7 @@ test('two managers see a saved client profile and a stale draft survives conflic
     const result = await saved
     expect(result.status()).toBe(200)
     expect(result.headers().etag).toMatch(/^"\d+"$/)
-    await expect(page.getByText(firstNote, { exact: true })).toBeVisible()
+    await expect(page.getByRole('definition').filter({ hasText: firstNote })).toBeVisible()
 
     const conflict = other.waitForResponse(
       (response) =>
@@ -100,7 +100,7 @@ test('two managers see a saved client profile and a stale draft survives conflic
 
     const link = url('section=clients&account=' + id + '&tab=overview')
     await signIn(readonly, reader, link)
-    await expect(readonly.getByText(firstNote, { exact: true })).toBeVisible()
+    await expect(readonly.getByRole('definition').filter({ hasText: firstNote })).toBeVisible()
     await expect(readonly.getByRole('textbox', { name: 'Заметка', exact: true })).toHaveCount(0)
     const denied = await readonly.request.patch(cardPath + '/profile', {
       headers: {
@@ -152,7 +152,7 @@ test('saved client changes survive the Admin and Platform restart', async ({ pag
   )
   await signIn(page, colleague, url('section=clients&clients_q=' + encodeURIComponent(amoAccount)))
   await page.getByRole('link', { name: 'Pilot 1', exact: true }).click()
-  await expect(page.getByText(firstNote, { exact: true })).toBeVisible()
+  await expect(page.getByRole('definition').filter({ hasText: firstNote })).toBeVisible()
   await page.getByRole('link', { name: 'Портрет' }).click()
   await expect(page.getByRole('spinbutton', { name: 'Рейтинг' })).toHaveValue('3')
   await page.getByRole('link', { name: 'Наши виджеты' }).click()
