@@ -91,7 +91,8 @@ it('loads metrics for stats-only grants without a list or detail read', async ()
   expect(paths).toHaveLength(1)
 })
 
-it('recovers a catalog-only create DTO by exact resubmission after a completed receipt', async () => {
+it('recovers a catalog-only create DTO on HTTP by exact resubmission after a completed receipt', async () => {
+  vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) })
   const commands: { body: RequestInit['body']; key: string | null }[] = []
   let completed = false
   open(['catalog.manage'], 'section=widgets&product_new=1', (url, init) => {
@@ -112,6 +113,9 @@ it('recovers a catalog-only create DTO by exact resubmission after a completed r
   fireEvent.click(await screen.findByRole('button', { name: 'Проверить результат' }))
   await screen.findByRole('button', { name: 'Сохранить виджет' }, { timeout: 4000 })
   expect(commands).toHaveLength(2)
+  expect(commands[0].key).toMatch(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+  )
   expect(commands[1]).toEqual(commands[0])
   expect(new URLSearchParams(window.location.search).get('product')).toBe(id)
 })

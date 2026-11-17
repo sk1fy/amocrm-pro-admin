@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { createRequestKey } from '../src/features/operations/intents'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { formatTime } from '../src/lib/format'
 import type { AccountDetail, AccountObservation } from './accountsApi'
@@ -56,7 +57,7 @@ function AccountRefresh({ account, ...actions }: AccountActions & { account: Acc
           attempt.start({
             kind: 'refresh',
             account: account.account_id,
-            key: crypto.randomUUID(),
+            key: createRequestKey(),
             body: JSON.stringify({
               components,
               reason: 'Обновление наблюдений из карточки клиента',

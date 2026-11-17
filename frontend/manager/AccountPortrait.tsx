@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { createRequestKey } from '../src/features/operations/intents'
 import { StatusBadge } from '../src/components/StatusBadge'
 import {
   type AccountId,
@@ -130,9 +131,7 @@ function TemplateEditor({ template, ...actions }: AccountActions & { template: P
               ))}
               <button
                 type="button"
-                onClick={() =>
-                  set([...topics, { id: crypto.randomUUID(), title: '', prompts: [] }])
-                }
+                onClick={() => set([...topics, { id: createRequestKey(), title: '', prompts: [] }])}
               >
                 Добавить тему
               </button>

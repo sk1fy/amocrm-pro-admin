@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createRequestKey } from '../src/features/operations/intents'
 import { isApiError, isForbidden, isUnauthorized } from '../src/api/client'
 import {
   getReviewReceipt,
@@ -167,7 +168,7 @@ export function useInstallationReview({
       command: {
         installationId: row.id,
         reviewed: !row.review.reviewed,
-        key: crypto.randomUUID(),
+        key: createRequestKey(),
         version: row.version,
       },
     })

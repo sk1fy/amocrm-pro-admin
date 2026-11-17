@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { createRequestKey } from '../src/features/operations/intents'
 import type { AccountCommand } from './accountsApi'
 import { CommandFeedback, useAccountCommand, VersionConflict } from './accountCommands'
 import styles from './Accounts.module.css'
@@ -37,7 +38,7 @@ export function AccountForm({
         onSubmit={(event) => {
           event.preventDefault()
           if (!draft) return
-          attempt.start(command(draft.values, draft.original, draft.base, crypto.randomUUID()))
+          attempt.start(command(draft.values, draft.original, draft.base, createRequestKey()))
         }}
       >
         <p className={styles.meta}>Версия {draft?.base ?? version}</p>

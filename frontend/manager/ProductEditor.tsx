@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createRequestKey } from '../src/features/operations/intents'
 import { CommandFeedback, useAccountCommand, VersionConflict } from './accountCommands'
 import type { AccountAccess } from './AccountsPage'
 import { isUUID } from './installationsApi'
@@ -103,7 +104,7 @@ export function ProductEditor({
             },
             links,
           }
-          const key = crypto.randomUUID()
+          const key = createRequestKey()
           attempt.start(
             product
               ? {

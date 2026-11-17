@@ -92,6 +92,7 @@ afterEach(() => {
 
 describe('manager installation queue', () => {
   it('retries an uncertain review with its original key, version and body and refreshes off the old snapshot', async () => {
+    vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) })
     const commands: { key: string | null; version: string | null; body: RequestInit['body'] }[] = []
     const receiptIds: string[] = []
     const queries: URLSearchParams[] = []
@@ -147,7 +148,9 @@ describe('manager installation queue', () => {
     ).toBeEnabled()
     expect(commands).toHaveLength(2)
     expect(commands[0]).toMatchObject({
-      key: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      key: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      ),
       version: '"1"',
       body: '{"reviewed":true}',
     })
