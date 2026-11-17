@@ -53,7 +53,7 @@ const grantNames: Record<string, string> = {
   'staff.manage': 'Управление сотрудниками',
   'identity.manage': 'Приглашения и сеансы',
   'security.audit.read': 'Просмотр аудита',
-  'stats.read': 'Статистика',
+  'stats.read': 'Метрики виджетов',
 }
 function Grants({
   catalog,
@@ -236,7 +236,7 @@ function StaffEditor({ staff, catalog, props }: { staff: Staff; catalog: string[
           disabled={command.busy}
           own={staff.id === props.managerId ? props.grants : undefined}
         />
-        <p>Пустой набор прав отзывает менеджерский доступ. Технический доступ не меняется.</p>
+        <p>Пустой набор прав отзывает менеджерский доступ.</p>
         <button disabled={command.busy || conflict}>Сохранить права</button>
       </form>
       {conflict ? (
@@ -269,7 +269,7 @@ function StaffEditor({ staff, catalog, props }: { staff: Staff; catalog: string[
             <div role="group" aria-label="Подтверждение завершения сеансов">
               <p>
                 Завершить все сеансы {staff.name} только в кабинете менеджеров (managers)?
-                Сотруднику потребуется войти снова. Технические сеансы сохраняются.
+                Сотруднику потребуется войти снова.
               </p>
               <button
                 type="button"
@@ -312,10 +312,7 @@ function InviteForm({ catalog, props }: { catalog: string[]; props: Props }) {
   return (
     <section>
       <h2>Пригласить сотрудника</h2>
-      <p>
-        Новая учётная запись получает только менеджерские права. Доступ к технической админке не
-        создаётся.
-      </p>
+      <p>Приглашение открывает доступ в кабинет менеджеров.</p>
       <form onSubmit={submit} className={styles.form}>
         <label>
           Email
