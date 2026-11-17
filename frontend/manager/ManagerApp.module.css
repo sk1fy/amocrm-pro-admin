@@ -53,3 +53,50 @@
 .card p[role='alert'] {
   color: var(--tone-error);
 }
+
+.header {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.headerInner,
+.workspace {
+  max-width: 90rem;
+  margin-inline: auto;
+  padding-inline: clamp(0.75rem, 3vw, 2rem);
+}
+
+.headerInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+  min-height: 3.75rem;
+  padding-block: var(--space-2);
+}
+
+.headerInner nav a {
+  display: inline-block;
+  padding: var(--space-2) var(--space-3);
+  font-weight: 700;
+  border-radius: var(--radius);
+}
+
+.headerInner nav a[aria-current='page'] {
+  background: var(--color-accent-soft);
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+
+.identity span {
+  overflow-wrap: anywhere;
+}
+
+.workspace {
+  padding-block: clamp(1rem, 4vw, 2rem);
+}

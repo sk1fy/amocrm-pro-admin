@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"mime"
 	"net/http"
 	"net/netip"
 	"net/url"
@@ -25,7 +24,7 @@ import (
 )
 
 const (
-	maxVersion = 9_007_199_254_740_991
+	MaxVersion = 9_007_199_254_740_991
 	maxTimeout = 30 * time.Second
 	managerBFF = "spiffe://amocrm-pro/manager-bff"
 )
@@ -121,6 +120,7 @@ func (t platformTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 type PeerError struct {
 	Status         int
+	Code           string
 	Version        *int
 	RetryAfter     *int
 	OutcomeUnknown bool
@@ -133,19 +133,22 @@ func peerError(response *http.Response, body []byte) error {
 	switch status {
 	case http.StatusBadRequest, http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound,
 		http.StatusConflict, http.StatusUnprocessableEntity, http.StatusTooManyRequests, http.StatusServiceUnavailable:
-		media, _, _ := mime.ParseMediaType(response.Header.Get("Content-Type"))
 		var result wire.Error
-		if media != "application/json" || json.Unmarshal(body, &result) != nil ||
+		if !jsonMedia(response) || json.Unmarshal(body, &result) != nil ||
 			result.Error.RequestId == uuid.Nil || result.Error.Code == "" {
 			// A generic 404 (e.g. unmounted P02 route) is not a typed receipt.
 			return ErrUnavailable
 		}
 		retryAfter := result.Error.RetryAfterSeconds
+		if retryAfter != nil && *retryAfter < 0 {
+			retryAfter = nil
+		}
 		if seconds := retryAfterSeconds(response.Header.Get("Retry-After")); seconds != nil {
 			retryAfter = seconds
 		}
 		return &PeerError{
 			Status:         status,
+			Code:           result.Error.Code,
 			Version:        result.Error.CurrentVersion,
 			RetryAfter:     retryAfter,
 			OutcomeUnknown: result.Error.Code == "unknown_outcome",
@@ -176,7 +179,7 @@ func retryAfterSeconds(header string) *int {
 func (c *Client) actor(ctx context.Context, principal auth.Principal, commandID *uuid.UUID) (string, error) {
 	version := principal.Account.ManagerGrantsVersion
 	if principal.Audience != auth.Managers || principal.SessionID == uuid.Nil || principal.EmployeeID == uuid.Nil ||
-		version < 1 || version > maxVersion || len(principal.Account.ManagerGrants) == 0 {
+		version < 1 || version > MaxVersion || len(principal.Account.ManagerGrants) == 0 {
 		return "", auth.ErrUnauthenticated
 	}
 	grants := make([]wire.Grant, 0, len(principal.Account.ManagerGrants))
@@ -264,7 +267,10 @@ func (c *Client) review(ctx context.Context, principal auth.Principal, intent in
 	if res.JSON200 == nil {
 		return nil, peerError(res.HTTPResponse, res.Body)
 	}
-	if res.JSON200.Id != intent.TargetID {
+	if res.JSON200.Id != intent.TargetID || res.JSON200.Review.Reviewed != body.Reviewed ||
+		int64(res.JSON200.Version) < intent.Version || !jsonMedia(res.HTTPResponse) ||
+		!validInstallation(res.Body, res.JSON200) ||
+		res.HTTPResponse.Header.Get("ETag") != strconv.Quote(strconv.Itoa(res.JSON200.Version)) {
 		return nil, ErrUnavailable
 	}
 	return res.JSON200, nil

@@ -1,0 +1,186 @@
+.page {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.page h1,
+.summary p,
+.message {
+  margin: 0;
+}
+
+.filters,
+.results,
+.message {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.filters,
+.message {
+  padding: var(--space-4);
+}
+
+.fields,
+.actions,
+.summary,
+.message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.summary {
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-muted);
+}
+
+.summary strong {
+  color: var(--color-text);
+}
+
+.fields label {
+  display: grid;
+  flex: 0 1 11rem;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.fields .search {
+  flex: 1 0 min(16rem, 100%);
+}
+
+.fields input,
+.fields select {
+  min-height: 2.375rem;
+  min-width: 0;
+}
+
+.advanced {
+  margin: var(--space-3) 0;
+}
+
+.advanced summary {
+  width: fit-content;
+  color: var(--color-link);
+  cursor: pointer;
+}
+
+.advanced[open] .fields {
+  margin-top: var(--space-2);
+}
+
+.message[role='alert'] {
+  color: var(--tone-error);
+}
+
+.results {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.tableScroll:focus-visible {
+  outline-offset: -2px;
+}
+
+.table {
+  width: 100%;
+  min-width: 48rem;
+}
+
+.table th,
+.table td {
+  padding: var(--space-3);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.table th {
+  background: var(--color-surface-2);
+  color: var(--color-subtle);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table small {
+  display: block;
+  color: var(--color-muted);
+}
+
+.id,
+.accountLink {
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.accountLink {
+  padding: 0;
+  min-height: 1.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-link);
+  font-weight: 400;
+}
+
+.accountLink:hover {
+  text-decoration: underline;
+}
+
+.reviewButton {
+  display: block;
+  margin-top: var(--space-1);
+  white-space: nowrap;
+}
+
+.table .detailCell {
+  padding: var(--space-4);
+  background: var(--color-surface-2);
+}
+
+.accountCard {
+  max-width: min(68rem, calc(100vw - 5rem));
+}
+
+.accountCard h2 {
+  margin: 0 0 var(--space-3);
+}
+
+.accountCard h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+}
+
+.cardFacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+  gap: var(--space-4);
+}
+
+.cardFacts dl {
+  display: grid;
+  grid-template-columns: minmax(min-content, 10rem) minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-3);
+}
+
+.cardFacts dt,
+.provenance {
+  color: var(--color-muted);
+}
+
+.cardFacts dd {
+  margin: 0;
+}
+
+.provenance {
+  margin: 0;
+}

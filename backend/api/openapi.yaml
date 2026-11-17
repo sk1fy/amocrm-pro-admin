@@ -123,6 +123,132 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/v1/managers/installations:
+    get:
+      operationId: listManagerInstallations
+      tags: [Managers]
+      security:
+        - managerSession: []
+      summary: List the live installation review queue.
+      description: >-
+        Requires clients.read on the manager host. A cursor belongs to the current
+        actor, filters, sort, and limit. An expired or mismatched cursor must be
+        discarded. Summary counts cover the entire filtered snapshot.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - {name: q, in: query, schema: {type: string, maxLength: 200}}
+        - {name: review, in: query, schema: {type: string, enum: [reviewed, unreviewed]}}
+        - {name: kind, in: query, schema: {type: string, enum: [install, reinstall]}}
+        - {name: last_lifecycle_event, in: query, schema: {$ref: '#/components/schemas/ManagerInstallationLifecycleEvent'}}
+        - {name: product_id, in: query, schema: {type: string, format: uuid}}
+        - {name: line, in: query, schema: {type: string, enum: [FREE, TOP, PRO]}}
+        - {name: activation, in: query, schema: {type: string, enum: [pending, activated, unavailable]}}
+        - {name: access_state, in: query, schema: {type: string, enum: [active, inactive]}}
+        - {name: from, in: query, schema: {type: string, format: date}}
+        - {name: to, in: query, schema: {type: string, format: date}}
+        - {name: sort, in: query, schema: {type: string, enum: [installed_at, -installed_at]}}
+      responses:
+        '200':
+          description: One page and the full filtered summary at snapshot_at.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagerInstallationList'}
+        '400':
+          description: Invalid query; details.code can be invalid_cursor or query_too_broad.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {$ref: '#/components/responses/ManagerPlatformRateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/ManagerPlatformUnavailable'}
+  /api/v1/managers/installations/{id}/review:
+    put:
+      operationId: setManagerInstallationReview
+      tags: [Managers]
+      security:
+        - managerSession: []
+      summary: Set the review mark on one installation episode.
+      description: >-
+        Requires clients.write and the manager Origin. On an unknown outcome
+        read the owned operation or resubmit the original key, version, and
+        body. Changing any of them is a new decision and requires a new key.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - name: Origin
+          in: header
+          required: true
+          description: Must equal MANAGERS_PUBLIC_ORIGIN (trailing slash ignored).
+          schema: {type: string, format: uri}
+        - $ref: '#/components/parameters/ID'
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: If-Match
+          in: header
+          required: true
+          schema: {type: string, pattern: '^"[1-9][0-9]{0,15}"$'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reviewed]
+              properties:
+                reviewed: {type: boolean}
+                reason: {type: string, minLength: 1, maxLength: 1000}
+      responses:
+        '200':
+          description: Authoritative installation and version after the command.
+          headers:
+            ETag:
+              schema: {type: string, pattern: '^"[1-9][0-9]{0,15}"$'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagerInstallation'}
+        '202':
+          description: The outcome is unknown; poll the operation at Location.
+          headers:
+            Location:
+              schema: {type: string}
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [id, state]
+                properties:
+                  id: {type: string, format: uuid}
+                  state: {type: string, enum: [unknown_outcome]}
+        '400': {$ref: '#/components/responses/InvalidArgument'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409':
+          description: >-
+            details.code can be idempotency_conflict or version_conflict.
+            Only version_conflict can include details.current_version.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+        '422':
+          description: Command rejected by an installation review rule.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+        '429': {$ref: '#/components/responses/ManagerPlatformRateLimited'}
+        '500': {$ref: '#/components/responses/InternalError'}
+        '503': {$ref: '#/components/responses/ManagerPlatformUnavailable'}
   /api/v1/managers/operations/{id}:
     get:
       operationId: getManagerOperation
@@ -130,6 +256,7 @@ paths:
       security:
         - managerSession: []
       summary: Read the live result of an owned manager command.
+      description: Requires clients.read; a review receipt also requires clients.write.
       parameters:
         - $ref: '#/components/parameters/RequestID'
         - name: id
@@ -1604,7 +1731,101 @@ components:
       schema:
         type: string
         format: uuid
+    RetryAfter:
+      schema: {type: string, pattern: '^[0-9]+$'}
   schemas:
+    ManagerInstallationLifecycleEvent:
+      type: string
+      enum: [installed, reinstalled, reauthorized, uninstalled]
+    ManagerInstallationAccess:
+      type: object
+      additionalProperties: false
+      required: [account_id, product_id, active, valid_until, source, reason_codes, own_until, entitlement_version, computed_at]
+      properties:
+        account_id: {type: string, format: uuid}
+        product_id: {type: string, format: uuid}
+        active: {type: boolean}
+        valid_until: {type: [string, 'null'], format: date-time}
+        source: {type: string, enum: [own_trial, free, own_paid, manual, none]}
+        reason_codes: {type: array, items: {type: string}}
+        own_until: {type: [string, 'null'], format: date-time}
+        entitlement_version: {type: integer, minimum: 1, maximum: 9007199254740991}
+        computed_at: {type: string, format: date-time}
+    ManagerInstallation:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - account_id
+        - amo_account_id
+        - product_id
+        - product_code
+        - product_name
+        - core_installation_id
+        - generation
+        - kind
+        - installed_at
+        - removed_at
+        - last_lifecycle_event
+        - lifecycle
+        - authorization
+        - activation_status
+        - review
+        - crm_workflow
+        - access
+        - version
+      properties:
+        id: {type: string, format: uuid}
+        account_id: {type: string, format: uuid}
+        amo_account_id:
+          type: string
+          description: Positive signed 64-bit amoCRM ID, in decimal to preserve precision.
+          pattern: '^[1-9][0-9]{0,18}$'
+        product_id: {type: string, format: uuid}
+        product_code: {type: string, maxLength: 63, pattern: '^[a-z0-9]+(?:[-_][a-z0-9]+)*$'}
+        product_name: {type: string}
+        core_installation_id: {type: string, format: uuid}
+        generation: {type: integer, minimum: 1, maximum: 9007199254740991}
+        kind: {type: string, enum: [install, reinstall]}
+        installed_at: {type: string, format: date-time}
+        removed_at: {type: [string, 'null'], format: date-time}
+        last_lifecycle_event: {$ref: '#/components/schemas/ManagerInstallationLifecycleEvent'}
+        lifecycle: {type: string, enum: [current, removed]}
+        authorization: {type: string, enum: [authorized, reauth_required, disabled, unknown]}
+        activation_status: {type: string, enum: [pending, activated, unavailable]}
+        review:
+          type: object
+          additionalProperties: false
+          required: [reviewed]
+          properties:
+            reviewed: {type: boolean}
+            reviewed_by: {type: string, format: uuid}
+            reviewed_at: {type: string, format: date-time}
+        crm_workflow: {type: string, enum: [unsupported, pending, succeeded, failed, needs_review]}
+        access: {$ref: '#/components/schemas/ManagerInstallationAccess'}
+        version: {type: integer, minimum: 1, maximum: 9007199254740991}
+    ManagerInstallationList:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor, snapshot_at, query_hash, summary, sources]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/ManagerInstallation'}
+        next_cursor: {type: [string, 'null']}
+        snapshot_at: {type: string, format: date-time}
+        query_hash: {type: string}
+        summary:
+          type: object
+          additionalProperties: false
+          required: [total, reviewed, unreviewed]
+          properties:
+            total: {type: integer, minimum: 0}
+            reviewed: {type: integer, minimum: 0}
+            unreviewed: {type: integer, minimum: 0}
+        sources:
+          type: array
+          items: {$ref: '#/components/schemas/SourceStatus'}
     ManagerOperation:
       type: object
       additionalProperties: false
@@ -2446,6 +2667,22 @@ components:
             data: {$ref: '#/components/schemas/DistributionTrace'}
 
   responses:
+    ManagerPlatformRateLimited:
+      description: The Platform request is rate limited.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    ManagerPlatformUnavailable:
+      description: Live Platform data is unavailable.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
     Unauthenticated:
       description: Authentication required or failed.
       content:

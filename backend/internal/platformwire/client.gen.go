@@ -390,16 +390,16 @@ func (e InstallationCrmWorkflow) Valid() bool {
 
 // Defines values for InstallationKind.
 const (
-	Install   InstallationKind = "install"
-	Reinstall InstallationKind = "reinstall"
+	InstallationKindInstall   InstallationKind = "install"
+	InstallationKindReinstall InstallationKind = "reinstall"
 )
 
 // Valid indicates whether the value is a known member of the InstallationKind enum.
 func (e InstallationKind) Valid() bool {
 	switch e {
-	case Install:
+	case InstallationKindInstall:
 		return true
-	case Reinstall:
+	case InstallationKindReinstall:
 		return true
 	default:
 		return false
@@ -552,22 +552,22 @@ func (e PortraitPredicateOp) Valid() bool {
 
 // Defines values for ProductAvailability.
 const (
-	Active   ProductAvailability = "active"
-	Archived ProductAvailability = "archived"
-	Draft    ProductAvailability = "draft"
-	Pilot    ProductAvailability = "pilot"
+	ProductAvailabilityActive   ProductAvailability = "active"
+	ProductAvailabilityArchived ProductAvailability = "archived"
+	ProductAvailabilityDraft    ProductAvailability = "draft"
+	ProductAvailabilityPilot    ProductAvailability = "pilot"
 )
 
 // Valid indicates whether the value is a known member of the ProductAvailability enum.
 func (e ProductAvailability) Valid() bool {
 	switch e {
-	case Active:
+	case ProductAvailabilityActive:
 		return true
-	case Archived:
+	case ProductAvailabilityArchived:
 		return true
-	case Draft:
+	case ProductAvailabilityDraft:
 		return true
-	case Pilot:
+	case ProductAvailabilityPilot:
 		return true
 	default:
 		return false
@@ -576,19 +576,19 @@ func (e ProductAvailability) Valid() bool {
 
 // Defines values for ProductLine.
 const (
-	FREE ProductLine = "FREE"
-	PRO  ProductLine = "PRO"
-	TOP  ProductLine = "TOP"
+	ProductLineFREE ProductLine = "FREE"
+	ProductLinePRO  ProductLine = "PRO"
+	ProductLineTOP  ProductLine = "TOP"
 )
 
 // Valid indicates whether the value is a known member of the ProductLine enum.
 func (e ProductLine) Valid() bool {
 	switch e {
-	case FREE:
+	case ProductLineFREE:
 		return true
-	case PRO:
+	case ProductLinePRO:
 		return true
-	case TOP:
+	case ProductLineTOP:
 		return true
 	default:
 		return false
@@ -640,6 +640,99 @@ func (e TrialPolicyKind) Valid() bool {
 	case TrialPolicyKindNone:
 		return true
 	case TrialPolicyKindOnce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListInstallationsParamsReview.
+const (
+	Reviewed   ListInstallationsParamsReview = "reviewed"
+	Unreviewed ListInstallationsParamsReview = "unreviewed"
+)
+
+// Valid indicates whether the value is a known member of the ListInstallationsParamsReview enum.
+func (e ListInstallationsParamsReview) Valid() bool {
+	switch e {
+	case Reviewed:
+		return true
+	case Unreviewed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListInstallationsParamsKind.
+const (
+	ListInstallationsParamsKindInstall   ListInstallationsParamsKind = "install"
+	ListInstallationsParamsKindReinstall ListInstallationsParamsKind = "reinstall"
+)
+
+// Valid indicates whether the value is a known member of the ListInstallationsParamsKind enum.
+func (e ListInstallationsParamsKind) Valid() bool {
+	switch e {
+	case ListInstallationsParamsKindInstall:
+		return true
+	case ListInstallationsParamsKindReinstall:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListInstallationsParamsLine.
+const (
+	ListInstallationsParamsLineFREE ListInstallationsParamsLine = "FREE"
+	ListInstallationsParamsLinePRO  ListInstallationsParamsLine = "PRO"
+	ListInstallationsParamsLineTOP  ListInstallationsParamsLine = "TOP"
+)
+
+// Valid indicates whether the value is a known member of the ListInstallationsParamsLine enum.
+func (e ListInstallationsParamsLine) Valid() bool {
+	switch e {
+	case ListInstallationsParamsLineFREE:
+		return true
+	case ListInstallationsParamsLinePRO:
+		return true
+	case ListInstallationsParamsLineTOP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListInstallationsParamsAccessState.
+const (
+	ListInstallationsParamsAccessStateActive   ListInstallationsParamsAccessState = "active"
+	ListInstallationsParamsAccessStateInactive ListInstallationsParamsAccessState = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the ListInstallationsParamsAccessState enum.
+func (e ListInstallationsParamsAccessState) Valid() bool {
+	switch e {
+	case ListInstallationsParamsAccessStateActive:
+		return true
+	case ListInstallationsParamsAccessStateInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListInstallationsParamsSort.
+const (
+	InstalledAt      ListInstallationsParamsSort = "installed_at"
+	MinusInstalledAt ListInstallationsParamsSort = "-installed_at"
+)
+
+// Valid indicates whether the value is a known member of the ListInstallationsParamsSort enum.
+func (e ListInstallationsParamsSort) Valid() bool {
+	switch e {
+	case InstalledAt:
+		return true
+	case MinusInstalledAt:
 		return true
 	default:
 		return false
@@ -1262,6 +1355,39 @@ type GetCommandReceiptParams struct {
 	XPlatformActor Actor `json:"X-Platform-Actor"`
 }
 
+// ListInstallationsParams defines parameters for ListInstallations.
+type ListInstallationsParams struct {
+	Limit              *int                                `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor             *string                             `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Q                  *string                             `form:"q,omitempty" json:"q,omitempty"`
+	Review             *ListInstallationsParamsReview      `form:"review,omitempty" json:"review,omitempty"`
+	Kind               *ListInstallationsParamsKind        `form:"kind,omitempty" json:"kind,omitempty"`
+	LastLifecycleEvent *LifecycleKind                      `form:"last_lifecycle_event,omitempty" json:"last_lifecycle_event,omitempty"`
+	ProductId          *openapi_types.UUID                 `form:"product_id,omitempty" json:"product_id,omitempty"`
+	Line               *ListInstallationsParamsLine        `form:"line,omitempty" json:"line,omitempty"`
+	Activation         *string                             `form:"activation,omitempty" json:"activation,omitempty"`
+	AccessState        *ListInstallationsParamsAccessState `form:"access_state,omitempty" json:"access_state,omitempty"`
+	From               *openapi_types.Date                 `form:"from,omitempty" json:"from,omitempty"`
+	To                 *openapi_types.Date                 `form:"to,omitempty" json:"to,omitempty"`
+	Sort               *ListInstallationsParamsSort        `form:"sort,omitempty" json:"sort,omitempty"`
+	XPlatformActor     Actor                               `json:"X-Platform-Actor"`
+}
+
+// ListInstallationsParamsReview defines parameters for ListInstallations.
+type ListInstallationsParamsReview string
+
+// ListInstallationsParamsKind defines parameters for ListInstallations.
+type ListInstallationsParamsKind string
+
+// ListInstallationsParamsLine defines parameters for ListInstallations.
+type ListInstallationsParamsLine string
+
+// ListInstallationsParamsAccessState defines parameters for ListInstallations.
+type ListInstallationsParamsAccessState string
+
+// ListInstallationsParamsSort defines parameters for ListInstallations.
+type ListInstallationsParamsSort string
+
 // RetryInstallationDealJSONBody defines parameters for RetryInstallationDeal.
 type RetryInstallationDealJSONBody struct {
 	Reason string `json:"reason"`
@@ -1527,6 +1653,9 @@ type ClientInterface interface {
 	// Только исходный BFF и субъект с актуальным правом на команду. Возвращает зарегистрированный исход по command ID; 404 не доказывает, что первый запрос не в пути.
 	GetCommandReceipt(ctx context.Context, id openapi_types.UUID, params *GetCommandReceiptParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListInstallations performs a GET /internal/platform/v1/managers/installations (the `ListInstallations` operationId) request.
+	ListInstallations(ctx context.Context, params *ListInstallationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RetryInstallationDealWithBody performs a POST /internal/platform/v1/managers/installations/{id}/crm-deal/retry (the `RetryInstallationDeal` operationId) request,
 	// with any type of body and a specified content type.
 	RetryInstallationDealWithBody(ctx context.Context, id openapi_types.UUID, params *RetryInstallationDealParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1554,6 +1683,19 @@ type ClientInterface interface {
 // Только исходный BFF и субъект с актуальным правом на команду. Возвращает зарегистрированный исход по command ID; 404 не доказывает, что первый запрос не в пути.
 func (c *Client) GetCommandReceipt(ctx context.Context, id openapi_types.UUID, params *GetCommandReceiptParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetCommandReceiptRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListInstallations performs a GET /internal/platform/v1/managers/installations (the `ListInstallations` operationId) request.
+func (c *Client) ListInstallations(ctx context.Context, params *ListInstallationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListInstallationsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1659,6 +1801,217 @@ func NewGetCommandReceiptRequest(server string, id openapi_types.UUID, params *G
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewListInstallationsRequest constructs an http.Request for the ListInstallations method
+func NewListInstallationsRequest(server string, params *ListInstallationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/installations")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Review != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "review", *params.Review, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", *params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.LastLifecycleEvent != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "last_lifecycle_event", *params.LastLifecycleEvent, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ProductId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Line != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "line", *params.Line, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Activation != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "activation", *params.Activation, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AccessState != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "access_state", *params.AccessState, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.From != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Sort != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sort", *params.Sort, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -1936,6 +2289,11 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetCommandReceiptWithResponse(ctx context.Context, id openapi_types.UUID, params *GetCommandReceiptParams, reqEditors ...RequestEditorFn) (*GetCommandReceiptResponse, error)
 
+	// ListInstallationsWithResponse performs a GET /internal/platform/v1/managers/installations (the `ListInstallations` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListInstallationsWithResponse(ctx context.Context, params *ListInstallationsParams, reqEditors ...RequestEditorFn) (*ListInstallationsResponse, error)
+
 	// RetryInstallationDealWithBodyWithResponse performs a POST /internal/platform/v1/managers/installations/{id}/crm-deal/retry (the `RetryInstallationDeal` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -2055,6 +2413,103 @@ func (r GetCommandReceiptResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetCommandReceiptResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListInstallationsResponse429Headers the declared response headers of an HTTP 429 response for ListInstallations
+type ListInstallationsResponse429Headers struct {
+	RetryAfter *string
+}
+
+// ListInstallationsResponse503Headers the declared response headers of an HTTP 503 response for ListInstallations
+type ListInstallationsResponse503Headers struct {
+	RetryAfter *string
+}
+
+type ListInstallationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *InstallationList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListInstallationsResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListInstallationsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListInstallationsResponse) GetJSON200() *InstallationList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListInstallationsResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListInstallationsResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListInstallationsResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListInstallationsResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListInstallationsResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListInstallationsResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListInstallationsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListInstallationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListInstallationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListInstallationsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -2407,6 +2862,17 @@ func (c *ClientWithResponses) GetCommandReceiptWithResponse(ctx context.Context,
 	return ParseGetCommandReceiptResponse(rsp)
 }
 
+// ListInstallationsWithResponse performs a GET /internal/platform/v1/managers/installations (the `ListInstallations` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListInstallationsWithResponse(ctx context.Context, params *ListInstallationsParams, reqEditors ...RequestEditorFn) (*ListInstallationsResponse, error) {
+	rsp, err := c.ListInstallations(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListInstallationsResponse(rsp)
+}
+
 // RetryInstallationDealWithBodyWithResponse performs a POST /internal/platform/v1/managers/installations/{id}/crm-deal/retry (the `RetryInstallationDeal` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -2542,6 +3008,97 @@ func ParseGetCommandReceiptResponse(rsp *http.Response) (*GetCommandReceiptRespo
 		response.Headers429 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetCommandReceiptResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListInstallationsResponse parses an HTTP response from a ListInstallationsWithResponse call
+func ParseListInstallationsResponse(rsp *http.Response) (*ListInstallationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListInstallationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstallationList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers ListInstallationsResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListInstallationsResponse503Headers
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {

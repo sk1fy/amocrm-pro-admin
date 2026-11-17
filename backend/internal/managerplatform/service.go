@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -66,6 +67,7 @@ type Result struct {
 	State        State
 	Operation    *wire.Operation
 	Installation *wire.Installation
+	RetryAfter   *int
 }
 
 func (s *Service) SetInstallationReview(ctx context.Context, meta CommandMeta, body wire.SetInstallationReviewJSONRequestBody) (Result, error) {
@@ -89,13 +91,13 @@ func (s *Service) RetryInstallationDeal(ctx context.Context, meta CommandMeta, b
 }
 
 func validReason(reason string) bool {
-	return utf8.ValidString(reason) && len(reason) > 0 && utf8.RuneCountInString(reason) <= 1000
+	return utf8.ValidString(reason) && !strings.ContainsRune(reason, 0) && len(reason) > 0 && utf8.RuneCountInString(reason) <= 1000
 }
 
 func (s *Service) send(ctx context.Context, kind string, meta CommandMeta, body any,
 	dispatch func(context.Context, auth.Principal, intent) (Result, error),
 ) (Result, error) {
-	if meta.IdempotencyKey == uuid.Nil || meta.TargetID == uuid.Nil || meta.ExpectedVersion < 1 || meta.ExpectedVersion > maxVersion {
+	if meta.IdempotencyKey == uuid.Nil || meta.TargetID == uuid.Nil || meta.ExpectedVersion < 1 || meta.ExpectedVersion > MaxVersion {
 		return Result{}, ErrInvalid
 	}
 	ctx, cancel := context.WithTimeout(ctx, maxTimeout)
@@ -142,6 +144,7 @@ func (s *Service) send(ctx context.Context, kind string, meta CommandMeta, body 
 			if !isTransient(err) {
 				return Result{}, err
 			}
+			setRetryAfter(&unknown, err)
 			return unknown, nil
 		}
 		if result.Operation != nil {
@@ -161,6 +164,7 @@ func (s *Service) send(ctx context.Context, kind string, meta CommandMeta, body 
 		return Result{}, err
 	}
 	if isTransient(err) {
+		setRetryAfter(&unknown, err)
 		return unknown, nil
 	}
 	return result, err
@@ -207,20 +211,26 @@ func (s *Service) observe(ctx context.Context, item intent, sessionID uuid.UUID,
 	if err != nil {
 		return Result{}, err
 	}
+	if item.Kind == kindReview && !hasGrant(actor, auth.GrantClientsWrite) {
+		return Result{}, ErrForbidden
+	}
 	if hasGrant(actor, auth.GrantClientsWrite) {
 		receipt, err := s.client.receipt(ctx, actor, item.ID)
 		if err != nil {
 			var peer *PeerError
 			if errors.As(err, &peer) && peer.Status == http.StatusNotFound {
-				if _, err := s.snapshot(ctx, sessionID, item.EmployeeID, required); err != nil {
+				if err := s.confirmReceiptAccess(ctx, item, sessionID, required); err != nil {
 					return Result{}, err
 				}
 				return Result{ID: item.ID, State: UnknownOutcome}, nil
 			}
 			return Result{}, err
 		}
+		if receipt.Kind != item.Kind || (item.Kind == kindReview && receipt.OperationId != nil) {
+			return Result{}, ErrUnavailable
+		}
 		if receipt.OperationId == nil {
-			if _, err := s.snapshot(ctx, sessionID, item.EmployeeID, required); err != nil {
+			if err := s.confirmReceiptAccess(ctx, item, sessionID, required); err != nil {
 				return Result{}, err
 			}
 			state := ReceiptDone
@@ -242,6 +252,24 @@ func (s *Service) observe(ctx context.Context, item intent, sessionID uuid.UUID,
 		return Result{}, err
 	}
 	return Result{ID: item.ID, State: PlatformResult, Operation: operation}, nil
+}
+
+func (s *Service) confirmReceiptAccess(ctx context.Context, item intent, sessionID uuid.UUID, required auth.ManagerGrant) error {
+	actor, err := s.snapshot(ctx, sessionID, item.EmployeeID, required)
+	if err != nil {
+		return err
+	}
+	if item.Kind == kindReview && !hasGrant(actor, auth.GrantClientsWrite) {
+		return ErrForbidden
+	}
+	return nil
+}
+
+func setRetryAfter(result *Result, err error) {
+	var peer *PeerError
+	if errors.As(err, &peer) {
+		result.RetryAfter = peer.RetryAfter
+	}
 }
 
 func isTransient(err error) bool {

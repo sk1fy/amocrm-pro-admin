@@ -33,6 +33,14 @@ export type StateDomain =
   | 'employee_status'
   | 'connection_health'
   | 'audit_outcome'
+  | 'installation_kind'
+  | 'installation_lifecycle'
+  | 'installation_event'
+  | 'installation_authorization'
+  | 'installation_activation'
+  | 'installation_review'
+  | 'product_access'
+  | 'product_access_source'
 
 const unknownEntry: StateEntry = { tone: 'unknown', label: 'Неизвестно' }
 
@@ -225,6 +233,46 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     ok: { tone: 'ok', label: 'Успех' },
     denied: { tone: 'action', label: 'Отклонено' },
     failed: { tone: 'error', label: 'Ошибка' },
+  },
+  installation_kind: {
+    install: { tone: 'ok', label: 'Первая установка' },
+    reinstall: { tone: 'ok', label: 'Повторная установка' },
+  },
+  installation_lifecycle: {
+    current: { tone: 'ok', label: 'Текущая' },
+    removed: { tone: 'off', label: 'Удалена' },
+  },
+  installation_event: {
+    installed: { tone: 'ok', label: 'Установка' },
+    reinstalled: { tone: 'ok', label: 'Повторная установка' },
+    reauthorized: { tone: 'ok', label: 'Повторная авторизация' },
+    uninstalled: { tone: 'off', label: 'Удаление' },
+  },
+  installation_authorization: {
+    authorized: { tone: 'ok', label: 'Авторизована' },
+    reauth_required: { tone: 'action', label: 'Нужна повторная авторизация' },
+    disabled: { tone: 'off', label: 'Отключена' },
+    unknown: { tone: 'unknown', label: 'Нет сведений об авторизации' },
+  },
+  installation_activation: {
+    activated: { tone: 'ok', label: 'Активирована' },
+    pending: { tone: 'attention', label: 'Ожидает активации' },
+    unavailable: { tone: 'unknown', label: 'Нет сведений об активации' },
+  },
+  installation_review: {
+    reviewed: { tone: 'ok', label: 'Проверена' },
+    unreviewed: { tone: 'attention', label: 'Не проверена' },
+  },
+  product_access: {
+    active: { tone: 'ok', label: 'Действует' },
+    inactive: { tone: 'off', label: 'Не действует' },
+  },
+  product_access_source: {
+    own_trial: { tone: 'attention', label: 'Пробный период' },
+    free: { tone: 'ok', label: 'Бесплатный доступ' },
+    own_paid: { tone: 'ok', label: 'Оплата продукта' },
+    manual: { tone: 'ok', label: 'Ручное назначение' },
+    none: { tone: 'off', label: 'Нет источника' },
   },
 }
 

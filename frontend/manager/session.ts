@@ -12,7 +12,7 @@ type Credentials = {
   password: string
 }
 
-const managerApi = '/api/v1/managers'
+export const managerApi = '/api/v1/managers'
 
 function parseManager(value: unknown): Manager {
   if (

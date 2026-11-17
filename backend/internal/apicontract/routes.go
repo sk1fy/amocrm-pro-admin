@@ -13,6 +13,8 @@ var (
 	ManagerLogin             = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/login"}
 	ManagerLogout            = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/logout"}
 	ManagerOperation         = Route{Method: http.MethodGet, Path: ManagerPrefix + "/operations/{id}"}
+	ManagerInstallations     = Route{Method: http.MethodGet, Path: ManagerPrefix + "/installations"}
+	ManagerReview            = Route{Method: http.MethodPut, Path: ManagerPrefix + "/installations/{id}/review"}
 	ManagerMe                = Route{Method: http.MethodGet, Path: ManagerPrefix + "/me"}
 	ConnectionCommand        = Route{Method: "POST", Path: "/api/v1/connections/{backend}/{connection_id}/commands/{command}"}
 	IntegrationCreateCommand = Route{Method: "POST", Path: "/api/v1/integrations/{backend}/commands/create"}
@@ -63,7 +65,7 @@ var (
 	Distribution      = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/distribution"}
 	DistributionTrace = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/distribution/trace"}
 	Routes            = []Route{
-		ManagerLogin, ManagerLogout, ManagerMe, ManagerOperation,
+		ManagerLogin, ManagerLogout, ManagerMe, ManagerOperation, ManagerInstallations, ManagerReview,
 		Distribution, DistributionTrace,
 		ConnectionCommand, IntegrationCreateCommand, IntegrationCommand, JobRetry, DeliveryRetry, AdminOperations, AdminOperation,
 		AuthLogin,

@@ -3,6 +3,6 @@ generate:
   models: true
   client: true
 output-options:
-  include-operation-ids: [getCommandReceipt, getOperation, setInstallationReview, retryInstallationDeal]
+  include-operation-ids: [listInstallations, getCommandReceipt, getOperation, setInstallationReview, retryInstallationDeal]
   skip-prune: true
   nullable-type: true

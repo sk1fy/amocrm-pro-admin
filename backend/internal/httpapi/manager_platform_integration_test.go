@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -35,6 +36,7 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/auth"
 	"github.com/sk1fy/amocrm-pro-admin/internal/employees"
 	"github.com/sk1fy/amocrm-pro-admin/internal/managerplatform"
+	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
 	wire "github.com/sk1fy/amocrm-pro-admin/internal/platformwire"
 	"github.com/sk1fy/amocrm-pro-admin/internal/rbac"
 	"github.com/sk1fy/amocrm-pro-admin/internal/testkit"
@@ -88,7 +90,9 @@ func TestManagerPlatformRecoversAfterLostResponse(t *testing.T) {
 	reviewBody := wire.SetInstallationReviewJSONRequestBody{Reviewed: true, Reason: &reason}
 	accountID, productID, coreInstallationID := uuid.New(), uuid.New(), uuid.New()
 	var reviewID uuid.UUID
-	var reviewRequests, reviewEffects int
+	var reviewRequests, reviewEffects, listRequests int
+	staleKey, unavailableKey := uuid.New(), uuid.New()
+	const opaqueCursor = "opaque-v1_+!=tail"
 	grantVersion := 2
 	var mu sync.Mutex
 	var commandID uuid.UUID
@@ -114,6 +118,34 @@ func TestManagerPlatformRecoversAfterLostResponse(t *testing.T) {
 		var problem wire.Error
 		problem.Error.Code, problem.Error.Message, problem.Error.RequestId = code, "private upstream detail", uuid.New()
 		return problem
+	}
+	installation := func() map[string]any {
+		return map[string]any{
+			"id": reviewMeta.TargetID, "account_id": accountID, "amo_account_id": "9223372036854775807",
+			"product_id": productID, "product_code": "fixture-product", "product_name": "Fixture Product",
+			"core_installation_id": coreInstallationID, "generation": 1, "kind": "install",
+			"installed_at": now, "removed_at": nil, "last_lifecycle_event": "installed", "lifecycle": "current",
+			"authorization": "authorized", "activation_status": "pending", "crm_workflow": "unsupported",
+			"review":  map[string]any{"reviewed": true, "reviewed_by": employee.ID, "reviewed_at": now},
+			"version": 43,
+			"access": map[string]any{"account_id": accountID, "product_id": productID,
+				"active": false, "valid_until": nil, "source": "none", "reason_codes": []string{},
+				"own_until": nil, "entitlement_version": 1, "computed_at": now},
+		}
+	}
+	wantFilters := url.Values{
+		"q": {"Фикстура + a"}, "review": {"reviewed"}, "kind": {"install"}, "last_lifecycle_event": {"installed"},
+		"product_id": {productID.String()}, "line": {"FREE"}, "activation": {"pending"}, "access_state": {"inactive"},
+		"from": {"2026-11-01"}, "to": {"2026-11-17"}, "sort": {"installed_at"}, "limit": {"1"}, "cursor": {opaqueCursor},
+	}
+	removeFixtureGrant := func(ctx context.Context, grant auth.ManagerGrant) error {
+		return pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
+			if _, err := tx.Exec(ctx, "DELETE FROM manager_grants WHERE employee_id=$1 AND grant_code=$2", employee.ID, grant); err != nil {
+				return err
+			}
+			_, err := tx.Exec(ctx, "UPDATE employees SET manager_grants_version=manager_grants_version+1 WHERE id=$1", employee.ID)
+			return err
+		})
 	}
 	handlers := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
@@ -205,7 +237,74 @@ func TestManagerPlatformRecoversAfterLostResponse(t *testing.T) {
 			case <-r.Context().Done():
 			}
 			panic(http.ErrAbortHandler)
+		case "listInstallations":
+			listRequests++
+			if actor.CommandId != nil {
+				t.Error("list sent a mutating actor envelope")
+			}
+			query := r.URL.Query()
+			switch query.Get("cursor") {
+			case "expired":
+				respond(http.StatusBadRequest, errorBody("invalid_cursor"))
+				return
+			}
+			switch query.Get("q") {
+			case "broad":
+				respond(http.StatusBadRequest, errorBody("query_too_broad"))
+				return
+			case "limited":
+				w.Header().Set("Retry-After", "23")
+				respond(http.StatusTooManyRequests, errorBody("rate_limited"))
+				return
+			case "unavailable":
+				w.Header().Set("Retry-After", "7")
+				respond(http.StatusServiceUnavailable, errorBody("dependency_unavailable"))
+				return
+			case "malformed":
+				row := installation()
+				delete(row["access"].(map[string]any), "active")
+				httpx.WriteJSON(w, http.StatusOK, map[string]any{
+					"items": []any{row}, "next_cursor": nil, "snapshot_at": now, "query_hash": strings.Repeat("2", 64),
+					"summary": map[string]int{"total": 1, "reviewed": 1, "unreviewed": 0},
+				})
+				return
+			case "remove-read":
+				if err := removeFixtureGrant(r.Context(), auth.GrantClientsRead); err != nil {
+					t.Error(err)
+				}
+				grantVersion++
+				respond(http.StatusOK, map[string]any{
+					"items": []any{installation()}, "next_cursor": nil, "snapshot_at": now, "query_hash": strings.Repeat("2", 64),
+					"summary": map[string]int{"total": 1, "reviewed": 1, "unreviewed": 0},
+				})
+				return
+			case "empty":
+				respond(http.StatusOK, map[string]any{
+					"items": []any{}, "next_cursor": nil, "snapshot_at": now, "query_hash": strings.Repeat("2", 64),
+					"summary": map[string]int{"total": 0, "reviewed": 0, "unreviewed": 0},
+				})
+				return
+			}
+			if !reflect.DeepEqual(query, wantFilters) {
+				t.Errorf("Platform filters = %v, want %v", query, wantFilters)
+			}
+			respond(http.StatusOK, map[string]any{
+				"items": []any{installation()}, "next_cursor": opaqueCursor,
+				"snapshot_at": now, "query_hash": strings.Repeat("1", 64),
+				"summary": map[string]int{"total": 20, "reviewed": 20, "unreviewed": 0},
+			})
 		case "setInstallationReview":
+			if r.Header.Get("Idempotency-Key") == unavailableKey.String() {
+				w.Header().Set("Retry-After", "8")
+				respond(http.StatusServiceUnavailable, errorBody("dependency_unavailable"))
+				return
+			}
+			if r.Header.Get("Idempotency-Key") == staleKey.String() {
+				problem := errorBody("version_conflict")
+				problem.Error.CurrentVersion = new(43)
+				respond(http.StatusConflict, problem)
+				return
+			}
 			reviewRequests++
 			var payload wire.SetInstallationReviewJSONRequestBody
 			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || !payload.Reviewed ||
@@ -224,18 +323,8 @@ func TestManagerPlatformRecoversAfterLostResponse(t *testing.T) {
 				t.Error("sync replay generated a second ID")
 				return
 			}
-			respond(http.StatusOK, map[string]any{
-				"id": reviewMeta.TargetID, "account_id": accountID, "amo_account_id": "1234",
-				"product_id": productID, "product_code": "fixture-product", "product_name": "Fixture Product",
-				"core_installation_id": coreInstallationID, "generation": 1, "kind": "install",
-				"installed_at": now, "removed_at": nil, "last_lifecycle_event": "installed", "lifecycle": "current",
-				"authorization": "authorized", "activation_status": "pending", "crm_workflow": "unsupported",
-				"review":  map[string]any{"reviewed": true, "reviewed_by": employee.ID, "reviewed_at": now},
-				"version": 43,
-				"access": map[string]any{"account_id": accountID, "product_id": productID,
-					"active": false, "valid_until": nil, "source": "none", "reason_codes": []string{},
-					"own_until": nil, "entitlement_version": 1, "computed_at": now},
-			})
+			w.Header().Set("ETag", `"43"`)
+			respond(http.StatusOK, installation())
 		case "getCommandReceipt":
 			if reviewID != uuid.Nil && params["id"] == reviewID.String() {
 				if actor.CommandId != nil {
@@ -333,13 +422,7 @@ func TestManagerPlatformRecoversAfterLostResponse(t *testing.T) {
 
 	removeGrant := func(grant auth.ManagerGrant) {
 		t.Helper()
-		if err := pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
-			if _, err := tx.Exec(ctx, "DELETE FROM manager_grants WHERE employee_id=$1 AND grant_code=$2", employee.ID, grant); err != nil {
-				return err
-			}
-			_, err := tx.Exec(ctx, "UPDATE employees SET manager_grants_version=manager_grants_version+1 WHERE id=$1", employee.ID)
-			return err
-		}); err != nil {
+		if err := removeFixtureGrant(ctx, grant); err != nil {
 			t.Fatal(err)
 		}
 		mu.Lock()
@@ -427,9 +510,114 @@ func TestManagerPlatformRecoversAfterLostResponse(t *testing.T) {
 		t.Fatalf("Retry-After = %q", retry)
 	}
 	setReceipt(http.StatusOK)
-	syncLost, err := restarted.SetInstallationReview(managerCtx, reviewMeta, reviewBody)
-	if err != nil || syncLost.ID == uuid.Nil || syncLost.State != managerplatform.UnknownOutcome {
-		t.Fatalf("sync lost response = %+v, %v", syncLost, err)
+	installationsPath := "/api/v1/managers/installations"
+	reviewPath := installationsPath + "/" + reviewMeta.TargetID.String() + "/review"
+	listAPI := browserSpec.Paths.Find(installationsPath).Get
+	reviewAPI := browserSpec.Paths.Find(installationsPath + "/{id}/review").Put
+	browserRequest := func(router http.Handler, method, path, cookie, origin, media, key, match, body string, want int) *httptest.ResponseRecorder {
+		t.Helper()
+		request := httptest.NewRequest(method, managerOrigin+path, strings.NewReader(body))
+		request.Header.Set("X-Platform-Actor", "browser-forged")
+		if cookie != "" {
+			request.AddCookie(&http.Cookie{Name: auth.ManagerCookieName, Value: cookie})
+		}
+		if method == http.MethodPut {
+			request.Header.Set("X-Requested-With", "admin-ui")
+			request.Header.Set("Origin", origin)
+			request.Header.Set("Content-Type", media)
+			request.Header.Set("Idempotency-Key", key)
+			request.Header.Set("If-Match", match)
+		}
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, request)
+		if response.Code != want || strings.Contains(response.Body.String(), "private upstream detail") ||
+			response.Header().Get("Cache-Control") != "no-store" {
+			t.Fatalf("%s %s = %d, want %d with safe no-store response: %s", method, path, response.Code, want, response.Body)
+		}
+		api := listAPI
+		if method == http.MethodPut {
+			api = reviewAPI
+		}
+		if (method == http.MethodGet && strings.HasPrefix(path, installationsPath)) || method == http.MethodPut {
+			var document any
+			decodeBody(t, response, &document)
+			if err := api.Responses.Status(want).Value.Content["application/json"].Schema.Value.VisitJSON(document, openapi3.EnableFormatValidation()); err != nil {
+				t.Fatalf("browser response contract: %v", err)
+			}
+		}
+		return response
+	}
+	list := func(query string, want int) *httptest.ResponseRecorder {
+		t.Helper()
+		return browserRequest(router, http.MethodGet, installationsPath+query, token, "", "", "", "", "", want)
+	}
+	assertDetails := func(response *httptest.ResponseRecorder, code string, version int) {
+		t.Helper()
+		var body struct {
+			Error struct {
+				Details struct {
+					Code    string `json:"code"`
+					Version int    `json:"current_version"`
+				}
+			}
+		}
+		decodeBody(t, response, &body)
+		if body.Error.Details.Code != code || body.Error.Details.Version != version {
+			t.Fatalf("error details = %+v, want %q %d", body.Error.Details, code, version)
+		}
+	}
+	browserRequest(router, http.MethodGet, installationsPath, "", "", "", "", "", "", http.StatusUnauthorized)
+	browserRequest(router, http.MethodGet, installationsPath, coreToken, "", "", "", "", "", http.StatusUnauthorized)
+	for _, query := range []string{"?unsupported=1", "?review=reviewed&review=unreviewed", "?limit=01", "?activation=unknown", "?from=2026-12-01&to=2026-11-30", "?q=%00", "?q=%"} {
+		list(query, http.StatusBadRequest)
+	}
+	assertDetails(list("?cursor=expired", http.StatusBadRequest), "invalid_cursor", 0)
+	assertDetails(list("?q=broad", http.StatusBadRequest), "query_too_broad", 0)
+	if after := list("?q=limited", http.StatusTooManyRequests).Header().Get("Retry-After"); after != "23" {
+		t.Fatalf("list 429 Retry-After = %q", after)
+	}
+	if after := list("?q=unavailable", http.StatusServiceUnavailable).Header().Get("Retry-After"); after != "7" {
+		t.Fatalf("list 503 Retry-After = %q", after)
+	}
+	list("?q=malformed", http.StatusServiceUnavailable)
+	var page managerInstallationListDTO
+	decodeBody(t, list("?q=empty", http.StatusOK), &page)
+	if page.Items == nil || len(page.Items) != 0 || page.NextCursor != nil || page.Summary.Total != 0 {
+		t.Fatalf("empty snapshot = %+v", page)
+	}
+	decodeBody(t, list("?"+wantFilters.Encode(), http.StatusOK), &page)
+	if len(page.Items) != 1 || page.Items[0].AmoAccountID != "9223372036854775807" ||
+		page.Items[0].Access.ValidUntil != nil || page.Items[0].RemovedAt != nil || page.Summary.Total != 20 ||
+		page.NextCursor == nil || *page.NextCursor != opaqueCursor || !page.SnapshotAt.Equal(now) ||
+		len(page.Sources) != 1 || page.Sources[0].Backend != "platform" ||
+		page.Sources[0].ObservedAt == nil || !page.Sources[0].ObservedAt.Equal(now) {
+		t.Fatalf("filtered live snapshot = %+v", page)
+	}
+
+	bodyJSON := `{"reviewed":true,"reason":"fixture review"}`
+	review := func(router http.Handler, cookie, origin, key, match, body string, want int) *httptest.ResponseRecorder {
+		t.Helper()
+		return browserRequest(router, http.MethodPut, reviewPath, cookie, origin, "application/json", key, match, body, want)
+	}
+	key := reviewMeta.IdempotencyKey.String()
+	review(router, "", managerOrigin, key, `"42"`, bodyJSON, http.StatusUnauthorized)
+	review(router, otherToken, managerOrigin, key, `"42"`, bodyJSON, http.StatusForbidden)
+	review(router, token, adminOrigin, key, `"42"`, bodyJSON, http.StatusForbidden)
+	review(router, token, managerOrigin, key, `W/"42"`, bodyJSON, http.StatusBadRequest)
+	review(router, token, managerOrigin, key, `"9007199254740992"`, bodyJSON, http.StatusBadRequest)
+	for _, body := range []string{`{}`, `{"reviewed":null}`, `{"Reviewed":true}`, `{"reviewed":true,"reviewed":false}`, `{"reviewed":true,"reason":null}`, `{"reviewed":true,"actor":"forged"}`} {
+		review(router, token, managerOrigin, key, `"42"`, body, http.StatusBadRequest)
+	}
+	assertDetails(review(router, token, managerOrigin, staleKey.String(), `"42"`, bodyJSON, http.StatusConflict), "version_conflict", 43)
+	if retry := review(router, token, managerOrigin, unavailableKey.String(), `"42"`, bodyJSON, http.StatusAccepted); retry.Header().Get("Retry-After") != "8" {
+		t.Fatalf("unknown review Retry-After = %q", retry.Header().Get("Retry-After"))
+	}
+	lostReview := review(router, token, managerOrigin, key, `"42"`, bodyJSON, http.StatusAccepted)
+	var syncLost managerOperationResponse
+	decodeBody(t, lostReview, &syncLost)
+	location := lostReview.Header().Get("Location")
+	if syncLost.ID == uuid.Nil || syncLost.State != managerplatform.UnknownOutcome || location != "/api/v1/managers/operations/"+syncLost.ID.String() {
+		t.Fatalf("unknown review = %+v at %q", syncLost, location)
 	}
 	thirdClient, err := managerplatform.NewClient(clientConfig)
 	if err != nil {
@@ -437,22 +625,38 @@ func TestManagerPlatformRecoversAfterLostResponse(t *testing.T) {
 	}
 	defer thirdClient.Close()
 	third := managerplatform.NewService(pool, 2*time.Second, audits, restartedSessions, thirdClient, logger)
-	syncStatus, err := third.GetOperation(managerCtx, syncLost.ID)
-	if err != nil || syncStatus.ID != syncLost.ID || syncStatus.State != managerplatform.ReceiptDone {
-		t.Fatalf("sync receipt after restart = %+v, %v", syncStatus, err)
+	restartedRouter := New(Dependencies{
+		Employees: store, Sessions: core, ManagerSessions: restartedSessions, ManagerPlatform: third,
+		Audit: audits, Limiter: auth.NewLimiter(50), Logger: logger,
+		PublicOrigin: adminOrigin, ManagerOrigin: managerOrigin,
+	})
+	pollReview := func(cookie string, want int) *httptest.ResponseRecorder {
+		t.Helper()
+		return browserRequest(restartedRouter, http.MethodGet, location, cookie, "", "", "", "", "", want)
 	}
-	syncReplay, err := third.SetInstallationReview(managerCtx, reviewMeta, reviewBody)
-	if err != nil || syncReplay.ID != syncLost.ID || syncReplay.Installation == nil ||
-		syncReplay.Installation.Version != 43 || !syncReplay.Installation.Review.Reviewed ||
-		!syncReplay.Installation.RemovedAt.IsNull() {
-		t.Fatalf("sync exact response = %+v, %v", syncReplay, err)
+	pollReview(otherToken, http.StatusNotFound)
+	var syncStatus managerOperationResponse
+	decodeBody(t, pollReview(token, http.StatusOK), &syncStatus)
+	if syncStatus.ID != syncLost.ID || syncStatus.State != managerplatform.ReceiptDone || syncStatus.Operation != nil {
+		t.Fatalf("sync receipt after restart = %+v", syncStatus)
+	}
+	assertDetails(review(restartedRouter, token, managerOrigin, key, `"42"`, `{"reviewed":false}`, http.StatusConflict), "idempotency_conflict", 0)
+	exact := review(restartedRouter, token, managerOrigin, key, `"42"`, bodyJSON, http.StatusOK)
+	var reviewed managerInstallationDTO
+	decodeBody(t, exact, &reviewed)
+	if reviewed.ID != reviewMeta.TargetID || reviewed.Version != 43 || !reviewed.Review.Reviewed ||
+		reviewed.RemovedAt != nil || exact.Header().Get("ETag") != `"43"` {
+		t.Fatalf("exact review response = %+v with ETag %q", reviewed, exact.Header().Get("ETag"))
 	}
 	removeGrant(auth.GrantClientsWrite)
+	pollReview(token, http.StatusForbidden)
 	setReceipt(http.StatusForbidden)
 	request(managerOrigin, token, http.StatusOK)
 	if _, err := third.SetInstallationReview(managerCtx, reviewMeta, reviewBody); !errors.Is(err, managerplatform.ErrForbidden) {
 		t.Fatalf("manager could write after removal of the live write grant: %v", err)
 	}
+	list("?q=remove-read", http.StatusForbidden)
+	list("", http.StatusForbidden)
 	if err := restartedSessions.Revoke(ctx, principal.SessionID, auth.ReasonAdmin); err != nil {
 		t.Fatal(err)
 	}
@@ -463,9 +667,9 @@ func TestManagerPlatformRecoversAfterLostResponse(t *testing.T) {
 	mu.Lock()
 	defer mu.Unlock()
 	if mutations != 1 || effects != 1 || receipts < 5 || operations != 4 ||
-		reviewRequests != 2 || reviewEffects != 1 {
-		t.Fatalf("boundary interactions: async mutations=%d effects=%d receipts=%d operations=%d; sync requests=%d effects=%d",
-			mutations, effects, receipts, operations, reviewRequests, reviewEffects)
+		reviewRequests != 2 || reviewEffects != 1 || listRequests != 8 {
+		t.Fatalf("boundary interactions: async mutations=%d effects=%d receipts=%d operations=%d; sync requests=%d effects=%d; list requests=%d",
+			mutations, effects, receipts, operations, reviewRequests, reviewEffects, listRequests)
 	}
 }
 

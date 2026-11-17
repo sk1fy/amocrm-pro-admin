@@ -141,6 +141,10 @@ func AccessLog(logger *slog.Logger) func(http.Handler) http.Handler {
 }
 
 func WriteError(w http.ResponseWriter, r *http.Request, err error) {
+	WriteErrorDetails(w, r, err, nil)
+}
+
+func WriteErrorDetails(w http.ResponseWriter, r *http.Request, err error, details map[string]any) {
 	var api Error
 	if !errors.As(err, &api) {
 		api = Internal()
@@ -155,6 +159,7 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 		Code:      api.Code,
 		Message:   api.Message,
 		RequestID: requestID,
+		Details:   details,
 	}})
 }
 
