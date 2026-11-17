@@ -5577,65 +5577,6 @@ components:
           properties:
             data: {$ref: '#/components/schemas/DistributionTrace'}
 
-  responses:
-    ManagerPlatformRateLimited:
-      description: The Platform request is rate limited.
-      headers:
-        Retry-After:
-          $ref: '#/components/headers/RetryAfter'
-      content:
-        application/json:
-          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
-    ManagerPlatformUnavailable:
-      description: Live Platform data is unavailable.
-      headers:
-        Retry-After:
-          $ref: '#/components/headers/RetryAfter'
-      content:
-        application/json:
-          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
-    Unauthenticated:
-      description: Authentication required or failed.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorEnvelope'
-    Forbidden:
-      description: CSRF check failed or permission denied.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorEnvelope'
-    NotFound:
-      description: Resource not found.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorEnvelope'
-    InvalidArgument:
-      description: Request is invalid.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorEnvelope'
-    Conflict:
-      description: Resource already exists.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorEnvelope'
-    RateLimited:
-      description: Too many login attempts.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorEnvelope'
-    InternalError:
-      description: Internal error.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorEnvelope'
     ManagerEvent:
       type: object
       additionalProperties: false
@@ -5719,3 +5660,63 @@ components:
       - next_cursor
       - snapshot_at
       - query_hash
+
+  responses:
+    ManagerPlatformRateLimited:
+      description: The Platform request is rate limited.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    ManagerPlatformUnavailable:
+      description: Live Platform data is unavailable.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    Unauthenticated:
+      description: Authentication required or failed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Forbidden:
+      description: CSRF check failed or permission denied.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    InvalidArgument:
+      description: Request is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Conflict:
+      description: Resource already exists.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    RateLimited:
+      description: Too many login attempts.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    InternalError:
+      description: Internal error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
