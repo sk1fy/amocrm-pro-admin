@@ -48,6 +48,7 @@ func managers(deps Dependencies) http.Handler {
 		r.Method(apicontract.ManagerInstallations.Method, apicontract.ManagerInstallations.Path, managerInstallations(deps.ManagerPlatform))
 		r.Method(apicontract.ManagerReview.Method, apicontract.ManagerReview.Path, managerInstallationReview(deps.ManagerPlatform))
 		r.Method(apicontract.ManagerOperation.Method, apicontract.ManagerOperation.Path, managerOperation(deps.ManagerPlatform))
+		registerManagerAccounts(r, deps.ManagerPlatform)
 	})
 	return router
 }

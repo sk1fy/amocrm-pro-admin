@@ -3,7 +3,6 @@ package httpapi
 import (
 	"errors"
 	"net/http"
-	"slices"
 	"strconv"
 	"time"
 
@@ -38,11 +37,6 @@ func managerOperation(service *managerplatform.Service) http.HandlerFunc {
 			httpx.WriteError(w, r, httpx.InvalidArgument("invalid operation id"))
 			return
 		}
-		principal, _ := auth.PrincipalFromContext(r.Context())
-		if !slices.Contains(principal.Account.ManagerGrants, auth.GrantClientsRead) {
-			httpx.WriteError(w, r, httpx.Forbidden("operation access denied"))
-			return
-		}
 		if service == nil {
 			httpx.WriteError(w, r, httpx.BackendUnavailable("Platform unavailable"))
 			return
@@ -52,16 +46,20 @@ func managerOperation(service *managerplatform.Service) http.HandlerFunc {
 			writeManagerOperationError(w, r, err)
 			return
 		}
-		response := managerOperationResponse{ID: result.ID, State: result.State}
-		if op := result.Operation; op != nil {
-			response.Operation = &managerPlatformOperationDTO{
-				State: string(op.State), Kind: op.Kind, TargetID: op.Target.Id,
-				CreatedAt: op.CreatedAt.UTC(), UpdatedAt: op.UpdatedAt.UTC(),
-				ResultRef: op.ResultRef, RetryAfterSeconds: op.RetryAfterSeconds,
-			}
-		}
-		httpx.WriteJSON(w, http.StatusOK, response)
+		httpx.WriteJSON(w, http.StatusOK, toManagerOperationResponse(result))
 	}
+}
+
+func toManagerOperationResponse(result managerplatform.Result) managerOperationResponse {
+	response := managerOperationResponse{ID: result.ID, State: result.State}
+	if op := result.Operation; op != nil {
+		response.Operation = &managerPlatformOperationDTO{
+			State: string(op.State), Kind: op.Kind, TargetID: op.Target.Id,
+			CreatedAt: op.CreatedAt.UTC(), UpdatedAt: op.UpdatedAt.UTC(),
+			ResultRef: op.ResultRef, RetryAfterSeconds: op.RetryAfterSeconds,
+		}
+	}
+	return response
 }
 
 func writeManagerOperationError(w http.ResponseWriter, r *http.Request, err error) {

@@ -16,8 +16,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/google/uuid"
 
+	"github.com/sk1fy/amocrm-pro-admin/api"
 	"github.com/sk1fy/amocrm-pro-admin/internal/auth"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
 	wire "github.com/sk1fy/amocrm-pro-admin/internal/platformwire"
@@ -43,6 +45,7 @@ type Client struct {
 	wire      *wire.ClientWithResponses
 	transport *http.Transport
 	timeout   time.Duration
+	contract  *openapi3.T
 }
 
 func NewClient(cfg ClientConfig) (*Client, error) {
@@ -96,7 +99,11 @@ func NewClient(cfg ClientConfig) (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create Platform wire client: %w", err)
 	}
-	return &Client{wire: generated, transport: transport, timeout: cfg.Timeout}, nil
+	contract, err := api.LoadPlatformContract()
+	if err != nil {
+		return nil, fmt.Errorf("load pinned Platform contract: %w", err)
+	}
+	return &Client{wire: generated, transport: transport, timeout: cfg.Timeout, contract: contract}, nil
 }
 
 func (c *Client) Close() { c.transport.CloseIdleConnections() }
@@ -298,7 +305,8 @@ func (c *Client) retryDeal(ctx context.Context, principal auth.Principal, intent
 
 func validOperation(op *wire.Operation, intent intent) bool {
 	return op.Id == intent.ID && op.Target.Id == intent.TargetID &&
-		op.Target.Kind == "installation" && op.Kind != "" &&
+		op.Target.Kind == intent.Kind.policy().target && op.Kind != "" &&
+		(intent.Kind == kindRetryDeal || op.Kind == string(intent.Kind)) &&
 		!op.CreatedAt.IsZero() && !op.UpdatedAt.IsZero() && op.State.Valid() &&
 		(op.RetryAfterSeconds == nil || *op.RetryAfterSeconds >= 0)
 }

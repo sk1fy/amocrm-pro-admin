@@ -16,17 +16,12 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
 )
 
-const (
-	kindReview    = "installation.review"
-	kindRetryDeal = "installation.crm_deal.retry"
-)
-
 type intent struct {
-	ID, EmployeeID, SessionID, Key, TargetID uuid.UUID
-	Kind                                     string
-	Version                                  int64
-	Hash                                     []byte
-	Lease                                    uuid.UUID
+	ID, EmployeeID, SessionID, Key, TargetID, RelatedID uuid.UUID
+	Kind                                                commandKind
+	Version                                             int64
+	Hash                                                []byte
+	Lease                                               uuid.UUID
 }
 
 type store struct {
@@ -35,12 +30,30 @@ type store struct {
 	timeout time.Duration
 }
 
-const intentColumns = "id, employee_id, session_id, idempotency_key, target_id, kind, expected_version, body_hash"
+const intentColumns = "id, employee_id, session_id, idempotency_key, target_id, kind, expected_version, body_hash, related_id"
 
 func scanIntent(row pgx.Row) (value intent, err error) {
+	var target, related *uuid.UUID
+	var version *int64
 	err = row.Scan(&value.ID, &value.EmployeeID, &value.SessionID, &value.Key,
-		&value.TargetID, &value.Kind, &value.Version, &value.Hash)
+		&target, &value.Kind, &version, &value.Hash, &related)
+	if target != nil {
+		value.TargetID = *target
+	}
+	if related != nil {
+		value.RelatedID = *related
+	}
+	if version != nil {
+		value.Version = *version
+	}
 	return value, err
+}
+
+func nullableManagerID(id uuid.UUID) *uuid.UUID {
+	if id == uuid.Nil {
+		return nil
+	}
+	return &id
 }
 
 func (s store) admit(ctx context.Context, actor auth.Principal, proposal intent) (intent, bool, error) {
@@ -54,21 +67,29 @@ func (s store) admit(ctx context.Context, actor auth.Principal, proposal intent)
 
 	proposal.ID, proposal.Lease = uuid.New(), uuid.New()
 	proposal.EmployeeID, proposal.SessionID = actor.EmployeeID, actor.SessionID
+	var expectedVersion *int64
+	if proposal.Version != 0 {
+		expectedVersion = &proposal.Version
+	}
 	tag, err := tx.Exec(ctx, `
 		INSERT INTO manager_command_intents (`+intentColumns+`, next_check_at, lease_id, lease_until)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9, now() + interval '35 seconds')
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), $10, now() + interval '35 seconds')
 		ON CONFLICT (employee_id, idempotency_key) DO NOTHING`,
 		proposal.ID, proposal.EmployeeID, proposal.SessionID, proposal.Key,
-		proposal.TargetID, proposal.Kind, proposal.Version, proposal.Hash, proposal.Lease)
+		nullableManagerID(proposal.TargetID), proposal.Kind, expectedVersion, proposal.Hash, nullableManagerID(proposal.RelatedID), proposal.Lease)
 	if err != nil {
 		return intent{}, false, fmt.Errorf("insert manager intent: %w", err)
 	}
 	created := tag.RowsAffected() == 1
 	if created {
+		objectType := proposal.Kind.policy().target
+		objectRef := objectType
+		if proposal.TargetID != uuid.Nil {
+			objectRef += ":" + proposal.TargetID.String()
+		}
 		err = s.audit.RecordTx(ctx, tx, audit.Event{
 			EmployeeID: &actor.EmployeeID, ActorEmail: actor.Account.Email,
-			Action: "manager.command.admitted", ObjectType: "installation",
-			ObjectRef: "installation:" + proposal.TargetID.String(),
+			Action: "manager.command.admitted", ObjectType: objectType, ObjectRef: objectRef,
 			RequestID: httpx.RequestIDFromContext(ctx),
 			Metadata:  map[string]any{"command_id": proposal.ID, "command": proposal.Kind},
 		})
@@ -82,7 +103,7 @@ func (s store) admit(ctx context.Context, actor auth.Principal, proposal intent)
 		if err != nil {
 			return intent{}, false, fmt.Errorf("read manager intent by key: %w", err)
 		}
-		if existing.Kind != proposal.Kind || existing.TargetID != proposal.TargetID ||
+		if existing.Kind != proposal.Kind || existing.TargetID != proposal.TargetID || existing.RelatedID != proposal.RelatedID ||
 			existing.Version != proposal.Version || !bytes.Equal(existing.Hash, proposal.Hash) {
 			return intent{}, false, ErrConflict
 		}

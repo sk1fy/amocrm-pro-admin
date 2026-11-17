@@ -49,8 +49,8 @@ func NewService(pool *pgxpool.Pool, timeout time.Duration, audits *audit.Store, 
 }
 
 type CommandMeta struct {
-	TargetID, IdempotencyKey uuid.UUID
-	ExpectedVersion          int64
+	TargetID, RelatedID, IdempotencyKey uuid.UUID
+	ExpectedVersion                     int64
 }
 
 type State string
@@ -67,6 +67,7 @@ type Result struct {
 	State        State
 	Operation    *wire.Operation
 	Installation *wire.Installation
+	Response     AccountResponse
 	RetryAfter   *int
 }
 
@@ -94,10 +95,11 @@ func validReason(reason string) bool {
 	return utf8.ValidString(reason) && !strings.ContainsRune(reason, 0) && len(reason) > 0 && utf8.RuneCountInString(reason) <= 1000
 }
 
-func (s *Service) send(ctx context.Context, kind string, meta CommandMeta, body any,
+func (s *Service) send(ctx context.Context, kind commandKind, meta CommandMeta, body any,
 	dispatch func(context.Context, auth.Principal, intent) (Result, error),
 ) (Result, error) {
-	if meta.IdempotencyKey == uuid.Nil || meta.TargetID == uuid.Nil || meta.ExpectedVersion < 1 || meta.ExpectedVersion > MaxVersion {
+	policy := kind.policy()
+	if !policy.validates(meta) {
 		return Result{}, ErrInvalid
 	}
 	ctx, cancel := context.WithTimeout(ctx, maxTimeout)
@@ -106,7 +108,7 @@ func (s *Service) send(ctx context.Context, kind string, meta CommandMeta, body 
 	if !ok || identity.Audience != auth.Managers {
 		return Result{}, auth.ErrUnauthenticated
 	}
-	actor, err := s.snapshot(ctx, identity.SessionID, identity.EmployeeID, auth.GrantClientsWrite)
+	actor, err := s.snapshot(ctx, identity.SessionID, identity.EmployeeID, policy.grant)
 	if err != nil {
 		return Result{}, err
 	}
@@ -120,7 +122,7 @@ func (s *Service) send(ctx context.Context, kind string, meta CommandMeta, body 
 	}
 	hash := sha256.Sum256(normalized)
 	item, created, err := s.admit(ctx, actor, intent{
-		Kind: kind, TargetID: meta.TargetID, Version: meta.ExpectedVersion, Key: meta.IdempotencyKey, Hash: hash[:],
+		Kind: kind, TargetID: meta.TargetID, RelatedID: meta.RelatedID, Version: meta.ExpectedVersion, Key: meta.IdempotencyKey, Hash: hash[:],
 	})
 	if err != nil {
 		return Result{}, err
@@ -132,13 +134,16 @@ func (s *Service) send(ctx context.Context, kind string, meta CommandMeta, body 
 			return Result{}, err
 		}
 		if !claimed {
+			if err := s.confirmActor(context.WithoutCancel(ctx), actor, policy.grant); err != nil {
+				return Result{}, err
+			}
 			return unknown, nil
 		}
 	}
 	delay := recheckDelay
 	defer func() { s.finishIntent(ctx, item, delay) }()
 	if !created {
-		result, err := s.observe(ctx, item, actor.SessionID, auth.GrantClientsWrite)
+		result, err := s.observe(ctx, item, actor.SessionID, policy.grant)
 		if err != nil {
 			delay = nextDelay(Result{}, err)
 			if !isTransient(err) {
@@ -154,13 +159,13 @@ func (s *Service) send(ctx context.Context, kind string, meta CommandMeta, body 
 		// This is an identical user resubmission. The original IDs and body
 		// let Platform resolve a command still in flight or replay a sync outcome.
 	}
-	actor, err = s.snapshot(ctx, actor.SessionID, actor.EmployeeID, auth.GrantClientsWrite)
+	actor, err = s.snapshot(ctx, actor.SessionID, actor.EmployeeID, policy.grant)
 	if err != nil {
 		return Result{}, err
 	}
 	result, err := dispatch(ctx, actor, item)
 	delay = nextDelay(result, err)
-	if _, err := s.snapshot(context.WithoutCancel(ctx), actor.SessionID, actor.EmployeeID, auth.GrantClientsWrite); err != nil {
+	if err := s.confirmActor(context.WithoutCancel(ctx), actor, policy.grant); err != nil {
 		return Result{}, err
 	}
 	if isTransient(err) {
@@ -177,7 +182,7 @@ func (s *Service) GetOperation(ctx context.Context, id uuid.UUID) (Result, error
 	if !ok || identity.Audience != auth.Managers {
 		return Result{}, auth.ErrUnauthenticated
 	}
-	actor, err := s.snapshot(ctx, identity.SessionID, identity.EmployeeID, auth.GrantClientsRead)
+	actor, err := s.snapshot(ctx, identity.SessionID, identity.EmployeeID, "")
 	if err != nil {
 		return Result{}, err
 	}
@@ -185,7 +190,7 @@ func (s *Service) GetOperation(ctx context.Context, id uuid.UUID) (Result, error
 	if err != nil {
 		return Result{}, err
 	}
-	return s.observe(ctx, item, actor.SessionID, auth.GrantClientsRead)
+	return s.observe(ctx, item, actor.SessionID, item.Kind.pollGrant())
 }
 
 func (s *Service) snapshot(ctx context.Context, sessionID, employeeID uuid.UUID, required auth.ManagerGrant) (auth.Principal, error) {
@@ -196,7 +201,7 @@ func (s *Service) snapshot(ctx context.Context, sessionID, employeeID uuid.UUID,
 	if actor.EmployeeID != employeeID {
 		return auth.Principal{}, auth.ErrUnauthenticated
 	}
-	if !hasGrant(actor, required) {
+	if required != "" && !hasGrant(actor, required) {
 		return auth.Principal{}, ErrForbidden
 	}
 	return actor, nil
@@ -207,32 +212,34 @@ func hasGrant(actor auth.Principal, grant auth.ManagerGrant) bool {
 }
 
 func (s *Service) observe(ctx context.Context, item intent, sessionID uuid.UUID, required auth.ManagerGrant) (Result, error) {
+	policy := item.Kind.policy()
+	if policy.grant == "" {
+		return Result{}, ErrUnavailable
+	}
 	actor, err := s.snapshot(ctx, sessionID, item.EmployeeID, required)
 	if err != nil {
 		return Result{}, err
 	}
-	if item.Kind == kindReview && !hasGrant(actor, auth.GrantClientsWrite) {
+	canReadReceipt := hasGrant(actor, policy.grant)
+	if !canReadReceipt && item.Kind != kindRetryDeal {
 		return Result{}, ErrForbidden
 	}
-	if hasGrant(actor, auth.GrantClientsWrite) {
+	if canReadReceipt {
 		receipt, err := s.client.receipt(ctx, actor, item.ID)
+		if accessErr := s.confirmActor(context.WithoutCancel(ctx), actor, policy.grant); accessErr != nil {
+			return Result{}, accessErr
+		}
 		if err != nil {
 			var peer *PeerError
 			if errors.As(err, &peer) && peer.Status == http.StatusNotFound {
-				if err := s.confirmReceiptAccess(ctx, item, sessionID, required); err != nil {
-					return Result{}, err
-				}
 				return Result{ID: item.ID, State: UnknownOutcome}, nil
 			}
 			return Result{}, err
 		}
-		if receipt.Kind != item.Kind || (item.Kind == kindReview && receipt.OperationId != nil) {
+		if receipt.Kind != string(item.Kind) || (!policy.async && receipt.OperationId != nil) {
 			return Result{}, ErrUnavailable
 		}
 		if receipt.OperationId == nil {
-			if err := s.confirmReceiptAccess(ctx, item, sessionID, required); err != nil {
-				return Result{}, err
-			}
 			state := ReceiptDone
 			if receipt.State == wire.CommandReceiptStateRejected {
 				state = ReceiptDenied
@@ -240,26 +247,26 @@ func (s *Service) observe(ctx context.Context, item intent, sessionID uuid.UUID,
 			return Result{ID: item.ID, State: state}, nil
 		}
 	}
-	actor, err = s.snapshot(ctx, sessionID, item.EmployeeID, auth.GrantClientsRead)
+	actor, err = s.snapshot(ctx, sessionID, item.EmployeeID, item.Kind.pollGrant())
 	if err != nil {
 		return Result{}, err
 	}
 	operation, err := s.client.operation(ctx, actor, item)
-	if err != nil {
-		return Result{}, err
+	if accessErr := s.confirmActor(context.WithoutCancel(ctx), actor, required); accessErr != nil {
+		return Result{}, accessErr
 	}
-	if _, err := s.snapshot(ctx, sessionID, item.EmployeeID, required); err != nil {
+	if err != nil {
 		return Result{}, err
 	}
 	return Result{ID: item.ID, State: PlatformResult, Operation: operation}, nil
 }
 
-func (s *Service) confirmReceiptAccess(ctx context.Context, item intent, sessionID uuid.UUID, required auth.ManagerGrant) error {
-	actor, err := s.snapshot(ctx, sessionID, item.EmployeeID, required)
+func (s *Service) confirmActor(ctx context.Context, actor auth.Principal, required auth.ManagerGrant) error {
+	current, err := s.snapshot(ctx, actor.SessionID, actor.EmployeeID, required)
 	if err != nil {
 		return err
 	}
-	if item.Kind == kindReview && !hasGrant(actor, auth.GrantClientsWrite) {
+	if current.Account.ManagerGrantsVersion != actor.Account.ManagerGrantsVersion {
 		return ErrForbidden
 	}
 	return nil
@@ -341,7 +348,7 @@ func (s *Service) reconcileNext(ctx context.Context) {
 		}
 		return
 	}
-	result, err := s.observe(ctx, item, item.SessionID, auth.GrantClientsRead)
+	result, err := s.observe(ctx, item, item.SessionID, item.Kind.pollGrant())
 	delay := nextDelay(result, err)
 	if err != nil && !errors.Is(err, auth.ErrUnauthenticated) && !errors.Is(err, ErrForbidden) && delay == 0 {
 		var peer *PeerError
