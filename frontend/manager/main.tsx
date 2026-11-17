@@ -10,7 +10,9 @@ import '../src/app/theme.css'
 const root = document.getElementById('root')
 if (!root) throw new Error('root element is missing')
 
-const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+const client = new QueryClient({
+  defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false, refetchOnMount: false } },
+})
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={client}>

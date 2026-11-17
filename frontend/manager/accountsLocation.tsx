@@ -24,6 +24,7 @@ export function getAccountLocation(search: string) {
     id,
     tab: isTab(tab) ? tab : ('overview' as const),
     productCursor: params.get('widget_cursor') ?? '',
+    episode: params.get('episode'),
   }
 }
 
@@ -34,8 +35,12 @@ export function accountSearch(search: string, id: string, tab: AccountTab = 'ove
     if (priorTab !== null && !isTab(priorTab)) params.set('list_tab', priorTab)
     params.delete('widget_cursor')
   }
+  if (params.get('account') !== id) params.delete('widget_cursor')
+  params.delete('product')
+  params.delete('product_new')
   params.set('account', id)
   params.set('tab', tab)
+  params.delete('episode')
   return params.toString()
 }
 
@@ -51,6 +56,7 @@ export function listSearch(search: string, section?: string) {
   }
   params.delete('product')
   params.delete('product_new')
+  params.delete('episode')
   if (section) params.set('section', section)
   return params.toString()
 }

@@ -118,6 +118,7 @@ function parsePage<T>(raw: unknown, parse: (value: unknown) => T) {
     items: array(page.items, parse),
     next_cursor: nullable(page.next_cursor, text),
     snapshot_at: date(page.snapshot_at),
+    query_hash: text(page.query_hash),
   }
 }
 
@@ -156,13 +157,16 @@ function parseAccess(raw: unknown, account: AccountId, product: unknown) {
   return integer(access.entitlement_version, 1)
 }
 
+export type WidgetFilter = { kind: 'allEpisodes' } | { kind: 'currentProduct'; product: string }
+
 export async function listWidgets(
   account: AccountId,
   cursor: string,
   signal: AbortSignal,
-  product?: string,
+  filter: WidgetFilter = { kind: 'allEpisodes' },
 ) {
-  const query = new URLSearchParams()
+  const product = filter.kind === 'currentProduct' ? filter.product : undefined
+  const query = new URLSearchParams({ limit: '100' })
   if (cursor) query.set('cursor', cursor)
   if (product) {
     query.set('product_id', product)

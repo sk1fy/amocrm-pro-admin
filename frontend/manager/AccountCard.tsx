@@ -1,4 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Timeline } from './Timeline'
+import { resolveEpisode } from './episodeResolver'
 import { useState } from 'react'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { formatTime } from '../src/lib/format'
@@ -104,7 +106,8 @@ function Widget({
   const product = snapshotRow.product_id
   const current = useQuery({
     queryKey: [...accountsKey, scope, selected.id, 'widget-current', product],
-    queryFn: ({ signal }) => listWidgets(selected.id, '', signal, product),
+    queryFn: ({ signal }) =>
+      listWidgets(selected.id, '', signal, { kind: 'currentProduct', product }),
     enabled: canRenew && fromSnapshot && renewing,
     retry: false,
   })
@@ -114,36 +117,7 @@ function Widget({
   return (
     <section className={styles.panel}>
       <h3>{row.product_name || row.product_code}</h3>
-      <dl className={styles.facts}>
-        <dt>Установка</dt>
-        <dd>
-          <StatusBadge domain="installation_lifecycle" state={row.lifecycle} calm />
-        </dd>
-        <dt>Авторизация</dt>
-        <dd>
-          <StatusBadge domain="installation_authorization" state={row.authorization} calm />
-        </dd>
-        <dt>Доступ</dt>
-        <dd>
-          <StatusBadge
-            domain="product_access"
-            state={row.access.active ? 'active' : 'inactive'}
-            calm
-          />
-        </dd>
-        <dt>Источник срока</dt>
-        <dd>
-          <StatusBadge domain="product_access_source" state={row.access.source} calm />
-        </dd>
-        <dt>Доступ до</dt>
-        <dd>{row.access.valid_until ? formatTime(row.access.valid_until) : '—'}</dd>
-        <dt>Собственный срок</dt>
-        <dd>{row.access.own_until ? formatTime(row.access.own_until) : '—'}</dd>
-        <dt>Доступ рассчитан</dt>
-        <dd>{formatTime(row.access.computed_at)}</dd>
-        <dt>Версия срока</dt>
-        <dd>{row.entitlement_version}</dd>
-      </dl>
+      <WidgetFacts row={row} />
       {canRenew && fromSnapshot && !renewing ? (
         <button type="button" onClick={() => setRenewing(true)}>
           Открыть продление
@@ -208,6 +182,82 @@ function Widget({
           )}
         </AccountForm>
       ) : null}
+    </section>
+  )
+}
+
+function WidgetFacts({ row }: { row: AccountWidget }) {
+  return (
+    <dl className={styles.facts}>
+      <dt>Поколение установки</dt>
+      <dd>{row.generation}</dd>
+      <dt>Установлен</dt>
+      <dd>{formatTime(row.installed_at)}</dd>
+      <dt>Удалён</dt>
+      <dd>{row.removed_at ? formatTime(row.removed_at) : '—'}</dd>
+      <dt>Установка</dt>
+      <dd>
+        <StatusBadge domain="installation_lifecycle" state={row.lifecycle} calm />
+      </dd>
+      <dt>Авторизация</dt>
+      <dd>
+        <StatusBadge domain="installation_authorization" state={row.authorization} calm />
+      </dd>
+      <dt>Доступ</dt>
+      <dd>
+        <StatusBadge
+          domain="product_access"
+          state={row.access.active ? 'active' : 'inactive'}
+          calm
+        />
+      </dd>
+      <dt>Источник срока</dt>
+      <dd>
+        <StatusBadge domain="product_access_source" state={row.access.source} calm />
+      </dd>
+      <dt>Доступ до</dt>
+      <dd>{row.access.valid_until ? formatTime(row.access.valid_until) : '—'}</dd>
+      <dt>Собственный срок</dt>
+      <dd>{row.access.own_until ? formatTime(row.access.own_until) : '—'}</dd>
+      <dt>Доступ рассчитан</dt>
+      <dd>{formatTime(row.access.computed_at)}</dd>
+      <dt>Версия срока</dt>
+      <dd>{row.entitlement_version}</dd>
+    </dl>
+  )
+}
+function HistoricalWidget({
+  selected,
+  scope,
+  onExpired,
+  onForbidden,
+}: Pick<Props, 'selected' | 'scope' | 'onExpired' | 'onForbidden'>) {
+  const episode = selected.episode ?? ''
+  const result = useQuery({
+    queryKey: [...accountsKey, scope, selected.id, 'episode', episode],
+    queryFn: ({ signal }) => resolveEpisode(selected.id, episode, signal),
+    retry: false,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  })
+  useAccountAccessError(result.error, onExpired, onForbidden)
+  if (result.isError)
+    return (
+      <>
+        <ReadFailure error={result.error} retry={() => void result.refetch()} />
+        <p role="alert">
+          {result.error instanceof Error && !('status' in result.error) ? result.error.message : ''}
+        </p>
+      </>
+    )
+  if (result.isPending) return <p role="status">Ищем точную установку…</p>
+  if (!result.data) return <p>Установка с указанным ID не найдена в снимке.</p>
+  return (
+    <section className={styles.panel}>
+      <h3>{result.data.product_name || result.data.product_code}</h3>
+      <p>ID установки {result.data.id}</p>
+      <WidgetFacts row={result.data} />
     </section>
   )
 }
@@ -335,7 +385,14 @@ export function ManagerAccountCard({
               {...actions}
             />
           ) : null}
-          {selected.tab === 'widgets' ? (
+          {selected.tab === 'widgets' && selected.episode ? (
+            <HistoricalWidget
+              selected={selected}
+              scope={scope}
+              onExpired={onExpired}
+              onForbidden={onForbidden}
+            />
+          ) : selected.tab === 'widgets' ? (
             <Widgets
               selected={selected}
               scope={scope}
@@ -365,10 +422,15 @@ export function ManagerAccountCard({
             />
           ) : null}
           {selected.tab === 'history' ? (
-            <section aria-label="История">
-              <StatusBadge domain="freshness" state="unavailable" calm />
-              <p>История событий пока недоступна.</p>
-            </section>
+            <Timeline
+              context={{ kind: 'history', account: selected.id }}
+              search={search}
+              navigate={navigate}
+              grants={grants}
+              scope={scope}
+              onExpired={onExpired}
+              onForbidden={onForbidden}
+            />
           ) : null}
           {selected.tab === 'users' ? (
             <Users
