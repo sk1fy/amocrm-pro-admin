@@ -155,15 +155,30 @@ function parseAccess(raw: unknown, account: AccountId, product: unknown) {
   return integer(access.entitlement_version, 1)
 }
 
-export async function listWidgets(account: AccountId, cursor: string, signal: AbortSignal) {
-  const suffix = cursor ? '?' + new URLSearchParams({ cursor }).toString() : ''
+export async function listWidgets(
+  account: AccountId,
+  cursor: string,
+  signal: AbortSignal,
+  product?: string,
+) {
+  const query = new URLSearchParams()
+  if (cursor) query.set('cursor', cursor)
+  if (product) {
+    query.set('product_id', product)
+    query.set('state', 'current')
+  }
+  const suffix = query.size > 0 ? '?' + query.toString() : ''
   const { data } = await apiFetchResponse<unknown>(accountPath(account) + '/widgets' + suffix, {
     signal,
   })
   return parsePage(data, (value) => {
     const row = parseInstallation(value)
-    if (row.account_id !== account) invalid()
     const raw = record(value)
+    if (
+      row.account_id !== account ||
+      (product && (raw.product_id !== product || row.lifecycle !== 'current'))
+    )
+      invalid()
     return {
       ...row,
       product_id: uuid(raw.product_id),

@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { formatTime } from '../src/lib/format'
 import { getAccount, listUsers, listWidgets, type AccountWidget } from './accountsApi'
@@ -63,6 +64,7 @@ function Widgets({
             key={row.id}
             row={row}
             selected={selected}
+            scope={scope}
             canRenew={canRenew && row.lifecycle === 'current'}
             actions={actions}
           />
@@ -85,16 +87,30 @@ function Widgets({
 }
 
 function Widget({
-  row,
+  row: snapshotRow,
   selected,
+  scope,
   canRenew,
   actions,
 }: {
   row: AccountWidget
   selected: AccountLocation
+  scope: string
   canRenew: boolean
   actions: AccountActions
 }) {
+  const [renewing, setRenewing] = useState(false)
+  const fromSnapshot = selected.productCursor !== ''
+  const product = snapshotRow.product_id
+  const current = useQuery({
+    queryKey: [...accountsKey, scope, selected.id, 'widget-current', product],
+    queryFn: ({ signal }) => listWidgets(selected.id, '', signal, product),
+    enabled: canRenew && fromSnapshot && renewing,
+    retry: false,
+  })
+  useAccountAccessError(current.error, actions.onExpired, actions.onForbidden)
+  const latest = current.isError ? undefined : current.data?.items[0]
+  const row = latest ?? snapshotRow
   return (
     <section className={styles.panel}>
       <h3>{row.product_name || row.product_code}</h3>
@@ -128,7 +144,21 @@ function Widget({
         <dt>Версия срока</dt>
         <dd>{row.entitlement_version}</dd>
       </dl>
-      {canRenew ? (
+      {canRenew && fromSnapshot && !renewing ? (
+        <button type="button" onClick={() => setRenewing(true)}>
+          Открыть продление
+        </button>
+      ) : null}
+      {canRenew && fromSnapshot && renewing ? (
+        current.isError ? (
+          <ReadFailure error={current.error} retry={() => void current.refetch()} />
+        ) : current.isPending ? (
+          <p role="status">Проверяем текущий срок…</p>
+        ) : !latest ? (
+          <p role="alert">Текущая установка не найдена.</p>
+        ) : null
+      ) : null}
+      {canRenew && (!fromSnapshot || (renewing && latest)) ? (
         <AccountForm
           {...actions}
           id={selected.id + ':renewal:' + row.product_id}
