@@ -22,6 +22,17 @@ func (c *Client) callAccount(ctx context.Context, action accountAction, actor st
 		return nil
 	}
 	switch action {
+	case "listProducts":
+		return c.wire.ListProducts(ctx, &wire.ListProductsParams{XPlatformActor: actor}, editQuery)
+	case "getProduct":
+		return c.wire.GetProduct(ctx, target, &wire.GetProductParams{XPlatformActor: actor}, editQuery)
+	case "getProductMetrics":
+		return c.wire.GetProductMetrics(ctx, target, &wire.GetProductMetricsParams{XPlatformActor: actor}, editQuery)
+	case "createProduct":
+		return c.wire.CreateProductWithBody(ctx, &wire.CreateProductParams{XPlatformActor: actor, IdempotencyKey: item.Key}, media, bytes.NewReader(body), editQuery)
+	case "updateProduct":
+		return c.wire.UpdateProductWithBody(ctx, target, &wire.UpdateProductParams{XPlatformActor: actor, IdempotencyKey: item.Key, IfMatch: etag}, media, bytes.NewReader(body), editQuery)
+
 	case "listAccounts":
 		return c.wire.ListAccounts(ctx, &wire.ListAccountsParams{XPlatformActor: actor}, editQuery)
 	case "searchAccounts":

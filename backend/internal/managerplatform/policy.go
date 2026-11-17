@@ -9,18 +9,20 @@ import (
 type commandKind string
 
 const (
-	kindReview      commandKind = "installation.review"
-	kindRetryDeal   commandKind = "installation.crm_deal.retry"
-	kindProfile     commandKind = "account.profile"
-	kindPortrait    commandKind = "account.portrait"
-	kindAuditDate   commandKind = "account.portrait_audit_date"
-	kindRefresh     commandKind = "account.refresh"
-	kindRenewal     commandKind = "account.renewal"
-	kindTemplate    commandKind = "portrait.template"
-	kindCreateNiche commandKind = "portrait.niche.create"
-	kindUpdateNiche commandKind = "portrait.niche.update"
-	kindDeleteNiche commandKind = "portrait.niche.delete"
-	kindMergeNiche  commandKind = "portrait.niche.merge"
+	kindCreateProduct commandKind = "product.create"
+	kindUpdateProduct commandKind = "product.update"
+	kindReview        commandKind = "installation.review"
+	kindRetryDeal     commandKind = "installation.crm_deal.retry"
+	kindProfile       commandKind = "account.profile"
+	kindPortrait      commandKind = "account.portrait"
+	kindAuditDate     commandKind = "account.portrait_audit_date"
+	kindRefresh       commandKind = "account.refresh"
+	kindRenewal       commandKind = "account.renewal"
+	kindTemplate      commandKind = "portrait.template"
+	kindCreateNiche   commandKind = "portrait.niche.create"
+	kindUpdateNiche   commandKind = "portrait.niche.update"
+	kindDeleteNiche   commandKind = "portrait.niche.delete"
+	kindMergeNiche    commandKind = "portrait.niche.merge"
 )
 
 type commandPolicy struct {
@@ -34,6 +36,10 @@ type commandPolicy struct {
 
 func (kind commandKind) policy() commandPolicy {
 	switch kind {
+	case kindCreateProduct:
+		return commandPolicy{grant: auth.GrantCatalogManage, target: "product"}
+	case kindUpdateProduct:
+		return commandPolicy{grant: auth.GrantCatalogManage, target: "product", bound: true, version: true}
 	case kindReview, kindRetryDeal:
 		return commandPolicy{grant: auth.GrantClientsWrite, target: "installation", bound: true, version: true, async: kind == kindRetryDeal}
 	case kindProfile, kindPortrait, kindAuditDate:

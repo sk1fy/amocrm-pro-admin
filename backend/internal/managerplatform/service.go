@@ -182,7 +182,7 @@ func (s *Service) GetOperation(ctx context.Context, id uuid.UUID) (Result, error
 	if !ok || identity.Audience != auth.Managers {
 		return Result{}, auth.ErrUnauthenticated
 	}
-	actor, err := s.snapshot(ctx, identity.SessionID, identity.EmployeeID, auth.GrantClientsRead)
+	actor, err := s.sessionIdentity(ctx, identity.SessionID, identity.EmployeeID)
 	if err != nil {
 		return Result{}, err
 	}
@@ -190,23 +190,39 @@ func (s *Service) GetOperation(ctx context.Context, id uuid.UUID) (Result, error
 	if err != nil {
 		return Result{}, err
 	}
+	required := auth.GrantClientsRead
+	if item.Kind == kindCreateProduct || item.Kind == kindUpdateProduct {
+		required = auth.GrantCatalogManage
+	}
+	if !hasGrant(actor, required) {
+		return Result{}, ErrForbidden
+	}
 	result, err := s.observe(ctx, item, actor.SessionID, item.Kind.pollGrant())
-	if accessErr := s.confirmActor(context.WithoutCancel(ctx), actor, auth.GrantClientsRead); accessErr != nil {
+	if accessErr := s.confirmActor(context.WithoutCancel(ctx), actor, required); accessErr != nil {
 		return Result{}, accessErr
 	}
+
 	return result, err
 }
 
 func (s *Service) snapshot(ctx context.Context, sessionID, employeeID uuid.UUID, required auth.ManagerGrant) (auth.Principal, error) {
+	actor, err := s.sessionIdentity(ctx, sessionID, employeeID)
+	if err != nil {
+		return auth.Principal{}, err
+	}
+	if !hasGrant(actor, required) {
+		return auth.Principal{}, ErrForbidden
+	}
+	return actor, nil
+}
+
+func (s *Service) sessionIdentity(ctx context.Context, sessionID, employeeID uuid.UUID) (auth.Principal, error) {
 	actor, err := s.sessions.ManagerSnapshot(ctx, sessionID)
 	if err != nil {
 		return auth.Principal{}, err
 	}
 	if actor.EmployeeID != employeeID {
 		return auth.Principal{}, auth.ErrUnauthenticated
-	}
-	if !hasGrant(actor, required) {
-		return auth.Principal{}, ErrForbidden
 	}
 	return actor, nil
 }

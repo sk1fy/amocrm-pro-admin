@@ -37,7 +37,8 @@ func managerOperation(service *managerplatform.Service) http.HandlerFunc {
 			httpx.WriteError(w, r, httpx.InvalidArgument("invalid operation id"))
 			return
 		}
-		if !requireManagerGrant(w, r, auth.GrantClientsRead) {
+		if principal, ok := auth.PrincipalFromContext(r.Context()); !ok || principal.Audience != auth.Managers {
+			httpx.WriteError(w, r, httpx.Unauthenticated("authentication required"))
 			return
 		}
 		if service == nil {

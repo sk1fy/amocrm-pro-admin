@@ -34,11 +34,12 @@ type AccountResponse struct {
 type accountAction string
 
 type AccountEndpoint struct {
-	Route  apicontract.Route
-	action accountAction
-	kind   commandKind
-	status int
-	model  func() any
+	Route     apicontract.Route
+	action    accountAction
+	kind      commandKind
+	readGrant auth.ManagerGrant
+	status    int
+	model     func() any
 }
 
 func (e AccountEndpoint) Mutates() bool         { return e.kind != "" }
@@ -47,32 +48,37 @@ func (e AccountEndpoint) Grant() auth.ManagerGrant {
 	if e.Mutates() {
 		return e.kind.policy().grant
 	}
-	return auth.GrantClientsRead
+	return e.readGrant
 }
 
 func newManagerModel[T any]() any { return new(T) }
 
 func AccountEndpoints() []AccountEndpoint {
 	return []AccountEndpoint{
-		{apicontract.ManagerAccounts, "listAccounts", "", http.StatusOK, newManagerModel[wire.AccountList]},
-		{apicontract.ManagerAccountSearch, "searchAccounts", "", http.StatusOK, newManagerModel[wire.AccountList]},
-		{apicontract.ManagerAccount, "getAccount", "", http.StatusOK, newManagerModel[wire.AccountDetail]},
-		{apicontract.ManagerAccountProfile, "updateAccountProfile", kindProfile, http.StatusOK, newManagerModel[wire.AccountDetail]},
-		{apicontract.ManagerAccountRefresh, "requestAccountRefresh", kindRefresh, http.StatusAccepted, newManagerModel[wire.Operation]},
-		{apicontract.ManagerAccountLicenseHistory, "getAccountLicenseHistory", "", http.StatusOK, newManagerModel[wire.LicenseEvidenceList]},
-		{apicontract.ManagerAccountWidgets, "listAccountWidgets", "", http.StatusOK, newManagerModel[wire.InstallationList]},
-		{apicontract.ManagerAccountCRMUsers, "getAccountCRMUsers", "", http.StatusOK, newManagerModel[wire.ObservationCRMUsers]},
-		{apicontract.ManagerAccountRenewal, "createAccountRenewal", kindRenewal, http.StatusCreated, newManagerModel[wire.Renewal]},
-		{apicontract.ManagerAccountPortrait, "getAccountPortrait", "", http.StatusOK, newManagerModel[wire.Portrait]},
-		{apicontract.ManagerAccountPortraitUpdate, "updateAccountPortrait", kindPortrait, http.StatusOK, newManagerModel[wire.Portrait]},
-		{apicontract.ManagerPortraitAuditDate, "createPortraitAuditDate", kindAuditDate, http.StatusOK, newManagerModel[wire.Portrait]},
-		{apicontract.ManagerPortraitTemplate, "getPortraitTemplate", "", http.StatusOK, newManagerModel[wire.PortraitTemplate]},
-		{apicontract.ManagerPortraitTemplateUpdate, "setPortraitTemplate", kindTemplate, http.StatusOK, newManagerModel[wire.PortraitTemplate]},
-		{apicontract.ManagerPortraitNiches, "listPortraitNiches", "", http.StatusOK, newManagerModel[wire.NicheList]},
-		{apicontract.ManagerPortraitNicheCreate, "createPortraitNiche", kindCreateNiche, http.StatusCreated, newManagerModel[wire.Niche]},
-		{apicontract.ManagerPortraitNicheUpdate, "updatePortraitNiche", kindUpdateNiche, http.StatusOK, newManagerModel[wire.Niche]},
-		{apicontract.ManagerPortraitNicheDelete, "deletePortraitNiche", kindDeleteNiche, http.StatusNoContent, nil},
-		{apicontract.ManagerPortraitNicheMerge, "mergePortraitNiche", kindMergeNiche, http.StatusOK, newManagerModel[wire.Niche]},
+		{apicontract.ManagerProducts, "listProducts", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.ProductList]},
+		{apicontract.ManagerProduct, "getProduct", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.Product]},
+		{apicontract.ManagerProductMetrics, "getProductMetrics", "", auth.GrantStatsRead, http.StatusOK, newManagerModel[wire.ProductMetrics]},
+		{apicontract.ManagerProductCreate, "createProduct", kindCreateProduct, auth.GrantCatalogManage, http.StatusCreated, newManagerModel[wire.Product]},
+		{apicontract.ManagerProductUpdate, "updateProduct", kindUpdateProduct, auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.Product]},
+		{apicontract.ManagerAccounts, "listAccounts", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.AccountList]},
+		{apicontract.ManagerAccountSearch, "searchAccounts", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.AccountList]},
+		{apicontract.ManagerAccount, "getAccount", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.AccountDetail]},
+		{apicontract.ManagerAccountProfile, "updateAccountProfile", kindProfile, auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.AccountDetail]},
+		{apicontract.ManagerAccountRefresh, "requestAccountRefresh", kindRefresh, auth.GrantClientsRead, http.StatusAccepted, newManagerModel[wire.Operation]},
+		{apicontract.ManagerAccountLicenseHistory, "getAccountLicenseHistory", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.LicenseEvidenceList]},
+		{apicontract.ManagerAccountWidgets, "listAccountWidgets", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.InstallationList]},
+		{apicontract.ManagerAccountCRMUsers, "getAccountCRMUsers", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.ObservationCRMUsers]},
+		{apicontract.ManagerAccountRenewal, "createAccountRenewal", kindRenewal, auth.GrantClientsRead, http.StatusCreated, newManagerModel[wire.Renewal]},
+		{apicontract.ManagerAccountPortrait, "getAccountPortrait", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.Portrait]},
+		{apicontract.ManagerAccountPortraitUpdate, "updateAccountPortrait", kindPortrait, auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.Portrait]},
+		{apicontract.ManagerPortraitAuditDate, "createPortraitAuditDate", kindAuditDate, auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.Portrait]},
+		{apicontract.ManagerPortraitTemplate, "getPortraitTemplate", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.PortraitTemplate]},
+		{apicontract.ManagerPortraitTemplateUpdate, "setPortraitTemplate", kindTemplate, auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.PortraitTemplate]},
+		{apicontract.ManagerPortraitNiches, "listPortraitNiches", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.NicheList]},
+		{apicontract.ManagerPortraitNicheCreate, "createPortraitNiche", kindCreateNiche, auth.GrantClientsRead, http.StatusCreated, newManagerModel[wire.Niche]},
+		{apicontract.ManagerPortraitNicheUpdate, "updatePortraitNiche", kindUpdateNiche, auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.Niche]},
+		{apicontract.ManagerPortraitNicheDelete, "deletePortraitNiche", kindDeleteNiche, auth.GrantClientsRead, http.StatusNoContent, nil},
+		{apicontract.ManagerPortraitNicheMerge, "mergePortraitNiche", kindMergeNiche, auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.Niche]},
 	}
 }
 
@@ -337,6 +343,14 @@ func (c *Client) clientAccountRequest(ctx context.Context, principal auth.Princi
 	if json.Unmarshal(raw, dto) != nil || !validManagerAccountDTO(dto, target, query, raw, response, item) {
 		return AccountResponse{}, ErrUnavailable
 	}
+	if endpoint.kind == kindCreateProduct {
+		var submitted struct {
+			Code string `json:"code"`
+		}
+		if json.Unmarshal(body, &submitted) != nil || dto.(*wire.Product).Code != submitted.Code {
+			return AccountResponse{}, ErrUnavailable
+		}
+	}
 	var etag string
 	if version := accountResponseVersion(dto); version != 0 {
 		etag = strconv.Quote(strconv.Itoa(version))
@@ -349,6 +363,8 @@ func (c *Client) clientAccountRequest(ctx context.Context, principal auth.Princi
 
 func accountResponseVersion(value any) int {
 	switch model := value.(type) {
+	case *wire.Product:
+		return model.Version
 	case *wire.AccountDetail:
 		return model.Version
 	case *wire.Portrait:
@@ -367,6 +383,32 @@ func validManagerAccountDTO(
 	value any, target uuid.UUID, query url.Values, raw []byte, response *http.Response, item intent,
 ) bool {
 	switch model := value.(type) {
+	case *wire.Product:
+		return model.Id != uuid.Nil && model.Version > 0 && (target == uuid.Nil || model.Id == target) && int64(model.Version) >= item.Version
+	case *wire.ProductMetrics:
+		return !model.SnapshotAt.IsZero()
+	case *wire.ProductList:
+		hash, err := hex.DecodeString(model.QueryHash)
+		if err != nil || len(hash) != 32 || model.Items == nil || model.SnapshotAt.IsZero() || !model.NextCursor.IsSpecified() {
+			return false
+		}
+		if cursor, err := model.NextCursor.Get(); err == nil && (cursor == "" || len(cursor) > 1024) {
+			return false
+		}
+		limit := 25
+		if requested := query.Get("limit"); requested != "" {
+			limit, _ = strconv.Atoi(requested)
+		}
+		if len(model.Items) > limit {
+			return false
+		}
+		seen := make(map[uuid.UUID]bool)
+		for _, product := range model.Items {
+			if product.Id == uuid.Nil || product.Version < 1 || seen[product.Id] {
+				return false
+			}
+			seen[product.Id] = true
+		}
 	case *wire.AccountList:
 		limit := 25
 		if requested := query.Get("limit"); requested != "" {
