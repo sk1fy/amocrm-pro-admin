@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createRequestKey } from '../operations/intents'
 import { boards, installs, dateLabel, type DemoRow } from './fixtures'
 import { demoClients, findDemoClient } from './clientDirectory'
 import type { DemoEvent } from './accountFixtures'
@@ -214,7 +215,7 @@ export function transition(state: DemoState, actor: Employee, action: Action): D
     ...next,
     events: [
       {
-        id: crypto.randomUUID(),
+        id: createRequestKey(),
         client,
         title,
         details,

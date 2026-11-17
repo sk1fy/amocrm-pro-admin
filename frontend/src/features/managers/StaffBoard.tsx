@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { createRequestKey } from '../operations/intents'
 import { staffDraftError, useDemo, type Block } from './DemoSession'
 import { dateLabel } from './fixtures'
 import styles from './StaffBoard.module.css'
@@ -75,7 +76,7 @@ export function StaffBoard() {
       setFeedback({ message: error || 'Выберите блок доступа.', error: true })
       return
     }
-    dispatch({ type: 'addStaff', id: crypto.randomUUID(), name, phone, block: block.id })
+    dispatch({ type: 'addStaff', id: createRequestKey(), name, phone, block: block.id })
     form.reset()
     setFeedback({ message: `Добавлен сотрудник ${name} с доступом «${block.name}».` })
   }

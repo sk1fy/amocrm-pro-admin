@@ -1,8 +1,28 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { initialState, initialStaff, transition, canView, type Invoice } from './DemoSession'
 import { getReceipts } from './paymentRegistry'
 
+afterEach(() => vi.unstubAllGlobals())
+
 describe('demo workflow boundaries', () => {
+  it('keeps account edits and distinct event IDs on HTTP origins without randomUUID', () => {
+    vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) })
+    const initial = initialState()
+    const action = {
+      type: 'account',
+      client: '91001001',
+      patch: { note: 'Call tomorrow' },
+      block: 'clients',
+      title: 'Note changed',
+    } as const
+    const first = transition(initial, initialStaff[0], action)
+    const second = transition(first, initialStaff[0], action)
+    expect(second.accounts[action.client].note).toBe(action.patch.note)
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    expect(first.events[0].id).toMatch(uuid)
+    expect(second.events[0].id).toMatch(uuid)
+    expect(second.events[0].id).not.toBe(first.events[0].id)
+  })
   it('reserves bonuses once and refunds only an open invoice', () => {
     const initial = initialState()
     const invoice: Invoice = {
