@@ -32,3 +32,4 @@
 - [0024: отдельная сессия кабинета менеджеров](0024-manager-auth-audience.md).
 - [0025: менеджерский BFF и операции Platform V1](0025-manager-platform-bff.md).
 - [0026. Версии карточки клиента и повтор команды](0026-manager-account-revisions.md).
+- [0027. Менеджерские identities и атомарный доступ](0027-manager-staff-identity.md).

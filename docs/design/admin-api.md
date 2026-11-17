@@ -441,3 +441,41 @@ Origin кабинета, `X-Requested-With: admin-ui`, UUID в `Idempotency-Key`
 ошибок Platform не передаются в браузер. Клиент может учитывать
 `retry_after_seconds` или заголовок `Retry-After` у ответов `429` и
 `503`. Код `503` означает, что Admin сейчас не может прочитать состояние.
+
+### Сотрудники кабинета менеджеров
+
+Все маршруты `/api/v1/managers/staff` обслуживает Admin без Platform.
+Чтение списка, карточки и `/grants` требует `staff.manage`.
+Создание через POST, `/invitation/reissue` и `/sessions/revoke`
+дополнительно требуют `identity.manage`. PATCH заменяет набор grants.
+Пустой набор отзывает менеджерский доступ. Собственное добавление
+прав запрещено. PATCH и перевыпуск требуют сильный `If-Match` из
+`ETag` карточки. Мутации требуют CSRF и UUID `Idempotency-Key`.
+
+Staff содержит `id`, `email`, `name`, `status`, `grants`, `version`,
+`changed_at`, nullable UUID `changed_by`. Список поддерживает поиск
+`search`, `limit` 25/100 и подписанный `cursor`. Ответ содержит `items`
+и nullable `next_cursor`. Канонический каталог grants возвращает `items`.
+Команда возвращает `staff` и `link_unavailable`. Создание возвращает 201,
+остальные команды 200. Первая выдача приглашения дополнительно содержит
+`invitation_url` с фрагментом `#invitation=`. Ответы имеют `no-store`.
+Квитанция не хранит ссылку; точный повтор сообщает `link_unavailable`.
+
+`POST /api/v1/managers/auth/invitations/accept` принимает `token`,
+`password`, UUID `Idempotency-Key`, Origin и `X-Requested-With`.
+Сессия не требуется, действует ограничитель попыток входа по IP.
+Успех возвращает `accepted=true`. Повтор с теми же токеном, ключом
+и паролем безопасен после потери ответа. Другая команда отвергается.
+Принятую identity нельзя сбросить перевыпуском приглашения.
+
+`GET /api/v1/managers/security/audit` требует `security.audit.read`.
+Он возвращает безопасные поля события без metadata, IP и секретов.
+Разрешены фиксированные действия manager и события входа/выхода
+с явным `metadata.audience=managers`. Технический аудит исключён.
+Пагинация использует подписанный cursor и лимит 25/100.
+
+Коды конфликта в `details.code` различают `version_conflict`,
+`idempotency_conflict`, `email_exists`, `last_administrator`,
+`invitation_unavailable`. Собственная эскалация возвращает 403
+с `self_escalation`. Отключение последнего менеджерского администратора
+в техническом API также возвращает 409 с `last_administrator`.
