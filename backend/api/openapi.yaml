@@ -2127,6 +2127,182 @@ paths:
         uses the optional calendar-day range in the owner time zone, with to inclusive. active_accesses is current
         and ignores that range. activations is zero while the G03 source is absent, not evidence of measured zero
         activity.
+  /api/v1/managers/feed:
+    get:
+      operationId: listFeedForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Read manager events.
+      description: Requires feed.read on the manager host.
+      x-manager-grant: feed.read
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: kind
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - installed
+            - reinstalled
+            - reauthorized
+            - uninstalled
+            - activated
+            - installation_reviewed
+            - installation_unreviewed
+            - account_profile_updated
+            - portrait_updated
+            - access_renewed
+      - name: product_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: account_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Manager event timeline.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerEventList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+  /api/v1/managers/accounts/{id}/history:
+    get:
+      operationId: listAccountHistoryForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Read manager events.
+      description: Requires clients.read on the manager host.
+      x-manager-grant: clients.read
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: kind
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - installed
+            - reinstalled
+            - reauthorized
+            - uninstalled
+            - activated
+            - installation_reviewed
+            - installation_unreviewed
+            - account_profile_updated
+            - portrait_updated
+            - access_renewed
+      - name: product_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Manager event timeline.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerEventList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
   /api/v1/managers/operations/{id}:
     get:
       operationId: getManagerOperation
@@ -5460,3 +5636,86 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+    ManagerEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+          - installed
+          - reinstalled
+          - reauthorized
+          - uninstalled
+          - activated
+          - installation_reviewed
+          - installation_unreviewed
+          - account_profile_updated
+          - portrait_updated
+          - access_renewed
+        occurred_at:
+          type: string
+          format: date-time
+        recorded_at:
+          type: string
+          format: date-time
+        account_id:
+          type: string
+          format: uuid
+        product_id:
+          type: string
+          format: uuid
+        actor_display:
+          type: string
+        summary:
+          type: string
+        related_refs:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              kind:
+                type: string
+                enum:
+                - account
+                - product
+                - installation
+              id:
+                type: string
+                format: uuid
+            required:
+            - kind
+            - id
+      required:
+      - id
+      - kind
+      - occurred_at
+      - recorded_at
+      - summary
+      - related_refs
+    ManagerEventList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerEvent'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        snapshot_at:
+          type: string
+          format: date-time
+        query_hash:
+          type: string
+      required:
+      - items
+      - next_cursor
+      - snapshot_at
+      - query_hash

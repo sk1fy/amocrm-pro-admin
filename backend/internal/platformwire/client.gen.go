@@ -700,6 +700,48 @@ func (e SearchAccountsParamsSort) Valid() bool {
 	}
 }
 
+// Defines values for ListAccountHistoryParamsKind.
+const (
+	ListAccountHistoryParamsKindAccessRenewed          ListAccountHistoryParamsKind = "access_renewed"
+	ListAccountHistoryParamsKindAccountProfileUpdated  ListAccountHistoryParamsKind = "account_profile_updated"
+	ListAccountHistoryParamsKindActivated              ListAccountHistoryParamsKind = "activated"
+	ListAccountHistoryParamsKindInstallationReviewed   ListAccountHistoryParamsKind = "installation_reviewed"
+	ListAccountHistoryParamsKindInstallationUnreviewed ListAccountHistoryParamsKind = "installation_unreviewed"
+	ListAccountHistoryParamsKindInstalled              ListAccountHistoryParamsKind = "installed"
+	ListAccountHistoryParamsKindPortraitUpdated        ListAccountHistoryParamsKind = "portrait_updated"
+	ListAccountHistoryParamsKindReauthorized           ListAccountHistoryParamsKind = "reauthorized"
+	ListAccountHistoryParamsKindReinstalled            ListAccountHistoryParamsKind = "reinstalled"
+	ListAccountHistoryParamsKindUninstalled            ListAccountHistoryParamsKind = "uninstalled"
+)
+
+// Valid indicates whether the value is a known member of the ListAccountHistoryParamsKind enum.
+func (e ListAccountHistoryParamsKind) Valid() bool {
+	switch e {
+	case ListAccountHistoryParamsKindAccessRenewed:
+		return true
+	case ListAccountHistoryParamsKindAccountProfileUpdated:
+		return true
+	case ListAccountHistoryParamsKindActivated:
+		return true
+	case ListAccountHistoryParamsKindInstallationReviewed:
+		return true
+	case ListAccountHistoryParamsKindInstallationUnreviewed:
+		return true
+	case ListAccountHistoryParamsKindInstalled:
+		return true
+	case ListAccountHistoryParamsKindPortraitUpdated:
+		return true
+	case ListAccountHistoryParamsKindReauthorized:
+		return true
+	case ListAccountHistoryParamsKindReinstalled:
+		return true
+	case ListAccountHistoryParamsKindUninstalled:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RequestAccountRefreshJSONBodyComponents.
 const (
 	License RequestAccountRefreshJSONBodyComponents = "license"
@@ -730,6 +772,48 @@ func (e ListAccountWidgetsParamsState) Valid() bool {
 	case ListAccountWidgetsParamsStateCurrent:
 		return true
 	case ListAccountWidgetsParamsStateRemoved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListFeedParamsKind.
+const (
+	ListFeedParamsKindAccessRenewed          ListFeedParamsKind = "access_renewed"
+	ListFeedParamsKindAccountProfileUpdated  ListFeedParamsKind = "account_profile_updated"
+	ListFeedParamsKindActivated              ListFeedParamsKind = "activated"
+	ListFeedParamsKindInstallationReviewed   ListFeedParamsKind = "installation_reviewed"
+	ListFeedParamsKindInstallationUnreviewed ListFeedParamsKind = "installation_unreviewed"
+	ListFeedParamsKindInstalled              ListFeedParamsKind = "installed"
+	ListFeedParamsKindPortraitUpdated        ListFeedParamsKind = "portrait_updated"
+	ListFeedParamsKindReauthorized           ListFeedParamsKind = "reauthorized"
+	ListFeedParamsKindReinstalled            ListFeedParamsKind = "reinstalled"
+	ListFeedParamsKindUninstalled            ListFeedParamsKind = "uninstalled"
+)
+
+// Valid indicates whether the value is a known member of the ListFeedParamsKind enum.
+func (e ListFeedParamsKind) Valid() bool {
+	switch e {
+	case ListFeedParamsKindAccessRenewed:
+		return true
+	case ListFeedParamsKindAccountProfileUpdated:
+		return true
+	case ListFeedParamsKindActivated:
+		return true
+	case ListFeedParamsKindInstallationReviewed:
+		return true
+	case ListFeedParamsKindInstallationUnreviewed:
+		return true
+	case ListFeedParamsKindInstalled:
+		return true
+	case ListFeedParamsKindPortraitUpdated:
+		return true
+	case ListFeedParamsKindReauthorized:
+		return true
+	case ListFeedParamsKindReinstalled:
+		return true
+	case ListFeedParamsKindUninstalled:
 		return true
 	default:
 		return false
@@ -1626,6 +1710,20 @@ type GetAccountCRMUsersParams struct {
 	XPlatformActor Actor `json:"X-Platform-Actor"`
 }
 
+// ListAccountHistoryParams defines parameters for ListAccountHistory.
+type ListAccountHistoryParams struct {
+	Limit          *int                            `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *string                         `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Kind           *[]ListAccountHistoryParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
+	ProductId      *openapi_types.UUID             `form:"product_id,omitempty" json:"product_id,omitempty"`
+	From           *openapi_types.Date             `form:"from,omitempty" json:"from,omitempty"`
+	To             *openapi_types.Date             `form:"to,omitempty" json:"to,omitempty"`
+	XPlatformActor Actor                           `json:"X-Platform-Actor"`
+}
+
+// ListAccountHistoryParamsKind defines parameters for ListAccountHistory.
+type ListAccountHistoryParamsKind string
+
 // GetAccountLicenseHistoryParams defines parameters for GetAccountLicenseHistory.
 type GetAccountLicenseHistoryParams struct {
 	Limit          *int                `form:"limit,omitempty" json:"limit,omitempty"`
@@ -1733,6 +1831,21 @@ type ListAccountWidgetsParamsState string
 type GetCommandReceiptParams struct {
 	XPlatformActor Actor `json:"X-Platform-Actor"`
 }
+
+// ListFeedParams defines parameters for ListFeed.
+type ListFeedParams struct {
+	Limit          *int                  `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *string               `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Kind           *[]ListFeedParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
+	ProductId      *openapi_types.UUID   `form:"product_id,omitempty" json:"product_id,omitempty"`
+	From           *openapi_types.Date   `form:"from,omitempty" json:"from,omitempty"`
+	To             *openapi_types.Date   `form:"to,omitempty" json:"to,omitempty"`
+	AccountId      *openapi_types.UUID   `form:"account_id,omitempty" json:"account_id,omitempty"`
+	XPlatformActor Actor                 `json:"X-Platform-Actor"`
+}
+
+// ListFeedParamsKind defines parameters for ListFeed.
+type ListFeedParamsKind string
 
 // ListInstallationsParams defines parameters for ListInstallations.
 type ListInstallationsParams struct {
@@ -2238,6 +2351,9 @@ type ClientInterface interface {
 	// GetAccountCRMUsers performs a GET /internal/platform/v1/managers/accounts/{id}/crm-users (the `GetAccountCRMUsers` operationId) request.
 	GetAccountCRMUsers(ctx context.Context, id openapi_types.UUID, params *GetAccountCRMUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListAccountHistory performs a GET /internal/platform/v1/managers/accounts/{id}/history (the `ListAccountHistory` operationId) request.
+	ListAccountHistory(ctx context.Context, id openapi_types.UUID, params *ListAccountHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAccountLicenseHistory performs a GET /internal/platform/v1/managers/accounts/{id}/license-history (the `GetAccountLicenseHistory` operationId) request.
 	GetAccountLicenseHistory(ctx context.Context, id openapi_types.UUID, params *GetAccountLicenseHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2295,6 +2411,9 @@ type ClientInterface interface {
 	//
 	// Только исходный BFF и субъект с актуальным правом на команду. Возвращает зарегистрированный исход по command ID; 404 не доказывает, что первый запрос не в пути.
 	GetCommandReceipt(ctx context.Context, id openapi_types.UUID, params *GetCommandReceiptParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListFeed performs a GET /internal/platform/v1/managers/feed (the `ListFeed` operationId) request.
+	ListFeed(ctx context.Context, params *ListFeedParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListInstallations performs a GET /internal/platform/v1/managers/installations (the `ListInstallations` operationId) request.
 	ListInstallations(ctx context.Context, params *ListInstallationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2448,6 +2567,19 @@ func (c *Client) GetAccount(ctx context.Context, id openapi_types.UUID, params *
 // GetAccountCRMUsers performs a GET /internal/platform/v1/managers/accounts/{id}/crm-users (the `GetAccountCRMUsers` operationId) request.
 func (c *Client) GetAccountCRMUsers(ctx context.Context, id openapi_types.UUID, params *GetAccountCRMUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAccountCRMUsersRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListAccountHistory performs a GET /internal/platform/v1/managers/accounts/{id}/history (the `ListAccountHistory` operationId) request.
+func (c *Client) ListAccountHistory(ctx context.Context, id openapi_types.UUID, params *ListAccountHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAccountHistoryRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2646,6 +2778,19 @@ func (c *Client) ListAccountWidgets(ctx context.Context, id openapi_types.UUID, 
 // Только исходный BFF и субъект с актуальным правом на команду. Возвращает зарегистрированный исход по command ID; 404 не доказывает, что первый запрос не в пути.
 func (c *Client) GetCommandReceipt(ctx context.Context, id openapi_types.UUID, params *GetCommandReceiptParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetCommandReceiptRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListFeed performs a GET /internal/platform/v1/managers/feed (the `ListFeed` operationId) request.
+func (c *Client) ListFeed(ctx context.Context, params *ListFeedParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListFeedRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3458,6 +3603,140 @@ func NewGetAccountCRMUsersRequest(server string, id openapi_types.UUID, params *
 	return req, nil
 }
 
+// NewListAccountHistoryRequest constructs an http.Request for the ListAccountHistory method
+func NewListAccountHistoryRequest(server string, id openapi_types.UUID, params *ListAccountHistoryParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/history", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", *params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ProductId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.From != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
 // NewGetAccountLicenseHistoryRequest constructs an http.Request for the GetAccountLicenseHistory method
 func NewGetAccountLicenseHistoryRequest(server string, id openapi_types.UUID, params *GetAccountLicenseHistoryParams) (*http.Request, error) {
 	var err error
@@ -4130,6 +4409,145 @@ func NewGetCommandReceiptRequest(server string, id openapi_types.UUID, params *G
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewListFeedRequest constructs an http.Request for the ListFeed method
+func NewListFeedRequest(server string, params *ListFeedParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/feed")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", *params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ProductId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.From != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "account_id", *params.AccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -5513,6 +5931,11 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetAccountCRMUsersWithResponse(ctx context.Context, id openapi_types.UUID, params *GetAccountCRMUsersParams, reqEditors ...RequestEditorFn) (*GetAccountCRMUsersResponse, error)
 
+	// ListAccountHistoryWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/history (the `ListAccountHistory` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListAccountHistoryWithResponse(ctx context.Context, id openapi_types.UUID, params *ListAccountHistoryParams, reqEditors ...RequestEditorFn) (*ListAccountHistoryResponse, error)
+
 	// GetAccountLicenseHistoryWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/license-history (the `GetAccountLicenseHistory` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -5588,6 +6011,11 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetCommandReceiptWithResponse(ctx context.Context, id openapi_types.UUID, params *GetCommandReceiptParams, reqEditors ...RequestEditorFn) (*GetCommandReceiptResponse, error)
+
+	// ListFeedWithResponse performs a GET /internal/platform/v1/managers/feed (the `ListFeed` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListFeedWithResponse(ctx context.Context, params *ListFeedParams, reqEditors ...RequestEditorFn) (*ListFeedResponse, error)
 
 	// ListInstallationsWithResponse performs a GET /internal/platform/v1/managers/installations (the `ListInstallations` operationId) request.
 	//
@@ -6101,6 +6529,103 @@ func (r GetAccountCRMUsersResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetAccountCRMUsersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListAccountHistoryResponse429Headers the declared response headers of an HTTP 429 response for ListAccountHistory
+type ListAccountHistoryResponse429Headers struct {
+	RetryAfter *string
+}
+
+// ListAccountHistoryResponse503Headers the declared response headers of an HTTP 503 response for ListAccountHistory
+type ListAccountHistoryResponse503Headers struct {
+	RetryAfter *string
+}
+
+type ListAccountHistoryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *EventList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListAccountHistoryResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListAccountHistoryResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListAccountHistoryResponse) GetJSON200() *EventList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListAccountHistoryResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListAccountHistoryResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListAccountHistoryResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListAccountHistoryResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListAccountHistoryResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListAccountHistoryResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListAccountHistoryResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAccountHistoryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAccountHistoryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAccountHistoryResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -7086,6 +7611,103 @@ func (r GetCommandReceiptResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetCommandReceiptResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListFeedResponse429Headers the declared response headers of an HTTP 429 response for ListFeed
+type ListFeedResponse429Headers struct {
+	RetryAfter *string
+}
+
+// ListFeedResponse503Headers the declared response headers of an HTTP 503 response for ListFeed
+type ListFeedResponse503Headers struct {
+	RetryAfter *string
+}
+
+type ListFeedResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *EventList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListFeedResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListFeedResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListFeedResponse) GetJSON200() *EventList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListFeedResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListFeedResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListFeedResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListFeedResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListFeedResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListFeedResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListFeedResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListFeedResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListFeedResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListFeedResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -8892,6 +9514,17 @@ func (c *ClientWithResponses) GetAccountCRMUsersWithResponse(ctx context.Context
 	return ParseGetAccountCRMUsersResponse(rsp)
 }
 
+// ListAccountHistoryWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/history (the `ListAccountHistory` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListAccountHistoryWithResponse(ctx context.Context, id openapi_types.UUID, params *ListAccountHistoryParams, reqEditors ...RequestEditorFn) (*ListAccountHistoryResponse, error) {
+	rsp, err := c.ListAccountHistory(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAccountHistoryResponse(rsp)
+}
+
 // GetAccountLicenseHistoryWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/license-history (the `GetAccountLicenseHistory` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -9050,6 +9683,17 @@ func (c *ClientWithResponses) GetCommandReceiptWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseGetCommandReceiptResponse(rsp)
+}
+
+// ListFeedWithResponse performs a GET /internal/platform/v1/managers/feed (the `ListFeed` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListFeedWithResponse(ctx context.Context, params *ListFeedParams, reqEditors ...RequestEditorFn) (*ListFeedResponse, error) {
+	rsp, err := c.ListFeed(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListFeedResponse(rsp)
 }
 
 // ListInstallationsWithResponse performs a GET /internal/platform/v1/managers/installations (the `ListInstallations` operationId) request.
@@ -9679,6 +10323,97 @@ func ParseGetAccountCRMUsersResponse(rsp *http.Response) (*GetAccountCRMUsersRes
 		response.Headers429 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetAccountCRMUsersResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListAccountHistoryResponse parses an HTTP response from a ListAccountHistoryWithResponse call
+func ParseListAccountHistoryResponse(rsp *http.Response) (*ListAccountHistoryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAccountHistoryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EventList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers ListAccountHistoryResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListAccountHistoryResponse503Headers
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -10628,6 +11363,97 @@ func ParseGetCommandReceiptResponse(rsp *http.Response) (*GetCommandReceiptRespo
 		response.Headers429 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetCommandReceiptResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListFeedResponse parses an HTTP response from a ListFeedWithResponse call
+func ParseListFeedResponse(rsp *http.Response) (*ListFeedResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListFeedResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EventList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers ListFeedResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListFeedResponse503Headers
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {

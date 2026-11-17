@@ -4,6 +4,8 @@ generate:
   client: true
 output-options:
   include-operation-ids:
+    - listFeed
+    - listAccountHistory
     - listInstallations
     - getCommandReceipt
     - getOperation
