@@ -141,7 +141,7 @@ export async function apiFetchResponse<T>(path: string, init: RequestInit = {}) 
   if (response.status === 204) {
     return { data: undefined as T, status: response.status, etag, retryNotBefore: undefined }
   }
-  const retryNotBefore = response.status === 202 ? retryDeadline(response.headers) : undefined
+  const retryNotBefore = retryDeadline(response.headers)
   const data = (await response.json()) as T
   signal.throwIfAborted()
   return { data, status: response.status, etag, retryNotBefore }
