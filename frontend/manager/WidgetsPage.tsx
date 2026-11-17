@@ -73,7 +73,7 @@ export function WidgetsPage({
   useAccountAccessError(detail.error, access.onExpired, access.onForbidden)
   const product = detail.isError
     ? undefined
-    : saved?.id === id && (!detail.data || saved.version >= detail.data.version)
+    : saved?.id === id && (!detail.data || saved.version > detail.data.version)
       ? saved
       : detail.data
   const save = (value?: Product) => {

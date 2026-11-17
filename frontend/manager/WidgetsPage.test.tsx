@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { resetApiSession } from '../src/api/client'
 import { ManagerApp } from './ManagerApp'
@@ -49,6 +49,7 @@ function open(
       <ManagerApp />
     </QueryClientProvider>,
   )
+  return client
 }
 afterEach(() => {
   resetApiSession()
@@ -147,6 +148,69 @@ it('retains an editor draft on conflict and rebases only through an explicit act
   await screen.findByText('Сохранено.')
   expect(versions).toEqual(['"1"', '"2"'])
   expect(keys[1]).not.toBe(keys[0])
+})
+
+it('uses refreshed same-version mappings for the next edit and preserves a pending command', async () => {
+  const originalRef = 'eaf2bbd1-277a-45aa-949d-a4ec53820e52'
+  const refreshedRef = '44869492-864f-429f-b7e8-857ced38b690'
+  const laterRef = 'c28e6c72-773d-4ce8-b51b-982c920ce80c'
+  let current = { ...product, integration_refs: [originalRef] }
+  const commands: { body: RequestInit['body']; key: string | null; version: string | null }[] = []
+  const client = open(
+    ['clients.read', 'catalog.manage'],
+    'section=widgets&product=' + id,
+    (_url, init) => {
+      if (init?.method === 'PATCH') {
+        commands.push({
+          body: init.body,
+          key: new Headers(init.headers).get('Idempotency-Key'),
+          version: new Headers(init.headers).get('If-Match'),
+        })
+        if (commands.length > 1) {
+          return Response.json({ id: receipt, state: 'unknown_outcome' }, { status: 202 })
+        }
+        current = { ...current, display_name: 'Сохранённое название', version: 2 }
+      }
+      return Response.json(current, { headers: { ETag: '"' + current.version + '"' } })
+    },
+  )
+  fireEvent.change(await screen.findByLabelText('Название'), {
+    target: { value: 'Сохранённое название' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Сохранить виджет' }))
+  await screen.findByText('Сохранено.')
+
+  current = { ...current, integration_refs: [originalRef, refreshedRef] }
+  await act(() => client.invalidateQueries({ queryKey: ['managers', 'products'] }))
+  await waitFor(() =>
+    expect(screen.getByLabelText('Подтверждённые интеграции')).toHaveValue(
+      originalRef + '\n' + refreshedRef,
+    ),
+  )
+  expect(screen.getByLabelText('Подтверждённые интеграции')).toHaveAttribute('readonly')
+  fireEvent.change(screen.getByLabelText('Название'), { target: { value: 'Следующее название' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Сохранить виджет' }))
+  await screen.findByText('Результат команды пока неизвестен.')
+  expect(commands).toHaveLength(2)
+  expect(commands[1].version).toBe('"2"')
+  expect(JSON.parse(String(commands[1].body))).toMatchObject({
+    display_name: 'Следующее название',
+    integration_refs: [originalRef, refreshedRef],
+  })
+
+  current = { ...current, integration_refs: [originalRef, refreshedRef, laterRef], version: 3 }
+  await act(() => client.invalidateQueries({ queryKey: ['managers', 'products'] }))
+  await waitFor(() =>
+    expect(
+      within(screen.getByRole('region', { name: 'Карточка виджета' })).getByText(
+        [originalRef, refreshedRef, laterRef].join(', '),
+      ),
+    ).toBeVisible(),
+  )
+  expect(screen.getByLabelText('Название')).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: 'Повторить ту же команду' }))
+  await waitFor(() => expect(commands).toHaveLength(3))
+  expect(commands[2]).toEqual(commands[1])
 })
 
 it('rejects a create response with an unexpected code and allows an adopted non-command UUID', async () => {
