@@ -1706,6 +1706,428 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/managers/products:
+    get:
+      operationId: listProductsForManagers
+      security:
+      - managerSession: []
+      responses:
+        '200':
+          description: List catalog products.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerProductList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+      - name: line
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - FREE
+          - TOP
+          - PRO
+      - name: availability
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - draft
+          - pilot
+          - active
+          - archived
+      tags:
+      - Managers
+      summary: List catalog products.
+      x-manager-grant: clients.read
+      description: Requires clients.read on the manager host.
+    post:
+      operationId: createProductForManagers
+      security:
+      - managerSession: []
+      responses:
+        '201':
+          description: Create or adopt a catalog product by code.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerProduct'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[1-9][0-9]*"$
+                description: Strong ETag of the product card version.
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict, version_conflict or state_conflict. An applicable current
+            version is numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                code:
+                  $ref: '#/components/schemas/ManagerProductCode'
+                display_name:
+                  type: string
+                line:
+                  type: string
+                  enum:
+                  - FREE
+                  - TOP
+                  - PRO
+                availability:
+                  type: string
+                  enum:
+                  - draft
+                  - pilot
+                  - active
+                  - archived
+                integration_refs:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                tariff_version:
+                  type:
+                  - integer
+                  - 'null'
+                  minimum: 1
+                  maximum: 9007199254740991
+                trial_policy:
+                  $ref: '#/components/schemas/ManagerTrialPolicy'
+                links:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      label:
+                        type: string
+                      url:
+                        type: string
+                        format: uri
+                    required:
+                    - label
+                    - url
+              required:
+              - code
+              - display_name
+              - line
+              - availability
+              - integration_refs
+              - tariff_version
+              - trial_policy
+              - links
+      tags:
+      - Managers
+      summary: Create or adopt a catalog product by code.
+      x-manager-grant: catalog.manage
+      description: Requires catalog.manage on the manager host. An existing technical product code adopts its UUID.
+        A new code creates a new product. Integration references must match the owner-approved set.
+  /api/v1/managers/products/{id}:
+    get:
+      operationId: getProductForManagers
+      security:
+      - managerSession: []
+      responses:
+        '200':
+          description: Read a catalog product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerProduct'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[1-9][0-9]*"$
+                description: Strong ETag of the product card version.
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - Managers
+      summary: Read a catalog product.
+      x-manager-grant: clients.read
+      description: Requires clients.read on the manager host.
+    patch:
+      operationId: updateProductForManagers
+      security:
+      - managerSession: []
+      responses:
+        '200':
+          description: Update a catalog product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerProduct'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[1-9][0-9]*"$
+                description: Strong ETag of the product card version.
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict, version_conflict or state_conflict. An applicable current
+            version is numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                display_name:
+                  type: string
+                line:
+                  type: string
+                  enum:
+                  - FREE
+                  - TOP
+                  - PRO
+                availability:
+                  type: string
+                  enum:
+                  - draft
+                  - pilot
+                  - active
+                  - archived
+                integration_refs:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                tariff_version:
+                  type:
+                  - integer
+                  - 'null'
+                  minimum: 1
+                  maximum: 9007199254740991
+                trial_policy:
+                  $ref: '#/components/schemas/ManagerTrialPolicy'
+                links:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      label:
+                        type: string
+                      url:
+                        type: string
+                        format: uri
+                    required:
+                    - label
+                    - url
+      tags:
+      - Managers
+      summary: Update a catalog product.
+      x-manager-grant: catalog.manage
+      description: Requires catalog.manage on the manager host. If-Match is the product card version, independent
+        of tariff_version. A no-op may retain the current version. Code and UUID cannot be changed.
+  /api/v1/managers/products/{id}/metrics:
+    get:
+      operationId: getProductMetricsForManagers
+      security:
+      - managerSession: []
+      responses:
+        '200':
+          description: Read product counters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerProductMetrics'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      tags:
+      - Managers
+      summary: Read product counters.
+      x-manager-grant: stats.read
+      description: Requires stats.read on the manager host. No clients.read grant is required. confirmed_installations
+        uses the optional calendar-day range in the owner time zone, with to inclusive. active_accesses is current
+        and ignores that range. activations is zero while the G03 source is absent, not evidence of measured zero
+        activity.
   /api/v1/managers/operations/{id}:
     get:
       operationId: getManagerOperation
@@ -1714,9 +2136,13 @@ paths:
         - managerSession: []
       summary: Read the live result of an owned manager command.
       description: >-
-        Requires clients.read and the grant for the owned command kind and
-        current target scope. The legacy installation CRM retry can be read
-        by its owner with clients.read.
+        Requires ownership and the current target scope. Product create and update
+        receipts require catalog.manage without clients.read. Other command kinds
+        retain clients.read plus their command grant. Installation review and
+        legacy installation CRM retry require clients.read. Account profile,
+        portrait, audit date and refresh require clients.write. Renewal requires
+        clients.renew. Portrait template and niche commands require
+        configuration.manage in addition to clients.read.
       parameters:
         - $ref: '#/components/parameters/RequestID'
         - name: id
@@ -4001,6 +4427,141 @@ components:
         sources:
           type: array
           items: {$ref: '#/components/schemas/SourceStatus'}
+    ManagerProduct:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          $ref: '#/components/schemas/ManagerProductCode'
+        display_name:
+          type: string
+        line:
+          type: string
+          enum:
+          - FREE
+          - TOP
+          - PRO
+        availability:
+          type: string
+          enum:
+          - draft
+          - pilot
+          - active
+          - archived
+        integration_refs:
+          type: array
+          items:
+            type: string
+            format: uuid
+        tariff_version:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 9007199254740991
+          description: Owner-verified tariff selection. Null clears the selection. No tariff discovery API is available.
+        trial_policy:
+          $ref: '#/components/schemas/ManagerTrialPolicy'
+        links:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              label:
+                type: string
+              url:
+                type: string
+                format: uri
+            required:
+            - label
+            - url
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+          description: Product card concurrency version, independent of tariff_version.
+      required:
+      - id
+      - code
+      - display_name
+      - line
+      - availability
+      - integration_refs
+      - tariff_version
+      - trial_policy
+      - links
+      - version
+    ManagerProductCode:
+      type: string
+      maxLength: 63
+      pattern: ^[a-z0-9]+(?:[-_][a-z0-9]+)*$
+    ManagerProductList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerProduct'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        snapshot_at:
+          type: string
+          format: date-time
+        query_hash:
+          type: string
+      required:
+      - items
+      - next_cursor
+      - snapshot_at
+      - query_hash
+    ManagerTrialPolicy:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum:
+          - none
+          - once
+          - free
+        duration_days:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+      required:
+      - kind
+      - duration_days
+      description: The owner validates the selected verified rule. FREE uses free with null duration_days. Disabled
+        uses none with null duration_days. TOP uses once with 90 days. PRO uses once with 7 or 14 days.
+    ManagerProductMetrics:
+      type: object
+      additionalProperties: false
+      properties:
+        confirmed_installations:
+          type: integer
+          minimum: 0
+        activations:
+          type: integer
+          minimum: 0
+        active_accesses:
+          type: integer
+          minimum: 0
+        snapshot_at:
+          type: string
+          format: date-time
+      required:
+      - confirmed_installations
+      - activations
+      - active_accesses
+      - snapshot_at
     ManagerOperation:
       type: object
       additionalProperties: false

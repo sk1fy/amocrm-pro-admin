@@ -829,6 +829,141 @@ func (e ListInstallationsParamsSort) Valid() bool {
 	}
 }
 
+// Defines values for ListProductsParamsLine.
+const (
+	ListProductsParamsLineFREE ListProductsParamsLine = "FREE"
+	ListProductsParamsLinePRO  ListProductsParamsLine = "PRO"
+	ListProductsParamsLineTOP  ListProductsParamsLine = "TOP"
+)
+
+// Valid indicates whether the value is a known member of the ListProductsParamsLine enum.
+func (e ListProductsParamsLine) Valid() bool {
+	switch e {
+	case ListProductsParamsLineFREE:
+		return true
+	case ListProductsParamsLinePRO:
+		return true
+	case ListProductsParamsLineTOP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListProductsParamsAvailability.
+const (
+	ListProductsParamsAvailabilityActive   ListProductsParamsAvailability = "active"
+	ListProductsParamsAvailabilityArchived ListProductsParamsAvailability = "archived"
+	ListProductsParamsAvailabilityDraft    ListProductsParamsAvailability = "draft"
+	ListProductsParamsAvailabilityPilot    ListProductsParamsAvailability = "pilot"
+)
+
+// Valid indicates whether the value is a known member of the ListProductsParamsAvailability enum.
+func (e ListProductsParamsAvailability) Valid() bool {
+	switch e {
+	case ListProductsParamsAvailabilityActive:
+		return true
+	case ListProductsParamsAvailabilityArchived:
+		return true
+	case ListProductsParamsAvailabilityDraft:
+		return true
+	case ListProductsParamsAvailabilityPilot:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateProductJSONBodyAvailability.
+const (
+	CreateProductJSONBodyAvailabilityActive   CreateProductJSONBodyAvailability = "active"
+	CreateProductJSONBodyAvailabilityArchived CreateProductJSONBodyAvailability = "archived"
+	CreateProductJSONBodyAvailabilityDraft    CreateProductJSONBodyAvailability = "draft"
+	CreateProductJSONBodyAvailabilityPilot    CreateProductJSONBodyAvailability = "pilot"
+)
+
+// Valid indicates whether the value is a known member of the CreateProductJSONBodyAvailability enum.
+func (e CreateProductJSONBodyAvailability) Valid() bool {
+	switch e {
+	case CreateProductJSONBodyAvailabilityActive:
+		return true
+	case CreateProductJSONBodyAvailabilityArchived:
+		return true
+	case CreateProductJSONBodyAvailabilityDraft:
+		return true
+	case CreateProductJSONBodyAvailabilityPilot:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateProductJSONBodyLine.
+const (
+	CreateProductJSONBodyLineFREE CreateProductJSONBodyLine = "FREE"
+	CreateProductJSONBodyLinePRO  CreateProductJSONBodyLine = "PRO"
+	CreateProductJSONBodyLineTOP  CreateProductJSONBodyLine = "TOP"
+)
+
+// Valid indicates whether the value is a known member of the CreateProductJSONBodyLine enum.
+func (e CreateProductJSONBodyLine) Valid() bool {
+	switch e {
+	case CreateProductJSONBodyLineFREE:
+		return true
+	case CreateProductJSONBodyLinePRO:
+		return true
+	case CreateProductJSONBodyLineTOP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateProductJSONBodyAvailability.
+const (
+	UpdateProductJSONBodyAvailabilityActive   UpdateProductJSONBodyAvailability = "active"
+	UpdateProductJSONBodyAvailabilityArchived UpdateProductJSONBodyAvailability = "archived"
+	UpdateProductJSONBodyAvailabilityDraft    UpdateProductJSONBodyAvailability = "draft"
+	UpdateProductJSONBodyAvailabilityPilot    UpdateProductJSONBodyAvailability = "pilot"
+)
+
+// Valid indicates whether the value is a known member of the UpdateProductJSONBodyAvailability enum.
+func (e UpdateProductJSONBodyAvailability) Valid() bool {
+	switch e {
+	case UpdateProductJSONBodyAvailabilityActive:
+		return true
+	case UpdateProductJSONBodyAvailabilityArchived:
+		return true
+	case UpdateProductJSONBodyAvailabilityDraft:
+		return true
+	case UpdateProductJSONBodyAvailabilityPilot:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateProductJSONBodyLine.
+const (
+	UpdateProductJSONBodyLineFREE UpdateProductJSONBodyLine = "FREE"
+	UpdateProductJSONBodyLinePRO  UpdateProductJSONBodyLine = "PRO"
+	UpdateProductJSONBodyLineTOP  UpdateProductJSONBodyLine = "TOP"
+)
+
+// Valid indicates whether the value is a known member of the UpdateProductJSONBodyLine enum.
+func (e UpdateProductJSONBodyLine) Valid() bool {
+	switch e {
+	case UpdateProductJSONBodyLineFREE:
+		return true
+	case UpdateProductJSONBodyLinePRO:
+		return true
+	case UpdateProductJSONBodyLineTOP:
+		return true
+	default:
+		return false
+	}
+}
+
 // AccessState defines model for AccessState.
 type AccessState struct {
 	AccountId          openapi_types.UUID           `json:"account_id"`
@@ -1734,6 +1869,88 @@ type SetPortraitTemplateParams struct {
 	IfMatch        IfMatch        `json:"If-Match"`
 }
 
+// ListProductsParams defines parameters for ListProducts.
+type ListProductsParams struct {
+	Limit          *int                            `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *string                         `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Q              *string                         `form:"q,omitempty" json:"q,omitempty"`
+	Line           *ListProductsParamsLine         `form:"line,omitempty" json:"line,omitempty"`
+	Availability   *ListProductsParamsAvailability `form:"availability,omitempty" json:"availability,omitempty"`
+	XPlatformActor Actor                           `json:"X-Platform-Actor"`
+}
+
+// ListProductsParamsLine defines parameters for ListProducts.
+type ListProductsParamsLine string
+
+// ListProductsParamsAvailability defines parameters for ListProducts.
+type ListProductsParamsAvailability string
+
+// CreateProductJSONBody defines parameters for CreateProduct.
+type CreateProductJSONBody struct {
+	Availability    CreateProductJSONBodyAvailability `json:"availability"`
+	Code            ProductCode                       `json:"code"`
+	DisplayName     string                            `json:"display_name"`
+	IntegrationRefs []openapi_types.UUID              `json:"integration_refs"`
+	Line            CreateProductJSONBodyLine         `json:"line"`
+	Links           []struct {
+		Label string `json:"label"`
+		Url   string `json:"url"`
+	} `json:"links"`
+	TariffVersion nullable.Nullable[int] `json:"tariff_version"`
+	TrialPolicy   TrialPolicy            `json:"trial_policy"`
+}
+
+// CreateProductParams defines parameters for CreateProduct.
+type CreateProductParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CreateProductJSONBodyAvailability defines parameters for CreateProduct.
+type CreateProductJSONBodyAvailability string
+
+// CreateProductJSONBodyLine defines parameters for CreateProduct.
+type CreateProductJSONBodyLine string
+
+// GetProductParams defines parameters for GetProduct.
+type GetProductParams struct {
+	XPlatformActor Actor `json:"X-Platform-Actor"`
+}
+
+// UpdateProductJSONBody defines parameters for UpdateProduct.
+type UpdateProductJSONBody struct {
+	Availability    *UpdateProductJSONBodyAvailability `json:"availability,omitempty"`
+	DisplayName     *string                            `json:"display_name,omitempty"`
+	IntegrationRefs *[]openapi_types.UUID              `json:"integration_refs,omitempty"`
+	Line            *UpdateProductJSONBodyLine         `json:"line,omitempty"`
+	Links           *[]struct {
+		Label string `json:"label"`
+		Url   string `json:"url"`
+	} `json:"links,omitempty"`
+	TariffVersion nullable.Nullable[int] `json:"tariff_version,omitempty"`
+	TrialPolicy   *TrialPolicy           `json:"trial_policy,omitempty"`
+}
+
+// UpdateProductParams defines parameters for UpdateProduct.
+type UpdateProductParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
+// UpdateProductJSONBodyAvailability defines parameters for UpdateProduct.
+type UpdateProductJSONBodyAvailability string
+
+// UpdateProductJSONBodyLine defines parameters for UpdateProduct.
+type UpdateProductJSONBodyLine string
+
+// GetProductMetricsParams defines parameters for GetProductMetrics.
+type GetProductMetricsParams struct {
+	From           *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
+	To             *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+	XPlatformActor Actor               `json:"X-Platform-Actor"`
+}
+
 // SearchAccountsJSONRequestBody defines body for SearchAccounts for application/json ContentType.
 type SearchAccountsJSONRequestBody SearchAccountsJSONBody
 
@@ -1769,6 +1986,12 @@ type MergePortraitNicheJSONRequestBody MergePortraitNicheJSONBody
 
 // SetPortraitTemplateJSONRequestBody defines body for SetPortraitTemplate for application/json ContentType.
 type SetPortraitTemplateJSONRequestBody SetPortraitTemplateJSONBody
+
+// CreateProductJSONRequestBody defines body for CreateProduct for application/json ContentType.
+type CreateProductJSONRequestBody CreateProductJSONBody
+
+// UpdateProductJSONRequestBody defines body for UpdateProduct for application/json ContentType.
+type UpdateProductJSONRequestBody UpdateProductJSONBody
 
 // AsPortraitFilter0 returns the union data inside the PortraitFilter as a PortraitFilter0
 func (t PortraitFilter) AsPortraitFilter0() (PortraitFilter0, error) {
@@ -2137,6 +2360,31 @@ type ClientInterface interface {
 	// SetPortraitTemplate performs a PUT /internal/platform/v1/managers/portrait-template (the `SetPortraitTemplate` operationId) request.
 	// Takes a body of the `application/json` content type.
 	SetPortraitTemplate(ctx context.Context, params *SetPortraitTemplateParams, body SetPortraitTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListProducts performs a GET /internal/platform/v1/managers/products (the `ListProducts` operationId) request.
+	ListProducts(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateProductWithBody performs a POST /internal/platform/v1/managers/products (the `CreateProduct` operationId) request,
+	// with any type of body and a specified content type.
+	CreateProductWithBody(ctx context.Context, params *CreateProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateProduct performs a POST /internal/platform/v1/managers/products (the `CreateProduct` operationId) request.
+	// Takes a body of the `application/json` content type.
+	CreateProduct(ctx context.Context, params *CreateProductParams, body CreateProductJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetProduct performs a GET /internal/platform/v1/managers/products/{id} (the `GetProduct` operationId) request.
+	GetProduct(ctx context.Context, id openapi_types.UUID, params *GetProductParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateProductWithBody performs a PATCH /internal/platform/v1/managers/products/{id} (the `UpdateProduct` operationId) request,
+	// with any type of body and a specified content type.
+	UpdateProductWithBody(ctx context.Context, id openapi_types.UUID, params *UpdateProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateProduct performs a PATCH /internal/platform/v1/managers/products/{id} (the `UpdateProduct` operationId) request.
+	// Takes a body of the `application/json` content type.
+	UpdateProduct(ctx context.Context, id openapi_types.UUID, params *UpdateProductParams, body UpdateProductJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetProductMetrics performs a GET /internal/platform/v1/managers/products/{id}/metrics (the `GetProductMetrics` operationId) request.
+	GetProductMetrics(ctx context.Context, id openapi_types.UUID, params *GetProductMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ListAccounts performs a GET /internal/platform/v1/managers/accounts (the `ListAccounts` operationId) request.
@@ -2633,6 +2881,101 @@ func (c *Client) SetPortraitTemplateWithBody(ctx context.Context, params *SetPor
 // Takes a body of the `application/json` content type.
 func (c *Client) SetPortraitTemplate(ctx context.Context, params *SetPortraitTemplateParams, body SetPortraitTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetPortraitTemplateRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListProducts performs a GET /internal/platform/v1/managers/products (the `ListProducts` operationId) request.
+func (c *Client) ListProducts(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProductsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateProductWithBody performs a POST /internal/platform/v1/managers/products (the `CreateProduct` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) CreateProductWithBody(ctx context.Context, params *CreateProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProductRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateProduct performs a POST /internal/platform/v1/managers/products (the `CreateProduct` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) CreateProduct(ctx context.Context, params *CreateProductParams, body CreateProductJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProductRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetProduct performs a GET /internal/platform/v1/managers/products/{id} (the `GetProduct` operationId) request.
+func (c *Client) GetProduct(ctx context.Context, id openapi_types.UUID, params *GetProductParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProductRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateProductWithBody performs a PATCH /internal/platform/v1/managers/products/{id} (the `UpdateProduct` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) UpdateProductWithBody(ctx context.Context, id openapi_types.UUID, params *UpdateProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateProductRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateProduct performs a PATCH /internal/platform/v1/managers/products/{id} (the `UpdateProduct` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) UpdateProduct(ctx context.Context, id openapi_types.UUID, params *UpdateProductParams, body UpdateProductJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateProductRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetProductMetrics performs a GET /internal/platform/v1/managers/products/{id}/metrics (the `GetProductMetrics` operationId) request.
+func (c *Client) GetProductMetrics(ctx context.Context, id openapi_types.UUID, params *GetProductMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProductMetricsRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -4709,6 +5052,394 @@ func NewSetPortraitTemplateRequestWithBody(server string, params *SetPortraitTem
 	return req, nil
 }
 
+// NewListProductsRequest constructs an http.Request for the ListProducts method
+func NewListProductsRequest(server string, params *ListProductsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/products")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Line != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "line", *params.Line, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Availability != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "availability", *params.Availability, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewCreateProductRequest calls the generic CreateProduct builder with application/json body
+func NewCreateProductRequest(server string, params *CreateProductParams, body CreateProductJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateProductRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewCreateProductRequestWithBody constructs an http.Request for the CreateProduct method, with any body, and a specified content type
+func NewCreateProductRequestWithBody(server string, params *CreateProductParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/products")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+	}
+
+	return req, nil
+}
+
+// NewGetProductRequest constructs an http.Request for the GetProduct method
+func NewGetProductRequest(server string, id openapi_types.UUID, params *GetProductParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/products/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewUpdateProductRequest calls the generic UpdateProduct builder with application/json body
+func NewUpdateProductRequest(server string, id openapi_types.UUID, params *UpdateProductParams, body UpdateProductJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateProductRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewUpdateProductRequestWithBody constructs an http.Request for the UpdateProduct method, with any body, and a specified content type
+func NewUpdateProductRequestWithBody(server string, id openapi_types.UUID, params *UpdateProductParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/products/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
+// NewGetProductMetricsRequest constructs an http.Request for the GetProductMetrics method
+func NewGetProductMetricsRequest(server string, id openapi_types.UUID, params *GetProductMetricsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/products/%s/metrics", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.From != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -4944,6 +5675,41 @@ type ClientWithResponsesInterface interface {
 	// SetPortraitTemplateWithResponse performs a PUT /internal/platform/v1/managers/portrait-template (the `SetPortraitTemplate` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	SetPortraitTemplateWithResponse(ctx context.Context, params *SetPortraitTemplateParams, body SetPortraitTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*SetPortraitTemplateResponse, error)
+
+	// ListProductsWithResponse performs a GET /internal/platform/v1/managers/products (the `ListProducts` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListProductsWithResponse(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*ListProductsResponse, error)
+
+	// CreateProductWithBodyWithResponse performs a POST /internal/platform/v1/managers/products (the `CreateProduct` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateProductWithBodyWithResponse(ctx context.Context, params *CreateProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProductResponse, error)
+
+	// CreateProductWithResponse performs a POST /internal/platform/v1/managers/products (the `CreateProduct` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	CreateProductWithResponse(ctx context.Context, params *CreateProductParams, body CreateProductJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProductResponse, error)
+
+	// GetProductWithResponse performs a GET /internal/platform/v1/managers/products/{id} (the `GetProduct` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetProductWithResponse(ctx context.Context, id openapi_types.UUID, params *GetProductParams, reqEditors ...RequestEditorFn) (*GetProductResponse, error)
+
+	// UpdateProductWithBodyWithResponse performs a PATCH /internal/platform/v1/managers/products/{id} (the `UpdateProduct` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateProductWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateProductResponse, error)
+
+	// UpdateProductWithResponse performs a PATCH /internal/platform/v1/managers/products/{id} (the `UpdateProduct` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	UpdateProductWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateProductParams, body UpdateProductJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProductResponse, error)
+
+	// GetProductMetricsWithResponse performs a GET /internal/platform/v1/managers/products/{id}/metrics (the `GetProductMetrics` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetProductMetricsWithResponse(ctx context.Context, id openapi_types.UUID, params *GetProductMetricsParams, reqEditors ...RequestEditorFn) (*GetProductMetricsResponse, error)
 }
 
 // ListAccountsResponse429Headers the declared response headers of an HTTP 429 response for ListAccounts
@@ -7533,6 +8299,540 @@ func (r SetPortraitTemplateResponse) ContentType() string {
 	return ""
 }
 
+// ListProductsResponse429Headers the declared response headers of an HTTP 429 response for ListProducts
+type ListProductsResponse429Headers struct {
+	RetryAfter *string
+}
+
+// ListProductsResponse503Headers the declared response headers of an HTTP 503 response for ListProducts
+type ListProductsResponse503Headers struct {
+	RetryAfter *string
+}
+
+type ListProductsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProductList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListProductsResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListProductsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListProductsResponse) GetJSON200() *ProductList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListProductsResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListProductsResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListProductsResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListProductsResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListProductsResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListProductsResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListProductsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListProductsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListProductsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListProductsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreateProductResponse201Headers the declared response headers of an HTTP 201 response for CreateProduct
+type CreateProductResponse201Headers struct {
+	ETag *string
+}
+
+// CreateProductResponse429Headers the declared response headers of an HTTP 429 response for CreateProduct
+type CreateProductResponse429Headers struct {
+	RetryAfter *string
+}
+
+// CreateProductResponse503Headers the declared response headers of an HTTP 503 response for CreateProduct
+type CreateProductResponse503Headers struct {
+	RetryAfter *string
+}
+
+type CreateProductResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *Product
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreateProductResponse201Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreateProductResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreateProductResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateProductResponse) GetJSON201() *Product {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateProductResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreateProductResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateProductResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreateProductResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateProductResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r CreateProductResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreateProductResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreateProductResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateProductResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateProductResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateProductResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateProductResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetProductResponse200Headers the declared response headers of an HTTP 200 response for GetProduct
+type GetProductResponse200Headers struct {
+	ETag *string
+}
+
+// GetProductResponse429Headers the declared response headers of an HTTP 429 response for GetProduct
+type GetProductResponse429Headers struct {
+	RetryAfter *string
+}
+
+// GetProductResponse503Headers the declared response headers of an HTTP 503 response for GetProduct
+type GetProductResponse503Headers struct {
+	RetryAfter *string
+}
+
+type GetProductResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Product
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetProductResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetProductResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetProductResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetProductResponse) GetJSON200() *Product {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetProductResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetProductResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetProductResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetProductResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetProductResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetProductResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetProductResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProductResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProductResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetProductResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// UpdateProductResponse200Headers the declared response headers of an HTTP 200 response for UpdateProduct
+type UpdateProductResponse200Headers struct {
+	ETag *string
+}
+
+// UpdateProductResponse429Headers the declared response headers of an HTTP 429 response for UpdateProduct
+type UpdateProductResponse429Headers struct {
+	RetryAfter *string
+}
+
+// UpdateProductResponse503Headers the declared response headers of an HTTP 503 response for UpdateProduct
+type UpdateProductResponse503Headers struct {
+	RetryAfter *string
+}
+
+type UpdateProductResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Product
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *UpdateProductResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *UpdateProductResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *UpdateProductResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateProductResponse) GetJSON200() *Product {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r UpdateProductResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r UpdateProductResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdateProductResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateProductResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateProductResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateProductResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r UpdateProductResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r UpdateProductResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateProductResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateProductResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateProductResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateProductResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetProductMetricsResponse429Headers the declared response headers of an HTTP 429 response for GetProductMetrics
+type GetProductMetricsResponse429Headers struct {
+	RetryAfter *string
+}
+
+// GetProductMetricsResponse503Headers the declared response headers of an HTTP 503 response for GetProductMetrics
+type GetProductMetricsResponse503Headers struct {
+	RetryAfter *string
+}
+
+type GetProductMetricsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProductMetrics
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetProductMetricsResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetProductMetricsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetProductMetricsResponse) GetJSON200() *ProductMetrics {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetProductMetricsResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetProductMetricsResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetProductMetricsResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetProductMetricsResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetProductMetricsResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetProductMetricsResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetProductMetricsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProductMetricsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProductMetricsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetProductMetricsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // ListAccountsWithResponse performs a GET /internal/platform/v1/managers/accounts (the `ListAccounts` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -7939,6 +9239,83 @@ func (c *ClientWithResponses) SetPortraitTemplateWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseSetPortraitTemplateResponse(rsp)
+}
+
+// ListProductsWithResponse performs a GET /internal/platform/v1/managers/products (the `ListProducts` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListProductsWithResponse(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*ListProductsResponse, error) {
+	rsp, err := c.ListProducts(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListProductsResponse(rsp)
+}
+
+// CreateProductWithBodyWithResponse performs a POST /internal/platform/v1/managers/products (the `CreateProduct` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateProductWithBodyWithResponse(ctx context.Context, params *CreateProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProductResponse, error) {
+	rsp, err := c.CreateProductWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateProductResponse(rsp)
+}
+
+// CreateProductWithResponse performs a POST /internal/platform/v1/managers/products (the `CreateProduct` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateProductWithResponse(ctx context.Context, params *CreateProductParams, body CreateProductJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProductResponse, error) {
+	rsp, err := c.CreateProduct(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateProductResponse(rsp)
+}
+
+// GetProductWithResponse performs a GET /internal/platform/v1/managers/products/{id} (the `GetProduct` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetProductWithResponse(ctx context.Context, id openapi_types.UUID, params *GetProductParams, reqEditors ...RequestEditorFn) (*GetProductResponse, error) {
+	rsp, err := c.GetProduct(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProductResponse(rsp)
+}
+
+// UpdateProductWithBodyWithResponse performs a PATCH /internal/platform/v1/managers/products/{id} (the `UpdateProduct` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateProductWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateProductResponse, error) {
+	rsp, err := c.UpdateProductWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateProductResponse(rsp)
+}
+
+// UpdateProductWithResponse performs a PATCH /internal/platform/v1/managers/products/{id} (the `UpdateProduct` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateProductWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateProductParams, body UpdateProductJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProductResponse, error) {
+	rsp, err := c.UpdateProduct(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateProductResponse(rsp)
+}
+
+// GetProductMetricsWithResponse performs a GET /internal/platform/v1/managers/products/{id}/metrics (the `GetProductMetrics` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetProductMetricsWithResponse(ctx context.Context, id openapi_types.UUID, params *GetProductMetricsParams, reqEditors ...RequestEditorFn) (*GetProductMetricsResponse, error) {
+	rsp, err := c.GetProductMetrics(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProductMetricsResponse(rsp)
 }
 
 // ParseListAccountsResponse parses an HTTP response from a ListAccountsWithResponse call
@@ -10416,6 +11793,519 @@ func ParseSetPortraitTemplateResponse(rsp *http.Response) (*SetPortraitTemplateR
 		response.Headers429 = &headers
 	case rsp.StatusCode == 503:
 		var headers SetPortraitTemplateResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListProductsResponse parses an HTTP response from a ListProductsWithResponse call
+func ParseListProductsResponse(rsp *http.Response) (*ListProductsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListProductsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProductList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers ListProductsResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListProductsResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreateProductResponse parses an HTTP response from a CreateProductWithResponse call
+func ParseCreateProductResponse(rsp *http.Response) (*CreateProductResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateProductResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Product
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreateProductResponse201Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreateProductResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreateProductResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetProductResponse parses an HTTP response from a GetProductWithResponse call
+func ParseGetProductResponse(rsp *http.Response) (*GetProductResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProductResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Product
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetProductResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetProductResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetProductResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseUpdateProductResponse parses an HTTP response from a UpdateProductWithResponse call
+func ParseUpdateProductResponse(rsp *http.Response) (*UpdateProductResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateProductResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Product
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers UpdateProductResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers UpdateProductResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers UpdateProductResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetProductMetricsResponse parses an HTTP response from a GetProductMetricsWithResponse call
+func ParseGetProductMetricsResponse(rsp *http.Response) (*GetProductMetricsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProductMetricsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProductMetrics
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers GetProductMetricsResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetProductMetricsResponse503Headers
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {

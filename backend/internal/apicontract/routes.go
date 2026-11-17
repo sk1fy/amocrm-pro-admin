@@ -34,6 +34,11 @@ var (
 	ManagerPortraitNicheUpdate    = Route{Method: http.MethodPatch, Path: ManagerPrefix + "/portrait-niches/{id}"}
 	ManagerPortraitNicheDelete    = Route{Method: http.MethodDelete, Path: ManagerPrefix + "/portrait-niches/{id}"}
 	ManagerPortraitNicheMerge     = Route{Method: http.MethodPost, Path: ManagerPrefix + "/portrait-niches/{id}/merge"}
+	ManagerProducts               = Route{Method: http.MethodGet, Path: ManagerPrefix + "/products"}
+	ManagerProductCreate          = Route{Method: http.MethodPost, Path: ManagerPrefix + "/products"}
+	ManagerProduct                = Route{Method: http.MethodGet, Path: ManagerPrefix + "/products/{id}"}
+	ManagerProductUpdate          = Route{Method: http.MethodPatch, Path: ManagerPrefix + "/products/{id}"}
+	ManagerProductMetrics         = Route{Method: http.MethodGet, Path: ManagerPrefix + "/products/{id}/metrics"}
 	ManagerMe                     = Route{Method: http.MethodGet, Path: ManagerPrefix + "/me"}
 	ConnectionCommand             = Route{Method: "POST", Path: "/api/v1/connections/{backend}/{connection_id}/commands/{command}"}
 	IntegrationCreateCommand      = Route{Method: "POST", Path: "/api/v1/integrations/{backend}/commands/create"}
@@ -104,6 +109,7 @@ var (
 		ManagerPortraitNicheUpdate,
 		ManagerPortraitNicheDelete,
 		ManagerPortraitNicheMerge,
+		ManagerProducts, ManagerProductCreate, ManagerProduct, ManagerProductUpdate, ManagerProductMetrics,
 		Distribution, DistributionTrace,
 		ConnectionCommand, IntegrationCreateCommand, IntegrationCommand, JobRetry, DeliveryRetry, AdminOperations, AdminOperation,
 		AuthLogin,
