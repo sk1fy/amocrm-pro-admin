@@ -8,12 +8,13 @@ import {
   type ReactNode,
 } from 'react'
 import { isApiError } from '../src/api/client'
-import { checkAccountCommand, sendAccountCommand, type AccountCommand } from './accountsApi'
+import { checkAccountCommand, sendAccountCommand, type ManagerCommand } from './accountsApi'
+import type { Product } from './productsApi'
 import styles from './Accounts.module.css'
 
 type Values = Record<string, string>
 type Draft = { values: Values; base: number; original: Values }
-type Pending = { command: AccountCommand; id?: string; retryAt?: number; status?: string }
+type Pending = { command: ManagerCommand; id?: string; retryAt?: number; status?: string }
 
 type CommandState =
   | { kind: 'idle' }
@@ -58,7 +59,7 @@ export function AccountCommands({ children }: { children: ReactNode }) {
 export function useAccountCommand(
   id: string,
   options: {
-    onSaved: () => void
+    onSaved: (product?: Product) => void
     onExpired: () => void
     onForbidden: () => void
   },
@@ -89,14 +90,22 @@ export function useAccountCommand(
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(15_000)])
     setState({ kind: 'busy' })
     try {
-      const result =
+      let result =
         poll && original.id
           ? await checkAccountCommand(original.command, original.id, signal)
           : await sendAccountCommand(original.command, signal)
       if (request.signal.aborted) return
+      if (
+        poll &&
+        result.kind === 'completed' &&
+        (original.command.kind === 'product-create' || original.command.kind === 'product-update')
+      ) {
+        result = await sendAccountCommand(original.command, signal)
+        if (request.signal.aborted) return
+      }
       if (result.kind === 'completed') {
         setState({ kind: 'saved' }, true)
-        options.onSaved()
+        options.onSaved(result.product)
       } else if (result.kind === 'rejected') {
         setState({ kind: 'error', message: 'Команда отклонена. Черновик сохранён.' })
         options.onSaved()
@@ -164,7 +173,7 @@ export function useAccountCommand(
   return {
     entry,
     locked: entry.state.kind === 'busy' || entry.state.kind === 'pending',
-    start: (command: AccountCommand) => {
+    start: (command: ManagerCommand) => {
       if (entry.state.kind !== 'conflict' && entry.state.kind !== 'pending')
         void run({ command }, false)
     },

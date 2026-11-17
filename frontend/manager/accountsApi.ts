@@ -8,6 +8,7 @@ import {
   record,
 } from './installationsApi'
 import { managerApi } from './session'
+import { sendProductCommand, type ProductCommand, type Product } from './productsApi'
 
 export type AccountId = string & { readonly __brand: 'AccountId' }
 export function isAccountId(value: unknown): value is AccountId {
@@ -311,15 +312,17 @@ const suffixes = {
   renewal: '/renewals',
 }
 
+export type ManagerCommand = AccountCommand | ProductCommand
+
 type Result =
-  | { kind: 'completed' }
+  | { kind: 'completed'; product?: Product }
   | { kind: 'rejected' }
   | { kind: 'pending'; id: string; retryAt?: number; state: string }
 
 function parseOperation(
   data: unknown,
   retryAt: number | undefined,
-  command: AccountCommand,
+  command: ManagerCommand,
   expected?: string,
 ): Result {
   const item = record(data)
@@ -365,9 +368,15 @@ function parseOperation(
 }
 
 export async function sendAccountCommand(
-  command: AccountCommand,
+  command: ManagerCommand,
   signal: AbortSignal,
 ): Promise<Result> {
+  if (command.kind === 'product-create' || command.kind === 'product-update') {
+    const result = await sendProductCommand(command, signal)
+    return result.kind === 'receipt'
+      ? parseOperation(result.response.data, result.response.retryNotBefore, command)
+      : result
+  }
   const headers = new Headers({ 'Idempotency-Key': command.key })
   if ('version' in command) headers.set('If-Match', versionETag(command.version))
   const path =
@@ -401,7 +410,7 @@ export async function sendAccountCommand(
 }
 
 export async function checkAccountCommand(
-  command: AccountCommand,
+  command: ManagerCommand,
   id: string,
   signal: AbortSignal,
 ) {

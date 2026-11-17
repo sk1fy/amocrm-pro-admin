@@ -41,6 +41,8 @@ export type StateDomain =
   | 'installation_review'
   | 'product_access'
   | 'product_access_source'
+  | 'product_availability'
+  | 'product_trial'
 
 const unknownEntry: StateEntry = { tone: 'unknown', label: 'Неизвестно' }
 
@@ -263,6 +265,17 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
   installation_review: {
     reviewed: { tone: 'ok', label: 'Проверена' },
     unreviewed: { tone: 'attention', label: 'Не проверена' },
+  },
+  product_availability: {
+    draft: { tone: 'off', label: 'Черновик' },
+    pilot: { tone: 'attention', label: 'Пилот' },
+    active: { tone: 'ok', label: 'Доступен' },
+    archived: { tone: 'off', label: 'Архив' },
+  },
+  product_trial: {
+    none: { tone: 'off', label: 'Отключён' },
+    free: { tone: 'ok', label: 'Бесплатный' },
+    once: { tone: 'attention', label: 'Однократный пробный период' },
   },
   product_access: {
     active: { tone: 'ok', label: 'Действует' },

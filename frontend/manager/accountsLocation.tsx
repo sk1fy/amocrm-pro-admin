@@ -49,6 +49,8 @@ export function listSearch(search: string, section?: string) {
     params.delete('widget_cursor')
     params.delete('account')
   }
+  params.delete('product')
+  params.delete('product_new')
   if (section) params.set('section', section)
   return params.toString()
 }

@@ -7,6 +7,7 @@ import { ManagerAccountCard } from './AccountCard'
 import { AccountCommands } from './accountCommands'
 import { AccountsPage } from './AccountsPage'
 import { getAccountLocation, listSearch, ManagerLink } from './accountsLocation'
+import { WidgetsPage } from './WidgetsPage'
 import { InstallationsPage } from './InstallationsPage'
 import { useManagerLocation } from './installationsLocation'
 import { fetchManager, loginManager, logoutManager } from './session'
@@ -65,6 +66,7 @@ export function ManagerApp() {
     const section = params.get('section')
     const installations = section === null || section === 'installations'
     const clients = section === 'clients'
+    const widgets = section === 'widgets'
     const selected = getAccountLocation(location.search)
     const canRead = manager.grants.includes('clients.read')
     return (
@@ -90,6 +92,13 @@ export function ManagerApp() {
               >
                 Клиенты
               </ManagerLink>
+              <ManagerLink
+                search={listSearch(location.search, 'widgets')}
+                navigate={location.navigate}
+                current={widgets}
+              >
+                Виджеты
+              </ManagerLink>
             </nav>
             <div className={styles.identity}>
               <span>{manager.name}</span>
@@ -104,7 +113,16 @@ export function ManagerApp() {
           {logout.isPending ? <p role="status">Завершаем сеанс…</p> : null}
           <div hidden={logout.isPending}>
             <AccountCommands key={scope}>
-              {!installations && !clients ? (
+              {widgets ? (
+                <WidgetsPage
+                  key={scope}
+                  {...location}
+                  scope={scope}
+                  grants={manager.grants}
+                  onExpired={expire}
+                  onForbidden={checkGrants}
+                />
+              ) : !installations && !clients ? (
                 <>
                   <h1>{section === 'staff' ? 'Сотрудники' : 'Кабинет менеджеров'}</h1>
                   <p>Раздел пока недоступен.</p>
