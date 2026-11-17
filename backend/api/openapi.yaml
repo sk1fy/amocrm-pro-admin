@@ -23,6 +23,171 @@ tags:
   - name: Catalog
   - name: System
 paths:
+  /api/v1/managers/staff:
+    get:
+      operationId: managerStaff
+      security: [{managerSession: []}]
+      x-manager-grant: staff.manage
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - name: search
+          in: query
+          schema: {type: string, maxLength: 200}
+      responses:
+        '200':
+          description: Successful local Admin operation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagerStaffPage'}
+        default:
+          $ref: '#/components/responses/InternalError'
+    post:
+      operationId: managerStaffCreate
+      security: [{managerSession: []}]
+      x-manager-grant: staff.manage
+      parameters:
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/ManagerOrigin'
+        - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ManagerStaffCreateRequest'}
+      responses:
+        '201':
+          description: Successful local Admin operation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagerStaffCommandResult'}
+        default:
+          $ref: '#/components/responses/InternalError'
+  /api/v1/managers/staff/grants:
+    get:
+      operationId: managerStaffGrants
+      security: [{managerSession: []}]
+      x-manager-grant: staff.manage
+      responses:
+        '200':
+          description: Successful local Admin operation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagerGrantCatalog'}
+        default:
+          $ref: '#/components/responses/InternalError'
+  /api/v1/managers/staff/{id}:
+    get:
+      operationId: managerStaffMember
+      security: [{managerSession: []}]
+      x-manager-grant: staff.manage
+      parameters:
+        - $ref: '#/components/parameters/ID'
+      responses:
+        '200':
+          description: Successful local Admin operation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagerStaffMember'}
+        default:
+          $ref: '#/components/responses/InternalError'
+    patch:
+      operationId: managerStaffUpdate
+      security: [{managerSession: []}]
+      x-manager-grant: staff.manage
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/ManagerOrigin'
+        - $ref: '#/components/parameters/ManagerIdempotencyKey'
+        - $ref: '#/components/parameters/ManagerIfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ManagerStaffUpdateRequest'}
+      responses:
+        '200':
+          description: Successful local Admin operation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagerStaffCommandResult'}
+        default:
+          $ref: '#/components/responses/InternalError'
+  /api/v1/managers/staff/{id}/invitation/reissue:
+    post:
+      operationId: managerInvitationReissue
+      security: [{managerSession: []}]
+      x-manager-grant: staff.manage
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/ManagerOrigin'
+        - $ref: '#/components/parameters/ManagerIdempotencyKey'
+        - $ref: '#/components/parameters/ManagerIfMatch'
+      responses:
+        '200':
+          description: Successful local Admin operation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagerStaffCommandResult'}
+        default:
+          $ref: '#/components/responses/InternalError'
+  /api/v1/managers/staff/{id}/sessions/revoke:
+    post:
+      operationId: managerStaffSessionsRevoke
+      security: [{managerSession: []}]
+      x-manager-grant: staff.manage
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/ManagerOrigin'
+        - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      responses:
+        '200':
+          description: Successful local Admin operation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagerStaffCommandResult'}
+        default:
+          $ref: '#/components/responses/InternalError'
+  /api/v1/managers/auth/invitations/accept:
+    post:
+      operationId: managerInvitationAccept
+      security: []
+      x-manager-grant: staff.manage
+      parameters:
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/ManagerOrigin'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ManagerInvitationAcceptRequest'}
+      responses:
+        '200':
+          description: Successful local Admin operation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagerInvitationAccepted'}
+        default:
+          $ref: '#/components/responses/InternalError'
+  /api/v1/managers/security/audit:
+    get:
+      operationId: managerSecurityAudit
+      security: [{managerSession: []}]
+      x-manager-grant: security.audit.read
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Successful local Admin operation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ManagerSecurityAuditPage'}
+        default:
+          $ref: '#/components/responses/InternalError'
   /api/v1/managers/auth/login:
     post:
       tags: [Auth]
@@ -3817,6 +3982,79 @@ components:
     RetryAfter:
       schema: {type: string, pattern: '^[0-9]+$'}
   schemas:
+    ManagerStaffMember:
+      type: object
+      additionalProperties: false
+      required: [id, email, name, status, grants, version, changed_at, changed_by]
+      properties:
+        id: {type: string, format: uuid}
+        email: {type: string, format: email}
+        name: {type: string}
+        status: {type: string, enum: [active, invited, revoked, disabled]}
+        grants: {type: array, items: {type: string}}
+        version: {type: integer, minimum: 1}
+        changed_at: {type: string, format: date-time}
+        changed_by: {type: string, format: uuid, nullable: true}
+    ManagerStaffPage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/ManagerStaffMember'}}
+        next_cursor: {type: string, nullable: true}
+    ManagerGrantCatalog:
+      type: object
+      required: [items]
+      properties:
+        items: {type: array, items: {type: string}}
+    ManagerStaffCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [email, name, grants]
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+        name: {type: string, minLength: 1, maxLength: 200}
+        grants: {type: array, minItems: 1, uniqueItems: true, items: {type: string}}
+    ManagerStaffUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [grants]
+      properties:
+        grants: {type: array, uniqueItems: true, items: {type: string}}
+    ManagerStaffCommandResult:
+      type: object
+      required: [staff, link_unavailable]
+      properties:
+        staff: {$ref: '#/components/schemas/ManagerStaffMember'}
+        invitation_url: {type: string, format: uri}
+        link_unavailable: {type: boolean}
+    ManagerInvitationAcceptRequest:
+      type: object
+      additionalProperties: false
+      required: [token, password]
+      properties:
+        token: {type: string}
+        password: {type: string}
+    ManagerInvitationAccepted:
+      type: object
+      required: [accepted]
+      properties:
+        accepted: {type: boolean, enum: [true]}
+    ManagerSecurityAuditEntry:
+      type: object
+      required: [id, actor_id, action, object_ref, outcome, created_at]
+      properties:
+        id: {type: integer}
+        actor_id: {type: string, format: uuid, nullable: true}
+        action: {type: string}
+        object_ref: {type: string}
+        outcome: {type: string}
+        created_at: {type: string, format: date-time}
+    ManagerSecurityAuditPage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/ManagerSecurityAuditEntry'}}
+        next_cursor: {type: string, nullable: true}
     ManagerAccountList:
       type: object
       additionalProperties: false

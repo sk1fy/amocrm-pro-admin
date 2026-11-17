@@ -10,6 +10,16 @@ type Route struct {
 const ManagerPrefix = "/api/v1/managers"
 
 var (
+	ManagerStaff               = Route{Method: http.MethodGet, Path: ManagerPrefix + "/staff"}
+	ManagerStaffCreate         = Route{Method: http.MethodPost, Path: ManagerPrefix + "/staff"}
+	ManagerStaffGrants         = Route{Method: http.MethodGet, Path: ManagerPrefix + "/staff/grants"}
+	ManagerStaffMember         = Route{Method: http.MethodGet, Path: ManagerPrefix + "/staff/{id}"}
+	ManagerStaffUpdate         = Route{Method: http.MethodPatch, Path: ManagerPrefix + "/staff/{id}"}
+	ManagerInvitationReissue   = Route{Method: http.MethodPost, Path: ManagerPrefix + "/staff/{id}/invitation/reissue"}
+	ManagerStaffSessionsRevoke = Route{Method: http.MethodPost, Path: ManagerPrefix + "/staff/{id}/sessions/revoke"}
+	ManagerInvitationAccept    = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/invitations/accept"}
+	ManagerSecurityAudit       = Route{Method: http.MethodGet, Path: ManagerPrefix + "/security/audit"}
+
 	ManagerLogin                  = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/login"}
 	ManagerLogout                 = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/logout"}
 	ManagerOperation              = Route{Method: http.MethodGet, Path: ManagerPrefix + "/operations/{id}"}
@@ -91,6 +101,7 @@ var (
 	Distribution      = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/distribution"}
 	DistributionTrace = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/distribution/trace"}
 	Routes            = []Route{
+		ManagerStaff, ManagerStaffCreate, ManagerStaffGrants, ManagerStaffMember, ManagerStaffUpdate, ManagerInvitationReissue, ManagerStaffSessionsRevoke, ManagerInvitationAccept, ManagerSecurityAudit,
 		ManagerLogin, ManagerLogout, ManagerMe, ManagerOperation, ManagerInstallations, ManagerReview,
 		ManagerFeed, ManagerAccountHistory,
 		ManagerAccounts,
