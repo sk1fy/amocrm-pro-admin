@@ -7,6 +7,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 
 	"github.com/sk1fy/amocrm-pro-admin/internal/apicontract"
+	"github.com/sk1fy/amocrm-pro-admin/internal/auth"
 )
 
 func TestOpenAPIContract(t *testing.T) {
@@ -45,11 +46,24 @@ func TestOpenAPIContract(t *testing.T) {
 		}
 	}
 
-	scheme := document.Components.SecuritySchemes["adminSession"]
-	if scheme == nil || scheme.Value == nil ||
-		scheme.Value.Type != "apiKey" || scheme.Value.In != "cookie" ||
-		scheme.Value.Name != "admin_session" {
-		t.Fatalf("adminSession security scheme = %+v, want cookie admin_session", scheme)
+	for name, cookie := range map[string]string{"adminSession": auth.CookieName, "managerSession": auth.ManagerCookieName} {
+		scheme := document.Components.SecuritySchemes[name]
+		if scheme == nil || scheme.Value == nil ||
+			scheme.Value.Type != "apiKey" || scheme.Value.In != "cookie" ||
+			scheme.Value.Name != cookie {
+			t.Fatalf("security scheme %s = %+v, want cookie %s", name, scheme, cookie)
+		}
+	}
+	managerSchema := document.Components.Schemas["ManagerMe"].Value
+	enum := managerSchema.Properties["grants"].Value.Items.Value.Enum
+	grants := auth.ManagerAdminGrants()
+	if len(enum) != len(grants) {
+		t.Fatalf("manager grant count = %d, want %d", len(enum), len(grants))
+	}
+	for i, grant := range grants {
+		if enum[i] != string(grant) {
+			t.Fatalf("manager grant at %d = %v, want %s", i, enum[i], grant)
+		}
 	}
 }
 

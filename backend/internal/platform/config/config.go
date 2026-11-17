@@ -31,6 +31,7 @@ type API struct {
 	DatabaseTimeout       time.Duration
 	DBMaxConns            int32
 	AdminPublicOrigin     string
+	ManagerPublicOrigin   string
 	SessionAbsoluteTTL    time.Duration
 	SessionIdleTTL        time.Duration
 	LoginRatePerMinute    int
@@ -124,6 +125,23 @@ func LoadAPI() (API, error) {
 		return API{}, fmt.Errorf("ADMIN_PUBLIC_ORIGIN must be an absolute URL")
 	}
 
+	managerOrigin := strings.TrimSpace(os.Getenv("MANAGERS_PUBLIC_ORIGIN"))
+	if managerOrigin != "" {
+		managerURL, err := parseBrowserOrigin(managerOrigin, environment)
+		if err != nil {
+			return API{}, fmt.Errorf("MANAGERS_PUBLIC_ORIGIN: %w", err)
+		}
+		adminURL, err := parseBrowserOrigin(origin, environment)
+		if err != nil {
+			return API{}, fmt.Errorf("ADMIN_PUBLIC_ORIGIN: %w", err)
+		}
+		if strings.EqualFold(managerURL.Hostname(), adminURL.Hostname()) {
+			return API{}, errors.New("MANAGERS_PUBLIC_ORIGIN and ADMIN_PUBLIC_ORIGIN must use different hostnames")
+		}
+		managerOrigin = managerURL.Scheme + "://" + managerURL.Host
+		origin = adminURL.Scheme + "://" + adminURL.Host
+	}
+
 	migrationsDir := strings.TrimSpace(os.Getenv("MIGRATIONS_DIR"))
 	if migrationsDir == "" {
 		migrationsDir = defaultMigrationsDir
@@ -148,6 +166,7 @@ func LoadAPI() (API, error) {
 		DatabaseTimeout:       databaseTimeout,
 		DBMaxConns:            int32(maxConns),
 		AdminPublicOrigin:     origin,
+		ManagerPublicOrigin:   managerOrigin,
 		SessionAbsoluteTTL:    absoluteTTL,
 		SessionIdleTTL:        idleTTL,
 		LoginRatePerMinute:    loginRate,
@@ -186,6 +205,33 @@ func LoadCLI() (CLI, error) {
 		return CLI{}, err
 	}
 	return CLI{DatabaseURL: databaseURL, DatabaseTimeout: timeout}, nil
+}
+
+func parseBrowserOrigin(raw, environment string) (*url.URL, error) {
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Hostname() == "" || parsed.User != nil ||
+		(parsed.Path != "" && parsed.Path != "/") || parsed.RawQuery != "" || parsed.ForceQuery ||
+		parsed.Fragment != "" || strings.Contains(raw, "#") {
+		return nil, errors.New("must be a browser origin")
+	}
+	if parsed.Scheme != "https" && (environment != envDevelopment || parsed.Scheme != "http") {
+		return nil, errors.New("must use HTTPS outside development")
+	}
+	parsed.Host = strings.ToLower(parsed.Host)
+	if port := parsed.Port(); port != "" {
+		value, err := strconv.Atoi(port)
+		if err != nil || value < 1 || value > 65_535 {
+			return nil, errors.New("must specify a valid TCP port")
+		}
+		if (parsed.Scheme == "https" && value == 443) || (parsed.Scheme == "http" && value == 80) {
+			parsed.Host = strings.TrimSuffix(parsed.Host, ":"+port)
+		} else {
+			parsed.Host = net.JoinHostPort(parsed.Hostname(), strconv.Itoa(value))
+		}
+	} else if strings.HasSuffix(parsed.Host, ":") {
+		return nil, errors.New("must specify a valid TCP port")
+	}
+	return parsed, nil
 }
 
 func NormalizeOrigin(origin string) string {

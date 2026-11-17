@@ -7,7 +7,12 @@ type Route struct {
 	Path   string
 }
 
+const ManagerPrefix = "/api/v1/managers"
+
 var (
+	ManagerLogin             = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/login"}
+	ManagerLogout            = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/logout"}
+	ManagerMe                = Route{Method: http.MethodGet, Path: ManagerPrefix + "/me"}
 	ConnectionCommand        = Route{Method: "POST", Path: "/api/v1/connections/{backend}/{connection_id}/commands/{command}"}
 	IntegrationCreateCommand = Route{Method: "POST", Path: "/api/v1/integrations/{backend}/commands/create"}
 	IntegrationCommand       = Route{Method: "POST", Path: "/api/v1/integrations/{backend}/{integration_id}/commands/{command}"}
@@ -57,6 +62,7 @@ var (
 	Distribution      = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/distribution"}
 	DistributionTrace = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/distribution/trace"}
 	Routes            = []Route{
+		ManagerLogin, ManagerLogout, ManagerMe,
 		Distribution, DistributionTrace,
 		ConnectionCommand, IntegrationCreateCommand, IntegrationCommand, JobRetry, DeliveryRetry, AdminOperations, AdminOperation,
 		AuthLogin,

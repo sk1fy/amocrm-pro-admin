@@ -25,20 +25,22 @@ import (
 const maxBodyBytes = 1 << 20
 
 type Dependencies struct {
-	Operations     *operations.Service
-	Employees      *employees.Store
-	Sessions       *auth.Service
-	Audit          *audit.Store
-	Views          *views.Store
-	Limiter        *auth.Limiter
-	PublicOrigin   string
-	GrafanaBaseURL string
-	LokiBaseURL    string
-	TrustProxy     bool
-	Logger         *slog.Logger
-	Timeout        time.Duration
-	Registry       *catalog.Registry
-	Accounts       *accounts.Service
+	Operations      *operations.Service
+	Employees       *employees.Store
+	Sessions        *auth.Service
+	ManagerSessions *auth.Service
+	ManagerOrigin   string
+	Audit           *audit.Store
+	Views           *views.Store
+	Limiter         *auth.Limiter
+	PublicOrigin    string
+	GrafanaBaseURL  string
+	LokiBaseURL     string
+	TrustProxy      bool
+	Logger          *slog.Logger
+	Timeout         time.Duration
+	Registry        *catalog.Registry
+	Accounts        *accounts.Service
 }
 
 type api struct {
@@ -178,6 +180,9 @@ func New(deps Dependencies) http.Handler {
 			r.Method(apicontract.ViewDelete.Method, apicontract.ViewDelete.Path, http.HandlerFunc(h.deleteView))
 		})
 	})
+	if deps.ManagerSessions != nil && deps.ManagerSessions.Audience() == auth.Managers && deps.ManagerOrigin != "" {
+		return browserHosts(deps.PublicOrigin, deps.ManagerOrigin, router, managers(deps))
+	}
 	return router
 }
 

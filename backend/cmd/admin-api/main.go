@@ -98,21 +98,27 @@ func run() error {
 		<-cleanupDone
 	}()
 
+	var managerSessions *auth.Service
+	if cfg.ManagerPublicOrigin != "" {
+		managerSessions = auth.NewManagerService(pool, cfg.DatabaseTimeout, cfg.SessionAbsoluteTTL, cfg.SessionIdleTTL, cfg.CookieSecure)
+	}
 	public := httpapi.New(httpapi.Dependencies{
-		Operations:     operationService,
-		Employees:      employeeStore,
-		Sessions:       sessionService,
-		Audit:          auditStore,
-		Views:          views.NewStore(pool, cfg.DatabaseTimeout),
-		Limiter:        limiter,
-		PublicOrigin:   cfg.AdminPublicOrigin,
-		GrafanaBaseURL: cfg.GrafanaBaseURL,
-		LokiBaseURL:    cfg.LokiBaseURL,
-		TrustProxy:     cfg.TrustProxy,
-		Logger:         logger,
-		Timeout:        cfg.DatabaseTimeout,
-		Registry:       registry,
-		Accounts:       accountService,
+		ManagerSessions: managerSessions,
+		ManagerOrigin:   cfg.ManagerPublicOrigin,
+		Operations:      operationService,
+		Employees:       employeeStore,
+		Sessions:        sessionService,
+		Audit:           auditStore,
+		Views:           views.NewStore(pool, cfg.DatabaseTimeout),
+		Limiter:         limiter,
+		PublicOrigin:    cfg.AdminPublicOrigin,
+		GrafanaBaseURL:  cfg.GrafanaBaseURL,
+		LokiBaseURL:     cfg.LokiBaseURL,
+		TrustProxy:      cfg.TrustProxy,
+		Logger:          logger,
+		Timeout:         cfg.DatabaseTimeout,
+		Registry:        registry,
+		Accounts:        accountService,
 	})
 	management := httpapi.Management(pool, cfg.DatabaseTimeout, logger)
 

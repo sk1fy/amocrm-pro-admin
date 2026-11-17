@@ -133,3 +133,35 @@ func TestLoadAPIRejectsInvalidTrustProxy(t *testing.T) {
 		t.Fatalf("error = %v", err)
 	}
 }
+
+func TestManagerOriginRequiresDedicatedHTTPSHost(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://admin:admin@example.invalid:5432/admin")
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("ADMIN_PUBLIC_ORIGIN", "https://admin.example.invalid")
+	for _, tc := range []struct {
+		origin string
+		want   string
+	}{
+		{"", ""},
+		{"https://MANAGERS.example.invalid:443/", "https://managers.example.invalid"},
+		{"https://managers.example.invalid:65536", "error"},
+		{"http://managers.example.invalid", "error"},
+		{"https://admin.example.invalid:444", "error"},
+		{"https://managers.example.invalid/path", "error"},
+		{"https://employee@managers.example.invalid", "error"},
+	} {
+		t.Run(tc.origin, func(t *testing.T) {
+			t.Setenv("MANAGERS_PUBLIC_ORIGIN", tc.origin)
+			cfg, err := LoadAPI()
+			if tc.want == "error" {
+				if err == nil || !strings.Contains(err.Error(), "MANAGERS_PUBLIC_ORIGIN") {
+					t.Fatalf("expected a manager origin error, got %v", err)
+				}
+				return
+			}
+			if err != nil || cfg.ManagerPublicOrigin != tc.want {
+				t.Fatalf("manager origin = %q, err = %v, want %q", cfg.ManagerPublicOrigin, err, tc.want)
+			}
+		})
+	}
+}

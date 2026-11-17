@@ -1,4 +1,5 @@
 dist
+dist-managers
 node_modules
 package-lock.json
 playwright-report

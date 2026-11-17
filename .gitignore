@@ -13,6 +13,7 @@ coverage.out
 # Node
 frontend/node_modules/
 frontend/dist/
+frontend/dist-managers/
 frontend/.vite/
 frontend/playwright-report/
 frontend/test-results/

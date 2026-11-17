@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	usage = "usage: admin-cli employee <create|set-role|disable|revoke-sessions> --email EMAIL [--name NAME --role ROLE --password-stdin --actor EMAIL]\n" +
+	usage = "usage: admin-cli employee <create|set-role|disable|revoke-sessions|bootstrap-manager> --email EMAIL [--name NAME --role ROLE --password-stdin --actor EMAIL]\n" +
 		"       admin-cli prune [--audit-before DATE] [--operations-before DATE] [--sessions-before DATE] [--confirm]"
 	minPasswordLength = 8
 )
@@ -133,6 +133,20 @@ func execute(
 	output io.Writer,
 ) error {
 	switch cmd.Action {
+	case "bootstrap-manager":
+		event := audit.Event{ActorEmail: cmd.Actor}
+		if cmd.Actor != "" {
+			actor, err := store.GetByEmail(ctx, cmd.Actor)
+			if err != nil {
+				return err
+			}
+			event.EmployeeID = &actor.ID
+		}
+		access := employees.NewAccess(store, sessions, audits)
+		if err := access.BootstrapManager(ctx, cmd.Email, event); err != nil {
+			return err
+		}
+		return json.NewEncoder(output).Encode(map[string]any{"ok": true, "email": cmd.Email})
 	case "create":
 		hash, err := auth.Hash(string(cmd.Password))
 		if err != nil {
@@ -290,7 +304,7 @@ func parseCommand(args []string, input io.Reader) (command, error) {
 		if !rbac.ValidRole(cmd.Role) || cmd.PasswordStdin {
 			return command{}, errors.New("set-role requires --email --role")
 		}
-	case "disable", "revoke-sessions":
+	case "disable", "revoke-sessions", "bootstrap-manager":
 		if cmd.PasswordStdin || cmd.Role != "" {
 			return command{}, errUsage
 		}

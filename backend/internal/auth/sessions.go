@@ -42,14 +42,16 @@ type Service struct {
 	absoluteTTL  time.Duration
 	idleTTL      time.Duration
 	cookieSecure bool
+	audience     Audience
 }
 
 type Account struct {
-	ID     uuid.UUID
-	Email  string
-	Name   string
-	Role   string
-	Status string
+	ID            uuid.UUID
+	Email         string
+	Name          string
+	Role          string
+	Status        string
+	ManagerGrants []ManagerGrant
 }
 
 type Session struct {
@@ -65,6 +67,7 @@ type Session struct {
 }
 
 type Principal struct {
+	Audience   Audience
 	SessionID  uuid.UUID
 	EmployeeID uuid.UUID
 	Account    Account
@@ -77,6 +80,7 @@ func NewService(pool *pgxpool.Pool, timeout, absoluteTTL, idleTTL time.Duration,
 		absoluteTTL:  absoluteTTL,
 		idleTTL:      idleTTL,
 		cookieSecure: cookieSecure,
+		audience:     CoreAdmin,
 	}
 }
 
@@ -97,12 +101,22 @@ func (s *Service) Login(ctx context.Context, email, password, ip, userAgent stri
 		}
 		return "", Account{}, err
 	}
-	hash := ""
-	if passwordHash != nil {
-		hash = *passwordHash
-	}
-	if hash == "" || !Verify(password, hash) || account.Status != StatusActive {
+	if passwordHash == nil || *passwordHash == "" {
+		_ = Verify(password, dummyPasswordHash())
 		return "", Account{}, ErrInvalidCredentials
+	}
+	if !Verify(password, *passwordHash) || account.Status != StatusActive {
+		return "", Account{}, ErrInvalidCredentials
+	}
+
+	if s.audience == Managers {
+		account.ManagerGrants, err = s.managerGrants(ctx, account.ID)
+		if err != nil {
+			return "", Account{}, err
+		}
+		if len(account.ManagerGrants) == 0 {
+			return "", Account{}, ErrInvalidCredentials
+		}
 	}
 
 	plain, tokenHash, err := NewToken()
@@ -111,9 +125,9 @@ func (s *Service) Login(ctx context.Context, email, password, ip, userAgent stri
 	}
 	expiresAt := time.Now().UTC().Add(s.absoluteTTL)
 	if _, err := s.pool.Exec(ctx, `
-		INSERT INTO sessions (employee_id, token_hash, expires_at, ip, user_agent)
-		VALUES ($1, $2, $3, $4, $5)`,
-		account.ID, tokenHash, expiresAt, inetArg(ip), truncateUA(userAgent),
+		INSERT INTO sessions (employee_id, token_hash, expires_at, ip, user_agent, audience)
+		VALUES ($1, $2, $3, $4, $5, $6)`,
+		account.ID, tokenHash, expiresAt, inetArg(ip), truncateUA(userAgent), s.audience,
 	); err != nil {
 		return "", Account{}, fmt.Errorf("create session: %w", err)
 	}
@@ -137,7 +151,7 @@ func (s *Service) Lookup(ctx context.Context, token string) (Principal, error) {
 		       e.email, e.name, e.role, e.status
 		FROM sessions s
 		JOIN employees e ON e.id = s.employee_id
-		WHERE s.token_hash = $1`, hash).Scan(
+		WHERE s.token_hash = $1 AND s.audience = $2`, hash, s.audience).Scan(
 		&principal.SessionID, &principal.EmployeeID, &lastSeen, &expiresAt, &revokedAt,
 		&principal.Account.Email, &principal.Account.Name, &principal.Account.Role, &status,
 	)
@@ -147,6 +161,7 @@ func (s *Service) Lookup(ctx context.Context, token string) (Principal, error) {
 		}
 		return Principal{}, fmt.Errorf("lookup session: %w", err)
 	}
+	principal.Audience = s.audience
 	principal.Account.ID = principal.EmployeeID
 	principal.Account.Status = status
 	now := time.Now().UTC()
@@ -158,6 +173,15 @@ func (s *Service) Lookup(ctx context.Context, token string) (Principal, error) {
 				WHERE id = $1 AND revoked_at IS NULL`, principal.SessionID, ReasonExpired)
 		}
 		return Principal{}, ErrUnauthenticated
+	}
+	if s.audience == Managers {
+		principal.Account.ManagerGrants, err = s.managerGrants(ctx, principal.EmployeeID)
+		if err != nil {
+			return Principal{}, err
+		}
+		if len(principal.Account.ManagerGrants) == 0 {
+			return Principal{}, ErrUnauthenticated
+		}
 	}
 	if now.Sub(lastSeen) >= time.Minute {
 		_, _ = s.pool.Exec(ctx, `
@@ -173,7 +197,7 @@ func (s *Service) Revoke(ctx context.Context, sessionID uuid.UUID, reason string
 	tag, err := s.pool.Exec(ctx, `
 		UPDATE sessions
 		SET revoked_at = now(), revoke_reason = $2
-		WHERE id = $1 AND revoked_at IS NULL`, sessionID, reason)
+		WHERE id = $1 AND audience = $3 AND revoked_at IS NULL`, sessionID, reason, s.audience)
 	if err != nil {
 		return fmt.Errorf("revoke session: %w", err)
 	}
@@ -193,7 +217,7 @@ func (s *Service) RevokeOwnedTx(ctx context.Context, db sessionExecutor, session
 	tag, err := db.Exec(ctx, `
 		UPDATE sessions
 		SET revoked_at = now(), revoke_reason = $3
-		WHERE id = $1 AND employee_id = $2 AND revoked_at IS NULL`, sessionID, employeeID, reason)
+		WHERE id = $1 AND employee_id = $2 AND audience = $4 AND revoked_at IS NULL`, sessionID, employeeID, reason, s.audience)
 	if err != nil {
 		return fmt.Errorf("revoke owned session: %w", err)
 	}
@@ -214,10 +238,16 @@ type sessionExecutor interface {
 }
 
 func (s *Service) RevokeAllTx(ctx context.Context, db sessionExecutor, employeeID uuid.UUID, reason string) error {
+	var audience *Audience
+	if reason == ReasonRoleChange {
+		core := CoreAdmin
+		audience = &core
+	}
 	if _, err := db.Exec(ctx, `
 		UPDATE sessions
 		SET revoked_at = now(), revoke_reason = $2
-		WHERE employee_id = $1 AND revoked_at IS NULL`, employeeID, reason); err != nil {
+		WHERE employee_id = $1 AND revoked_at IS NULL
+		  AND ($3::text IS NULL OR audience = $3)`, employeeID, reason, audience); err != nil {
 		return fmt.Errorf("revoke employee sessions: %w", err)
 	}
 	return nil
@@ -230,8 +260,8 @@ func (s *Service) ListOwn(ctx context.Context, employeeID uuid.UUID) ([]Session,
 		SELECT id, employee_id, created_at, last_seen_at, expires_at, revoked_at, revoke_reason,
 		       host(ip)::text, user_agent
 		FROM sessions
-		WHERE employee_id = $1
-		ORDER BY created_at DESC, id DESC`, employeeID)
+		WHERE employee_id = $1 AND audience = $2
+		ORDER BY created_at DESC, id DESC`, employeeID, s.audience)
 	if err != nil {
 		return nil, fmt.Errorf("list sessions: %w", err)
 	}
@@ -316,7 +346,7 @@ func (s *Service) ClearCookie(w http.ResponseWriter) {
 func (s *Service) cookie(value string, maxAge int) *http.Cookie {
 	if s.cookieSecure {
 		return &http.Cookie{
-			Name:     CookieName,
+			Name:     s.cookieName(),
 			Value:    value,
 			Path:     "/",
 			MaxAge:   maxAge,
@@ -325,12 +355,12 @@ func (s *Service) cookie(value string, maxAge int) *http.Cookie {
 			SameSite: http.SameSiteStrictMode,
 		}
 	}
-	return developmentCookie(value, maxAge)
+	return developmentCookie(s.cookieName(), value, maxAge)
 }
 
-func developmentCookie(value string, maxAge int) *http.Cookie {
+func developmentCookie(name, value string, maxAge int) *http.Cookie {
 	return &http.Cookie{ //nolint:gosec // G124: Secure is disabled only when APP_ENV=development
-		Name:     CookieName,
+		Name:     name,
 		Value:    value,
 		Path:     "/",
 		MaxAge:   maxAge,
