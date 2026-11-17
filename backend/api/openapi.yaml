@@ -29,7 +29,7 @@ paths:
       security: [{managerSession: []}]
       x-manager-grant: staff.manage
       parameters:
-        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/ManagerStaffLimit'
         - $ref: '#/components/parameters/Cursor'
         - name: search
           in: query
@@ -44,6 +44,8 @@ paths:
           $ref: '#/components/responses/InternalError'
     post:
       operationId: managerStaffCreate
+      x-manager-grants: [staff.manage, identity.manage]
+      description: Requires both staff.manage and identity.manage.
       security: [{managerSession: []}]
       x-manager-grant: staff.manage
       parameters:
@@ -86,6 +88,10 @@ paths:
       responses:
         '200':
           description: Successful local Admin operation.
+          headers:
+            ETag:
+              description: Strong quoted manager grants version for If-Match.
+              schema: {type: string}
           content:
             application/json:
               schema: {$ref: '#/components/schemas/ManagerStaffMember'}
@@ -117,6 +123,8 @@ paths:
   /api/v1/managers/staff/{id}/invitation/reissue:
     post:
       operationId: managerInvitationReissue
+      x-manager-grants: [staff.manage, identity.manage]
+      description: Requires both staff.manage and identity.manage.
       security: [{managerSession: []}]
       x-manager-grant: staff.manage
       parameters:
@@ -136,6 +144,8 @@ paths:
   /api/v1/managers/staff/{id}/sessions/revoke:
     post:
       operationId: managerStaffSessionsRevoke
+      x-manager-grants: [staff.manage, identity.manage]
+      description: Requires both staff.manage and identity.manage.
       security: [{managerSession: []}]
       x-manager-grant: staff.manage
       parameters:
@@ -155,7 +165,6 @@ paths:
     post:
       operationId: managerInvitationAccept
       security: []
-      x-manager-grant: staff.manage
       parameters:
         - $ref: '#/components/parameters/RequestedWith'
         - $ref: '#/components/parameters/ManagerOrigin'
@@ -178,7 +187,7 @@ paths:
       security: [{managerSession: []}]
       x-manager-grant: security.audit.read
       parameters:
-        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/ManagerStaffLimit'
         - $ref: '#/components/parameters/Cursor'
       responses:
         '200':
@@ -3857,6 +3866,10 @@ components:
       in: cookie
       name: manager_session
   parameters:
+    ManagerStaffLimit:
+      name: limit
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 100, default: 25}
     ManagerOrigin:
       name: Origin
       in: header
@@ -3997,6 +4010,7 @@ components:
         changed_by: {type: string, format: uuid, nullable: true}
     ManagerStaffPage:
       type: object
+      additionalProperties: false
       required: [items, next_cursor]
       properties:
         items: {type: array, items: {$ref: '#/components/schemas/ManagerStaffMember'}}
@@ -4051,6 +4065,7 @@ components:
         created_at: {type: string, format: date-time}
     ManagerSecurityAuditPage:
       type: object
+      additionalProperties: false
       required: [items, next_cursor]
       properties:
         items: {type: array, items: {$ref: '#/components/schemas/ManagerSecurityAuditEntry'}}
