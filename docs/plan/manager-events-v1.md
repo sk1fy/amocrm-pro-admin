@@ -58,4 +58,29 @@ AccountWidgets. Все страницы сохраняют один `snapshot_at
 
 ## Отчёт
 
-Результаты реализации и сквозной проверки добавляются после приёмки A06.
+Локальная приёмка выполнена на Admin `1bf5a45` и Platform `093cdb5`.
+Контракты добавлены в `4335661`, `ef13c08`, BFF — в `9476264`.
+
+`sh /tmp/rakurs-v1-a06-live/run.sh` запустил настоящие Core, Go-воркер,
+Gateway, две реплики Platform, Admin, три PostgreSQL 17 и Chromium.
+Для одной установки создано 101 поколение через Core lifecycle.
+Ссылка review-события открыла исходный закрытый эпизод со второй страницы
+по 100 строк. Ссылки аккаунта и продукта открыли свои карточки.
+Review, изменение профиля и продление сохранили исходные UUID.
+
+Chromium выполнил два сценария до и два после перезапуска Admin и Platform.
+Подтверждены фильтры по дням, пустой результат активаций, курсор, возврат,
+явное обновление, независимые grants и прямые серверные запреты.
+Сотрудник только с `feed.read` получил события с пустыми разрешёнными ссылками.
+
+`sh /tmp/rakurs-v1-a06-review.sh` выполнил
+`TestManagerEventsGrantAndRevocationBoundary` с `-race` на обычном PostgreSQL.
+Проверены отзыв права во время вызова, 429 с Retry-After, 503 и invalid_cursor.
+`go test -race ./api ./internal/managerplatform`, проверка генерации,
+frontend lint, manager build и все 34 manager-теста прошли.
+Независимое ревью Astra приняло `1bf5a45` без блокирующих замечаний.
+
+Логи приёмки сохранены локально в `/tmp/rakurs-v1-a06-browser.log`,
+`/tmp/rakurs-v1-a06-boundary.log`, `/tmp/rakurs-v1-a06-manager-tests.log`
+и `/tmp/rakurs-v1-a06-lint.log`. Общие проверки выпуска выполняются
+в P11, A08 и A09. Production-развёртывание требует отдельного подтверждения.
