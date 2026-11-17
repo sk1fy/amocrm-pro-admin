@@ -515,3 +515,46 @@ func TestManagerStaffSelfEscalationAndPrivilegeAndExistingIdentity(t *testing.T)
 		t.Fatalf("duplicate grant accepted %v", err)
 	}
 }
+
+func TestManagerStaffQueuedCommandChecksCurrentExpiry(t *testing.T) {
+	f := newStaffFixture(t)
+	ctx := context.Background()
+	command, _, _ := f.invite(t, "expiry@example.invalid", []auth.ManagerGrant{auth.GrantClientsRead})
+	tx, err := f.pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if _, err := tx.Exec(ctx, `LOCK TABLE manager_grants IN SHARE ROW EXCLUSIVE MODE`); err != nil {
+		t.Fatal(err)
+	}
+	expires := time.Now().Add(250 * time.Millisecond)
+	if _, err := tx.Exec(ctx, `UPDATE sessions SET expires_at=$2 WHERE id=$1`, f.p.SessionID, expires); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { _, _, err := f.access.ManagerStaffCommand(ctx, command); done <- err }()
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		var waiting bool
+		if err := f.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE 'LOCK TABLE manager_grants%')`).Scan(&waiting); err != nil {
+			t.Fatal(err)
+		}
+		if waiting {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("command never queued")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if delay := time.Until(expires.Add(30 * time.Millisecond)); delay > 0 {
+		time.Sleep(delay)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; !errors.Is(err, auth.ErrUnauthenticated) {
+		t.Fatalf("queued command accepted expired session %v", err)
+	}
+}

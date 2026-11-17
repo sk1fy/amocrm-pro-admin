@@ -127,7 +127,7 @@ func (s *Service) ManagerSnapshotTx(ctx context.Context, db interface {
         ARRAY(SELECT grant_code FROM manager_grants WHERE employee_id = e.id ORDER BY grant_code), s.token_hash
         FROM sessions s JOIN employees e ON e.id = s.employee_id
         WHERE s.id = $1 AND s.audience = 'managers' AND s.revoked_at IS NULL
-        AND s.expires_at > now() AND s.last_seen_at > now() - ($2 * interval '1 millisecond')
+        AND s.expires_at > clock_timestamp() AND s.last_seen_at > clock_timestamp() - ($2 * interval '1 millisecond')
         AND e.status = 'active' AND NULLIF(e.password_hash, '') IS NOT NULL`, sessionID, s.idleTTL.Milliseconds()).Scan(
 		&p.SessionID, &p.EmployeeID, &p.Account.Email, &p.Account.Name, &p.Account.ManagerGrantsVersion, &p.Account.ManagerGrants, &key)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && len(p.Account.ManagerGrants) == 0) {

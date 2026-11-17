@@ -332,7 +332,7 @@ func (s *Access) AcceptManagerInvitation(ctx context.Context, token, password st
 		}
 		var invitationID uuid.UUID
 		err = tx.QueryRow(ctx, `SELECT i.id FROM manager_invitations i JOIN employees e ON e.id=i.employee_id
-    WHERE i.token_hash=$1 AND i.consumed_at IS NULL AND i.revoked_at IS NULL AND i.expires_at>now()
+    WHERE i.token_hash=$1 AND i.consumed_at IS NULL AND i.revoked_at IS NULL AND i.expires_at>clock_timestamp()
     AND NOT e.technical_access AND e.password_hash IS NULL AND e.status='active'
     AND EXISTS(SELECT 1 FROM manager_grants WHERE employee_id=e.id) FOR UPDATE OF i`, hash).Scan(&invitationID)
 		if errors.Is(err, pgx.ErrNoRows) {

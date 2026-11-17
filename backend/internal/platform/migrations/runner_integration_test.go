@@ -27,9 +27,10 @@ func TestMigratorLifecycle(t *testing.T) {
 	if err := runner.Up(ctx); err != nil {
 		t.Fatalf("up: %v", err)
 	}
+	testkit.Reset(t, pool)
 	assertAppTables(t, pool, true)
-	if count := migrationCount(t, pool); count != 8 {
-		t.Fatalf("applied = %d, want 8", count)
+	if count := migrationCount(t, pool); count != 11 {
+		t.Fatalf("applied = %d, want 11", count)
 	}
 
 	if err := migrations.RequireDownConfirmation(func(string) string { return "" }); err == nil {
@@ -65,8 +66,8 @@ func TestMigratorLifecycle(t *testing.T) {
 			t.Fatalf("parallel up: %v", err)
 		}
 	}
-	if count := migrationCount(t, pool); count != 8 {
-		t.Fatalf("parallel up applied = %d, want 8", count)
+	if count := migrationCount(t, pool); count != 11 {
+		t.Fatalf("parallel up applied = %d, want 11", count)
 	}
 	assertAppTables(t, pool, true)
 	if err := runner.EnsureCurrent(ctx); err != nil {
@@ -118,6 +119,7 @@ func TestManagerAudiencePreservesLegacySession(t *testing.T) {
 		}
 	})
 	ctx := t.Context()
+	testkit.Reset(t, pool)
 	if err := runner.Down(ctx); err != nil {
 		t.Fatal(err)
 	}
