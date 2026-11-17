@@ -51,6 +51,7 @@ type Account struct {
 	Name                 string
 	Role                 string
 	Status               string
+	TechnicalAccess      bool
 	ManagerGrants        []ManagerGrant
 	ManagerGrantsVersion int64
 }
@@ -106,7 +107,7 @@ func (s *Service) Login(ctx context.Context, email, password, ip, userAgent stri
 		_ = Verify(password, dummyPasswordHash())
 		return "", Account{}, ErrInvalidCredentials
 	}
-	if !Verify(password, *passwordHash) || account.Status != StatusActive {
+	if !Verify(password, *passwordHash) || account.Status != StatusActive || (s.audience == CoreAdmin && !account.TechnicalAccess) {
 		return "", Account{}, ErrInvalidCredentials
 	}
 
@@ -156,7 +157,7 @@ func (s *Service) Lookup(ctx context.Context, token string) (Principal, error) {
 		       e.email, e.name, e.role, e.status
 		FROM sessions s
 		JOIN employees e ON e.id = s.employee_id
-		WHERE s.token_hash = $1 AND s.audience = $2`, hash, s.audience).Scan(
+		WHERE s.token_hash = $1 AND s.audience = $2 AND e.technical_access`, hash, s.audience).Scan(
 		&principal.SessionID, &principal.EmployeeID, &lastSeen, &expiresAt, &revokedAt,
 		&principal.Account.Email, &principal.Account.Name, &principal.Account.Role, &status,
 	)
@@ -370,10 +371,10 @@ func (s *Service) lookupByEmail(ctx context.Context, email string) (Account, *st
 	var account Account
 	var hash *string
 	err := s.pool.QueryRow(ctx, `
-		SELECT id, email, name, role, status, password_hash
+		SELECT id, email, name, role, status, password_hash, technical_access
 		FROM employees
 		WHERE email = $1`, email).Scan(
-		&account.ID, &account.Email, &account.Name, &account.Role, &account.Status, &hash,
+		&account.ID, &account.Email, &account.Name, &account.Role, &account.Status, &hash, &account.TechnicalAccess,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -497,4 +498,13 @@ func truncateUA(value string) any {
 		value = value[:512]
 	}
 	return value
+}
+
+func (s *Service) ManagerRevokeAudienceTx(ctx context.Context, tx pgx.Tx, employeeID uuid.UUID) error {
+	_, err := tx.Exec(ctx, `UPDATE sessions SET revoked_at = now(), revoke_reason = $2
+        WHERE employee_id = $1 AND audience = 'managers' AND revoked_at IS NULL`, employeeID, ReasonAdmin)
+	if err != nil {
+		return fmt.Errorf("revoke manager sessions: %w", err)
+	}
+	return nil
 }

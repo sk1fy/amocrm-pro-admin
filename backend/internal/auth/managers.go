@@ -95,7 +95,7 @@ func (s *Service) lookupManager(ctx context.Context, hash []byte, sessionID *uui
 		JOIN employees e ON e.id = s.employee_id
 		WHERE (($1::bytea IS NOT NULL AND s.token_hash = $1)
 		       OR ($2::uuid IS NOT NULL AND s.id = $2))
-		  AND s.audience = 'managers' AND e.status = 'active'
+		  AND s.audience = 'managers' AND e.status = 'active' AND NULLIF(e.password_hash,'') IS NOT NULL
 		  AND s.revoked_at IS NULL AND s.expires_at > now()
 		  AND s.last_seen_at > now() - ($3 * interval '1 millisecond')`,
 		hash, sessionID, s.idleTTL.Milliseconds(),
@@ -115,4 +115,27 @@ func (s *Service) lookupManager(ctx context.Context, hash []byte, sessionID *uui
 			WHERE id = $1 AND revoked_at IS NULL AND last_seen_at <= now() - interval '1 minute'`, principal.SessionID)
 	}
 	return principal, nil
+}
+
+// ManagerSnapshotTx rechecks the live session using the caller's transaction.
+func (s *Service) ManagerSnapshotTx(ctx context.Context, db interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}, sessionID uuid.UUID) (Principal, []byte, error) {
+	var p Principal
+	var key []byte
+	err := db.QueryRow(ctx, `SELECT s.id, e.id, e.email, e.name, e.manager_grants_version,
+        ARRAY(SELECT grant_code FROM manager_grants WHERE employee_id = e.id ORDER BY grant_code), s.token_hash
+        FROM sessions s JOIN employees e ON e.id = s.employee_id
+        WHERE s.id = $1 AND s.audience = 'managers' AND s.revoked_at IS NULL
+        AND s.expires_at > now() AND s.last_seen_at > now() - ($2 * interval '1 millisecond')
+        AND e.status = 'active' AND NULLIF(e.password_hash, '') IS NOT NULL`, sessionID, s.idleTTL.Milliseconds()).Scan(
+		&p.SessionID, &p.EmployeeID, &p.Account.Email, &p.Account.Name, &p.Account.ManagerGrantsVersion, &p.Account.ManagerGrants, &key)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && len(p.Account.ManagerGrants) == 0) {
+		return Principal{}, nil, ErrUnauthenticated
+	}
+	if err != nil {
+		return Principal{}, nil, fmt.Errorf("check manager actor: %w", err)
+	}
+	p.Audience, p.Account.ID = Managers, p.EmployeeID
+	return p, key, nil
 }

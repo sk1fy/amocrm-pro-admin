@@ -57,7 +57,7 @@ func (s *Access) BootstrapManager(ctx context.Context, email string, event audit
 			return fmt.Errorf("grant first manager administrator access: %w", err)
 		}
 		if _, err := tx.Exec(ctx, `
-			UPDATE employees SET manager_grants_version = manager_grants_version + 1
+			UPDATE employees SET manager_grants_version = manager_grants_version + 1, manager_changed_at=now()
 			WHERE id = $1`, employeeID); err != nil {
 			return fmt.Errorf("advance manager grants version: %w", err)
 		}

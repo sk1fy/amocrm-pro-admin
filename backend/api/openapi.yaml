@@ -166,6 +166,7 @@ paths:
       operationId: managerInvitationAccept
       security: []
       parameters:
+        - $ref: '#/components/parameters/ManagerIdempotencyKey'
         - $ref: '#/components/parameters/RequestedWith'
         - $ref: '#/components/parameters/ManagerOrigin'
       requestBody:

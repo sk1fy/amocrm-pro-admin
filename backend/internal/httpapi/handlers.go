@@ -319,6 +319,11 @@ func (h *api) patchEmployee(w http.ResponseWriter, r *http.Request) {
 		Name: body.Name, Role: body.Role, Status: body.Status,
 	}, h.accessEvent(r))
 	if err != nil {
+		if errors.Is(err, employees.ErrLastManagerAdmin) {
+			writeManagerStaffError(w, r, err)
+			return
+		}
+
 		if errors.Is(err, employees.ErrNotFound) {
 			httpx.WriteError(w, r, httpx.NotFound("employee not found"))
 			return

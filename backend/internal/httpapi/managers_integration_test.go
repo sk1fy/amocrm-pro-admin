@@ -157,6 +157,12 @@ func TestManagerSessionBoundary(t *testing.T) {
 	}
 	managerCookie = cookie(login(apicontract.ManagerLogin, managerOrigin, manager.Email, http.StatusOK), auth.ManagerCookieName)
 	disabled := auth.StatusDisabled
+	if _, err := access.Update(ctx, manager.ID, employees.UpdateInput{Status: &disabled}, audit.Event{}); !errors.Is(err, employees.ErrLastManagerAdmin) {
+		t.Fatalf("last manager administrator disable = %v", err)
+	}
+	if _, err := pool.Exec(ctx, "INSERT INTO manager_grants(employee_id,grant_code) VALUES($1,$2)", technical.ID, auth.GrantStaffManage); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := access.Update(ctx, manager.ID, employees.UpdateInput{Status: &disabled}, audit.Event{}); err != nil {
 		t.Fatal(err)
 	}

@@ -40,6 +40,8 @@ func managers(deps Dependencies) http.Handler {
 	router.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteError(w, r, httpx.InvalidArgument("method not allowed"))
 	})
+	staff := managerStaffHandler{access: h.access, origin: deps.ManagerOrigin}
+	router.Method(apicontract.ManagerInvitationAccept.Method, apicontract.ManagerInvitationAccept.Path, staff.accept(deps.Limiter, deps.TrustProxy))
 	router.Method(apicontract.ManagerLogin.Method, apicontract.ManagerLogin.Path, http.HandlerFunc(h.login))
 	router.Group(func(r chi.Router) {
 		r.Use(deps.ManagerSessions.Middleware)
@@ -49,6 +51,7 @@ func managers(deps Dependencies) http.Handler {
 		r.Method(apicontract.ManagerReview.Method, apicontract.ManagerReview.Path, managerInstallationReview(deps.ManagerPlatform))
 		r.Method(apicontract.ManagerOperation.Method, apicontract.ManagerOperation.Path, managerOperation(deps.ManagerPlatform))
 		registerManagerAccounts(r, deps.ManagerPlatform)
+		registerManagerStaff(r, staff)
 	})
 	return router
 }

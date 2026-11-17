@@ -180,27 +180,9 @@ func execute(
 		if err != nil {
 			return err
 		}
-		updated, _, _, err := store.Update(ctx, emp.ID, employees.UpdateInput{Role: &cmd.Role})
+		actorID, actorEmail := resolveActor(ctx, store, cmd.Actor, emp)
+		updated, err := employees.NewAccess(store, sessions, audits).Update(ctx, emp.ID, employees.UpdateInput{Role: &cmd.Role}, audit.Event{EmployeeID: actorID, ActorEmail: actorEmail})
 		if err != nil {
-			return err
-		}
-		if err := sessions.RevokeAll(ctx, updated.ID, auth.ReasonRoleChange); err != nil {
-			return err
-		}
-		actorID, actorEmail := resolveActor(ctx, store, cmd.Actor, updated)
-		if err := audits.Record(ctx, audit.Event{
-			EmployeeID: actorID,
-			ActorEmail: actorEmail,
-			Action:     audit.ActionEmployeeUpdate,
-			ObjectType: "employee",
-			ObjectRef:  "employee:" + updated.ID.String(),
-			Metadata: map[string]any{
-				"changed": []string{"role"},
-				"from":    map[string]any{"role": emp.Role},
-				"to":      map[string]any{"role": updated.Role},
-				"source":  "cli",
-			},
-		}); err != nil {
 			return err
 		}
 		return json.NewEncoder(output).Encode(map[string]any{
@@ -212,22 +194,9 @@ func execute(
 			return err
 		}
 		status := auth.StatusDisabled
-		updated, _, _, err := store.Update(ctx, emp.ID, employees.UpdateInput{Status: &status})
+		actorID, actorEmail := resolveActor(ctx, store, cmd.Actor, emp)
+		updated, err := employees.NewAccess(store, sessions, audits).Update(ctx, emp.ID, employees.UpdateInput{Status: &status}, audit.Event{EmployeeID: actorID, ActorEmail: actorEmail})
 		if err != nil {
-			return err
-		}
-		if err := sessions.RevokeAll(ctx, updated.ID, auth.ReasonDisabled); err != nil {
-			return err
-		}
-		actorID, actorEmail := resolveActor(ctx, store, cmd.Actor, updated)
-		if err := audits.Record(ctx, audit.Event{
-			EmployeeID: actorID,
-			ActorEmail: actorEmail,
-			Action:     audit.ActionEmployeeDisable,
-			ObjectType: "employee",
-			ObjectRef:  "employee:" + updated.ID.String(),
-			Metadata:   map[string]any{"changed": []string{"status"}, "source": "cli"},
-		}); err != nil {
 			return err
 		}
 		return json.NewEncoder(output).Encode(map[string]any{
