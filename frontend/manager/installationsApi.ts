@@ -53,7 +53,7 @@ const installationsPath = managerApi + '/installations'
 const uuidPattern = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i
 const nilUUID = '00000000-0000-0000-0000-000000000000'
 
-function isUUID(value: unknown): value is string {
+export function isUUID(value: unknown): value is string {
   return typeof value === 'string' && uuidPattern.test(value) && value !== nilUUID
 }
 
@@ -65,7 +65,7 @@ function isOperationId(value: unknown): value is OperationId {
   return isUUID(value)
 }
 
-function isAmoAccountId(value: unknown): value is AmoAccountId {
+export function isAmoAccountId(value: unknown): value is AmoAccountId {
   return (
     typeof value === 'string' &&
     /^[1-9][0-9]{0,18}$/.test(value) &&
@@ -77,7 +77,7 @@ function invalidResponse(): never {
   throw new Error('invalid manager installation response')
 }
 
-function record(value: unknown): Record<string, unknown> {
+export function record(value: unknown): Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) invalidResponse()
   return { ...value }
 }
@@ -87,7 +87,7 @@ function string(value: unknown): string {
   return value
 }
 
-function date(value: unknown): string {
+export function date(value: unknown): string {
   if (typeof value !== 'string' || !value.includes('T') || !Number.isFinite(Date.parse(value))) {
     invalidResponse()
   }
@@ -98,12 +98,12 @@ function nullableDate(value: unknown): string | null {
   return value === null ? null : date(value)
 }
 
-function integer(value: unknown, min: number): number {
+export function integer(value: unknown, min: number): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < min) invalidResponse()
   return value
 }
 
-function parseInstallation(value: unknown): Installation {
+export function parseInstallation(value: unknown): Installation {
   const item = record(value)
   const review = record(item.review)
   const access = record(item.access)

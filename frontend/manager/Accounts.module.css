@@ -1,0 +1,134 @@
+.workspace {
+  display: grid;
+  gap: 20px;
+}
+
+.heading,
+.results,
+.form,
+.observation {
+  display: grid;
+  gap: 12px;
+}
+
+.heading p,
+.observation p,
+.results p {
+  margin: 0;
+}
+
+.heading h1,
+.heading h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.toolbar,
+.tabs,
+.actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tabs {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 10px;
+}
+
+.tabs a[aria-current='page'] {
+  font-weight: 700;
+}
+
+.filters,
+.fields {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+}
+
+.form label,
+.filters label {
+  display: grid;
+  gap: 4px;
+}
+
+.form input,
+.form select,
+.form textarea,
+.filters input,
+.filters select {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.panel {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.panel summary {
+  cursor: pointer;
+}
+
+.panel h3 {
+  margin-top: 0;
+}
+
+.form input,
+.form select,
+.form textarea,
+.filters input,
+.filters select,
+.workspace button {
+  font: inherit;
+  padding: 6px 10px;
+}
+
+.meta {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.tableScroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  border-collapse: collapse;
+  min-width: max-content;
+  width: 100%;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.facts {
+  display: grid;
+  gap: 4px 12px;
+  grid-template-columns: max-content minmax(0, 1fr);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.form textarea {
+  min-height: 90px;
+}
+
+.form fieldset {
+  min-width: 0;
+}
+
+.form fieldset:disabled {
+  opacity: 0.75;
+}

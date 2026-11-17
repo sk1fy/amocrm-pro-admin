@@ -6,6 +6,7 @@ export class ApiError extends Error {
   readonly requestId: string
   readonly detailCode?: string
   readonly retryNotBefore?: number
+  readonly currentVersion?: number
 
   constructor(
     status: number,
@@ -14,6 +15,7 @@ export class ApiError extends Error {
     requestId: string,
     detailCode?: string,
     retryNotBefore?: number,
+    currentVersion?: number,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -22,6 +24,7 @@ export class ApiError extends Error {
     this.requestId = requestId
     this.detailCode = detailCode
     this.retryNotBefore = retryNotBefore
+    this.currentVersion = currentVersion
   }
 }
 
@@ -81,6 +84,14 @@ async function parseError(response: Response): Promise<ApiError> {
           ? details.code
           : undefined,
         retryNotBefore,
+        typeof details === 'object' &&
+        details !== null &&
+        'current_version' in details &&
+        typeof details.current_version === 'number' &&
+        Number.isSafeInteger(details.current_version) &&
+        details.current_version > 0
+          ? details.current_version
+          : undefined,
       )
     }
   } catch {
@@ -126,13 +137,14 @@ export async function apiFetchResponse<T>(path: string, init: RequestInit = {}) 
   if (!response.ok) {
     throw await parseError(response)
   }
+  const etag = response.headers.get('ETag')
   if (response.status === 204) {
-    return { data: undefined as T, status: response.status, retryNotBefore: undefined }
+    return { data: undefined as T, status: response.status, etag, retryNotBefore: undefined }
   }
   const retryNotBefore = response.status === 202 ? retryDeadline(response.headers) : undefined
   const data = (await response.json()) as T
   signal.throwIfAborted()
-  return { data, status: response.status, retryNotBefore }
+  return { data, status: response.status, etag, retryNotBefore }
 }
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {

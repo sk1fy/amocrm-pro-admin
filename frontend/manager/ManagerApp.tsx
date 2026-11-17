@@ -3,6 +3,10 @@ import { useCallback, useState, type FormEvent } from 'react'
 import { clearSession } from '../src/app/session'
 import { BrandLogo } from '../src/components/BrandLogo'
 import { loginErrorMessage } from '../src/states/login'
+import { ManagerAccountCard } from './AccountCard'
+import { AccountCommands } from './accountCommands'
+import { AccountsPage } from './AccountsPage'
+import { getAccountLocation, listSearch, ManagerLink } from './accountsLocation'
 import { InstallationsPage } from './InstallationsPage'
 import { useManagerLocation } from './installationsLocation'
 import { fetchManager, loginManager, logoutManager } from './session'
@@ -60,7 +64,9 @@ export function ManagerApp() {
     const params = new URLSearchParams(location.search)
     const section = params.get('section')
     const installations = section === null || section === 'installations'
-    params.set('section', 'installations')
+    const clients = section === 'clients'
+    const selected = getAccountLocation(location.search)
+    const canRead = manager.grants.includes('clients.read')
     return (
       <>
         <header className={styles.header}>
@@ -70,9 +76,20 @@ export function ManagerApp() {
               <span>Ракурс</span>
             </div>
             <nav aria-label="Кабинет менеджеров">
-              <a href={'?' + params.toString()} aria-current={installations ? 'page' : undefined}>
+              <ManagerLink
+                search={listSearch(location.search, 'installations')}
+                navigate={location.navigate}
+                current={installations}
+              >
                 Установки
-              </a>
+              </ManagerLink>
+              <ManagerLink
+                search={listSearch(location.search, 'clients')}
+                navigate={location.navigate}
+                current={clients}
+              >
+                Клиенты
+              </ManagerLink>
             </nav>
             <div className={styles.identity}>
               <span>{manager.name}</span>
@@ -84,28 +101,49 @@ export function ManagerApp() {
         </header>
         <main className={styles.workspace}>
           {logout.isError ? <p role="alert">Не удалось выйти. Повторите попытку.</p> : null}
-          {logout.isPending ? (
-            <p role="status">Завершаем сеанс…</p>
-          ) : !installations ? (
-            <>
-              <h1>{section === 'staff' ? 'Сотрудники' : 'Кабинет менеджеров'}</h1>
-              <p>Раздел пока недоступен.</p>
-            </>
-          ) : !manager.grants.includes('clients.read') ? (
-            <>
-              <h1>Установки</h1>
-              <p role="alert">Нет доступа к установкам.</p>
-            </>
-          ) : (
-            <InstallationsPage
-              key={scope}
-              {...location}
-              scope={scope}
-              canWrite={manager.grants.includes('clients.write')}
-              onExpired={expire}
-              onForbidden={checkGrants}
-            />
-          )}
+          {logout.isPending ? <p role="status">Завершаем сеанс…</p> : null}
+          <div hidden={logout.isPending}>
+            <AccountCommands key={scope}>
+              {!installations && !clients ? (
+                <>
+                  <h1>{section === 'staff' ? 'Сотрудники' : 'Кабинет менеджеров'}</h1>
+                  <p>Раздел пока недоступен.</p>
+                </>
+              ) : !canRead ? (
+                <>
+                  <h1>{clients ? 'Клиенты' : 'Установки'}</h1>
+                  <p role="alert">
+                    {clients || selected ? 'Нет доступа к клиентам.' : 'Нет доступа к установкам.'}
+                  </p>
+                </>
+              ) : selected ? (
+                <ManagerAccountCard
+                  key={selected.id}
+                  {...location}
+                  selected={selected}
+                  scope={scope}
+                  grants={manager.grants}
+                  onExpired={expire}
+                  onForbidden={checkGrants}
+                />
+              ) : clients ? (
+                <AccountsPage
+                  {...location}
+                  scope={scope}
+                  onExpired={expire}
+                  onForbidden={checkGrants}
+                />
+              ) : (
+                <InstallationsPage
+                  {...location}
+                  scope={scope}
+                  canWrite={manager.grants.includes('clients.write')}
+                  onExpired={expire}
+                  onForbidden={checkGrants}
+                />
+              )}
+            </AccountCommands>
+          </div>
         </main>
       </>
     )

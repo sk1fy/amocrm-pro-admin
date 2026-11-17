@@ -47,14 +47,18 @@ export function useManagerLocation() {
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
 
-  function updateFilters(update: FilterUpdate, replace = false) {
+  function navigate(search: string, replace = false) {
     const url = new URL(window.location.href)
-    url.search = updateInstallationSearch(url.search, update)
+    url.search = search
     if (url.href === window.location.href) return
     if (replace) window.history.replaceState(null, '', url)
     else window.history.pushState(null, '', url)
     setSearch(url.search)
   }
 
-  return { search, updateFilters }
+  function updateFilters(update: FilterUpdate, replace = false) {
+    navigate(updateInstallationSearch(window.location.search, update), replace)
+  }
+
+  return { search, updateFilters, navigate }
 }

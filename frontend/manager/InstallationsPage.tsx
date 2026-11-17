@@ -5,6 +5,7 @@ import { DataTablePager } from '../src/components/DataTable'
 import { EmptyState } from '../src/components/EmptyState'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { EMPTY, formatTime } from '../src/lib/format'
+import { accountSearch, ManagerLink } from './accountsLocation'
 import { InstallationFilters } from './InstallationFilters'
 import { listInstallations, type Installation } from './installationsApi'
 import { getInstallationSearch, type useManagerLocation } from './installationsLocation'
@@ -34,10 +35,23 @@ function ReviewBadge({ row }: { row: Installation }) {
   )
 }
 
-function AccountCard({ row, snapshot }: { row: Installation; snapshot: string }) {
+function AccountCard({
+  row,
+  snapshot,
+  search,
+  navigate,
+}: {
+  row: Installation
+  snapshot: string
+  search: string
+  navigate: Props['navigate']
+}) {
   return (
     <section className={styles.accountCard} aria-labelledby={'account-' + row.id}>
       <h2 id={'account-' + row.id}>Аккаунт amoCRM {row.amo_account_id}</h2>
+      <ManagerLink search={accountSearch(search, row.account_id)} navigate={navigate}>
+        Открыть карточку клиента
+      </ManagerLink>
       <div className={styles.cardFacts}>
         <div>
           <h3>Установка</h3>
@@ -139,6 +153,7 @@ function AccountCard({ row, snapshot }: { row: Installation; snapshot: string })
 export function InstallationsPage({
   search,
   updateFilters,
+  navigate,
   scope,
   canWrite,
   onExpired,
@@ -387,7 +402,12 @@ export function InstallationsPage({
                               {selected ? (
                                 <tr>
                                   <td className={styles.detailCell} colSpan={6}>
-                                    <AccountCard row={row} snapshot={snapshot.source.observed_at} />
+                                    <AccountCard
+                                      row={row}
+                                      snapshot={snapshot.source.observed_at}
+                                      search={search}
+                                      navigate={navigate}
+                                    />
                                   </td>
                                 </tr>
                               ) : null}

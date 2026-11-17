@@ -78,6 +78,7 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
   freshness: {
     fresh: { tone: 'ok', label: 'Актуально' },
     stale: { tone: 'attention', label: 'Данные устарели' },
+    unsupported: { tone: 'off', label: 'Источник не поддерживается' },
     unavailable: { tone: 'error', label: 'Источник недоступен' },
     unknown: { tone: 'unknown', label: 'Нет данных' },
   },
