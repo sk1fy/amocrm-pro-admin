@@ -14,6 +14,7 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/auth"
 	"github.com/sk1fy/amocrm-pro-admin/internal/catalog"
 	"github.com/sk1fy/amocrm-pro-admin/internal/employees"
+	"github.com/sk1fy/amocrm-pro-admin/internal/managerplatform"
 	"github.com/sk1fy/amocrm-pro-admin/internal/operations"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/jsonbody"
@@ -29,6 +30,7 @@ type Dependencies struct {
 	Employees       *employees.Store
 	Sessions        *auth.Service
 	ManagerSessions *auth.Service
+	ManagerPlatform *managerplatform.Service
 	ManagerOrigin   string
 	Audit           *audit.Store
 	Views           *views.Store

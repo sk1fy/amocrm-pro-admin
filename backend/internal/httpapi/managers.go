@@ -45,6 +45,7 @@ func managers(deps Dependencies) http.Handler {
 		r.Use(deps.ManagerSessions.Middleware)
 		r.Method(apicontract.ManagerLogout.Method, apicontract.ManagerLogout.Path, http.HandlerFunc(h.logout))
 		r.Method(apicontract.ManagerMe.Method, apicontract.ManagerMe.Path, http.HandlerFunc(managerMe))
+		r.Method(apicontract.ManagerOperation.Method, apicontract.ManagerOperation.Path, managerOperation(deps.ManagerPlatform))
 	})
 	return router
 }

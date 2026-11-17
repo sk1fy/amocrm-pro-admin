@@ -246,3 +246,26 @@ Docker Compose передаёт эти переменные как build args в
    `frontend`. Откройте `http://localhost:5176/managers` и войдите.
 5. Для статической сборки выполните `npm run build:managers`.
    Результат появится в `frontend/dist-managers`.
+
+### Подключение Platform V1
+
+Вход в кабинет работает без подключения Platform. Чтобы включить
+закрытый клиент, дополнительно задайте:
+
+- `MANAGERS_PLATFORM_URL`: HTTPS origin с DNS-именем Platform и
+  при необходимости портом. Имя должно совпасть с DNS SAN сервера.
+- `MANAGERS_PLATFORM_CA_FILE`: путь к доверенному CA Platform.
+- `MANAGERS_PLATFORM_CERT_FILE` и `MANAGERS_PLATFORM_KEY_FILE`: пути к
+  сертификату и ключу Manager BFF. URI SAN нужен ровно один:
+  `spiffe://amocrm-pro/manager-bff`.
+- `MANAGERS_PLATFORM_TIMEOUT`: от 1 до 30 секунд, по умолчанию 10 секунд.
+
+При запуске в Compose смонтируйте эти три файла только для чтения
+через локальный override для сервиса `admin-api`. Передайте пути внутри
+контейнера. Закрытый listener Platform должен быть доступен контейнеру
+по настроенному DNS. Частичная конфигурация останавливает запуск.
+Публичный вход и техническое API не используют эти файлы.
+
+`make platform-contract-check` сверяет сгенерированный клиент. Контракт
+и сценарий потери ответа проверяются в `make integration-test` на
+PostgreSQL и тестовом mTLS peer.

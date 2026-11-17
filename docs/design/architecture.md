@@ -106,6 +106,7 @@
 | `audit` | Запись действий сотрудников в `admin_audit_log` |
 | `adapter` | Контракт адаптера бекенда v1, типы `Observation`, ошибки |
 | `adapter/core` | HTTP-клиент Core admin listener |
+| `managerplatform`, `platformwire` | Manager BFF: mTLS, intent, Platform V1 |
 | `adapter/fixture` | Тестовый адаптер (`kind: fixture`) |
 | `accounts` | Агрегация аккаунтов и подключений по адаптерам, частичная доступность |
 | `catalog` | Каталог продуктов и бекендов из конфигурации |

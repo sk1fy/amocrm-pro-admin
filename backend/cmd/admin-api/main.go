@@ -15,6 +15,7 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/catalog"
 	"github.com/sk1fy/amocrm-pro-admin/internal/employees"
 	"github.com/sk1fy/amocrm-pro-admin/internal/httpapi"
+	"github.com/sk1fy/amocrm-pro-admin/internal/managerplatform"
 	"github.com/sk1fy/amocrm-pro-admin/internal/operations"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/config"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/logging"
@@ -102,8 +103,25 @@ func run() error {
 	if cfg.ManagerPublicOrigin != "" {
 		managerSessions = auth.NewManagerService(pool, cfg.DatabaseTimeout, cfg.SessionAbsoluteTTL, cfg.SessionIdleTTL, cfg.CookieSecure)
 	}
+	var managerPlatform *managerplatform.Service
+	if cfg.ManagerPlatform.URL != "" {
+		client, err := managerplatform.NewClient(managerplatform.ClientConfig{
+			URL: cfg.ManagerPlatform.URL, CAFile: cfg.ManagerPlatform.CAFile,
+			CertFile: cfg.ManagerPlatform.CertFile, KeyFile: cfg.ManagerPlatform.KeyFile, Timeout: cfg.ManagerPlatform.Timeout,
+		})
+		if err != nil {
+			return err
+		}
+		defer client.Close()
+		managerPlatform = managerplatform.NewService(pool, cfg.DatabaseTimeout, auditStore, managerSessions, client, logger)
+		managerCtx, stopManager := context.WithCancel(ctx)
+		managerDone := make(chan struct{})
+		go func() { defer close(managerDone); managerPlatform.Reconcile(managerCtx) }()
+		defer func() { stopManager(); <-managerDone }()
+	}
 	public := httpapi.New(httpapi.Dependencies{
 		ManagerSessions: managerSessions,
+		ManagerPlatform: managerPlatform,
 		ManagerOrigin:   cfg.ManagerPublicOrigin,
 		Operations:      operationService,
 		Employees:       employeeStore,

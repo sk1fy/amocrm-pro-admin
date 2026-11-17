@@ -56,6 +56,11 @@ func (s *Access) BootstrapManager(ctx context.Context, email string, event audit
 			ON CONFLICT (employee_id, grant_code) DO NOTHING`, employeeID, grants); err != nil {
 			return fmt.Errorf("grant first manager administrator access: %w", err)
 		}
+		if _, err := tx.Exec(ctx, `
+			UPDATE employees SET manager_grants_version = manager_grants_version + 1
+			WHERE id = $1`, employeeID); err != nil {
+			return fmt.Errorf("advance manager grants version: %w", err)
+		}
 		event.Action = audit.ActionManagerBootstrap
 		event.ObjectType = "employee"
 		event.ObjectRef = "employee:" + employeeID.String()

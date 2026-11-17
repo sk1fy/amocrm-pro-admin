@@ -46,12 +46,13 @@ type Service struct {
 }
 
 type Account struct {
-	ID            uuid.UUID
-	Email         string
-	Name          string
-	Role          string
-	Status        string
-	ManagerGrants []ManagerGrant
+	ID                   uuid.UUID
+	Email                string
+	Name                 string
+	Role                 string
+	Status               string
+	ManagerGrants        []ManagerGrant
+	ManagerGrantsVersion int64
 }
 
 type Session struct {
@@ -110,7 +111,7 @@ func (s *Service) Login(ctx context.Context, email, password, ip, userAgent stri
 	}
 
 	if s.audience == Managers {
-		account.ManagerGrants, err = s.managerGrants(ctx, account.ID)
+		account.ManagerGrants, account.ManagerGrantsVersion, err = s.managerGrants(ctx, account.ID)
 		if err != nil {
 			return "", Account{}, err
 		}
@@ -141,6 +142,10 @@ func (s *Service) Lookup(ctx context.Context, token string) (Principal, error) {
 	}
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
+
+	if s.audience == Managers {
+		return s.lookupManager(ctx, hash, nil, true)
+	}
 
 	var principal Principal
 	var lastSeen, expiresAt time.Time
@@ -173,15 +178,6 @@ func (s *Service) Lookup(ctx context.Context, token string) (Principal, error) {
 				WHERE id = $1 AND revoked_at IS NULL`, principal.SessionID, ReasonExpired)
 		}
 		return Principal{}, ErrUnauthenticated
-	}
-	if s.audience == Managers {
-		principal.Account.ManagerGrants, err = s.managerGrants(ctx, principal.EmployeeID)
-		if err != nil {
-			return Principal{}, err
-		}
-		if len(principal.Account.ManagerGrants) == 0 {
-			return Principal{}, ErrUnauthenticated
-		}
 	}
 	if now.Sub(lastSeen) >= time.Minute {
 		_, _ = s.pool.Exec(ctx, `

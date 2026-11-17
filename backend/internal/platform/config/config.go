@@ -32,6 +32,7 @@ type API struct {
 	DBMaxConns            int32
 	AdminPublicOrigin     string
 	ManagerPublicOrigin   string
+	ManagerPlatform       ManagerPlatform
 	SessionAbsoluteTTL    time.Duration
 	SessionIdleTTL        time.Duration
 	LoginRatePerMinute    int
@@ -41,6 +42,11 @@ type API struct {
 	GrafanaBaseURL        string
 	LokiBaseURL           string
 	CookieSecure          bool
+}
+
+type ManagerPlatform struct {
+	URL, CAFile, CertFile, KeyFile string
+	Timeout                        time.Duration
 }
 
 type Migrate struct {
@@ -142,6 +148,11 @@ func LoadAPI() (API, error) {
 		origin = adminURL.Scheme + "://" + adminURL.Host
 	}
 
+	managerPlatform, err := loadManagerPlatform(managerOrigin)
+	if err != nil {
+		return API{}, err
+	}
+
 	migrationsDir := strings.TrimSpace(os.Getenv("MIGRATIONS_DIR"))
 	if migrationsDir == "" {
 		migrationsDir = defaultMigrationsDir
@@ -167,6 +178,7 @@ func LoadAPI() (API, error) {
 		DBMaxConns:            int32(maxConns),
 		AdminPublicOrigin:     origin,
 		ManagerPublicOrigin:   managerOrigin,
+		ManagerPlatform:       managerPlatform,
 		SessionAbsoluteTTL:    absoluteTTL,
 		SessionIdleTTL:        idleTTL,
 		LoginRatePerMinute:    loginRate,
@@ -177,6 +189,26 @@ func LoadAPI() (API, error) {
 		LokiBaseURL:           lokiURL,
 		CookieSecure:          environment != envDevelopment,
 	}, nil
+}
+
+func loadManagerPlatform(managerOrigin string) (ManagerPlatform, error) {
+	platform := ManagerPlatform{
+		URL:      strings.TrimSpace(os.Getenv("MANAGERS_PLATFORM_URL")),
+		CAFile:   strings.TrimSpace(os.Getenv("MANAGERS_PLATFORM_CA_FILE")),
+		CertFile: strings.TrimSpace(os.Getenv("MANAGERS_PLATFORM_CERT_FILE")),
+		KeyFile:  strings.TrimSpace(os.Getenv("MANAGERS_PLATFORM_KEY_FILE")),
+	}
+	var err error
+	platform.Timeout, err = duration("MANAGERS_PLATFORM_TIMEOUT", 10*time.Second)
+	if err != nil || platform.Timeout < time.Second || platform.Timeout > 30*time.Second {
+		return ManagerPlatform{}, errors.New("MANAGERS_PLATFORM_TIMEOUT must be between 1s and 30s")
+	}
+	if platform.URL != "" || platform.CAFile != "" || platform.CertFile != "" || platform.KeyFile != "" {
+		if managerOrigin == "" || platform.URL == "" || platform.CAFile == "" || platform.CertFile == "" || platform.KeyFile == "" {
+			return ManagerPlatform{}, errors.New("platform requires MANAGERS_PUBLIC_ORIGIN, MANAGERS_PLATFORM_URL and all three mTLS files")
+		}
+	}
+	return platform, nil
 }
 
 func LoadMigrate() (Migrate, error) {

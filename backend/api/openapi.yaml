@@ -123,6 +123,54 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/v1/managers/operations/{id}:
+    get:
+      operationId: getManagerOperation
+      tags: [Managers]
+      security:
+        - managerSession: []
+      summary: Read the live result of an owned manager command.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Live Platform operation, synchronous receipt, or unknown outcome.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          description: The Platform request is rate limited.
+          headers:
+            Retry-After:
+              schema: {type: string, pattern: '^[0-9]+$'}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          description: The Platform result cannot currently be read.
+          headers:
+            Retry-After:
+              schema: {type: string, pattern: '^[0-9]+$'}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/auth/login:
     post:
       tags: [Auth]
@@ -1557,6 +1605,38 @@ components:
         type: string
         format: uuid
   schemas:
+    ManagerOperation:
+      type: object
+      additionalProperties: false
+      required: [id, state]
+      properties:
+        id: {type: string, format: uuid}
+        state:
+          type: string
+          enum: [unknown_outcome, completed, rejected, platform_operation]
+        operation:
+          type: object
+          additionalProperties: false
+          required: [state, kind, target_id, created_at, updated_at]
+          properties:
+            state:
+              type: string
+              enum: [accepted, running, waiting_external, succeeded, failed, needs_review]
+            kind: {type: string}
+            target_id: {type: string, format: uuid}
+            created_at: {type: string, format: date-time}
+            updated_at: {type: string, format: date-time}
+            result_ref: {type: string, format: uuid}
+            retry_after_seconds: {type: integer, minimum: 0}
+      if:
+        properties:
+          state:
+            const: platform_operation
+      then:
+        required: [operation]
+      else:
+        not:
+          required: [operation]
     AdminOperation:
       type: object
       required: [id, employee_id, backend, target_type, target_id, command, state, result, created_at, updated_at]

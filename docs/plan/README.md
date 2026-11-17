@@ -33,6 +33,7 @@
 ## Текущая часть
 
 - [Вход в кабинет менеджеров V1](manager-auth-v1.md).
+- [Менеджерский BFF и Platform V1](manager-platform-v1.md).
 - [Регистрация MVP контроля активности](activity-mvp-registration.md).
 - [Пользователи amoCRM в карточке аккаунта](account-crm-users.md).
 - [Спокойный интерфейс админки](calm-interface.md).

@@ -165,3 +165,34 @@ func TestManagerOriginRequiresDedicatedHTTPSHost(t *testing.T) {
 		})
 	}
 }
+
+func TestManagerPlatformConfigurationIsAllOrNothing(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://admin:admin@example.invalid:5432/admin")
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("ADMIN_PUBLIC_ORIGIN", "https://admin.example.invalid")
+	t.Setenv("MANAGERS_PUBLIC_ORIGIN", "https://managers.example.invalid")
+	t.Setenv("MANAGERS_PLATFORM_URL", "https://platform.example.invalid:8443")
+	t.Setenv("MANAGERS_PLATFORM_CA_FILE", "/fixture/ca.pem")
+	t.Setenv("MANAGERS_PLATFORM_CERT_FILE", "/fixture/bff.pem")
+	t.Setenv("MANAGERS_PLATFORM_KEY_FILE", "")
+	t.Setenv("MANAGERS_PLATFORM_TIMEOUT", "15s")
+	if _, err := LoadAPI(); err == nil {
+		t.Fatal("accepted a Platform connection with partial mTLS configuration")
+	}
+
+	t.Setenv("MANAGERS_PLATFORM_KEY_FILE", "/fixture/bff.key")
+	cfg, err := LoadAPI()
+	if err != nil || cfg.ManagerPlatform.Timeout != 15*time.Second || cfg.ManagerPlatform.URL != "https://platform.example.invalid:8443" {
+		t.Fatalf("configured Platform connection = %+v, %v", cfg.ManagerPlatform, err)
+	}
+
+	t.Setenv("MANAGERS_PLATFORM_TIMEOUT", "31s")
+	if _, err := LoadAPI(); err == nil {
+		t.Fatal("accepted a Platform timeout above the actor envelope deadline limit")
+	}
+	t.Setenv("MANAGERS_PLATFORM_TIMEOUT", "30s")
+	t.Setenv("MANAGERS_PUBLIC_ORIGIN", "")
+	if _, err := LoadAPI(); err == nil {
+		t.Fatal("accepted a Platform connection without a dedicated managers host")
+	}
+}

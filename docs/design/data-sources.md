@@ -364,3 +364,9 @@ Admin API, Core и платёжные системы не вызываются (
 | Пароль для входа | Ввод сотрудника. Admin проверяет хеш в `employees.password_hash`. |
 | Имя сотрудника | `ManagerMe.name` из `employees.name` в Admin. |
 | Права | `ManagerMe.grants` из `manager_grants` в Admin. |
+
+## Состояние менеджерской команды
+
+`GET /api/v1/managers/operations/{id}` проверяет владельца по intent,
+сохранённому в PostgreSQL Admin. Исход и метаданные операции загружаются
+из Platform по тому же ID. Если receipt ещё нет, исход неизвестен.

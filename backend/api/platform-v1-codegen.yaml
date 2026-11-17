@@ -1,0 +1,8 @@
+package: platformwire
+generate:
+  models: true
+  client: true
+output-options:
+  include-operation-ids: [getCommandReceipt, getOperation, setInstallationReview, retryInstallationDeal]
+  skip-prune: true
+  nullable-type: true

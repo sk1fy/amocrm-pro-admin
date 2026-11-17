@@ -28,8 +28,8 @@ func TestMigratorLifecycle(t *testing.T) {
 		t.Fatalf("up: %v", err)
 	}
 	assertAppTables(t, pool, true)
-	if count := migrationCount(t, pool); count != 7 {
-		t.Fatalf("applied = %d, want 7", count)
+	if count := migrationCount(t, pool); count != 8 {
+		t.Fatalf("applied = %d, want 8", count)
 	}
 
 	if err := migrations.RequireDownConfirmation(func(string) string { return "" }); err == nil {
@@ -65,8 +65,8 @@ func TestMigratorLifecycle(t *testing.T) {
 			t.Fatalf("parallel up: %v", err)
 		}
 	}
-	if count := migrationCount(t, pool); count != 7 {
-		t.Fatalf("parallel up applied = %d, want 7", count)
+	if count := migrationCount(t, pool); count != 8 {
+		t.Fatalf("parallel up applied = %d, want 8", count)
 	}
 	assertAppTables(t, pool, true)
 	if err := runner.EnsureCurrent(ctx); err != nil {
@@ -78,17 +78,22 @@ func assertAppTables(t *testing.T, pool *pgxpool.Pool, wantPresent bool) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	var employees, sessions, audit, grants *string
+	var employees, sessions, audit, grants, intents *string
 	if err := pool.QueryRow(ctx, `
 		SELECT to_regclass('public.employees')::text,
 		       to_regclass('public.sessions')::text,
 		       to_regclass('public.admin_audit_log')::text,
-		       to_regclass('public.manager_grants')::text`).Scan(&employees, &sessions, &audit, &grants); err != nil {
+		       to_regclass('public.manager_grants')::text,
+		       to_regclass('public.manager_command_intents')::text`).Scan(&employees, &sessions, &audit, &grants, &intents); err != nil {
 		t.Fatal(err)
 	}
-	present := employees != nil && sessions != nil && audit != nil && grants != nil
-	if present != wantPresent {
-		t.Fatalf("tables present=%t, want %t (employees=%v sessions=%v audit=%v)", present, wantPresent, employees, sessions, audit)
+	for name, table := range map[string]*string{
+		"employees": employees, "sessions": sessions, "admin_audit_log": audit,
+		"manager_grants": grants, "manager_command_intents": intents,
+	} {
+		if present := table != nil; present != wantPresent {
+			t.Errorf("table %s present=%t, want %t", name, present, wantPresent)
+		}
 	}
 }
 
@@ -124,7 +129,7 @@ func TestManagerAudiencePreservesLegacySession(t *testing.T) {
 	}
 	for _, file := range files {
 		name := file.Name()
-		if !strings.HasSuffix(name, ".sql") || strings.HasPrefix(name, "000007_") {
+		if !strings.HasSuffix(name, ".sql") || name >= "000007_" {
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(dir, name))

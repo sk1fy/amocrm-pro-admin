@@ -29,3 +29,5 @@
 | [0022](0022-rightmost-forwarded-address.md) | Правое значение X-Forwarded-For | принято |
 
 - [0023: локальная сессия менеджерского демо](0023-manager-demo-session.md).
+- [0024: отдельная сессия кабинета менеджеров](0024-manager-auth-audience.md).
+- [0025: менеджерский BFF и операции Platform V1](0025-manager-platform-bff.md).

@@ -2,10 +2,12 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -58,15 +60,59 @@ func (s *Service) cookieName() string {
 	return CookieName
 }
 
-func (s *Service) managerGrants(ctx context.Context, employeeID uuid.UUID) ([]ManagerGrant, error) {
+func (s *Service) managerGrants(ctx context.Context, employeeID uuid.UUID) ([]ManagerGrant, int64, error) {
 	var grants []ManagerGrant
+	var version int64
 	err := s.pool.QueryRow(ctx, `
 		SELECT ARRAY(
 			SELECT grant_code FROM manager_grants
-			WHERE employee_id = $1 ORDER BY grant_code
-		)`, employeeID).Scan(&grants)
+			WHERE employee_id = e.id ORDER BY grant_code
+		), e.manager_grants_version FROM employees e WHERE e.id = $1`, employeeID).Scan(&grants, &version)
 	if err != nil {
-		return nil, fmt.Errorf("lookup manager grants: %w", err)
+		return nil, 0, fmt.Errorf("lookup manager grants: %w", err)
 	}
-	return grants, nil
+	return grants, version, nil
+}
+
+func (s *Service) ManagerSnapshot(ctx context.Context, sessionID uuid.UUID) (Principal, error) {
+	if s.audience != Managers || sessionID == uuid.Nil {
+		return Principal{}, ErrUnauthenticated
+	}
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	return s.lookupManager(ctx, nil, &sessionID, false)
+}
+
+func (s *Service) lookupManager(ctx context.Context, hash []byte, sessionID *uuid.UUID, touch bool) (Principal, error) {
+	principal := Principal{Audience: Managers}
+	var lastSeen time.Time
+	err := s.pool.QueryRow(ctx, `
+		SELECT s.id, s.employee_id, s.last_seen_at, e.email, e.name, e.role, e.status,
+		       ARRAY(SELECT grant_code FROM manager_grants
+		             WHERE employee_id = e.id ORDER BY grant_code),
+		       e.manager_grants_version
+		FROM sessions s
+		JOIN employees e ON e.id = s.employee_id
+		WHERE (($1::bytea IS NOT NULL AND s.token_hash = $1)
+		       OR ($2::uuid IS NOT NULL AND s.id = $2))
+		  AND s.audience = 'managers' AND e.status = 'active'
+		  AND s.revoked_at IS NULL AND s.expires_at > now()
+		  AND s.last_seen_at > now() - ($3 * interval '1 millisecond')`,
+		hash, sessionID, s.idleTTL.Milliseconds(),
+	).Scan(&principal.SessionID, &principal.EmployeeID, &lastSeen, &principal.Account.Email,
+		&principal.Account.Name, &principal.Account.Role, &principal.Account.Status,
+		&principal.Account.ManagerGrants, &principal.Account.ManagerGrantsVersion)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && len(principal.Account.ManagerGrants) == 0) {
+		return Principal{}, ErrUnauthenticated
+	}
+	if err != nil {
+		return Principal{}, fmt.Errorf("lookup manager session: %w", err)
+	}
+	principal.Account.ID = principal.EmployeeID
+	if touch && time.Since(lastSeen) >= time.Minute {
+		_, _ = s.pool.Exec(ctx, `
+			UPDATE sessions SET last_seen_at = now()
+			WHERE id = $1 AND revoked_at IS NULL AND last_seen_at <= now() - interval '1 minute'`, principal.SessionID)
+	}
+	return principal, nil
 }

@@ -125,7 +125,11 @@ migrate: ## Apply pending admin DB migrations
 # Checks (each target requires the corresponding source tree to exist)
 # ---------------------------------------------------------------------------
 
-lint: ## gofmt/vet/golangci-lint in Docker; eslint + tsc in Docker
+.PHONY: platform-contract-check
+platform-contract-check: ## Verify the pinned Platform V1 client is reproducible
+	$(DOCKER_GO) sh internal/platformwire/generate.sh --check
+
+lint: platform-contract-check ## gofmt/vet/golangci-lint in Docker; eslint + tsc in Docker
 	@test -d backend || { echo "backend/ is not created yet (stage 1, part 1.2)" >&2; exit 1; }
 	$(DOCKER_GO) sh -ec 'files="$$(gofmt -l .)"; if [ -n "$$files" ]; then printf "%s\n" "$$files"; exit 1; fi; go vet ./...'
 	$(DOCKER_GOLANGCI) golangci-lint run --timeout 5m
