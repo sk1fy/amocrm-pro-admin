@@ -384,7 +384,11 @@ Admin API, Core и платёжные системы не вызываются (
 | Названия ниш и шаблон тем | Platform `/portrait-niches` и `/portrait-template` |
 | Пользователи amoCRM | Platform `/accounts/{id}/crm-users` |
 | Обновление наблюдений | Операция Admin с результатом Platform |
-| История событий | Состояние недоступности до подключения P09 и A06 |
+| История событий аккаунта | Platform `/accounts/{id}/history`, право `clients.read` |
+| Глобальная лента | Platform `/feed`, право `feed.read` |
+| UUID, вид, время действия и записи, описание, исполнитель | `Event` владельца; `actor_display` опционален |
+| Переходы события | `Event.related_refs`, разрешённые владельцем UUID аккаунта, продукта и эпизода |
+| Снимок событий | `EventList.snapshot_at`, `query_hash`, `next_cursor` владельца |
 
 Браузер получает данные через `/api/v1/managers`. Одна карточка
 открывается по UUID аккаунта из очереди установок и из списка клиентов.

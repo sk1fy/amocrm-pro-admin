@@ -112,8 +112,8 @@ func TestManagerClientsContractSeparatesSearchAndCommands(t *testing.T) {
 			t.Fatalf("browser route has wrong command or CSRF headers: %s %s", route.Method, route.Path)
 		}
 	}
-	if count != 19 {
-		t.Fatalf("manager client operations = %d, want 19", count)
+	if count != 20 {
+		t.Fatalf("manager client operations = %d, want 20", count)
 	}
 }
 
@@ -276,7 +276,7 @@ func assertManagerProductSchema(t *testing.T, browser, owner *openapi3.Schema) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, name := range []string{"Product", "ProductCode", "ProductList", "TrialPolicy", "ProductMetrics"} {
+		for _, name := range []string{"Product", "ProductCode", "ProductList", "TrialPolicy", "ProductMetrics", "Event", "EventList"} {
 			encoded = bytes.ReplaceAll(encoded, []byte("#/components/schemas/Manager"+name+`"`), []byte("#/components/schemas/"+name+`"`))
 		}
 		var value any

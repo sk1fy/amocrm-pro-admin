@@ -22,6 +22,10 @@ func (c *Client) callAccount(ctx context.Context, action accountAction, actor st
 		return nil
 	}
 	switch action {
+	case "listFeed":
+		return c.wire.ListFeed(ctx, &wire.ListFeedParams{XPlatformActor: actor}, editQuery)
+	case "listAccountHistory":
+		return c.wire.ListAccountHistory(ctx, target, &wire.ListAccountHistoryParams{XPlatformActor: actor}, editQuery)
 	case "listProducts":
 		return c.wire.ListProducts(ctx, &wire.ListProductsParams{XPlatformActor: actor}, editQuery)
 	case "getProduct":

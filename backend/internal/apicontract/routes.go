@@ -15,6 +15,8 @@ var (
 	ManagerOperation              = Route{Method: http.MethodGet, Path: ManagerPrefix + "/operations/{id}"}
 	ManagerInstallations          = Route{Method: http.MethodGet, Path: ManagerPrefix + "/installations"}
 	ManagerReview                 = Route{Method: http.MethodPut, Path: ManagerPrefix + "/installations/{id}/review"}
+	ManagerFeed                   = Route{Method: http.MethodGet, Path: ManagerPrefix + "/feed"}
+	ManagerAccountHistory         = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/history"}
 	ManagerAccounts               = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts"}
 	ManagerAccountSearch          = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/search"}
 	ManagerAccount                = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}"}
@@ -90,6 +92,7 @@ var (
 	DistributionTrace = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/distribution/trace"}
 	Routes            = []Route{
 		ManagerLogin, ManagerLogout, ManagerMe, ManagerOperation, ManagerInstallations, ManagerReview,
+		ManagerFeed, ManagerAccountHistory,
 		ManagerAccounts,
 		ManagerAccountSearch,
 		ManagerAccount,

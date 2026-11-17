@@ -55,6 +55,8 @@ func newManagerModel[T any]() any { return new(T) }
 
 func AccountEndpoints() []AccountEndpoint {
 	return []AccountEndpoint{
+		{apicontract.ManagerFeed, "listFeed", "", auth.GrantFeedRead, http.StatusOK, newManagerModel[wire.EventList]},
+		{apicontract.ManagerAccountHistory, "listAccountHistory", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.EventList]},
 		{apicontract.ManagerProducts, "listProducts", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.ProductList]},
 		{apicontract.ManagerProduct, "getProduct", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.Product]},
 		{apicontract.ManagerProductMetrics, "getProductMetrics", "", auth.GrantStatsRead, http.StatusOK, newManagerModel[wire.ProductMetrics]},
@@ -383,6 +385,8 @@ func validManagerAccountDTO(
 	value any, target uuid.UUID, query url.Values, raw []byte, response *http.Response, item intent,
 ) bool {
 	switch model := value.(type) {
+	case *wire.EventList:
+		return validManagerEvents(model, target, query)
 	case *wire.Product:
 		return model.Id != uuid.Nil && model.Version > 0 && (target == uuid.Nil || model.Id == target) && int64(model.Version) >= item.Version
 	case *wire.ProductMetrics:
