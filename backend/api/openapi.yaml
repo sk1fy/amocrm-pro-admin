@@ -1821,8 +1821,7 @@ paths:
         '503':
           $ref: '#/components/responses/ManagerPlatformUnavailable'
         '409':
-          description: details.code is idempotency_conflict, version_conflict or state_conflict. An applicable current
-            version is numeric details.current_version.
+          description: details.code is product_exists or idempotency_conflict. The command has a definitive outcome.
           content:
             application/json:
               schema:

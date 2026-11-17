@@ -161,7 +161,7 @@ func writeManagerAccountPeerError(w http.ResponseWriter, r *http.Request, peer *
 	case http.StatusConflict:
 		response = httpx.Conflict("client command conflict")
 		switch peer.Code {
-		case "idempotency_conflict":
+		case "idempotency_conflict", "product_exists":
 			details = map[string]any{"code": peer.Code}
 		case "state_conflict":
 			details = map[string]any{"code": peer.Code}
@@ -181,7 +181,8 @@ func writeManagerAccountPeerError(w http.ResponseWriter, r *http.Request, peer *
 		response = httpx.InvalidArgument("client command rejected")
 		response.Status = http.StatusUnprocessableEntity
 		switch peer.Code {
-		case "validation_failed", "business_rule_failed", "classification_unavailable", "renewal_unavailable", "target_not_extended":
+		case "validation_failed", "business_rule_failed", "classification_unavailable", "renewal_unavailable", "target_not_extended",
+			"trial_policy_incompatible", "trial_evidence_required", "tariff_evidence_required", "integration_mapping_mismatch":
 			details = map[string]any{"code": peer.Code}
 		}
 	case http.StatusTooManyRequests:
