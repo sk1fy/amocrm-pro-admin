@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -64,6 +66,51 @@ func TestOpenAPIContract(t *testing.T) {
 		if enum[i] != string(grant) {
 			t.Fatalf("manager grant at %d = %v, want %s", i, enum[i], grant)
 		}
+	}
+}
+
+func TestManagerClientsContractSeparatesSearchAndCommands(t *testing.T) {
+	loader := openapi3.NewLoader()
+	browser, err := loader.LoadFromFile("openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	owner, err := loader.LoadFromFile("platform-v1-openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var count int
+	for _, route := range apicontract.Routes {
+		suffix, ok := strings.CutPrefix(route.Path, apicontract.ManagerPrefix)
+		if !ok || (!strings.HasPrefix(suffix, "/accounts") && !strings.HasPrefix(suffix, "/portrait-")) {
+			continue
+		}
+		count++
+		public := browser.Paths.Find(route.Path).GetOperation(route.Method)
+		private := owner.Paths.Find("/internal/platform/v1/managers" + suffix).GetOperation(route.Method)
+		if public.Extensions["x-manager-grant"] != private.Extensions["x-platform-grant"] ||
+			public.Security == nil || len(*public.Security) != 1 {
+			t.Fatalf("browser route has a different grant or security requirement: %s %s", route.Method, route.Path)
+		}
+		if _, ok := (*public.Security)[0]["managerSession"]; !ok {
+			t.Fatalf("browser route has no manager session: %s", route.Path)
+		}
+		headers := map[string]bool{}
+		for _, parameter := range public.Parameters {
+			if parameter.Value.In == "header" {
+				headers[parameter.Value.Name] = true
+			}
+		}
+		writes := route.Method != http.MethodGet && suffix != "/accounts/search"
+		usesCSRF := route.Method != http.MethodGet
+		if headers["X-Platform-Actor"] || headers["Idempotency-Key"] != writes ||
+			headers["X-Requested-With"] != usesCSRF || headers["Origin"] != usesCSRF ||
+			(public.Responses.Status(http.StatusAccepted) != nil) != writes {
+			t.Fatalf("browser route has wrong command or CSRF headers: %s %s", route.Method, route.Path)
+		}
+	}
+	if count != 19 {
+		t.Fatalf("manager client operations = %d, want 19", count)
 	}
 }
 

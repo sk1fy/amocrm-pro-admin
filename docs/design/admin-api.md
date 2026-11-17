@@ -385,12 +385,53 @@ Origin кабинета, `X-Requested-With: admin-ui`, UUID в `Idempotency-Key`
 и ключ. Ответ `409` различает `version_conflict` и
 `idempotency_conflict` через `details.code`.
 
+### Клиенты
+
+Префикс маршрутов `/api/v1/managers`. UUID клиента в маршруте обозначает
+запись Platform. Права действуют в текущей менеджерской сессии.
+
+| Маршрут | Право | Результат |
+| --- | --- | --- |
+| `GET /accounts`, `POST /accounts/search` | `clients.read` | Список, итог Platform, курсор, время снимка и `sources` |
+| `GET /accounts/{id}` | `clients.read` | Карточка и `ETag` профиля |
+| `GET /accounts/{id}/widgets` | `clients.read` | Собственные виджеты с версиями сроков |
+| `GET /accounts/{id}/license-history` | `clients.read` | Подтверждённые наблюдения лицензии |
+| `GET /accounts/{id}/crm-users` | `clients.read` | Последний полный список пользователей и его свежесть |
+| `GET /accounts/{id}/portrait` | `clients.read` | Портрет и его `ETag` |
+| `PATCH /accounts/{id}/profile` | `clients.write` | Сохранённый профиль и `ETag` |
+| `PATCH /accounts/{id}/portrait`, `POST /accounts/{id}/portrait/audit-dates` | `clients.write` | Сохранённый портрет и `ETag` |
+| `POST /accounts/{id}/refresh` | `clients.write` | `202` с ID команды и локальным адресом опроса |
+| `POST /accounts/{id}/renewals` | `clients.renew` | `201` и `ETag` срока выбранного продукта |
+| `GET /portrait-template`, `GET /portrait-niches` | `clients.read` | Версия шаблона и справочник ниш |
+| `PUT /portrait-template` | `configuration.manage` | Сохранённый шаблон и `ETag` |
+| `POST /portrait-niches`, `PATCH /portrait-niches/{id}`, `POST /portrait-niches/{id}/merge` | `configuration.manage` | Созданная, изменённая или оставшаяся после объединения ниша и `ETag` |
+| `DELETE /portrait-niches/{id}` | `configuration.manage` | `204` после подтверждённого удаления |
+
+Список и поиск поддерживают фильтры P01, включая дерево условий
+`portrait_filter` в теле `POST /accounts/search`. Поиск требует Origin
+кабинета и `X-Requested-With: admin-ui` и сохраняет семантику чтения.
+
+Мутации дополнительно требуют UUID `Idempotency-Key`. Для обновления
+ресурса нужен сильный `If-Match` соответствующей версии. Для продления
+это `access.entitlement_version` выбранного виджета. Создание ниши и
+обновление наблюдений обходятся без версии. Наблюдения `unknown`,
+`stale` и `unsupported` остаются данными ответа. Общая история клиента
+подключается в P09 и A06.
+
+При потере ответа команда возвращает `202` со `state=unknown_outcome`,
+`Location` и, при ограничении частоты, `Retry-After`. Подтверждённое
+фоновое обновление возвращает `202` со `state=platform_operation` и
+таким же локальным `Location`. Повтор использует исходные тело, ключ
+и версию. Ответ `409` различает конфликт ключа и версии по `details.code`.
+`details.current_version` содержит целое значение актуальной версии
+при `version_conflict`.
+
 ### Состояние менеджерской команды
 
 `GET /api/v1/managers/operations/{id}` требует активную менеджерскую
-сессию, `clients.read` и исходного владельца команды. Для результата
-отметки проверки также требуется `clients.write`. Platform проверяет
-текущее право на команду и её ресурс.
+сессию, исходного владельца и актуальное право на вид команды.
+Для отметки установки действуют `clients.read` и `clients.write`.
+Platform проверяет текущее право на команду и её ресурс.
 Идентификатор совпадает с `command_id`.
 
 Ответ `200` содержит `id` и `state`: `unknown_outcome`, `completed`,

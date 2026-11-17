@@ -249,6 +249,1443 @@ paths:
         '429': {$ref: '#/components/responses/ManagerPlatformRateLimited'}
         '500': {$ref: '#/components/responses/InternalError'}
         '503': {$ref: '#/components/responses/ManagerPlatformUnavailable'}
+  /api/v1/managers/accounts:
+    get:
+      operationId: listAccountsForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: List manager accounts.
+      description: Requires clients.read on the manager host. Cursors are bound to the current actor and query. Totals
+        cover the whole filtered snapshot.
+      x-manager-grant: clients.read
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+      - name: classification
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      - name: product_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: license_before
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: active_users_min
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - name: active_users_max
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - amo_account_id
+          - current_domain
+          - display_name
+          - license_until
+          - -license_until
+      responses:
+        '200':
+          description: List manager accounts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerAccountList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+  /api/v1/managers/accounts/search:
+    post:
+      operationId: searchAccountsForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Search manager accounts by portrait and account filters.
+      description: Requires clients.read on the manager host. The manager Origin and X-Requested-With are required
+        for this read. Cursors are bound to the current actor and query. Totals cover the whole filtered snapshot.
+      x-manager-grant: clients.read
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+      - name: classification
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      - name: product_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: license_before
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: active_users_min
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - name: active_users_max
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - amo_account_id
+          - current_domain
+          - display_name
+          - license_until
+          - -license_until
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                portrait_filter:
+                  $ref: '#/components/schemas/ManagerPortraitFilter'
+              required:
+              - portrait_filter
+      responses:
+        '200':
+          description: Search manager accounts by portrait and account filters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerAccountList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+  /api/v1/managers/accounts/{id}:
+    get:
+      operationId: getAccountForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Read a manager account.
+      description: Requires clients.read on the manager host.
+      x-manager-grant: clients.read
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Read a manager account.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerAccountDetail'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+  /api/v1/managers/accounts/{id}/profile:
+    patch:
+      operationId: updateAccountProfileForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Update the account profile.
+      description: Requires clients.write on the manager host.
+      x-manager-grant: clients.write
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                display_name:
+                  type:
+                  - string
+                  - 'null'
+                note:
+                  type:
+                  - string
+                  - 'null'
+                classification:
+                  type:
+                  - string
+                  - 'null'
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+              required:
+              - reason
+      responses:
+        '200':
+          description: Update the account profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerAccountDetail'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/managers/accounts/{id}/refresh:
+    post:
+      operationId: requestAccountRefreshForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Request account observations.
+      description: Requires clients.write on the manager host.
+      x-manager-grant: clients.write
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                components:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                    - license
+                    - users
+                  minItems: 1
+                  uniqueItems: true
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+              required:
+              - components
+              - reason
+      responses:
+        '202':
+          description: Poll the owned command at Location. The state is platform_operation after acknowledgement or
+            unknown_outcome after a lost reply.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/managers/accounts/{id}/license-history:
+    get:
+      operationId: getAccountLicenseHistoryForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Read confirmed license evidence.
+      description: Requires clients.read on the manager host.
+      x-manager-grant: clients.read
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Read confirmed license evidence.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerLicenseEvidenceList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+  /api/v1/managers/accounts/{id}/widgets:
+    get:
+      operationId: listAccountWidgetsForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: List the account’s own widgets.
+      description: Requires clients.read on the manager host.
+      x-manager-grant: clients.read
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - current
+          - removed
+      - name: product_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: List the account’s own widgets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerAccountWidgets'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+  /api/v1/managers/accounts/{id}/crm-users:
+    get:
+      operationId: getAccountCRMUsersForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Read the last complete CRM user observation.
+      description: Requires clients.read on the manager host.
+      x-manager-grant: clients.read
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: active
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: admin
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: Read the last complete CRM user observation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerObservationCRMUsers'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+  /api/v1/managers/accounts/{id}/renewals:
+    post:
+      operationId: createAccountRenewalForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Extend a versioned own access term.
+      description: Requires clients.renew on the manager host.
+      x-manager-grant: clients.renew
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                product_id:
+                  type: string
+                  format: uuid
+                target_until:
+                  type: string
+                  format: date-time
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+              required:
+              - product_id
+              - target_until
+              - reason
+      responses:
+        '201':
+          description: Extend a versioned own access term.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerRenewal'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/managers/accounts/{id}/portrait:
+    get:
+      operationId: getAccountPortraitForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Read the current account portrait.
+      description: Requires clients.read on the manager host.
+      x-manager-grant: clients.read
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Read the current account portrait.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerPortrait'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+    patch:
+      operationId: updateAccountPortraitForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Update the account portrait.
+      description: Requires clients.write on the manager host.
+      x-manager-grant: clients.write
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                company:
+                  $ref: '#/components/schemas/ManagerCompanyPortrait'
+                maturity_signals:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      manual:
+                        type:
+                        - boolean
+                        - 'null'
+                    required:
+                    - id
+                    - manual
+                topics:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      note:
+                        type: string
+                    required:
+                    - id
+                    - note
+      responses:
+        '200':
+          description: Update the account portrait.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerPortrait'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/managers/accounts/{id}/portrait/audit-dates:
+    post:
+      operationId: createPortraitAuditDateForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Add an account audit date.
+      description: Requires clients.write on the manager host.
+      x-manager-grant: clients.write
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                date:
+                  type: string
+                  format: date
+                note:
+                  type:
+                  - string
+                  - 'null'
+              required:
+              - date
+      responses:
+        '200':
+          description: Add an account audit date.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerPortrait'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/managers/portrait-template:
+    get:
+      operationId: getPortraitTemplateForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Read the current portrait template.
+      description: Requires clients.read on the manager host.
+      x-manager-grant: clients.read
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      responses:
+        '200':
+          description: Read the current portrait template.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerPortraitTemplate'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+    put:
+      operationId: setPortraitTemplateForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Update the portrait template.
+      description: Requires configuration.manage on the manager host.
+      x-manager-grant: configuration.manage
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                topics:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      title:
+                        type: string
+                      prompts:
+                        type: array
+                        items:
+                          type: string
+                    required:
+                    - id
+                    - title
+                    - prompts
+              required:
+              - topics
+      responses:
+        '200':
+          description: Update the portrait template.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerPortraitTemplate'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/managers/portrait-niches:
+    get:
+      operationId: listPortraitNichesForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: List the configured niches.
+      description: Requires clients.read on the manager host.
+      x-manager-grant: clients.read
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+      responses:
+        '200':
+          description: List the configured niches.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerNicheList'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+    post:
+      operationId: createPortraitNicheForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Create a portrait niche.
+      description: Requires configuration.manage on the manager host.
+      x-manager-grant: configuration.manage
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+              required:
+              - name
+      responses:
+        '201':
+          description: Create a portrait niche.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerNiche'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/managers/portrait-niches/{id}:
+    patch:
+      operationId: updatePortraitNicheForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Update a portrait niche.
+      description: Requires configuration.manage on the manager host.
+      x-manager-grant: configuration.manage
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+              required:
+              - name
+      responses:
+        '200':
+          description: Update a portrait niche.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerNiche'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    delete:
+      operationId: deletePortraitNicheForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Delete an unused portrait niche.
+      description: Requires configuration.manage on the manager host.
+      x-manager-grant: configuration.manage
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '204':
+          description: Delete an unused portrait niche.
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/managers/portrait-niches/{id}/merge:
+    post:
+      operationId: mergePortraitNicheForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Merge a portrait niche into a second niche.
+      description: Requires configuration.manage on the manager host.
+      x-manager-grant: configuration.manage
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                target_id:
+                  type: string
+                  format: uuid
+                target_version:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+              required:
+              - target_id
+              - target_version
+      responses:
+        '200':
+          description: Merge a portrait niche into a second niche.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerNiche'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: details.code is idempotency_conflict or version_conflict. A version conflict has numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/managers/operations/{id}:
     get:
       operationId: getManagerOperation
@@ -256,7 +1693,7 @@ paths:
       security:
         - managerSession: []
       summary: Read the live result of an owned manager command.
-      description: Requires clients.read; a review receipt also requires clients.write.
+      description: The authenticated owner must have the grant for the command kind and current target scope.
       parameters:
         - $ref: '#/components/parameters/RequestID'
         - name: id
@@ -1631,6 +3068,28 @@ components:
       in: cookie
       name: manager_session
   parameters:
+    ManagerOrigin:
+      name: Origin
+      in: header
+      required: true
+      description: Must equal MANAGERS_PUBLIC_ORIGIN (trailing slash ignored).
+      schema:
+        type: string
+        format: uri
+    ManagerIdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ManagerIfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: ^"[1-9][0-9]{0,15}"$
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -1734,6 +3193,699 @@ components:
     RetryAfter:
       schema: {type: string, pattern: '^[0-9]+$'}
   schemas:
+    ManagerAccountList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerAccountSummary'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        snapshot_at:
+          type: string
+          format: date-time
+        query_hash:
+          type: string
+        summary:
+          $ref: '#/components/schemas/ManagerAccountListSummary'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceStatus'
+      required:
+      - items
+      - next_cursor
+      - snapshot_at
+      - query_hash
+      - summary
+      - sources
+    ManagerAccountSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        amo_account_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        current_domain:
+          type:
+          - string
+          - 'null'
+        domain_aliases:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        display_name:
+          type:
+          - string
+          - 'null'
+        classification:
+          type:
+          - string
+          - 'null'
+        active_products_count:
+          type: integer
+          minimum: 0
+        license:
+          $ref: '#/components/schemas/ManagerObservationLicense'
+        active_users:
+          $ref: '#/components/schemas/ManagerObservationCount'
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - account_id
+      - amo_account_id
+      - current_domain
+      - domain_aliases
+      - display_name
+      - classification
+      - active_products_count
+      - license
+      - active_users
+      - version
+    ManagerAmoID:
+      type: string
+      pattern: ^(?:[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-6]|9223372036854775807)$
+    ManagerObservationLicense:
+      type: object
+      additionalProperties: false
+      properties:
+        state:
+          $ref: '#/components/schemas/ManagerFreshness'
+        value:
+          type: object
+          additionalProperties: false
+          properties:
+            license_until:
+              type:
+              - string
+              - 'null'
+              format: date-time
+            paid_seat_limit:
+              type:
+              - integer
+              - 'null'
+              minimum: 0
+            tariff:
+              type:
+              - string
+              - 'null'
+        source:
+          type: string
+        observed_at:
+          type: string
+          format: date-time
+        fresh_until:
+          type: string
+          format: date-time
+        evidence_id:
+          type: string
+          format: uuid
+        error_code:
+          type: string
+      required:
+      - state
+      - source
+    ManagerFreshness:
+      type: string
+      enum:
+      - fresh
+      - stale
+      - unknown
+      - unavailable
+      - unsupported
+    ManagerObservationCount:
+      type: object
+      additionalProperties: false
+      properties:
+        state:
+          $ref: '#/components/schemas/ManagerFreshness'
+        value:
+          type: integer
+          minimum: 0
+        source:
+          type: string
+        observed_at:
+          type: string
+          format: date-time
+        fresh_until:
+          type: string
+          format: date-time
+        evidence_id:
+          type: string
+          format: uuid
+        error_code:
+          type: string
+      required:
+      - state
+      - source
+    ManagerAccountListSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        total:
+          type: integer
+          minimum: 0
+      required:
+      - total
+    ManagerPortraitFilter:
+      type: object
+      additionalProperties: false
+      properties:
+        condition:
+          $ref: '#/components/schemas/ManagerPortraitPredicate'
+        and:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerPortraitFilter'
+          minItems: 1
+          maxItems: 30
+        or:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerPortraitFilter'
+          minItems: 1
+          maxItems: 30
+      oneOf:
+      - required:
+        - condition
+        maxProperties: 1
+      - required:
+        - and
+        maxProperties: 1
+      - required:
+        - or
+        maxProperties: 1
+    ManagerPortraitPredicate:
+      type: object
+      additionalProperties: false
+      properties:
+        field_id:
+          type: string
+          format: uuid
+        op:
+          type: string
+          enum:
+          - eq
+          - in
+          - exists
+          - lt
+          - gte
+        value: {}
+      required:
+      - field_id
+      - op
+    ManagerAccountDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        amo_account_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        current_domain:
+          type:
+          - string
+          - 'null'
+        domain_aliases:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+        display_name:
+          type:
+          - string
+          - 'null'
+        classification:
+          type:
+          - string
+          - 'null'
+        active_products_count:
+          type: integer
+          minimum: 0
+        license:
+          $ref: '#/components/schemas/ManagerObservationLicense'
+        active_users:
+          $ref: '#/components/schemas/ManagerObservationCount'
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        note:
+          type:
+          - string
+          - 'null'
+        region:
+          type:
+          - string
+          - 'null'
+        time_zone:
+          type:
+          - string
+          - 'null'
+        amostart:
+          $ref: '#/components/schemas/ManagerObservationDate'
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerCapability'
+      required:
+      - account_id
+      - amo_account_id
+      - current_domain
+      - domain_aliases
+      - display_name
+      - classification
+      - active_products_count
+      - license
+      - active_users
+      - version
+      - note
+      - region
+      - time_zone
+      - amostart
+      - capabilities
+    ManagerObservationDate:
+      type: object
+      additionalProperties: false
+      properties:
+        state:
+          $ref: '#/components/schemas/ManagerFreshness'
+        value:
+          type: string
+          format: date-time
+        source:
+          type: string
+        observed_at:
+          type: string
+          format: date-time
+        fresh_until:
+          type: string
+          format: date-time
+        evidence_id:
+          type: string
+          format: uuid
+        error_code:
+          type: string
+      required:
+      - state
+      - source
+    ManagerCapability:
+      type: object
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+        allowed:
+          type: boolean
+        reason_codes:
+          type: array
+          items:
+            type: string
+        required_grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerGrant'
+      required:
+      - action
+      - allowed
+      - reason_codes
+      - required_grants
+    ManagerGrant:
+      type: string
+      enum:
+      - catalog.manage
+      - clients.read
+      - clients.renew
+      - clients.write
+      - configuration.manage
+      - feed.read
+      - identity.manage
+      - security.audit.read
+      - staff.manage
+      - stats.read
+    ManagerLicenseEvidenceList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerLicenseEvidence'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        snapshot_at:
+          type: string
+          format: date-time
+        query_hash:
+          type: string
+      required:
+      - items
+      - next_cursor
+      - snapshot_at
+      - query_hash
+    ManagerLicenseEvidence:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        source:
+          type: string
+        license_until:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        observed_at:
+          type: string
+          format: date-time
+        previous_until:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        paid_seat_limit:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        active_users:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+      required:
+      - id
+      - account_id
+      - source
+      - license_until
+      - observed_at
+      - previous_until
+      - paid_seat_limit
+      - active_users
+    ManagerAccountWidgets:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerInstallation'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        snapshot_at:
+          type: string
+          format: date-time
+        query_hash:
+          type: string
+        summary:
+          $ref: '#/components/schemas/ManagerInstallationSummary'
+      required:
+      - items
+      - next_cursor
+      - snapshot_at
+      - query_hash
+      - summary
+    ManagerInstallationSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        reviewed:
+          type: integer
+          minimum: 0
+        unreviewed:
+          type: integer
+          minimum: 0
+      required:
+      - total
+      - reviewed
+      - unreviewed
+    ManagerObservationCRMUsers:
+      type: object
+      additionalProperties: false
+      properties:
+        state:
+          $ref: '#/components/schemas/ManagerFreshness'
+        value:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              id:
+                $ref: '#/components/schemas/ManagerAmoID'
+              name:
+                type: string
+              is_active:
+                type: boolean
+              is_admin:
+                type: boolean
+            required:
+            - id
+            - name
+            - is_active
+            - is_admin
+        source:
+          type: string
+        observed_at:
+          type: string
+          format: date-time
+        fresh_until:
+          type: string
+          format: date-time
+        evidence_id:
+          type: string
+          format: uuid
+        error_code:
+          type: string
+      required:
+      - state
+      - source
+    ManagerRenewal:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        account_id:
+          type: string
+          format: uuid
+        product_id:
+          type: string
+          format: uuid
+        target_until:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        access:
+          $ref: '#/components/schemas/ManagerInstallationAccess'
+      required:
+      - id
+      - account_id
+      - product_id
+      - target_until
+      - reason
+      - access
+    ManagerPortrait:
+      type: object
+      additionalProperties: false
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        template_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        company:
+          $ref: '#/components/schemas/ManagerCompanyPortrait'
+        maturity_signals:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+                format: uuid
+              manual:
+                type: boolean
+              observed:
+                type: boolean
+              source:
+                type: string
+            required:
+            - id
+        topics:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+                format: uuid
+              note:
+                type: string
+            required:
+            - id
+            - note
+        audit_dates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerAuditDate'
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - account_id
+      - template_version
+      - company
+      - maturity_signals
+      - topics
+      - audit_dates
+      - version
+    ManagerCompanyPortrait:
+      type: object
+      additionalProperties: false
+      properties:
+        niche_id:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        site:
+          type:
+          - string
+          - 'null'
+        rating:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        work_types:
+          type: array
+          items:
+            type: string
+        customer_types:
+          type: array
+          items:
+            type: string
+    ManagerAuditDate:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        note:
+          type:
+          - string
+          - 'null'
+      required:
+      - id
+      - date
+      - note
+    ManagerPortraitTemplate:
+      type: object
+      additionalProperties: false
+      properties:
+        topics:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+                format: uuid
+              title:
+                type: string
+              prompts:
+                type: array
+                items:
+                  type: string
+            required:
+            - id
+            - title
+            - prompts
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - topics
+      - version
+    ManagerNicheList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerNiche'
+        next_cursor:
+          type:
+          - string
+          - 'null'
+        snapshot_at:
+          type: string
+          format: date-time
+        query_hash:
+          type: string
+      required:
+      - items
+      - next_cursor
+      - snapshot_at
+      - query_hash
+    ManagerNiche:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - id
+      - name
+      - version
     ManagerInstallationLifecycleEvent:
       type: string
       enum: [installed, reinstalled, reauthorized, uninstalled]

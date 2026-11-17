@@ -408,16 +408,16 @@ func (e InstallationKind) Valid() bool {
 
 // Defines values for InstallationLifecycle.
 const (
-	Current InstallationLifecycle = "current"
-	Removed InstallationLifecycle = "removed"
+	InstallationLifecycleCurrent InstallationLifecycle = "current"
+	InstallationLifecycleRemoved InstallationLifecycle = "removed"
 )
 
 // Valid indicates whether the value is a known member of the InstallationLifecycle enum.
 func (e InstallationLifecycle) Valid() bool {
 	switch e {
-	case Current:
+	case InstallationLifecycleCurrent:
 		return true
-	case Removed:
+	case InstallationLifecycleRemoved:
 		return true
 	default:
 		return false
@@ -640,6 +640,96 @@ func (e TrialPolicyKind) Valid() bool {
 	case TrialPolicyKindNone:
 		return true
 	case TrialPolicyKindOnce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListAccountsParamsSort.
+const (
+	ListAccountsParamsSortAmoAccountId      ListAccountsParamsSort = "amo_account_id"
+	ListAccountsParamsSortCurrentDomain     ListAccountsParamsSort = "current_domain"
+	ListAccountsParamsSortDisplayName       ListAccountsParamsSort = "display_name"
+	ListAccountsParamsSortLicenseUntil      ListAccountsParamsSort = "license_until"
+	ListAccountsParamsSortMinusLicenseUntil ListAccountsParamsSort = "-license_until"
+)
+
+// Valid indicates whether the value is a known member of the ListAccountsParamsSort enum.
+func (e ListAccountsParamsSort) Valid() bool {
+	switch e {
+	case ListAccountsParamsSortAmoAccountId:
+		return true
+	case ListAccountsParamsSortCurrentDomain:
+		return true
+	case ListAccountsParamsSortDisplayName:
+		return true
+	case ListAccountsParamsSortLicenseUntil:
+		return true
+	case ListAccountsParamsSortMinusLicenseUntil:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SearchAccountsParamsSort.
+const (
+	SearchAccountsParamsSortAmoAccountId      SearchAccountsParamsSort = "amo_account_id"
+	SearchAccountsParamsSortCurrentDomain     SearchAccountsParamsSort = "current_domain"
+	SearchAccountsParamsSortDisplayName       SearchAccountsParamsSort = "display_name"
+	SearchAccountsParamsSortLicenseUntil      SearchAccountsParamsSort = "license_until"
+	SearchAccountsParamsSortMinusLicenseUntil SearchAccountsParamsSort = "-license_until"
+)
+
+// Valid indicates whether the value is a known member of the SearchAccountsParamsSort enum.
+func (e SearchAccountsParamsSort) Valid() bool {
+	switch e {
+	case SearchAccountsParamsSortAmoAccountId:
+		return true
+	case SearchAccountsParamsSortCurrentDomain:
+		return true
+	case SearchAccountsParamsSortDisplayName:
+		return true
+	case SearchAccountsParamsSortLicenseUntil:
+		return true
+	case SearchAccountsParamsSortMinusLicenseUntil:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RequestAccountRefreshJSONBodyComponents.
+const (
+	License RequestAccountRefreshJSONBodyComponents = "license"
+	Users   RequestAccountRefreshJSONBodyComponents = "users"
+)
+
+// Valid indicates whether the value is a known member of the RequestAccountRefreshJSONBodyComponents enum.
+func (e RequestAccountRefreshJSONBodyComponents) Valid() bool {
+	switch e {
+	case License:
+		return true
+	case Users:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListAccountWidgetsParamsState.
+const (
+	ListAccountWidgetsParamsStateCurrent ListAccountWidgetsParamsState = "current"
+	ListAccountWidgetsParamsStateRemoved ListAccountWidgetsParamsState = "removed"
+)
+
+// Valid indicates whether the value is a known member of the ListAccountWidgetsParamsState enum.
+func (e ListAccountWidgetsParamsState) Valid() bool {
+	switch e {
+	case ListAccountWidgetsParamsStateCurrent:
+		return true
+	case ListAccountWidgetsParamsStateRemoved:
 		return true
 	default:
 		return false
@@ -1350,6 +1440,160 @@ type Error429 = Error
 // Error503 defines model for Error503.
 type Error503 = Error
 
+// ListAccountsParams defines parameters for ListAccounts.
+type ListAccountsParams struct {
+	Limit          *int                    `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *string                 `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Q              *string                 `form:"q,omitempty" json:"q,omitempty"`
+	Classification *[]string               `form:"classification,omitempty" json:"classification,omitempty"`
+	ProductId      *openapi_types.UUID     `form:"product_id,omitempty" json:"product_id,omitempty"`
+	LicenseBefore  *time.Time              `form:"license_before,omitempty" json:"license_before,omitempty"`
+	ActiveUsersMin *int                    `form:"active_users_min,omitempty" json:"active_users_min,omitempty"`
+	ActiveUsersMax *int                    `form:"active_users_max,omitempty" json:"active_users_max,omitempty"`
+	Sort           *ListAccountsParamsSort `form:"sort,omitempty" json:"sort,omitempty"`
+	XPlatformActor Actor                   `json:"X-Platform-Actor"`
+}
+
+// ListAccountsParamsSort defines parameters for ListAccounts.
+type ListAccountsParamsSort string
+
+// SearchAccountsJSONBody defines parameters for SearchAccounts.
+type SearchAccountsJSONBody struct {
+	PortraitFilter PortraitFilter `json:"portrait_filter"`
+}
+
+// SearchAccountsParams defines parameters for SearchAccounts.
+type SearchAccountsParams struct {
+	Limit          *int                      `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *string                   `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Q              *string                   `form:"q,omitempty" json:"q,omitempty"`
+	Classification *[]string                 `form:"classification,omitempty" json:"classification,omitempty"`
+	ProductId      *openapi_types.UUID       `form:"product_id,omitempty" json:"product_id,omitempty"`
+	LicenseBefore  *time.Time                `form:"license_before,omitempty" json:"license_before,omitempty"`
+	ActiveUsersMin *int                      `form:"active_users_min,omitempty" json:"active_users_min,omitempty"`
+	ActiveUsersMax *int                      `form:"active_users_max,omitempty" json:"active_users_max,omitempty"`
+	Sort           *SearchAccountsParamsSort `form:"sort,omitempty" json:"sort,omitempty"`
+	XPlatformActor Actor                     `json:"X-Platform-Actor"`
+}
+
+// SearchAccountsParamsSort defines parameters for SearchAccounts.
+type SearchAccountsParamsSort string
+
+// GetAccountParams defines parameters for GetAccount.
+type GetAccountParams struct {
+	XPlatformActor Actor `json:"X-Platform-Actor"`
+}
+
+// GetAccountCRMUsersParams defines parameters for GetAccountCRMUsers.
+type GetAccountCRMUsersParams struct {
+	Active         *bool `form:"active,omitempty" json:"active,omitempty"`
+	Admin          *bool `form:"admin,omitempty" json:"admin,omitempty"`
+	XPlatformActor Actor `json:"X-Platform-Actor"`
+}
+
+// GetAccountLicenseHistoryParams defines parameters for GetAccountLicenseHistory.
+type GetAccountLicenseHistoryParams struct {
+	Limit          *int                `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *string             `form:"cursor,omitempty" json:"cursor,omitempty"`
+	From           *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
+	To             *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+	XPlatformActor Actor               `json:"X-Platform-Actor"`
+}
+
+// GetAccountPortraitParams defines parameters for GetAccountPortrait.
+type GetAccountPortraitParams struct {
+	XPlatformActor Actor `json:"X-Platform-Actor"`
+}
+
+// UpdateAccountPortraitJSONBody defines parameters for UpdateAccountPortrait.
+type UpdateAccountPortraitJSONBody struct {
+	Company         *CompanyPortrait `json:"company,omitempty"`
+	MaturitySignals *[]struct {
+		Id     openapi_types.UUID      `json:"id"`
+		Manual nullable.Nullable[bool] `json:"manual"`
+	} `json:"maturity_signals,omitempty"`
+	Topics *[]struct {
+		Id   openapi_types.UUID `json:"id"`
+		Note string             `json:"note"`
+	} `json:"topics,omitempty"`
+}
+
+// UpdateAccountPortraitParams defines parameters for UpdateAccountPortrait.
+type UpdateAccountPortraitParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
+// CreatePortraitAuditDateJSONBody defines parameters for CreatePortraitAuditDate.
+type CreatePortraitAuditDateJSONBody struct {
+	Date openapi_types.Date        `json:"date"`
+	Note nullable.Nullable[string] `json:"note,omitempty"`
+}
+
+// CreatePortraitAuditDateParams defines parameters for CreatePortraitAuditDate.
+type CreatePortraitAuditDateParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
+// UpdateAccountProfileJSONBody defines parameters for UpdateAccountProfile.
+type UpdateAccountProfileJSONBody struct {
+	Classification nullable.Nullable[string] `json:"classification,omitempty"`
+	DisplayName    nullable.Nullable[string] `json:"display_name,omitempty"`
+	Note           nullable.Nullable[string] `json:"note,omitempty"`
+	Reason         string                    `json:"reason"`
+}
+
+// UpdateAccountProfileParams defines parameters for UpdateAccountProfile.
+type UpdateAccountProfileParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
+// RequestAccountRefreshJSONBody defines parameters for RequestAccountRefresh.
+type RequestAccountRefreshJSONBody struct {
+	Components []RequestAccountRefreshJSONBodyComponents `json:"components"`
+	Reason     string                                    `json:"reason"`
+}
+
+// RequestAccountRefreshParams defines parameters for RequestAccountRefresh.
+type RequestAccountRefreshParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RequestAccountRefreshJSONBodyComponents defines parameters for RequestAccountRefresh.
+type RequestAccountRefreshJSONBodyComponents string
+
+// CreateAccountRenewalJSONBody defines parameters for CreateAccountRenewal.
+type CreateAccountRenewalJSONBody struct {
+	ProductId   openapi_types.UUID `json:"product_id"`
+	Reason      string             `json:"reason"`
+	TargetUntil time.Time          `json:"target_until"`
+}
+
+// CreateAccountRenewalParams defines parameters for CreateAccountRenewal.
+type CreateAccountRenewalParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
+// ListAccountWidgetsParams defines parameters for ListAccountWidgets.
+type ListAccountWidgetsParams struct {
+	Limit          *int                           `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *string                        `form:"cursor,omitempty" json:"cursor,omitempty"`
+	State          *ListAccountWidgetsParamsState `form:"state,omitempty" json:"state,omitempty"`
+	ProductId      *openapi_types.UUID            `form:"product_id,omitempty" json:"product_id,omitempty"`
+	XPlatformActor Actor                          `json:"X-Platform-Actor"`
+}
+
+// ListAccountWidgetsParamsState defines parameters for ListAccountWidgets.
+type ListAccountWidgetsParamsState string
+
 // GetCommandReceiptParams defines parameters for GetCommandReceipt.
 type GetCommandReceiptParams struct {
 	XPlatformActor Actor `json:"X-Platform-Actor"`
@@ -1418,11 +1662,113 @@ type GetOperationParams struct {
 	XPlatformActor Actor `json:"X-Platform-Actor"`
 }
 
+// ListPortraitNichesParams defines parameters for ListPortraitNiches.
+type ListPortraitNichesParams struct {
+	Limit          *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Q              *string `form:"q,omitempty" json:"q,omitempty"`
+	XPlatformActor Actor   `json:"X-Platform-Actor"`
+}
+
+// CreatePortraitNicheJSONBody defines parameters for CreatePortraitNiche.
+type CreatePortraitNicheJSONBody struct {
+	Name string `json:"name"`
+}
+
+// CreatePortraitNicheParams defines parameters for CreatePortraitNiche.
+type CreatePortraitNicheParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DeletePortraitNicheParams defines parameters for DeletePortraitNiche.
+type DeletePortraitNicheParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
+// UpdatePortraitNicheJSONBody defines parameters for UpdatePortraitNiche.
+type UpdatePortraitNicheJSONBody struct {
+	Name string `json:"name"`
+}
+
+// UpdatePortraitNicheParams defines parameters for UpdatePortraitNiche.
+type UpdatePortraitNicheParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
+// MergePortraitNicheJSONBody defines parameters for MergePortraitNiche.
+type MergePortraitNicheJSONBody struct {
+	TargetId      openapi_types.UUID `json:"target_id"`
+	TargetVersion int                `json:"target_version"`
+}
+
+// MergePortraitNicheParams defines parameters for MergePortraitNiche.
+type MergePortraitNicheParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
+// GetPortraitTemplateParams defines parameters for GetPortraitTemplate.
+type GetPortraitTemplateParams struct {
+	XPlatformActor Actor `json:"X-Platform-Actor"`
+}
+
+// SetPortraitTemplateJSONBody defines parameters for SetPortraitTemplate.
+type SetPortraitTemplateJSONBody struct {
+	Topics []struct {
+		Id      openapi_types.UUID `json:"id"`
+		Prompts []string           `json:"prompts"`
+		Title   string             `json:"title"`
+	} `json:"topics"`
+}
+
+// SetPortraitTemplateParams defines parameters for SetPortraitTemplate.
+type SetPortraitTemplateParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
+// SearchAccountsJSONRequestBody defines body for SearchAccounts for application/json ContentType.
+type SearchAccountsJSONRequestBody SearchAccountsJSONBody
+
+// UpdateAccountPortraitJSONRequestBody defines body for UpdateAccountPortrait for application/json ContentType.
+type UpdateAccountPortraitJSONRequestBody UpdateAccountPortraitJSONBody
+
+// CreatePortraitAuditDateJSONRequestBody defines body for CreatePortraitAuditDate for application/json ContentType.
+type CreatePortraitAuditDateJSONRequestBody CreatePortraitAuditDateJSONBody
+
+// UpdateAccountProfileJSONRequestBody defines body for UpdateAccountProfile for application/json ContentType.
+type UpdateAccountProfileJSONRequestBody UpdateAccountProfileJSONBody
+
+// RequestAccountRefreshJSONRequestBody defines body for RequestAccountRefresh for application/json ContentType.
+type RequestAccountRefreshJSONRequestBody RequestAccountRefreshJSONBody
+
+// CreateAccountRenewalJSONRequestBody defines body for CreateAccountRenewal for application/json ContentType.
+type CreateAccountRenewalJSONRequestBody CreateAccountRenewalJSONBody
+
 // RetryInstallationDealJSONRequestBody defines body for RetryInstallationDeal for application/json ContentType.
 type RetryInstallationDealJSONRequestBody RetryInstallationDealJSONBody
 
 // SetInstallationReviewJSONRequestBody defines body for SetInstallationReview for application/json ContentType.
 type SetInstallationReviewJSONRequestBody SetInstallationReviewJSONBody
+
+// CreatePortraitNicheJSONRequestBody defines body for CreatePortraitNiche for application/json ContentType.
+type CreatePortraitNicheJSONRequestBody CreatePortraitNicheJSONBody
+
+// UpdatePortraitNicheJSONRequestBody defines body for UpdatePortraitNiche for application/json ContentType.
+type UpdatePortraitNicheJSONRequestBody UpdatePortraitNicheJSONBody
+
+// MergePortraitNicheJSONRequestBody defines body for MergePortraitNiche for application/json ContentType.
+type MergePortraitNicheJSONRequestBody MergePortraitNicheJSONBody
+
+// SetPortraitTemplateJSONRequestBody defines body for SetPortraitTemplate for application/json ContentType.
+type SetPortraitTemplateJSONRequestBody SetPortraitTemplateJSONBody
 
 // AsPortraitFilter0 returns the union data inside the PortraitFilter as a PortraitFilter0
 func (t PortraitFilter) AsPortraitFilter0() (PortraitFilter0, error) {
@@ -1648,6 +1994,80 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
+	// ListAccounts performs a GET /internal/platform/v1/managers/accounts (the `ListAccounts` operationId) request.
+	ListAccounts(ctx context.Context, params *ListAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SearchAccountsWithBody performs a POST /internal/platform/v1/managers/accounts/search (the `SearchAccounts` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// До 3 уровней и 30 условий. Тип значения задаёт поле шаблона. Операция чтения.
+	SearchAccountsWithBody(ctx context.Context, params *SearchAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SearchAccounts performs a POST /internal/platform/v1/managers/accounts/search (the `SearchAccounts` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// До 3 уровней и 30 условий. Тип значения задаёт поле шаблона. Операция чтения.
+	SearchAccounts(ctx context.Context, params *SearchAccountsParams, body SearchAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAccount performs a GET /internal/platform/v1/managers/accounts/{id} (the `GetAccount` operationId) request.
+	GetAccount(ctx context.Context, id openapi_types.UUID, params *GetAccountParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAccountCRMUsers performs a GET /internal/platform/v1/managers/accounts/{id}/crm-users (the `GetAccountCRMUsers` operationId) request.
+	GetAccountCRMUsers(ctx context.Context, id openapi_types.UUID, params *GetAccountCRMUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAccountLicenseHistory performs a GET /internal/platform/v1/managers/accounts/{id}/license-history (the `GetAccountLicenseHistory` operationId) request.
+	GetAccountLicenseHistory(ctx context.Context, id openapi_types.UUID, params *GetAccountLicenseHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAccountPortrait performs a GET /internal/platform/v1/managers/accounts/{id}/portrait (the `GetAccountPortrait` operationId) request.
+	GetAccountPortrait(ctx context.Context, id openapi_types.UUID, params *GetAccountPortraitParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAccountPortraitWithBody performs a PATCH /internal/platform/v1/managers/accounts/{id}/portrait (the `UpdateAccountPortrait` operationId) request,
+	// with any type of body and a specified content type.
+	UpdateAccountPortraitWithBody(ctx context.Context, id openapi_types.UUID, params *UpdateAccountPortraitParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAccountPortrait performs a PATCH /internal/platform/v1/managers/accounts/{id}/portrait (the `UpdateAccountPortrait` operationId) request.
+	// Takes a body of the `application/json` content type.
+	UpdateAccountPortrait(ctx context.Context, id openapi_types.UUID, params *UpdateAccountPortraitParams, body UpdateAccountPortraitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePortraitAuditDateWithBody performs a POST /internal/platform/v1/managers/accounts/{id}/portrait/audit-dates (the `CreatePortraitAuditDate` operationId) request,
+	// with any type of body and a specified content type.
+	CreatePortraitAuditDateWithBody(ctx context.Context, id openapi_types.UUID, params *CreatePortraitAuditDateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePortraitAuditDate performs a POST /internal/platform/v1/managers/accounts/{id}/portrait/audit-dates (the `CreatePortraitAuditDate` operationId) request.
+	// Takes a body of the `application/json` content type.
+	CreatePortraitAuditDate(ctx context.Context, id openapi_types.UUID, params *CreatePortraitAuditDateParams, body CreatePortraitAuditDateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAccountProfileWithBody performs a PATCH /internal/platform/v1/managers/accounts/{id}/profile (the `UpdateAccountProfile` operationId) request,
+	// with any type of body and a specified content type.
+	UpdateAccountProfileWithBody(ctx context.Context, id openapi_types.UUID, params *UpdateAccountProfileParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAccountProfile performs a PATCH /internal/platform/v1/managers/accounts/{id}/profile (the `UpdateAccountProfile` operationId) request.
+	// Takes a body of the `application/json` content type.
+	UpdateAccountProfile(ctx context.Context, id openapi_types.UUID, params *UpdateAccountProfileParams, body UpdateAccountProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestAccountRefreshWithBody performs a POST /internal/platform/v1/managers/accounts/{id}/refresh (the `RequestAccountRefresh` operationId) request,
+	// with any type of body and a specified content type.
+	RequestAccountRefreshWithBody(ctx context.Context, id openapi_types.UUID, params *RequestAccountRefreshParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestAccountRefresh performs a POST /internal/platform/v1/managers/accounts/{id}/refresh (the `RequestAccountRefresh` operationId) request.
+	// Takes a body of the `application/json` content type.
+	RequestAccountRefresh(ctx context.Context, id openapi_types.UUID, params *RequestAccountRefreshParams, body RequestAccountRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateAccountRenewalWithBody performs a POST /internal/platform/v1/managers/accounts/{id}/renewals (the `CreateAccountRenewal` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// If-Match относится к версии собственных прав выбранного account/product. Возвращается обновлённая версия права.
+	CreateAccountRenewalWithBody(ctx context.Context, id openapi_types.UUID, params *CreateAccountRenewalParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateAccountRenewal performs a POST /internal/platform/v1/managers/accounts/{id}/renewals (the `CreateAccountRenewal` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// If-Match относится к версии собственных прав выбранного account/product. Возвращается обновлённая версия права.
+	CreateAccountRenewal(ctx context.Context, id openapi_types.UUID, params *CreateAccountRenewalParams, body CreateAccountRenewalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListAccountWidgets performs a GET /internal/platform/v1/managers/accounts/{id}/widgets (the `ListAccountWidgets` operationId) request.
+	ListAccountWidgets(ctx context.Context, id openapi_types.UUID, params *ListAccountWidgetsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetCommandReceipt performs a GET /internal/platform/v1/managers/commands/{id} (the `GetCommandReceipt` operationId) request.
 	//
 	// Только исходный BFF и субъект с актуальным правом на команду. Возвращает зарегистрированный исход по command ID; 404 не доказывает, что первый запрос не в пути.
@@ -1676,6 +2096,301 @@ type ClientInterface interface {
 	//
 	// Исходный субъект и актуальное право на операцию и целевой ресурс.
 	GetOperation(ctx context.Context, id openapi_types.UUID, params *GetOperationParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListPortraitNiches performs a GET /internal/platform/v1/managers/portrait-niches (the `ListPortraitNiches` operationId) request.
+	ListPortraitNiches(ctx context.Context, params *ListPortraitNichesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePortraitNicheWithBody performs a POST /internal/platform/v1/managers/portrait-niches (the `CreatePortraitNiche` operationId) request,
+	// with any type of body and a specified content type.
+	CreatePortraitNicheWithBody(ctx context.Context, params *CreatePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePortraitNiche performs a POST /internal/platform/v1/managers/portrait-niches (the `CreatePortraitNiche` operationId) request.
+	// Takes a body of the `application/json` content type.
+	CreatePortraitNiche(ctx context.Context, params *CreatePortraitNicheParams, body CreatePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeletePortraitNiche performs a DELETE /internal/platform/v1/managers/portrait-niches/{id} (the `DeletePortraitNiche` operationId) request.
+	DeletePortraitNiche(ctx context.Context, id openapi_types.UUID, params *DeletePortraitNicheParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdatePortraitNicheWithBody performs a PATCH /internal/platform/v1/managers/portrait-niches/{id} (the `UpdatePortraitNiche` operationId) request,
+	// with any type of body and a specified content type.
+	UpdatePortraitNicheWithBody(ctx context.Context, id openapi_types.UUID, params *UpdatePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdatePortraitNiche performs a PATCH /internal/platform/v1/managers/portrait-niches/{id} (the `UpdatePortraitNiche` operationId) request.
+	// Takes a body of the `application/json` content type.
+	UpdatePortraitNiche(ctx context.Context, id openapi_types.UUID, params *UpdatePortraitNicheParams, body UpdatePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MergePortraitNicheWithBody performs a POST /internal/platform/v1/managers/portrait-niches/{id}/merge (the `MergePortraitNiche` operationId) request,
+	// with any type of body and a specified content type.
+	MergePortraitNicheWithBody(ctx context.Context, id openapi_types.UUID, params *MergePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MergePortraitNiche performs a POST /internal/platform/v1/managers/portrait-niches/{id}/merge (the `MergePortraitNiche` operationId) request.
+	// Takes a body of the `application/json` content type.
+	MergePortraitNiche(ctx context.Context, id openapi_types.UUID, params *MergePortraitNicheParams, body MergePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPortraitTemplate performs a GET /internal/platform/v1/managers/portrait-template (the `GetPortraitTemplate` operationId) request.
+	GetPortraitTemplate(ctx context.Context, params *GetPortraitTemplateParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetPortraitTemplateWithBody performs a PUT /internal/platform/v1/managers/portrait-template (the `SetPortraitTemplate` operationId) request,
+	// with any type of body and a specified content type.
+	SetPortraitTemplateWithBody(ctx context.Context, params *SetPortraitTemplateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetPortraitTemplate performs a PUT /internal/platform/v1/managers/portrait-template (the `SetPortraitTemplate` operationId) request.
+	// Takes a body of the `application/json` content type.
+	SetPortraitTemplate(ctx context.Context, params *SetPortraitTemplateParams, body SetPortraitTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+// ListAccounts performs a GET /internal/platform/v1/managers/accounts (the `ListAccounts` operationId) request.
+func (c *Client) ListAccounts(ctx context.Context, params *ListAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAccountsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SearchAccountsWithBody performs a POST /internal/platform/v1/managers/accounts/search (the `SearchAccounts` operationId) request,
+// with any type of body and a specified content type.
+//
+// До 3 уровней и 30 условий. Тип значения задаёт поле шаблона. Операция чтения.
+func (c *Client) SearchAccountsWithBody(ctx context.Context, params *SearchAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchAccountsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SearchAccounts performs a POST /internal/platform/v1/managers/accounts/search (the `SearchAccounts` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// До 3 уровней и 30 условий. Тип значения задаёт поле шаблона. Операция чтения.
+func (c *Client) SearchAccounts(ctx context.Context, params *SearchAccountsParams, body SearchAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchAccountsRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetAccount performs a GET /internal/platform/v1/managers/accounts/{id} (the `GetAccount` operationId) request.
+func (c *Client) GetAccount(ctx context.Context, id openapi_types.UUID, params *GetAccountParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAccountRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetAccountCRMUsers performs a GET /internal/platform/v1/managers/accounts/{id}/crm-users (the `GetAccountCRMUsers` operationId) request.
+func (c *Client) GetAccountCRMUsers(ctx context.Context, id openapi_types.UUID, params *GetAccountCRMUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAccountCRMUsersRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetAccountLicenseHistory performs a GET /internal/platform/v1/managers/accounts/{id}/license-history (the `GetAccountLicenseHistory` operationId) request.
+func (c *Client) GetAccountLicenseHistory(ctx context.Context, id openapi_types.UUID, params *GetAccountLicenseHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAccountLicenseHistoryRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetAccountPortrait performs a GET /internal/platform/v1/managers/accounts/{id}/portrait (the `GetAccountPortrait` operationId) request.
+func (c *Client) GetAccountPortrait(ctx context.Context, id openapi_types.UUID, params *GetAccountPortraitParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAccountPortraitRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateAccountPortraitWithBody performs a PATCH /internal/platform/v1/managers/accounts/{id}/portrait (the `UpdateAccountPortrait` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) UpdateAccountPortraitWithBody(ctx context.Context, id openapi_types.UUID, params *UpdateAccountPortraitParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAccountPortraitRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateAccountPortrait performs a PATCH /internal/platform/v1/managers/accounts/{id}/portrait (the `UpdateAccountPortrait` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) UpdateAccountPortrait(ctx context.Context, id openapi_types.UUID, params *UpdateAccountPortraitParams, body UpdateAccountPortraitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAccountPortraitRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePortraitAuditDateWithBody performs a POST /internal/platform/v1/managers/accounts/{id}/portrait/audit-dates (the `CreatePortraitAuditDate` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) CreatePortraitAuditDateWithBody(ctx context.Context, id openapi_types.UUID, params *CreatePortraitAuditDateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePortraitAuditDateRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePortraitAuditDate performs a POST /internal/platform/v1/managers/accounts/{id}/portrait/audit-dates (the `CreatePortraitAuditDate` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) CreatePortraitAuditDate(ctx context.Context, id openapi_types.UUID, params *CreatePortraitAuditDateParams, body CreatePortraitAuditDateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePortraitAuditDateRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateAccountProfileWithBody performs a PATCH /internal/platform/v1/managers/accounts/{id}/profile (the `UpdateAccountProfile` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) UpdateAccountProfileWithBody(ctx context.Context, id openapi_types.UUID, params *UpdateAccountProfileParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAccountProfileRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateAccountProfile performs a PATCH /internal/platform/v1/managers/accounts/{id}/profile (the `UpdateAccountProfile` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) UpdateAccountProfile(ctx context.Context, id openapi_types.UUID, params *UpdateAccountProfileParams, body UpdateAccountProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAccountProfileRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RequestAccountRefreshWithBody performs a POST /internal/platform/v1/managers/accounts/{id}/refresh (the `RequestAccountRefresh` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) RequestAccountRefreshWithBody(ctx context.Context, id openapi_types.UUID, params *RequestAccountRefreshParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestAccountRefreshRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RequestAccountRefresh performs a POST /internal/platform/v1/managers/accounts/{id}/refresh (the `RequestAccountRefresh` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) RequestAccountRefresh(ctx context.Context, id openapi_types.UUID, params *RequestAccountRefreshParams, body RequestAccountRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestAccountRefreshRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateAccountRenewalWithBody performs a POST /internal/platform/v1/managers/accounts/{id}/renewals (the `CreateAccountRenewal` operationId) request,
+// with any type of body and a specified content type.
+//
+// If-Match относится к версии собственных прав выбранного account/product. Возвращается обновлённая версия права.
+func (c *Client) CreateAccountRenewalWithBody(ctx context.Context, id openapi_types.UUID, params *CreateAccountRenewalParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateAccountRenewalRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateAccountRenewal performs a POST /internal/platform/v1/managers/accounts/{id}/renewals (the `CreateAccountRenewal` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// If-Match относится к версии собственных прав выбранного account/product. Возвращается обновлённая версия права.
+func (c *Client) CreateAccountRenewal(ctx context.Context, id openapi_types.UUID, params *CreateAccountRenewalParams, body CreateAccountRenewalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateAccountRenewalRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListAccountWidgets performs a GET /internal/platform/v1/managers/accounts/{id}/widgets (the `ListAccountWidgets` operationId) request.
+func (c *Client) ListAccountWidgets(ctx context.Context, id openapi_types.UUID, params *ListAccountWidgetsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAccountWidgetsRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 // GetCommandReceipt performs a GET /internal/platform/v1/managers/commands/{id} (the `GetCommandReceipt` operationId) request.
@@ -1775,6 +2490,1277 @@ func (c *Client) GetOperation(ctx context.Context, id openapi_types.UUID, params
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// ListPortraitNiches performs a GET /internal/platform/v1/managers/portrait-niches (the `ListPortraitNiches` operationId) request.
+func (c *Client) ListPortraitNiches(ctx context.Context, params *ListPortraitNichesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPortraitNichesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePortraitNicheWithBody performs a POST /internal/platform/v1/managers/portrait-niches (the `CreatePortraitNiche` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) CreatePortraitNicheWithBody(ctx context.Context, params *CreatePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePortraitNicheRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePortraitNiche performs a POST /internal/platform/v1/managers/portrait-niches (the `CreatePortraitNiche` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) CreatePortraitNiche(ctx context.Context, params *CreatePortraitNicheParams, body CreatePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePortraitNicheRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeletePortraitNiche performs a DELETE /internal/platform/v1/managers/portrait-niches/{id} (the `DeletePortraitNiche` operationId) request.
+func (c *Client) DeletePortraitNiche(ctx context.Context, id openapi_types.UUID, params *DeletePortraitNicheParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeletePortraitNicheRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdatePortraitNicheWithBody performs a PATCH /internal/platform/v1/managers/portrait-niches/{id} (the `UpdatePortraitNiche` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) UpdatePortraitNicheWithBody(ctx context.Context, id openapi_types.UUID, params *UpdatePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdatePortraitNicheRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdatePortraitNiche performs a PATCH /internal/platform/v1/managers/portrait-niches/{id} (the `UpdatePortraitNiche` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) UpdatePortraitNiche(ctx context.Context, id openapi_types.UUID, params *UpdatePortraitNicheParams, body UpdatePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdatePortraitNicheRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// MergePortraitNicheWithBody performs a POST /internal/platform/v1/managers/portrait-niches/{id}/merge (the `MergePortraitNiche` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) MergePortraitNicheWithBody(ctx context.Context, id openapi_types.UUID, params *MergePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMergePortraitNicheRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// MergePortraitNiche performs a POST /internal/platform/v1/managers/portrait-niches/{id}/merge (the `MergePortraitNiche` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) MergePortraitNiche(ctx context.Context, id openapi_types.UUID, params *MergePortraitNicheParams, body MergePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMergePortraitNicheRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetPortraitTemplate performs a GET /internal/platform/v1/managers/portrait-template (the `GetPortraitTemplate` operationId) request.
+func (c *Client) GetPortraitTemplate(ctx context.Context, params *GetPortraitTemplateParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPortraitTemplateRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetPortraitTemplateWithBody performs a PUT /internal/platform/v1/managers/portrait-template (the `SetPortraitTemplate` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) SetPortraitTemplateWithBody(ctx context.Context, params *SetPortraitTemplateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetPortraitTemplateRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetPortraitTemplate performs a PUT /internal/platform/v1/managers/portrait-template (the `SetPortraitTemplate` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) SetPortraitTemplate(ctx context.Context, params *SetPortraitTemplateParams, body SetPortraitTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetPortraitTemplateRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// NewListAccountsRequest constructs an http.Request for the ListAccounts method
+func NewListAccountsRequest(server string, params *ListAccountsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Classification != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "classification", *params.Classification, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ProductId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.LicenseBefore != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "license_before", *params.LicenseBefore, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ActiveUsersMin != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "active_users_min", *params.ActiveUsersMin, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ActiveUsersMax != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "active_users_max", *params.ActiveUsersMax, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Sort != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sort", *params.Sort, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewSearchAccountsRequest calls the generic SearchAccounts builder with application/json body
+func NewSearchAccountsRequest(server string, params *SearchAccountsParams, body SearchAccountsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSearchAccountsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewSearchAccountsRequestWithBody constructs an http.Request for the SearchAccounts method, with any body, and a specified content type
+func NewSearchAccountsRequestWithBody(server string, params *SearchAccountsParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/search")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Classification != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "classification", *params.Classification, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ProductId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.LicenseBefore != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "license_before", *params.LicenseBefore, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ActiveUsersMin != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "active_users_min", *params.ActiveUsersMin, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ActiveUsersMax != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "active_users_max", *params.ActiveUsersMax, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Sort != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sort", *params.Sort, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGetAccountRequest constructs an http.Request for the GetAccount method
+func NewGetAccountRequest(server string, id openapi_types.UUID, params *GetAccountParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGetAccountCRMUsersRequest constructs an http.Request for the GetAccountCRMUsers method
+func NewGetAccountCRMUsersRequest(server string, id openapi_types.UUID, params *GetAccountCRMUsersParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/crm-users", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Active != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "active", *params.Active, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Admin != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "admin", *params.Admin, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGetAccountLicenseHistoryRequest constructs an http.Request for the GetAccountLicenseHistory method
+func NewGetAccountLicenseHistoryRequest(server string, id openapi_types.UUID, params *GetAccountLicenseHistoryParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/license-history", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.From != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGetAccountPortraitRequest constructs an http.Request for the GetAccountPortrait method
+func NewGetAccountPortraitRequest(server string, id openapi_types.UUID, params *GetAccountPortraitParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/portrait", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewUpdateAccountPortraitRequest calls the generic UpdateAccountPortrait builder with application/json body
+func NewUpdateAccountPortraitRequest(server string, id openapi_types.UUID, params *UpdateAccountPortraitParams, body UpdateAccountPortraitJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateAccountPortraitRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewUpdateAccountPortraitRequestWithBody constructs an http.Request for the UpdateAccountPortrait method, with any body, and a specified content type
+func NewUpdateAccountPortraitRequestWithBody(server string, id openapi_types.UUID, params *UpdateAccountPortraitParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/portrait", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
+// NewCreatePortraitAuditDateRequest calls the generic CreatePortraitAuditDate builder with application/json body
+func NewCreatePortraitAuditDateRequest(server string, id openapi_types.UUID, params *CreatePortraitAuditDateParams, body CreatePortraitAuditDateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreatePortraitAuditDateRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewCreatePortraitAuditDateRequestWithBody constructs an http.Request for the CreatePortraitAuditDate method, with any body, and a specified content type
+func NewCreatePortraitAuditDateRequestWithBody(server string, id openapi_types.UUID, params *CreatePortraitAuditDateParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/portrait/audit-dates", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
+// NewUpdateAccountProfileRequest calls the generic UpdateAccountProfile builder with application/json body
+func NewUpdateAccountProfileRequest(server string, id openapi_types.UUID, params *UpdateAccountProfileParams, body UpdateAccountProfileJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateAccountProfileRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewUpdateAccountProfileRequestWithBody constructs an http.Request for the UpdateAccountProfile method, with any body, and a specified content type
+func NewUpdateAccountProfileRequestWithBody(server string, id openapi_types.UUID, params *UpdateAccountProfileParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/profile", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
+// NewRequestAccountRefreshRequest calls the generic RequestAccountRefresh builder with application/json body
+func NewRequestAccountRefreshRequest(server string, id openapi_types.UUID, params *RequestAccountRefreshParams, body RequestAccountRefreshJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRequestAccountRefreshRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewRequestAccountRefreshRequestWithBody constructs an http.Request for the RequestAccountRefresh method, with any body, and a specified content type
+func NewRequestAccountRefreshRequestWithBody(server string, id openapi_types.UUID, params *RequestAccountRefreshParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/refresh", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+	}
+
+	return req, nil
+}
+
+// NewCreateAccountRenewalRequest calls the generic CreateAccountRenewal builder with application/json body
+func NewCreateAccountRenewalRequest(server string, id openapi_types.UUID, params *CreateAccountRenewalParams, body CreateAccountRenewalJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateAccountRenewalRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewCreateAccountRenewalRequestWithBody constructs an http.Request for the CreateAccountRenewal method, with any body, and a specified content type
+func NewCreateAccountRenewalRequestWithBody(server string, id openapi_types.UUID, params *CreateAccountRenewalParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/renewals", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
+// NewListAccountWidgetsRequest constructs an http.Request for the ListAccountWidgets method
+func NewListAccountWidgetsRequest(server string, id openapi_types.UUID, params *ListAccountWidgetsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/widgets", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.State != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ProductId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
 }
 
 // NewGetCommandReceiptRequest constructs an http.Request for the GetCommandReceipt method
@@ -2238,6 +4224,491 @@ func NewGetOperationRequest(server string, id openapi_types.UUID, params *GetOpe
 	return req, nil
 }
 
+// NewListPortraitNichesRequest constructs an http.Request for the ListPortraitNiches method
+func NewListPortraitNichesRequest(server string, params *ListPortraitNichesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/portrait-niches")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewCreatePortraitNicheRequest calls the generic CreatePortraitNiche builder with application/json body
+func NewCreatePortraitNicheRequest(server string, params *CreatePortraitNicheParams, body CreatePortraitNicheJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreatePortraitNicheRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewCreatePortraitNicheRequestWithBody constructs an http.Request for the CreatePortraitNiche method, with any body, and a specified content type
+func NewCreatePortraitNicheRequestWithBody(server string, params *CreatePortraitNicheParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/portrait-niches")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+	}
+
+	return req, nil
+}
+
+// NewDeletePortraitNicheRequest constructs an http.Request for the DeletePortraitNiche method
+func NewDeletePortraitNicheRequest(server string, id openapi_types.UUID, params *DeletePortraitNicheParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/portrait-niches/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
+// NewUpdatePortraitNicheRequest calls the generic UpdatePortraitNiche builder with application/json body
+func NewUpdatePortraitNicheRequest(server string, id openapi_types.UUID, params *UpdatePortraitNicheParams, body UpdatePortraitNicheJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdatePortraitNicheRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewUpdatePortraitNicheRequestWithBody constructs an http.Request for the UpdatePortraitNiche method, with any body, and a specified content type
+func NewUpdatePortraitNicheRequestWithBody(server string, id openapi_types.UUID, params *UpdatePortraitNicheParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/portrait-niches/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
+// NewMergePortraitNicheRequest calls the generic MergePortraitNiche builder with application/json body
+func NewMergePortraitNicheRequest(server string, id openapi_types.UUID, params *MergePortraitNicheParams, body MergePortraitNicheJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewMergePortraitNicheRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewMergePortraitNicheRequestWithBody constructs an http.Request for the MergePortraitNiche method, with any body, and a specified content type
+func NewMergePortraitNicheRequestWithBody(server string, id openapi_types.UUID, params *MergePortraitNicheParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/portrait-niches/%s/merge", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
+// NewGetPortraitTemplateRequest constructs an http.Request for the GetPortraitTemplate method
+func NewGetPortraitTemplateRequest(server string, params *GetPortraitTemplateParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/portrait-template")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewSetPortraitTemplateRequest calls the generic SetPortraitTemplate builder with application/json body
+func NewSetPortraitTemplateRequest(server string, params *SetPortraitTemplateParams, body SetPortraitTemplateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetPortraitTemplateRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewSetPortraitTemplateRequestWithBody constructs an http.Request for the SetPortraitTemplate method, with any body, and a specified content type
+func NewSetPortraitTemplateRequestWithBody(server string, params *SetPortraitTemplateParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/portrait-template")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -2282,6 +4753,104 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
+	// ListAccountsWithResponse performs a GET /internal/platform/v1/managers/accounts (the `ListAccounts` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListAccountsWithResponse(ctx context.Context, params *ListAccountsParams, reqEditors ...RequestEditorFn) (*ListAccountsResponse, error)
+
+	// SearchAccountsWithBodyWithResponse performs a POST /internal/platform/v1/managers/accounts/search (the `SearchAccounts` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// До 3 уровней и 30 условий. Тип значения задаёт поле шаблона. Операция чтения.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	SearchAccountsWithBodyWithResponse(ctx context.Context, params *SearchAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchAccountsResponse, error)
+
+	// SearchAccountsWithResponse performs a POST /internal/platform/v1/managers/accounts/search (the `SearchAccounts` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// До 3 уровней и 30 условий. Тип значения задаёт поле шаблона. Операция чтения.
+	SearchAccountsWithResponse(ctx context.Context, params *SearchAccountsParams, body SearchAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchAccountsResponse, error)
+
+	// GetAccountWithResponse performs a GET /internal/platform/v1/managers/accounts/{id} (the `GetAccount` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetAccountWithResponse(ctx context.Context, id openapi_types.UUID, params *GetAccountParams, reqEditors ...RequestEditorFn) (*GetAccountResponse, error)
+
+	// GetAccountCRMUsersWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/crm-users (the `GetAccountCRMUsers` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetAccountCRMUsersWithResponse(ctx context.Context, id openapi_types.UUID, params *GetAccountCRMUsersParams, reqEditors ...RequestEditorFn) (*GetAccountCRMUsersResponse, error)
+
+	// GetAccountLicenseHistoryWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/license-history (the `GetAccountLicenseHistory` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetAccountLicenseHistoryWithResponse(ctx context.Context, id openapi_types.UUID, params *GetAccountLicenseHistoryParams, reqEditors ...RequestEditorFn) (*GetAccountLicenseHistoryResponse, error)
+
+	// GetAccountPortraitWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/portrait (the `GetAccountPortrait` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetAccountPortraitWithResponse(ctx context.Context, id openapi_types.UUID, params *GetAccountPortraitParams, reqEditors ...RequestEditorFn) (*GetAccountPortraitResponse, error)
+
+	// UpdateAccountPortraitWithBodyWithResponse performs a PATCH /internal/platform/v1/managers/accounts/{id}/portrait (the `UpdateAccountPortrait` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateAccountPortraitWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateAccountPortraitParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAccountPortraitResponse, error)
+
+	// UpdateAccountPortraitWithResponse performs a PATCH /internal/platform/v1/managers/accounts/{id}/portrait (the `UpdateAccountPortrait` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	UpdateAccountPortraitWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateAccountPortraitParams, body UpdateAccountPortraitJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAccountPortraitResponse, error)
+
+	// CreatePortraitAuditDateWithBodyWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/portrait/audit-dates (the `CreatePortraitAuditDate` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreatePortraitAuditDateWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *CreatePortraitAuditDateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePortraitAuditDateResponse, error)
+
+	// CreatePortraitAuditDateWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/portrait/audit-dates (the `CreatePortraitAuditDate` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	CreatePortraitAuditDateWithResponse(ctx context.Context, id openapi_types.UUID, params *CreatePortraitAuditDateParams, body CreatePortraitAuditDateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePortraitAuditDateResponse, error)
+
+	// UpdateAccountProfileWithBodyWithResponse performs a PATCH /internal/platform/v1/managers/accounts/{id}/profile (the `UpdateAccountProfile` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateAccountProfileWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateAccountProfileParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAccountProfileResponse, error)
+
+	// UpdateAccountProfileWithResponse performs a PATCH /internal/platform/v1/managers/accounts/{id}/profile (the `UpdateAccountProfile` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	UpdateAccountProfileWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateAccountProfileParams, body UpdateAccountProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAccountProfileResponse, error)
+
+	// RequestAccountRefreshWithBodyWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/refresh (the `RequestAccountRefresh` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RequestAccountRefreshWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *RequestAccountRefreshParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestAccountRefreshResponse, error)
+
+	// RequestAccountRefreshWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/refresh (the `RequestAccountRefresh` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	RequestAccountRefreshWithResponse(ctx context.Context, id openapi_types.UUID, params *RequestAccountRefreshParams, body RequestAccountRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestAccountRefreshResponse, error)
+
+	// CreateAccountRenewalWithBodyWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/renewals (the `CreateAccountRenewal` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// If-Match относится к версии собственных прав выбранного account/product. Возвращается обновлённая версия права.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateAccountRenewalWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *CreateAccountRenewalParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAccountRenewalResponse, error)
+
+	// CreateAccountRenewalWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/renewals (the `CreateAccountRenewal` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// If-Match относится к версии собственных прав выбранного account/product. Возвращается обновлённая версия права.
+	CreateAccountRenewalWithResponse(ctx context.Context, id openapi_types.UUID, params *CreateAccountRenewalParams, body CreateAccountRenewalJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAccountRenewalResponse, error)
+
+	// ListAccountWidgetsWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/widgets (the `ListAccountWidgets` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListAccountWidgetsWithResponse(ctx context.Context, id openapi_types.UUID, params *ListAccountWidgetsParams, reqEditors ...RequestEditorFn) (*ListAccountWidgetsResponse, error)
+
 	// GetCommandReceiptWithResponse performs a GET /internal/platform/v1/managers/commands/{id} (the `GetCommandReceipt` operationId) request.
 	//
 	// Только исходный BFF и субъект с актуальным правом на команду. Возвращает зарегистрированный исход по command ID; 404 не доказывает, что первый запрос не в пути.
@@ -2320,6 +4889,1344 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetOperationWithResponse(ctx context.Context, id openapi_types.UUID, params *GetOperationParams, reqEditors ...RequestEditorFn) (*GetOperationResponse, error)
+
+	// ListPortraitNichesWithResponse performs a GET /internal/platform/v1/managers/portrait-niches (the `ListPortraitNiches` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListPortraitNichesWithResponse(ctx context.Context, params *ListPortraitNichesParams, reqEditors ...RequestEditorFn) (*ListPortraitNichesResponse, error)
+
+	// CreatePortraitNicheWithBodyWithResponse performs a POST /internal/platform/v1/managers/portrait-niches (the `CreatePortraitNiche` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreatePortraitNicheWithBodyWithResponse(ctx context.Context, params *CreatePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePortraitNicheResponse, error)
+
+	// CreatePortraitNicheWithResponse performs a POST /internal/platform/v1/managers/portrait-niches (the `CreatePortraitNiche` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	CreatePortraitNicheWithResponse(ctx context.Context, params *CreatePortraitNicheParams, body CreatePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePortraitNicheResponse, error)
+
+	// DeletePortraitNicheWithResponse performs a DELETE /internal/platform/v1/managers/portrait-niches/{id} (the `DeletePortraitNiche` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeletePortraitNicheWithResponse(ctx context.Context, id openapi_types.UUID, params *DeletePortraitNicheParams, reqEditors ...RequestEditorFn) (*DeletePortraitNicheResponse, error)
+
+	// UpdatePortraitNicheWithBodyWithResponse performs a PATCH /internal/platform/v1/managers/portrait-niches/{id} (the `UpdatePortraitNiche` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdatePortraitNicheWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdatePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePortraitNicheResponse, error)
+
+	// UpdatePortraitNicheWithResponse performs a PATCH /internal/platform/v1/managers/portrait-niches/{id} (the `UpdatePortraitNiche` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	UpdatePortraitNicheWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdatePortraitNicheParams, body UpdatePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePortraitNicheResponse, error)
+
+	// MergePortraitNicheWithBodyWithResponse performs a POST /internal/platform/v1/managers/portrait-niches/{id}/merge (the `MergePortraitNiche` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	MergePortraitNicheWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *MergePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MergePortraitNicheResponse, error)
+
+	// MergePortraitNicheWithResponse performs a POST /internal/platform/v1/managers/portrait-niches/{id}/merge (the `MergePortraitNiche` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	MergePortraitNicheWithResponse(ctx context.Context, id openapi_types.UUID, params *MergePortraitNicheParams, body MergePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*MergePortraitNicheResponse, error)
+
+	// GetPortraitTemplateWithResponse performs a GET /internal/platform/v1/managers/portrait-template (the `GetPortraitTemplate` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetPortraitTemplateWithResponse(ctx context.Context, params *GetPortraitTemplateParams, reqEditors ...RequestEditorFn) (*GetPortraitTemplateResponse, error)
+
+	// SetPortraitTemplateWithBodyWithResponse performs a PUT /internal/platform/v1/managers/portrait-template (the `SetPortraitTemplate` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	SetPortraitTemplateWithBodyWithResponse(ctx context.Context, params *SetPortraitTemplateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetPortraitTemplateResponse, error)
+
+	// SetPortraitTemplateWithResponse performs a PUT /internal/platform/v1/managers/portrait-template (the `SetPortraitTemplate` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	SetPortraitTemplateWithResponse(ctx context.Context, params *SetPortraitTemplateParams, body SetPortraitTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*SetPortraitTemplateResponse, error)
+}
+
+// ListAccountsResponse429Headers the declared response headers of an HTTP 429 response for ListAccounts
+type ListAccountsResponse429Headers struct {
+	RetryAfter *string
+}
+
+// ListAccountsResponse503Headers the declared response headers of an HTTP 503 response for ListAccounts
+type ListAccountsResponse503Headers struct {
+	RetryAfter *string
+}
+
+type ListAccountsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AccountList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListAccountsResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListAccountsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListAccountsResponse) GetJSON200() *AccountList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListAccountsResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListAccountsResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListAccountsResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListAccountsResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListAccountsResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListAccountsResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListAccountsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAccountsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAccountsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAccountsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// SearchAccountsResponse429Headers the declared response headers of an HTTP 429 response for SearchAccounts
+type SearchAccountsResponse429Headers struct {
+	RetryAfter *string
+}
+
+// SearchAccountsResponse503Headers the declared response headers of an HTTP 503 response for SearchAccounts
+type SearchAccountsResponse503Headers struct {
+	RetryAfter *string
+}
+
+type SearchAccountsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AccountList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *SearchAccountsResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *SearchAccountsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SearchAccountsResponse) GetJSON200() *AccountList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r SearchAccountsResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r SearchAccountsResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r SearchAccountsResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r SearchAccountsResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r SearchAccountsResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r SearchAccountsResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r SearchAccountsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SearchAccountsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SearchAccountsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SearchAccountsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetAccountResponse200Headers the declared response headers of an HTTP 200 response for GetAccount
+type GetAccountResponse200Headers struct {
+	ETag *string
+}
+
+// GetAccountResponse429Headers the declared response headers of an HTTP 429 response for GetAccount
+type GetAccountResponse429Headers struct {
+	RetryAfter *string
+}
+
+// GetAccountResponse503Headers the declared response headers of an HTTP 503 response for GetAccount
+type GetAccountResponse503Headers struct {
+	RetryAfter *string
+}
+
+type GetAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AccountDetail
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetAccountResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetAccountResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetAccountResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetAccountResponse) GetJSON200() *AccountDetail {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetAccountResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetAccountResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetAccountResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetAccountResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetAccountResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetAccountResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetAccountResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetAccountCRMUsersResponse429Headers the declared response headers of an HTTP 429 response for GetAccountCRMUsers
+type GetAccountCRMUsersResponse429Headers struct {
+	RetryAfter *string
+}
+
+// GetAccountCRMUsersResponse503Headers the declared response headers of an HTTP 503 response for GetAccountCRMUsers
+type GetAccountCRMUsersResponse503Headers struct {
+	RetryAfter *string
+}
+
+type GetAccountCRMUsersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ObservationCRMUsers
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetAccountCRMUsersResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetAccountCRMUsersResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetAccountCRMUsersResponse) GetJSON200() *ObservationCRMUsers {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetAccountCRMUsersResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetAccountCRMUsersResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetAccountCRMUsersResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetAccountCRMUsersResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetAccountCRMUsersResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetAccountCRMUsersResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetAccountCRMUsersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAccountCRMUsersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAccountCRMUsersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetAccountCRMUsersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetAccountLicenseHistoryResponse429Headers the declared response headers of an HTTP 429 response for GetAccountLicenseHistory
+type GetAccountLicenseHistoryResponse429Headers struct {
+	RetryAfter *string
+}
+
+// GetAccountLicenseHistoryResponse503Headers the declared response headers of an HTTP 503 response for GetAccountLicenseHistory
+type GetAccountLicenseHistoryResponse503Headers struct {
+	RetryAfter *string
+}
+
+type GetAccountLicenseHistoryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LicenseEvidenceList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetAccountLicenseHistoryResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetAccountLicenseHistoryResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetAccountLicenseHistoryResponse) GetJSON200() *LicenseEvidenceList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetAccountLicenseHistoryResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetAccountLicenseHistoryResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetAccountLicenseHistoryResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetAccountLicenseHistoryResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetAccountLicenseHistoryResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetAccountLicenseHistoryResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetAccountLicenseHistoryResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAccountLicenseHistoryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAccountLicenseHistoryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetAccountLicenseHistoryResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetAccountPortraitResponse200Headers the declared response headers of an HTTP 200 response for GetAccountPortrait
+type GetAccountPortraitResponse200Headers struct {
+	ETag *string
+}
+
+// GetAccountPortraitResponse429Headers the declared response headers of an HTTP 429 response for GetAccountPortrait
+type GetAccountPortraitResponse429Headers struct {
+	RetryAfter *string
+}
+
+// GetAccountPortraitResponse503Headers the declared response headers of an HTTP 503 response for GetAccountPortrait
+type GetAccountPortraitResponse503Headers struct {
+	RetryAfter *string
+}
+
+type GetAccountPortraitResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Portrait
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetAccountPortraitResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetAccountPortraitResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetAccountPortraitResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetAccountPortraitResponse) GetJSON200() *Portrait {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetAccountPortraitResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetAccountPortraitResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetAccountPortraitResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetAccountPortraitResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetAccountPortraitResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetAccountPortraitResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetAccountPortraitResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAccountPortraitResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAccountPortraitResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetAccountPortraitResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// UpdateAccountPortraitResponse200Headers the declared response headers of an HTTP 200 response for UpdateAccountPortrait
+type UpdateAccountPortraitResponse200Headers struct {
+	ETag *string
+}
+
+// UpdateAccountPortraitResponse429Headers the declared response headers of an HTTP 429 response for UpdateAccountPortrait
+type UpdateAccountPortraitResponse429Headers struct {
+	RetryAfter *string
+}
+
+// UpdateAccountPortraitResponse503Headers the declared response headers of an HTTP 503 response for UpdateAccountPortrait
+type UpdateAccountPortraitResponse503Headers struct {
+	RetryAfter *string
+}
+
+type UpdateAccountPortraitResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Portrait
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *UpdateAccountPortraitResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *UpdateAccountPortraitResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *UpdateAccountPortraitResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateAccountPortraitResponse) GetJSON200() *Portrait {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r UpdateAccountPortraitResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r UpdateAccountPortraitResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdateAccountPortraitResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateAccountPortraitResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateAccountPortraitResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateAccountPortraitResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r UpdateAccountPortraitResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r UpdateAccountPortraitResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateAccountPortraitResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateAccountPortraitResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateAccountPortraitResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateAccountPortraitResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreatePortraitAuditDateResponse200Headers the declared response headers of an HTTP 200 response for CreatePortraitAuditDate
+type CreatePortraitAuditDateResponse200Headers struct {
+	ETag *string
+}
+
+// CreatePortraitAuditDateResponse429Headers the declared response headers of an HTTP 429 response for CreatePortraitAuditDate
+type CreatePortraitAuditDateResponse429Headers struct {
+	RetryAfter *string
+}
+
+// CreatePortraitAuditDateResponse503Headers the declared response headers of an HTTP 503 response for CreatePortraitAuditDate
+type CreatePortraitAuditDateResponse503Headers struct {
+	RetryAfter *string
+}
+
+type CreatePortraitAuditDateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Portrait
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *CreatePortraitAuditDateResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreatePortraitAuditDateResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreatePortraitAuditDateResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreatePortraitAuditDateResponse) GetJSON200() *Portrait {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreatePortraitAuditDateResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreatePortraitAuditDateResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreatePortraitAuditDateResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreatePortraitAuditDateResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreatePortraitAuditDateResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r CreatePortraitAuditDateResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreatePortraitAuditDateResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreatePortraitAuditDateResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreatePortraitAuditDateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreatePortraitAuditDateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreatePortraitAuditDateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreatePortraitAuditDateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// UpdateAccountProfileResponse200Headers the declared response headers of an HTTP 200 response for UpdateAccountProfile
+type UpdateAccountProfileResponse200Headers struct {
+	ETag *string
+}
+
+// UpdateAccountProfileResponse429Headers the declared response headers of an HTTP 429 response for UpdateAccountProfile
+type UpdateAccountProfileResponse429Headers struct {
+	RetryAfter *string
+}
+
+// UpdateAccountProfileResponse503Headers the declared response headers of an HTTP 503 response for UpdateAccountProfile
+type UpdateAccountProfileResponse503Headers struct {
+	RetryAfter *string
+}
+
+type UpdateAccountProfileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AccountDetail
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *UpdateAccountProfileResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *UpdateAccountProfileResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *UpdateAccountProfileResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateAccountProfileResponse) GetJSON200() *AccountDetail {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r UpdateAccountProfileResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r UpdateAccountProfileResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdateAccountProfileResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateAccountProfileResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateAccountProfileResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateAccountProfileResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r UpdateAccountProfileResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r UpdateAccountProfileResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateAccountProfileResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateAccountProfileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateAccountProfileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateAccountProfileResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// RequestAccountRefreshResponse202Headers the declared response headers of an HTTP 202 response for RequestAccountRefresh
+type RequestAccountRefreshResponse202Headers struct {
+	Location *string
+}
+
+// RequestAccountRefreshResponse429Headers the declared response headers of an HTTP 429 response for RequestAccountRefresh
+type RequestAccountRefreshResponse429Headers struct {
+	RetryAfter *string
+}
+
+// RequestAccountRefreshResponse503Headers the declared response headers of an HTTP 503 response for RequestAccountRefresh
+type RequestAccountRefreshResponse503Headers struct {
+	RetryAfter *string
+}
+
+type RequestAccountRefreshResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *Operation
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers202 the parsed response headers for an HTTP 202 response
+	Headers202 *RequestAccountRefreshResponse202Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *RequestAccountRefreshResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *RequestAccountRefreshResponse503Headers
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r RequestAccountRefreshResponse) GetJSON202() *Operation {
+	return r.JSON202
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r RequestAccountRefreshResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r RequestAccountRefreshResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r RequestAccountRefreshResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r RequestAccountRefreshResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RequestAccountRefreshResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r RequestAccountRefreshResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r RequestAccountRefreshResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r RequestAccountRefreshResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r RequestAccountRefreshResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RequestAccountRefreshResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RequestAccountRefreshResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RequestAccountRefreshResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreateAccountRenewalResponse201Headers the declared response headers of an HTTP 201 response for CreateAccountRenewal
+type CreateAccountRenewalResponse201Headers struct {
+	ETag *string
+}
+
+// CreateAccountRenewalResponse429Headers the declared response headers of an HTTP 429 response for CreateAccountRenewal
+type CreateAccountRenewalResponse429Headers struct {
+	RetryAfter *string
+}
+
+// CreateAccountRenewalResponse503Headers the declared response headers of an HTTP 503 response for CreateAccountRenewal
+type CreateAccountRenewalResponse503Headers struct {
+	RetryAfter *string
+}
+
+type CreateAccountRenewalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *Renewal
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreateAccountRenewalResponse201Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreateAccountRenewalResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreateAccountRenewalResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateAccountRenewalResponse) GetJSON201() *Renewal {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateAccountRenewalResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreateAccountRenewalResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateAccountRenewalResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreateAccountRenewalResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateAccountRenewalResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r CreateAccountRenewalResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreateAccountRenewalResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreateAccountRenewalResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateAccountRenewalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateAccountRenewalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateAccountRenewalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateAccountRenewalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListAccountWidgetsResponse429Headers the declared response headers of an HTTP 429 response for ListAccountWidgets
+type ListAccountWidgetsResponse429Headers struct {
+	RetryAfter *string
+}
+
+// ListAccountWidgetsResponse503Headers the declared response headers of an HTTP 503 response for ListAccountWidgets
+type ListAccountWidgetsResponse503Headers struct {
+	RetryAfter *string
+}
+
+type ListAccountWidgetsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *InstallationList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListAccountWidgetsResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListAccountWidgetsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListAccountWidgetsResponse) GetJSON200() *InstallationList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListAccountWidgetsResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListAccountWidgetsResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListAccountWidgetsResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListAccountWidgetsResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListAccountWidgetsResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListAccountWidgetsResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListAccountWidgetsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAccountWidgetsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAccountWidgetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAccountWidgetsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
 }
 
 // GetCommandReceiptResponse429Headers the declared response headers of an HTTP 429 response for GetCommandReceipt
@@ -2849,6 +6756,989 @@ func (r GetOperationResponse) ContentType() string {
 	return ""
 }
 
+// ListPortraitNichesResponse429Headers the declared response headers of an HTTP 429 response for ListPortraitNiches
+type ListPortraitNichesResponse429Headers struct {
+	RetryAfter *string
+}
+
+// ListPortraitNichesResponse503Headers the declared response headers of an HTTP 503 response for ListPortraitNiches
+type ListPortraitNichesResponse503Headers struct {
+	RetryAfter *string
+}
+
+type ListPortraitNichesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *NicheList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListPortraitNichesResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListPortraitNichesResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListPortraitNichesResponse) GetJSON200() *NicheList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListPortraitNichesResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListPortraitNichesResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListPortraitNichesResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListPortraitNichesResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListPortraitNichesResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListPortraitNichesResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListPortraitNichesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListPortraitNichesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListPortraitNichesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListPortraitNichesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreatePortraitNicheResponse201Headers the declared response headers of an HTTP 201 response for CreatePortraitNiche
+type CreatePortraitNicheResponse201Headers struct {
+	ETag *string
+}
+
+// CreatePortraitNicheResponse429Headers the declared response headers of an HTTP 429 response for CreatePortraitNiche
+type CreatePortraitNicheResponse429Headers struct {
+	RetryAfter *string
+}
+
+// CreatePortraitNicheResponse503Headers the declared response headers of an HTTP 503 response for CreatePortraitNiche
+type CreatePortraitNicheResponse503Headers struct {
+	RetryAfter *string
+}
+
+type CreatePortraitNicheResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *Niche
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreatePortraitNicheResponse201Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreatePortraitNicheResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreatePortraitNicheResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreatePortraitNicheResponse) GetJSON201() *Niche {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreatePortraitNicheResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreatePortraitNicheResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreatePortraitNicheResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreatePortraitNicheResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreatePortraitNicheResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r CreatePortraitNicheResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreatePortraitNicheResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreatePortraitNicheResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreatePortraitNicheResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreatePortraitNicheResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreatePortraitNicheResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreatePortraitNicheResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DeletePortraitNicheResponse429Headers the declared response headers of an HTTP 429 response for DeletePortraitNiche
+type DeletePortraitNicheResponse429Headers struct {
+	RetryAfter *string
+}
+
+// DeletePortraitNicheResponse503Headers the declared response headers of an HTTP 503 response for DeletePortraitNiche
+type DeletePortraitNicheResponse503Headers struct {
+	RetryAfter *string
+}
+
+type DeletePortraitNicheResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DeletePortraitNicheResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *DeletePortraitNicheResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DeletePortraitNicheResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DeletePortraitNicheResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeletePortraitNicheResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeletePortraitNicheResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeletePortraitNicheResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r DeletePortraitNicheResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DeletePortraitNicheResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DeletePortraitNicheResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DeletePortraitNicheResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeletePortraitNicheResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeletePortraitNicheResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeletePortraitNicheResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// UpdatePortraitNicheResponse200Headers the declared response headers of an HTTP 200 response for UpdatePortraitNiche
+type UpdatePortraitNicheResponse200Headers struct {
+	ETag *string
+}
+
+// UpdatePortraitNicheResponse429Headers the declared response headers of an HTTP 429 response for UpdatePortraitNiche
+type UpdatePortraitNicheResponse429Headers struct {
+	RetryAfter *string
+}
+
+// UpdatePortraitNicheResponse503Headers the declared response headers of an HTTP 503 response for UpdatePortraitNiche
+type UpdatePortraitNicheResponse503Headers struct {
+	RetryAfter *string
+}
+
+type UpdatePortraitNicheResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Niche
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *UpdatePortraitNicheResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *UpdatePortraitNicheResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *UpdatePortraitNicheResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdatePortraitNicheResponse) GetJSON200() *Niche {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r UpdatePortraitNicheResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r UpdatePortraitNicheResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdatePortraitNicheResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdatePortraitNicheResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdatePortraitNicheResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdatePortraitNicheResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r UpdatePortraitNicheResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r UpdatePortraitNicheResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdatePortraitNicheResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdatePortraitNicheResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdatePortraitNicheResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdatePortraitNicheResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// MergePortraitNicheResponse200Headers the declared response headers of an HTTP 200 response for MergePortraitNiche
+type MergePortraitNicheResponse200Headers struct {
+	ETag *string
+}
+
+// MergePortraitNicheResponse429Headers the declared response headers of an HTTP 429 response for MergePortraitNiche
+type MergePortraitNicheResponse429Headers struct {
+	RetryAfter *string
+}
+
+// MergePortraitNicheResponse503Headers the declared response headers of an HTTP 503 response for MergePortraitNiche
+type MergePortraitNicheResponse503Headers struct {
+	RetryAfter *string
+}
+
+type MergePortraitNicheResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Niche
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *MergePortraitNicheResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *MergePortraitNicheResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *MergePortraitNicheResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r MergePortraitNicheResponse) GetJSON200() *Niche {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r MergePortraitNicheResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r MergePortraitNicheResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r MergePortraitNicheResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r MergePortraitNicheResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r MergePortraitNicheResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r MergePortraitNicheResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r MergePortraitNicheResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r MergePortraitNicheResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r MergePortraitNicheResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r MergePortraitNicheResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MergePortraitNicheResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r MergePortraitNicheResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetPortraitTemplateResponse200Headers the declared response headers of an HTTP 200 response for GetPortraitTemplate
+type GetPortraitTemplateResponse200Headers struct {
+	ETag *string
+}
+
+// GetPortraitTemplateResponse429Headers the declared response headers of an HTTP 429 response for GetPortraitTemplate
+type GetPortraitTemplateResponse429Headers struct {
+	RetryAfter *string
+}
+
+// GetPortraitTemplateResponse503Headers the declared response headers of an HTTP 503 response for GetPortraitTemplate
+type GetPortraitTemplateResponse503Headers struct {
+	RetryAfter *string
+}
+
+type GetPortraitTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PortraitTemplate
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetPortraitTemplateResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetPortraitTemplateResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetPortraitTemplateResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetPortraitTemplateResponse) GetJSON200() *PortraitTemplate {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetPortraitTemplateResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetPortraitTemplateResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetPortraitTemplateResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetPortraitTemplateResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetPortraitTemplateResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetPortraitTemplateResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetPortraitTemplateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPortraitTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPortraitTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetPortraitTemplateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// SetPortraitTemplateResponse200Headers the declared response headers of an HTTP 200 response for SetPortraitTemplate
+type SetPortraitTemplateResponse200Headers struct {
+	ETag *string
+}
+
+// SetPortraitTemplateResponse429Headers the declared response headers of an HTTP 429 response for SetPortraitTemplate
+type SetPortraitTemplateResponse429Headers struct {
+	RetryAfter *string
+}
+
+// SetPortraitTemplateResponse503Headers the declared response headers of an HTTP 503 response for SetPortraitTemplate
+type SetPortraitTemplateResponse503Headers struct {
+	RetryAfter *string
+}
+
+type SetPortraitTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PortraitTemplate
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *SetPortraitTemplateResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *SetPortraitTemplateResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *SetPortraitTemplateResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetPortraitTemplateResponse) GetJSON200() *PortraitTemplate {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r SetPortraitTemplateResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r SetPortraitTemplateResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r SetPortraitTemplateResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r SetPortraitTemplateResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r SetPortraitTemplateResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r SetPortraitTemplateResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r SetPortraitTemplateResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r SetPortraitTemplateResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r SetPortraitTemplateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetPortraitTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetPortraitTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetPortraitTemplateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListAccountsWithResponse performs a GET /internal/platform/v1/managers/accounts (the `ListAccounts` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListAccountsWithResponse(ctx context.Context, params *ListAccountsParams, reqEditors ...RequestEditorFn) (*ListAccountsResponse, error) {
+	rsp, err := c.ListAccounts(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAccountsResponse(rsp)
+}
+
+// SearchAccountsWithBodyWithResponse performs a POST /internal/platform/v1/managers/accounts/search (the `SearchAccounts` operationId) request,
+// with any type of body and a specified content type.
+//
+// До 3 уровней и 30 условий. Тип значения задаёт поле шаблона. Операция чтения.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) SearchAccountsWithBodyWithResponse(ctx context.Context, params *SearchAccountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchAccountsResponse, error) {
+	rsp, err := c.SearchAccountsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchAccountsResponse(rsp)
+}
+
+// SearchAccountsWithResponse performs a POST /internal/platform/v1/managers/accounts/search (the `SearchAccounts` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// До 3 уровней и 30 условий. Тип значения задаёт поле шаблона. Операция чтения.
+func (c *ClientWithResponses) SearchAccountsWithResponse(ctx context.Context, params *SearchAccountsParams, body SearchAccountsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchAccountsResponse, error) {
+	rsp, err := c.SearchAccounts(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchAccountsResponse(rsp)
+}
+
+// GetAccountWithResponse performs a GET /internal/platform/v1/managers/accounts/{id} (the `GetAccount` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetAccountWithResponse(ctx context.Context, id openapi_types.UUID, params *GetAccountParams, reqEditors ...RequestEditorFn) (*GetAccountResponse, error) {
+	rsp, err := c.GetAccount(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAccountResponse(rsp)
+}
+
+// GetAccountCRMUsersWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/crm-users (the `GetAccountCRMUsers` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetAccountCRMUsersWithResponse(ctx context.Context, id openapi_types.UUID, params *GetAccountCRMUsersParams, reqEditors ...RequestEditorFn) (*GetAccountCRMUsersResponse, error) {
+	rsp, err := c.GetAccountCRMUsers(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAccountCRMUsersResponse(rsp)
+}
+
+// GetAccountLicenseHistoryWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/license-history (the `GetAccountLicenseHistory` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetAccountLicenseHistoryWithResponse(ctx context.Context, id openapi_types.UUID, params *GetAccountLicenseHistoryParams, reqEditors ...RequestEditorFn) (*GetAccountLicenseHistoryResponse, error) {
+	rsp, err := c.GetAccountLicenseHistory(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAccountLicenseHistoryResponse(rsp)
+}
+
+// GetAccountPortraitWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/portrait (the `GetAccountPortrait` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetAccountPortraitWithResponse(ctx context.Context, id openapi_types.UUID, params *GetAccountPortraitParams, reqEditors ...RequestEditorFn) (*GetAccountPortraitResponse, error) {
+	rsp, err := c.GetAccountPortrait(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAccountPortraitResponse(rsp)
+}
+
+// UpdateAccountPortraitWithBodyWithResponse performs a PATCH /internal/platform/v1/managers/accounts/{id}/portrait (the `UpdateAccountPortrait` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateAccountPortraitWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateAccountPortraitParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAccountPortraitResponse, error) {
+	rsp, err := c.UpdateAccountPortraitWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAccountPortraitResponse(rsp)
+}
+
+// UpdateAccountPortraitWithResponse performs a PATCH /internal/platform/v1/managers/accounts/{id}/portrait (the `UpdateAccountPortrait` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateAccountPortraitWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateAccountPortraitParams, body UpdateAccountPortraitJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAccountPortraitResponse, error) {
+	rsp, err := c.UpdateAccountPortrait(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAccountPortraitResponse(rsp)
+}
+
+// CreatePortraitAuditDateWithBodyWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/portrait/audit-dates (the `CreatePortraitAuditDate` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreatePortraitAuditDateWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *CreatePortraitAuditDateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePortraitAuditDateResponse, error) {
+	rsp, err := c.CreatePortraitAuditDateWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePortraitAuditDateResponse(rsp)
+}
+
+// CreatePortraitAuditDateWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/portrait/audit-dates (the `CreatePortraitAuditDate` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreatePortraitAuditDateWithResponse(ctx context.Context, id openapi_types.UUID, params *CreatePortraitAuditDateParams, body CreatePortraitAuditDateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePortraitAuditDateResponse, error) {
+	rsp, err := c.CreatePortraitAuditDate(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePortraitAuditDateResponse(rsp)
+}
+
+// UpdateAccountProfileWithBodyWithResponse performs a PATCH /internal/platform/v1/managers/accounts/{id}/profile (the `UpdateAccountProfile` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateAccountProfileWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateAccountProfileParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAccountProfileResponse, error) {
+	rsp, err := c.UpdateAccountProfileWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAccountProfileResponse(rsp)
+}
+
+// UpdateAccountProfileWithResponse performs a PATCH /internal/platform/v1/managers/accounts/{id}/profile (the `UpdateAccountProfile` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateAccountProfileWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateAccountProfileParams, body UpdateAccountProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAccountProfileResponse, error) {
+	rsp, err := c.UpdateAccountProfile(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAccountProfileResponse(rsp)
+}
+
+// RequestAccountRefreshWithBodyWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/refresh (the `RequestAccountRefresh` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RequestAccountRefreshWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *RequestAccountRefreshParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestAccountRefreshResponse, error) {
+	rsp, err := c.RequestAccountRefreshWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestAccountRefreshResponse(rsp)
+}
+
+// RequestAccountRefreshWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/refresh (the `RequestAccountRefresh` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RequestAccountRefreshWithResponse(ctx context.Context, id openapi_types.UUID, params *RequestAccountRefreshParams, body RequestAccountRefreshJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestAccountRefreshResponse, error) {
+	rsp, err := c.RequestAccountRefresh(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestAccountRefreshResponse(rsp)
+}
+
+// CreateAccountRenewalWithBodyWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/renewals (the `CreateAccountRenewal` operationId) request,
+// with any type of body and a specified content type.
+//
+// If-Match относится к версии собственных прав выбранного account/product. Возвращается обновлённая версия права.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateAccountRenewalWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *CreateAccountRenewalParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAccountRenewalResponse, error) {
+	rsp, err := c.CreateAccountRenewalWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateAccountRenewalResponse(rsp)
+}
+
+// CreateAccountRenewalWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/renewals (the `CreateAccountRenewal` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// If-Match относится к версии собственных прав выбранного account/product. Возвращается обновлённая версия права.
+func (c *ClientWithResponses) CreateAccountRenewalWithResponse(ctx context.Context, id openapi_types.UUID, params *CreateAccountRenewalParams, body CreateAccountRenewalJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAccountRenewalResponse, error) {
+	rsp, err := c.CreateAccountRenewal(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateAccountRenewalResponse(rsp)
+}
+
+// ListAccountWidgetsWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/widgets (the `ListAccountWidgets` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListAccountWidgetsWithResponse(ctx context.Context, id openapi_types.UUID, params *ListAccountWidgetsParams, reqEditors ...RequestEditorFn) (*ListAccountWidgetsResponse, error) {
+	rsp, err := c.ListAccountWidgets(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAccountWidgetsResponse(rsp)
+}
+
 // GetCommandReceiptWithResponse performs a GET /internal/platform/v1/managers/commands/{id} (the `GetCommandReceipt` operationId) request.
 //
 // Только исходный BFF и субъект с актуальным правом на команду. Возвращает зарегистрированный исход по command ID; 404 не доказывает, что первый запрос не в пути.
@@ -2928,6 +7818,1359 @@ func (c *ClientWithResponses) GetOperationWithResponse(ctx context.Context, id o
 		return nil, err
 	}
 	return ParseGetOperationResponse(rsp)
+}
+
+// ListPortraitNichesWithResponse performs a GET /internal/platform/v1/managers/portrait-niches (the `ListPortraitNiches` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListPortraitNichesWithResponse(ctx context.Context, params *ListPortraitNichesParams, reqEditors ...RequestEditorFn) (*ListPortraitNichesResponse, error) {
+	rsp, err := c.ListPortraitNiches(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListPortraitNichesResponse(rsp)
+}
+
+// CreatePortraitNicheWithBodyWithResponse performs a POST /internal/platform/v1/managers/portrait-niches (the `CreatePortraitNiche` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreatePortraitNicheWithBodyWithResponse(ctx context.Context, params *CreatePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePortraitNicheResponse, error) {
+	rsp, err := c.CreatePortraitNicheWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePortraitNicheResponse(rsp)
+}
+
+// CreatePortraitNicheWithResponse performs a POST /internal/platform/v1/managers/portrait-niches (the `CreatePortraitNiche` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreatePortraitNicheWithResponse(ctx context.Context, params *CreatePortraitNicheParams, body CreatePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePortraitNicheResponse, error) {
+	rsp, err := c.CreatePortraitNiche(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePortraitNicheResponse(rsp)
+}
+
+// DeletePortraitNicheWithResponse performs a DELETE /internal/platform/v1/managers/portrait-niches/{id} (the `DeletePortraitNiche` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeletePortraitNicheWithResponse(ctx context.Context, id openapi_types.UUID, params *DeletePortraitNicheParams, reqEditors ...RequestEditorFn) (*DeletePortraitNicheResponse, error) {
+	rsp, err := c.DeletePortraitNiche(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeletePortraitNicheResponse(rsp)
+}
+
+// UpdatePortraitNicheWithBodyWithResponse performs a PATCH /internal/platform/v1/managers/portrait-niches/{id} (the `UpdatePortraitNiche` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdatePortraitNicheWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdatePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePortraitNicheResponse, error) {
+	rsp, err := c.UpdatePortraitNicheWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdatePortraitNicheResponse(rsp)
+}
+
+// UpdatePortraitNicheWithResponse performs a PATCH /internal/platform/v1/managers/portrait-niches/{id} (the `UpdatePortraitNiche` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdatePortraitNicheWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdatePortraitNicheParams, body UpdatePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePortraitNicheResponse, error) {
+	rsp, err := c.UpdatePortraitNiche(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdatePortraitNicheResponse(rsp)
+}
+
+// MergePortraitNicheWithBodyWithResponse performs a POST /internal/platform/v1/managers/portrait-niches/{id}/merge (the `MergePortraitNiche` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) MergePortraitNicheWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *MergePortraitNicheParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*MergePortraitNicheResponse, error) {
+	rsp, err := c.MergePortraitNicheWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMergePortraitNicheResponse(rsp)
+}
+
+// MergePortraitNicheWithResponse performs a POST /internal/platform/v1/managers/portrait-niches/{id}/merge (the `MergePortraitNiche` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) MergePortraitNicheWithResponse(ctx context.Context, id openapi_types.UUID, params *MergePortraitNicheParams, body MergePortraitNicheJSONRequestBody, reqEditors ...RequestEditorFn) (*MergePortraitNicheResponse, error) {
+	rsp, err := c.MergePortraitNiche(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMergePortraitNicheResponse(rsp)
+}
+
+// GetPortraitTemplateWithResponse performs a GET /internal/platform/v1/managers/portrait-template (the `GetPortraitTemplate` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetPortraitTemplateWithResponse(ctx context.Context, params *GetPortraitTemplateParams, reqEditors ...RequestEditorFn) (*GetPortraitTemplateResponse, error) {
+	rsp, err := c.GetPortraitTemplate(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPortraitTemplateResponse(rsp)
+}
+
+// SetPortraitTemplateWithBodyWithResponse performs a PUT /internal/platform/v1/managers/portrait-template (the `SetPortraitTemplate` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) SetPortraitTemplateWithBodyWithResponse(ctx context.Context, params *SetPortraitTemplateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetPortraitTemplateResponse, error) {
+	rsp, err := c.SetPortraitTemplateWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetPortraitTemplateResponse(rsp)
+}
+
+// SetPortraitTemplateWithResponse performs a PUT /internal/platform/v1/managers/portrait-template (the `SetPortraitTemplate` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) SetPortraitTemplateWithResponse(ctx context.Context, params *SetPortraitTemplateParams, body SetPortraitTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*SetPortraitTemplateResponse, error) {
+	rsp, err := c.SetPortraitTemplate(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetPortraitTemplateResponse(rsp)
+}
+
+// ParseListAccountsResponse parses an HTTP response from a ListAccountsWithResponse call
+func ParseListAccountsResponse(rsp *http.Response) (*ListAccountsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAccountsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AccountList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers ListAccountsResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListAccountsResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseSearchAccountsResponse parses an HTTP response from a SearchAccountsWithResponse call
+func ParseSearchAccountsResponse(rsp *http.Response) (*SearchAccountsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SearchAccountsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AccountList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers SearchAccountsResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers SearchAccountsResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetAccountResponse parses an HTTP response from a GetAccountWithResponse call
+func ParseGetAccountResponse(rsp *http.Response) (*GetAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AccountDetail
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetAccountResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetAccountResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetAccountResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetAccountCRMUsersResponse parses an HTTP response from a GetAccountCRMUsersWithResponse call
+func ParseGetAccountCRMUsersResponse(rsp *http.Response) (*GetAccountCRMUsersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAccountCRMUsersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ObservationCRMUsers
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers GetAccountCRMUsersResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetAccountCRMUsersResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetAccountLicenseHistoryResponse parses an HTTP response from a GetAccountLicenseHistoryWithResponse call
+func ParseGetAccountLicenseHistoryResponse(rsp *http.Response) (*GetAccountLicenseHistoryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAccountLicenseHistoryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LicenseEvidenceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers GetAccountLicenseHistoryResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetAccountLicenseHistoryResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetAccountPortraitResponse parses an HTTP response from a GetAccountPortraitWithResponse call
+func ParseGetAccountPortraitResponse(rsp *http.Response) (*GetAccountPortraitResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAccountPortraitResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Portrait
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetAccountPortraitResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetAccountPortraitResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetAccountPortraitResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseUpdateAccountPortraitResponse parses an HTTP response from a UpdateAccountPortraitWithResponse call
+func ParseUpdateAccountPortraitResponse(rsp *http.Response) (*UpdateAccountPortraitResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateAccountPortraitResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Portrait
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers UpdateAccountPortraitResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers UpdateAccountPortraitResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers UpdateAccountPortraitResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreatePortraitAuditDateResponse parses an HTTP response from a CreatePortraitAuditDateWithResponse call
+func ParseCreatePortraitAuditDateResponse(rsp *http.Response) (*CreatePortraitAuditDateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreatePortraitAuditDateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Portrait
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers CreatePortraitAuditDateResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreatePortraitAuditDateResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreatePortraitAuditDateResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseUpdateAccountProfileResponse parses an HTTP response from a UpdateAccountProfileWithResponse call
+func ParseUpdateAccountProfileResponse(rsp *http.Response) (*UpdateAccountProfileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateAccountProfileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AccountDetail
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers UpdateAccountProfileResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers UpdateAccountProfileResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers UpdateAccountProfileResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseRequestAccountRefreshResponse parses an HTTP response from a RequestAccountRefreshWithResponse call
+func ParseRequestAccountRefreshResponse(rsp *http.Response) (*RequestAccountRefreshResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RequestAccountRefreshResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest Operation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 202:
+		var headers RequestAccountRefreshResponse202Headers
+		if values := rsp.Header.Values("Location"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Location", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.Location = &value
+		}
+		response.Headers202 = &headers
+	case rsp.StatusCode == 429:
+		var headers RequestAccountRefreshResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers RequestAccountRefreshResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreateAccountRenewalResponse parses an HTTP response from a CreateAccountRenewalWithResponse call
+func ParseCreateAccountRenewalResponse(rsp *http.Response) (*CreateAccountRenewalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateAccountRenewalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Renewal
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreateAccountRenewalResponse201Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreateAccountRenewalResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreateAccountRenewalResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListAccountWidgetsResponse parses an HTTP response from a ListAccountWidgetsWithResponse call
+func ParseListAccountWidgetsResponse(rsp *http.Response) (*ListAccountWidgetsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAccountWidgetsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstallationList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers ListAccountWidgetsResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListAccountWidgetsResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
 }
 
 // ParseGetCommandReceiptResponse parses an HTTP response from a GetCommandReceiptWithResponse call
@@ -3420,6 +9663,759 @@ func ParseGetOperationResponse(rsp *http.Response) (*GetOperationResponse, error
 		response.Headers429 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetOperationResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListPortraitNichesResponse parses an HTTP response from a ListPortraitNichesWithResponse call
+func ParseListPortraitNichesResponse(rsp *http.Response) (*ListPortraitNichesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListPortraitNichesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest NicheList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers ListPortraitNichesResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListPortraitNichesResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreatePortraitNicheResponse parses an HTTP response from a CreatePortraitNicheWithResponse call
+func ParseCreatePortraitNicheResponse(rsp *http.Response) (*CreatePortraitNicheResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreatePortraitNicheResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Niche
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreatePortraitNicheResponse201Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreatePortraitNicheResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreatePortraitNicheResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDeletePortraitNicheResponse parses an HTTP response from a DeletePortraitNicheWithResponse call
+func ParseDeletePortraitNicheResponse(rsp *http.Response) (*DeletePortraitNicheResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeletePortraitNicheResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers DeletePortraitNicheResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers DeletePortraitNicheResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseUpdatePortraitNicheResponse parses an HTTP response from a UpdatePortraitNicheWithResponse call
+func ParseUpdatePortraitNicheResponse(rsp *http.Response) (*UpdatePortraitNicheResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdatePortraitNicheResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Niche
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers UpdatePortraitNicheResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers UpdatePortraitNicheResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers UpdatePortraitNicheResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseMergePortraitNicheResponse parses an HTTP response from a MergePortraitNicheWithResponse call
+func ParseMergePortraitNicheResponse(rsp *http.Response) (*MergePortraitNicheResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MergePortraitNicheResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Niche
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers MergePortraitNicheResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers MergePortraitNicheResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers MergePortraitNicheResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetPortraitTemplateResponse parses an HTTP response from a GetPortraitTemplateWithResponse call
+func ParseGetPortraitTemplateResponse(rsp *http.Response) (*GetPortraitTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPortraitTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PortraitTemplate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetPortraitTemplateResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetPortraitTemplateResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetPortraitTemplateResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseSetPortraitTemplateResponse parses an HTTP response from a SetPortraitTemplateWithResponse call
+func ParseSetPortraitTemplateResponse(rsp *http.Response) (*SetPortraitTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetPortraitTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PortraitTemplate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers SetPortraitTemplateResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers SetPortraitTemplateResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers SetPortraitTemplateResponse503Headers
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {

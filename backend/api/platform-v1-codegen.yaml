@@ -3,6 +3,30 @@ generate:
   models: true
   client: true
 output-options:
-  include-operation-ids: [listInstallations, getCommandReceipt, getOperation, setInstallationReview, retryInstallationDeal]
+  include-operation-ids:
+    - listInstallations
+    - getCommandReceipt
+    - getOperation
+    - setInstallationReview
+    - retryInstallationDeal
+    - listAccounts
+    - searchAccounts
+    - getAccount
+    - updateAccountProfile
+    - requestAccountRefresh
+    - getAccountLicenseHistory
+    - listAccountWidgets
+    - getAccountCRMUsers
+    - createAccountRenewal
+    - getAccountPortrait
+    - updateAccountPortrait
+    - createPortraitAuditDate
+    - getPortraitTemplate
+    - setPortraitTemplate
+    - listPortraitNiches
+    - createPortraitNiche
+    - updatePortraitNiche
+    - deletePortraitNiche
+    - mergePortraitNiche
   skip-prune: true
   nullable-type: true
