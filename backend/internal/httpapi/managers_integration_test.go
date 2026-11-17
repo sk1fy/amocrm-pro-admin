@@ -184,8 +184,9 @@ func TestManagerBootstrapConcurrent(t *testing.T) {
 	}
 	close(start)
 	firstResult, secondResult := <-results, <-results
-	if !((firstResult == nil && errors.Is(secondResult, employees.ErrManagerBootstrapComplete)) ||
-		(secondResult == nil && errors.Is(firstResult, employees.ErrManagerBootstrapComplete))) {
+	firstWon := firstResult == nil && errors.Is(secondResult, employees.ErrManagerBootstrapComplete)
+	secondWon := secondResult == nil && errors.Is(firstResult, employees.ErrManagerBootstrapComplete)
+	if !firstWon && !secondWon {
 		t.Fatalf("bootstrap outcomes: %v, %v", firstResult, secondResult)
 	}
 }
