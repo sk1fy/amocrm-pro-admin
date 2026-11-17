@@ -31,6 +31,7 @@ export type StateDomain =
   | 'origin'
   | 'problem'
   | 'employee_status'
+  | 'manager_staff'
   | 'connection_health'
   | 'audit_outcome'
   | 'installation_kind'
@@ -47,6 +48,12 @@ export type StateDomain =
 const unknownEntry: StateEntry = { tone: 'unknown', label: 'Неизвестно' }
 
 const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
+  manager_staff: {
+    active: { tone: 'ok', label: 'Доступ открыт' },
+    invited: { tone: 'attention', label: 'Ожидает приглашения' },
+    revoked: { tone: 'off', label: 'Доступ отозван' },
+    disabled: { tone: 'off', label: 'Учётная запись отключена' },
+  },
   distribution: {
     pending: { tone: 'attention', label: 'Ожидает' },
     processed: { tone: 'ok', label: 'Обработано' },

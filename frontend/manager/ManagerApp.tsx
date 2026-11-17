@@ -13,12 +13,23 @@ import { InstallationsPage } from './InstallationsPage'
 import { useManagerLocation } from './installationsLocation'
 import { fetchManager, loginManager, logoutManager } from './session'
 import styles from './ManagerApp.module.css'
+import { StaffPage } from './StaffPage'
+import { AcceptInvitationPage } from './AcceptInvitationPage'
 
 const sessionKey = ['managers', 'me']
 
 type LoginState = { kind: 'idle' } | { kind: 'pending' } | { kind: 'failed'; message: string }
 
-export function ManagerApp() {
+export function ManagerApp({ initialInvitation = null }: { initialInvitation?: string | null }) {
+  const [invitation, setInvitation] = useState(initialInvitation)
+  return invitation !== null ? (
+    <AcceptInvitationPage token={invitation} onAccepted={() => setInvitation(null)} />
+  ) : (
+    <AuthenticatedManagerApp />
+  )
+}
+
+function AuthenticatedManagerApp() {
   const client = useQueryClient()
   const location = useManagerLocation()
   const session = useQuery({
@@ -108,6 +119,13 @@ export function ManagerApp() {
               >
                 Лента событий
               </ManagerLink>
+              <ManagerLink
+                search={listSearch(location.search, 'staff')}
+                navigate={location.navigate}
+                current={section === 'staff'}
+              >
+                Сотрудники
+              </ManagerLink>
             </nav>
             <div className={styles.identity}>
               <span>{manager.name}</span>
@@ -122,7 +140,17 @@ export function ManagerApp() {
           {logout.isPending ? <p role="status">Завершаем сеанс…</p> : null}
           <div hidden={logout.isPending}>
             <AccountCommands key={scope}>
-              {feed && !selected ? (
+              {section === 'staff' ? (
+                <StaffPage
+                  key={scope}
+                  {...location}
+                  scope={scope}
+                  grants={manager.grants}
+                  managerId={manager.id}
+                  onExpired={expire}
+                  onForbidden={checkGrants}
+                />
+              ) : feed && !selected ? (
                 <Timeline
                   key={scope}
                   {...location}
