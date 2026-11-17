@@ -309,7 +309,7 @@ func (c *Client) clientAccountRequest(ctx context.Context, principal auth.Princi
 	if err != nil {
 		return AccountResponse{}, fmt.Errorf("%w: %w", ErrUnavailable, err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {
 		return AccountResponse{}, fmt.Errorf("%w: %w", ErrUnavailable, err)

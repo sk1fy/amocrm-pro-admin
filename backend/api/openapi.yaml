@@ -1693,7 +1693,10 @@ paths:
       security:
         - managerSession: []
       summary: Read the live result of an owned manager command.
-      description: The authenticated owner must have the grant for the command kind and current target scope.
+      description: >-
+        Requires clients.read and the grant for the owned command kind and
+        current target scope. The legacy installation CRM retry can be read
+        by its owner with clients.read.
       parameters:
         - $ref: '#/components/parameters/RequestID'
         - name: id

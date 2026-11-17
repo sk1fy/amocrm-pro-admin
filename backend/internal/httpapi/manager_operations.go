@@ -37,6 +37,9 @@ func managerOperation(service *managerplatform.Service) http.HandlerFunc {
 			httpx.WriteError(w, r, httpx.InvalidArgument("invalid operation id"))
 			return
 		}
+		if !requireManagerGrant(w, r, auth.GrantClientsRead) {
+			return
+		}
 		if service == nil {
 			httpx.WriteError(w, r, httpx.BackendUnavailable("Platform unavailable"))
 			return

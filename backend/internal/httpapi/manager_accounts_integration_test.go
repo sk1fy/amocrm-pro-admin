@@ -31,10 +31,11 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 	pool := testkit.Postgres(t)
 	testkit.Reset(t, pool)
 	ctx := t.Context()
-	employeesStore := employees.NewStore(pool, 2*time.Second)
-	audits := audit.NewStore(pool, 2*time.Second)
-	sessions := auth.NewManagerService(pool, 5*time.Second, time.Hour, time.Hour, true)
-	core := auth.NewService(pool, 5*time.Second, time.Hour, time.Hour, true)
+	const dbTimeout = 8 * time.Second
+	employeesStore := employees.NewStore(pool, dbTimeout)
+	audits := audit.NewStore(pool, dbTimeout)
+	sessions := auth.NewManagerService(pool, dbTimeout, time.Hour, time.Hour, true)
+	core := auth.NewService(pool, dbTimeout, time.Hour, time.Hour, true)
 	writer := createEmployee(t, ctx, employeesStore, "clients-writer@example.invalid", "Fixture Writer", rbac.RoleViewer)
 	reader := createEmployee(t, ctx, employeesStore, "clients-reader@example.invalid", "Fixture Reader", rbac.RoleViewer)
 	if err := employees.NewAccess(employeesStore, core, audits).BootstrapManager(ctx, writer.Email, audit.Event{}); err != nil {
@@ -58,6 +59,7 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 	var mu sync.Mutex
 	var profileID, refreshID uuid.UUID
 	var profileAttempts, refreshAttempts, readCalls int
+	var revokeReadOnPoll bool
 	const errorSecret = "private upstream diagnostic"
 	problem := func(w http.ResponseWriter, status int, code string, version int) {
 		errorBody := map[string]any{"code": code, "message": errorSecret, "request_id": uuid.New(), "retryable": false}
@@ -170,6 +172,13 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 		case "/commands/" + refreshID.String():
 			httpx.WriteJSON(w, http.StatusOK, map[string]any{"id": refreshID, "kind": "account.refresh", "state": "accepted", "operation_id": refreshID})
 		case "/operations/" + refreshID.String():
+			if revokeReadOnPoll {
+				revokeReadOnPoll = false
+				if _, err := pool.Exec(r.Context(), `DELETE FROM manager_grants
+					WHERE employee_id=$1 AND grant_code='clients.read'`, writer.ID); err != nil {
+					t.Error(err)
+				}
+			}
 			httpx.WriteJSON(w, http.StatusOK, operation())
 		case "/portrait-template":
 			if actor.CommandId == nil || r.Header.Get("If-Match") != "\"1\"" {
@@ -189,7 +198,7 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 	}
 	t.Cleanup(client.Close)
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	service := managerplatform.NewService(pool, 2*time.Second, audits, sessions, client, logger)
+	service := managerplatform.NewService(pool, dbTimeout, audits, sessions, client, logger)
 	router := New(Dependencies{Employees: employeesStore, Sessions: core, ManagerSessions: sessions, ManagerPlatform: service,
 		Audit: audits, Limiter: auth.NewLimiter(50), Logger: logger, PublicOrigin: "https://admin.example.invalid", ManagerOrigin: origin})
 	call := func(method, path, cookie, body string, key uuid.UUID, etag string, csrf bool, want int) *httptest.ResponseRecorder {
@@ -267,6 +276,14 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 	call(http.MethodGet, "/operations/"+accepted.ID.String(), readerCookie, "", uuid.Nil, "", false, http.StatusNotFound)
 	call(http.MethodGet, "/operations/"+accepted.ID.String(), writerCookie, "", uuid.Nil, "", false, http.StatusOK)
 	call(http.MethodPut, "/portrait-template", writerCookie, `{"topics":[]}`, uuid.New(), "\"1\"", true, http.StatusOK)
+	mu.Lock()
+	revokeReadOnPoll = true
+	mu.Unlock()
+	call(http.MethodGet, "/operations/"+accepted.ID.String(), writerCookie, "", uuid.Nil, "", false, http.StatusForbidden)
+	call(http.MethodGet, "/operations/"+accepted.ID.String(), writerCookie, "", uuid.Nil, "", false, http.StatusForbidden)
+	if _, err := pool.Exec(ctx, "INSERT INTO manager_grants(employee_id,grant_code) VALUES($1,'clients.read')", writer.ID); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := pool.Exec(ctx, "DELETE FROM manager_grants WHERE employee_id=$1 AND grant_code='clients.write'", writer.ID); err != nil {
 		t.Fatal(err)
 	}
