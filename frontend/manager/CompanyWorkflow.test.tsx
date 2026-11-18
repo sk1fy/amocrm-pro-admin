@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { resetApiSession } from '../src/api/client'
 import { ManagerApp } from './ManagerApp'
@@ -134,12 +134,10 @@ it('uses catalog-only workflow, clears stage on pipeline change, and retains exa
   expect(requests[1]).toEqual(requests[0])
   expect(requests[0].version).toBe('"1"')
   expect(
-    screen
+    within(screen.getByRole('navigation', { name: 'Кабинет менеджеров' }))
       .getAllByRole('link')
-      .filter((link) =>
-        ['Установки', 'Клиенты', 'Виджеты', 'Лента', 'Сотрудники'].includes(link.textContent ?? ''),
-      ),
-  ).toHaveLength(5)
+      .map((link) => link.textContent),
+  ).toEqual(['Установки', 'Клиенты', 'Виджеты', 'Лента событий', 'Сотрудники'])
 })
 it('preserves the draft on metadata assertion conflict and explicitly creates a new command', async () => {
   let changed = false
