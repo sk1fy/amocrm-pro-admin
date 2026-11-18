@@ -82,6 +82,156 @@ func (e CommandReceiptState) Valid() bool {
 	}
 }
 
+// Defines values for CompanyDetailRuntimeResolution.
+const (
+	CompanyDetailRuntimeResolutionAmbiguous  CompanyDetailRuntimeResolution = "ambiguous"
+	CompanyDetailRuntimeResolutionPartial    CompanyDetailRuntimeResolution = "partial"
+	CompanyDetailRuntimeResolutionResolved   CompanyDetailRuntimeResolution = "resolved"
+	CompanyDetailRuntimeResolutionUnresolved CompanyDetailRuntimeResolution = "unresolved"
+)
+
+// Valid indicates whether the value is a known member of the CompanyDetailRuntimeResolution enum.
+func (e CompanyDetailRuntimeResolution) Valid() bool {
+	switch e {
+	case CompanyDetailRuntimeResolutionAmbiguous:
+		return true
+	case CompanyDetailRuntimeResolutionPartial:
+		return true
+	case CompanyDetailRuntimeResolutionResolved:
+		return true
+	case CompanyDetailRuntimeResolutionUnresolved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CompanyDetailSourceResolution.
+const (
+	CompanyDetailSourceResolutionMultiple CompanyDetailSourceResolution = "multiple"
+	CompanyDetailSourceResolutionOne      CompanyDetailSourceResolution = "one"
+	CompanyDetailSourceResolutionUnknown  CompanyDetailSourceResolution = "unknown"
+	CompanyDetailSourceResolutionZero     CompanyDetailSourceResolution = "zero"
+)
+
+// Valid indicates whether the value is a known member of the CompanyDetailSourceResolution enum.
+func (e CompanyDetailSourceResolution) Valid() bool {
+	switch e {
+	case CompanyDetailSourceResolutionMultiple:
+		return true
+	case CompanyDetailSourceResolutionOne:
+		return true
+	case CompanyDetailSourceResolutionUnknown:
+		return true
+	case CompanyDetailSourceResolutionZero:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CompanySourceState.
+const (
+	CompanySourceStateDisabled CompanySourceState = "disabled"
+	CompanySourceStateError    CompanySourceState = "error"
+	CompanySourceStateFresh    CompanySourceState = "fresh"
+	CompanySourceStateStale    CompanySourceState = "stale"
+)
+
+// Valid indicates whether the value is a known member of the CompanySourceState enum.
+func (e CompanySourceState) Valid() bool {
+	switch e {
+	case CompanySourceStateDisabled:
+		return true
+	case CompanySourceStateError:
+		return true
+	case CompanySourceStateFresh:
+		return true
+	case CompanySourceStateStale:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CompanySummaryRuntimeResolution.
+const (
+	CompanySummaryRuntimeResolutionAmbiguous  CompanySummaryRuntimeResolution = "ambiguous"
+	CompanySummaryRuntimeResolutionPartial    CompanySummaryRuntimeResolution = "partial"
+	CompanySummaryRuntimeResolutionResolved   CompanySummaryRuntimeResolution = "resolved"
+	CompanySummaryRuntimeResolutionUnresolved CompanySummaryRuntimeResolution = "unresolved"
+)
+
+// Valid indicates whether the value is a known member of the CompanySummaryRuntimeResolution enum.
+func (e CompanySummaryRuntimeResolution) Valid() bool {
+	switch e {
+	case CompanySummaryRuntimeResolutionAmbiguous:
+		return true
+	case CompanySummaryRuntimeResolutionPartial:
+		return true
+	case CompanySummaryRuntimeResolutionResolved:
+		return true
+	case CompanySummaryRuntimeResolutionUnresolved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CompanySummarySourceResolution.
+const (
+	CompanySummarySourceResolutionMultiple CompanySummarySourceResolution = "multiple"
+	CompanySummarySourceResolutionOne      CompanySummarySourceResolution = "one"
+	CompanySummarySourceResolutionUnknown  CompanySummarySourceResolution = "unknown"
+	CompanySummarySourceResolutionZero     CompanySummarySourceResolution = "zero"
+)
+
+// Valid indicates whether the value is a known member of the CompanySummarySourceResolution enum.
+func (e CompanySummarySourceResolution) Valid() bool {
+	switch e {
+	case CompanySummarySourceResolutionMultiple:
+		return true
+	case CompanySummarySourceResolutionOne:
+		return true
+	case CompanySummarySourceResolutionUnknown:
+		return true
+	case CompanySummarySourceResolutionZero:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CompanyWorkflowMetadataRequiredFieldsState.
+const (
+	CompanyWorkflowMetadataRequiredFieldsStateUnknown CompanyWorkflowMetadataRequiredFieldsState = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the CompanyWorkflowMetadataRequiredFieldsState enum.
+func (e CompanyWorkflowMetadataRequiredFieldsState) Valid() bool {
+	switch e {
+	case CompanyWorkflowMetadataRequiredFieldsStateUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CompanyWorkflowMetadataWriteReady.
+const (
+	CompanyWorkflowMetadataWriteReadyFalse CompanyWorkflowMetadataWriteReady = false
+)
+
+// Valid indicates whether the value is a known member of the CompanyWorkflowMetadataWriteReady enum.
+func (e CompanyWorkflowMetadataWriteReady) Valid() bool {
+	switch e {
+	case CompanyWorkflowMetadataWriteReadyFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CoreAuthorizationEventAuthorization.
 const (
 	CoreAuthorizationEventAuthorizationAuthorized     CoreAuthorizationEventAuthorization = "authorized"
@@ -589,6 +739,21 @@ func (e ProductLine) Valid() bool {
 	case ProductLinePRO:
 		return true
 	case ProductLineTOP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProductCompanyWorkflowWriteReady.
+const (
+	ProductCompanyWorkflowWriteReadyFalse ProductCompanyWorkflowWriteReady = false
+)
+
+// Valid indicates whether the value is a known member of the ProductCompanyWorkflowWriteReady enum.
+func (e ProductCompanyWorkflowWriteReady) Valid() bool {
+	switch e {
+	case ProductCompanyWorkflowWriteReadyFalse:
 		return true
 	default:
 		return false
@@ -1150,6 +1315,52 @@ type CommandReceipt struct {
 // CommandReceiptState defines model for CommandReceipt.State.
 type CommandReceiptState string
 
+// CompanyContact defines model for CompanyContact.
+type CompanyContact struct {
+	Companies []CompanyContactLink `json:"companies"`
+	Id        AmoID                `json:"id"`
+	Name      string               `json:"name"`
+}
+
+// CompanyContactLink defines model for CompanyContactLink.
+type CompanyContactLink struct {
+	CompanyId    nullable.Nullable[CompanyProjectionId] `json:"company_id"`
+	CrmCompanyId AmoID                                  `json:"crm_company_id"`
+}
+
+// CompanyDetail defines model for CompanyDetail.
+type CompanyDetail struct {
+	Contacts           []CompanyContact `json:"contacts"`
+	CrmCompanyId       AmoID            `json:"crm_company_id"`
+	CustomerAccountIds []AmoID          `json:"customer_account_ids"`
+
+	// Id UUID проекции CRM-компании. Не является runtime account_id.
+	Id                CompanyProjectionId            `json:"id"`
+	Name              string                         `json:"name"`
+	RuntimeAccounts   []CompanyRuntimeAccount        `json:"runtime_accounts"`
+	RuntimeResolution CompanyDetailRuntimeResolution `json:"runtime_resolution"`
+
+	// Source Времена относятся к полному поколению данных. Ошибка последней попытки не заменяет данные; локальное истечение переводит fresh в stale. Смена активной привязки очищает текущий снимок.
+	Source              CompanySource                 `json:"source"`
+	SourceResolution    CompanyDetailSourceResolution `json:"source_resolution"`
+	UnresolvedRelations []CompanyContactLink          `json:"unresolved_relations"`
+}
+
+// CompanyDetailRuntimeResolution defines model for CompanyDetail.RuntimeResolution.
+type CompanyDetailRuntimeResolution string
+
+// CompanyDetailSourceResolution defines model for CompanyDetail.SourceResolution.
+type CompanyDetailSourceResolution string
+
+// CompanyList items=null до первого полного наблюдения; items=[] означает полный пустой каталог. Курсор фиксирует поколение, активацию, сотрудника, версию прав и фильтры на 15 минут.
+type CompanyList struct {
+	Items      nullable.Nullable[[]CompanySummary] `json:"items"`
+	NextCursor nullable.Nullable[string]           `json:"next_cursor"`
+
+	// Source Времена относятся к полному поколению данных. Ошибка последней попытки не заменяет данные; локальное истечение переводит fresh в stale. Смена активной привязки очищает текущий снимок.
+	Source CompanySource `json:"source"`
+}
+
 // CompanyPortrait defines model for CompanyPortrait.
 type CompanyPortrait struct {
 	CustomerTypes *[]string                             `json:"customer_types,omitempty"`
@@ -1157,6 +1368,90 @@ type CompanyPortrait struct {
 	Rating        nullable.Nullable[int]                `json:"rating,omitempty"`
 	Site          nullable.Nullable[string]             `json:"site,omitempty"`
 	WorkTypes     *[]string                             `json:"work_types,omitempty"`
+}
+
+// CompanyProjectionId UUID проекции CRM-компании. Не является runtime account_id.
+type CompanyProjectionId = openapi_types.UUID
+
+// CompanyRuntimeAccount defines model for CompanyRuntimeAccount.
+type CompanyRuntimeAccount struct {
+	AccountId         openapi_types.UUID `json:"account_id"`
+	CustomerAccountId AmoID              `json:"customer_account_id"`
+}
+
+// CompanySource Времена относятся к полному поколению данных. Ошибка последней попытки не заменяет данные; локальное истечение переводит fresh в stale. Смена активной привязки очищает текущий снимок.
+type CompanySource struct {
+	BindingRevision nullable.Nullable[string]    `json:"binding_revision"`
+	Complete        bool                         `json:"complete"`
+	ErrorCode       nullable.Nullable[string]    `json:"error_code"`
+	FreshUntil      nullable.Nullable[time.Time] `json:"fresh_until"`
+	ObservedAt      nullable.Nullable[time.Time] `json:"observed_at"`
+	RetryAt         nullable.Nullable[time.Time] `json:"retry_at"`
+	SourceAccountId nullable.Nullable[AmoID]     `json:"source_account_id"`
+	State           CompanySourceState           `json:"state"`
+}
+
+// CompanySourceState defines model for CompanySource.State.
+type CompanySourceState string
+
+// CompanySummary defines model for CompanySummary.
+type CompanySummary struct {
+	CrmCompanyId       AmoID   `json:"crm_company_id"`
+	CustomerAccountIds []AmoID `json:"customer_account_ids"`
+
+	// Id UUID проекции CRM-компании. Не является runtime account_id.
+	Id                CompanyProjectionId             `json:"id"`
+	Name              string                          `json:"name"`
+	RuntimeAccounts   []CompanyRuntimeAccount         `json:"runtime_accounts"`
+	RuntimeResolution CompanySummaryRuntimeResolution `json:"runtime_resolution"`
+	SourceResolution  CompanySummarySourceResolution  `json:"source_resolution"`
+}
+
+// CompanySummaryRuntimeResolution defines model for CompanySummary.RuntimeResolution.
+type CompanySummaryRuntimeResolution string
+
+// CompanySummarySourceResolution defines model for CompanySummary.SourceResolution.
+type CompanySummarySourceResolution string
+
+// CompanyWorkflowConfiguration defines model for CompanyWorkflowConfiguration.
+type CompanyWorkflowConfiguration struct {
+	BindingRevision      string             `json:"binding_revision"`
+	InitialStageId       AmoID              `json:"initial_stage_id"`
+	MetadataGenerationId openapi_types.UUID `json:"metadata_generation_id"`
+	PipelineId           AmoID              `json:"pipeline_id"`
+	Revision             Version            `json:"revision"`
+	SourceAccountId      AmoID              `json:"source_account_id"`
+	ValidatedAt          time.Time          `json:"validated_at"`
+}
+
+// CompanyWorkflowMetadata defines model for CompanyWorkflowMetadata.
+type CompanyWorkflowMetadata struct {
+	GenerationId        nullable.Nullable[openapi_types.UUID]        `json:"generation_id"`
+	Pipelines           nullable.Nullable[[]CompanyWorkflowPipeline] `json:"pipelines"`
+	RequiredFieldsState CompanyWorkflowMetadataRequiredFieldsState   `json:"required_fields_state"`
+
+	// Source Времена относятся к полному поколению данных. Ошибка последней попытки не заменяет данные; локальное истечение переводит fresh в stale. Смена активной привязки очищает текущий снимок.
+	Source     CompanySource                     `json:"source"`
+	WriteReady CompanyWorkflowMetadataWriteReady `json:"write_ready"`
+}
+
+// CompanyWorkflowMetadataRequiredFieldsState defines model for CompanyWorkflowMetadata.RequiredFieldsState.
+type CompanyWorkflowMetadataRequiredFieldsState string
+
+// CompanyWorkflowMetadataWriteReady defines model for CompanyWorkflowMetadata.WriteReady.
+type CompanyWorkflowMetadataWriteReady bool
+
+// CompanyWorkflowPipeline defines model for CompanyWorkflowPipeline.
+type CompanyWorkflowPipeline struct {
+	Id     AmoID                  `json:"id"`
+	Name   string                 `json:"name"`
+	Stages []CompanyWorkflowStage `json:"stages"`
+}
+
+// CompanyWorkflowStage defines model for CompanyWorkflowStage.
+type CompanyWorkflowStage struct {
+	Id   AmoID  `json:"id"`
+	Name string `json:"name"`
 }
 
 // CoreAuthorizationEvent defines model for CoreAuthorizationEvent.
@@ -1554,6 +1849,17 @@ type ProductLine string
 // ProductCode defines model for ProductCode.
 type ProductCode = string
 
+// ProductCompanyWorkflow defines model for ProductCompanyWorkflow.
+type ProductCompanyWorkflow struct {
+	Configuration nullable.Nullable[CompanyWorkflowConfiguration] `json:"configuration"`
+	ProductId     openapi_types.UUID                              `json:"product_id"`
+	Version       Version                                         `json:"version"`
+	WriteReady    ProductCompanyWorkflowWriteReady                `json:"write_ready"`
+}
+
+// ProductCompanyWorkflowWriteReady defines model for ProductCompanyWorkflow.WriteReady.
+type ProductCompanyWorkflowWriteReady bool
+
 // ProductList defines model for ProductList.
 type ProductList struct {
 	Items      []Product                 `json:"items"`
@@ -1612,6 +1918,15 @@ type Review struct {
 	Reviewed   bool                `json:"reviewed"`
 	ReviewedAt *time.Time          `json:"reviewed_at,omitempty"`
 	ReviewedBy *openapi_types.UUID `json:"reviewed_by,omitempty"`
+}
+
+// SetProductCompanyWorkflow defines model for SetProductCompanyWorkflow.
+type SetProductCompanyWorkflow struct {
+	BindingRevision      string             `json:"binding_revision"`
+	InitialStageId       AmoID              `json:"initial_stage_id"`
+	MetadataGenerationId openapi_types.UUID `json:"metadata_generation_id"`
+	PipelineId           AmoID              `json:"pipeline_id"`
+	SourceAccountId      AmoID              `json:"source_account_id"`
 }
 
 // TrialPolicy defines model for TrialPolicy.
@@ -1829,6 +2144,24 @@ type ListAccountWidgetsParamsState string
 
 // GetCommandReceiptParams defines parameters for GetCommandReceipt.
 type GetCommandReceiptParams struct {
+	XPlatformActor Actor `json:"X-Platform-Actor"`
+}
+
+// ListCompaniesParams defines parameters for ListCompanies.
+type ListCompaniesParams struct {
+	Limit          *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Q              *string `form:"q,omitempty" json:"q,omitempty"`
+	XPlatformActor Actor   `json:"X-Platform-Actor"`
+}
+
+// GetCompanyParams defines parameters for GetCompany.
+type GetCompanyParams struct {
+	XPlatformActor Actor `json:"X-Platform-Actor"`
+}
+
+// GetCompanyWorkflowMetadataParams defines parameters for GetCompanyWorkflowMetadata.
+type GetCompanyWorkflowMetadataParams struct {
 	XPlatformActor Actor `json:"X-Platform-Actor"`
 }
 
@@ -2057,6 +2390,18 @@ type UpdateProductJSONBodyAvailability string
 // UpdateProductJSONBodyLine defines parameters for UpdateProduct.
 type UpdateProductJSONBodyLine string
 
+// GetProductCompanyWorkflowParams defines parameters for GetProductCompanyWorkflow.
+type GetProductCompanyWorkflowParams struct {
+	XPlatformActor Actor `json:"X-Platform-Actor"`
+}
+
+// SetProductCompanyWorkflowParams defines parameters for SetProductCompanyWorkflow.
+type SetProductCompanyWorkflowParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
 // GetProductMetricsParams defines parameters for GetProductMetrics.
 type GetProductMetricsParams struct {
 	From           *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
@@ -2105,6 +2450,9 @@ type CreateProductJSONRequestBody CreateProductJSONBody
 
 // UpdateProductJSONRequestBody defines body for UpdateProduct for application/json ContentType.
 type UpdateProductJSONRequestBody UpdateProductJSONBody
+
+// SetProductCompanyWorkflowJSONRequestBody defines body for SetProductCompanyWorkflow for application/json ContentType.
+type SetProductCompanyWorkflowJSONRequestBody = SetProductCompanyWorkflow
 
 // AsPortraitFilter0 returns the union data inside the PortraitFilter as a PortraitFilter0
 func (t PortraitFilter) AsPortraitFilter0() (PortraitFilter0, error) {
@@ -2412,6 +2760,15 @@ type ClientInterface interface {
 	// Только исходный BFF и субъект с актуальным правом на команду. Возвращает зарегистрированный исход по command ID; 404 не доказывает, что первый запрос не в пути.
 	GetCommandReceipt(ctx context.Context, id openapi_types.UUID, params *GetCommandReceiptParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListCompanies performs a GET /internal/platform/v1/managers/companies (the `ListCompanies` operationId) request.
+	ListCompanies(ctx context.Context, params *ListCompaniesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCompany performs a GET /internal/platform/v1/managers/companies/{id} (the `GetCompany` operationId) request.
+	GetCompany(ctx context.Context, id openapi_types.UUID, params *GetCompanyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCompanyWorkflowMetadata performs a GET /internal/platform/v1/managers/company-workflow-metadata (the `GetCompanyWorkflowMetadata` operationId) request.
+	GetCompanyWorkflowMetadata(ctx context.Context, params *GetCompanyWorkflowMetadataParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListFeed performs a GET /internal/platform/v1/managers/feed (the `ListFeed` operationId) request.
 	ListFeed(ctx context.Context, params *ListFeedParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -2501,6 +2858,21 @@ type ClientInterface interface {
 	// UpdateProduct performs a PATCH /internal/platform/v1/managers/products/{id} (the `UpdateProduct` operationId) request.
 	// Takes a body of the `application/json` content type.
 	UpdateProduct(ctx context.Context, id openapi_types.UUID, params *UpdateProductParams, body UpdateProductJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetProductCompanyWorkflow performs a GET /internal/platform/v1/managers/products/{id}/company-workflow (the `GetProductCompanyWorkflow` operationId) request.
+	GetProductCompanyWorkflow(ctx context.Context, id openapi_types.UUID, params *GetProductCompanyWorkflowParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetProductCompanyWorkflowWithBody performs a PUT /internal/platform/v1/managers/products/{id}/company-workflow (the `SetProductCompanyWorkflow` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Команда product.company_workflow.set. Первая запись меняет виртуальную версию 1 на 2. Проверяет принятую карточку продукта и свежее полное поколение метаданных в SQL. 409/422 сохраняют receipt. 503 откатывает резервирование ключа. Точный повтор успеха возвращает сохранённые байты и ETag даже после outage или rebind, при текущем catalog.manage и видимом продукте. write_ready всегда false.
+	SetProductCompanyWorkflowWithBody(ctx context.Context, id openapi_types.UUID, params *SetProductCompanyWorkflowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetProductCompanyWorkflow performs a PUT /internal/platform/v1/managers/products/{id}/company-workflow (the `SetProductCompanyWorkflow` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Команда product.company_workflow.set. Первая запись меняет виртуальную версию 1 на 2. Проверяет принятую карточку продукта и свежее полное поколение метаданных в SQL. 409/422 сохраняют receipt. 503 откатывает резервирование ключа. Точный повтор успеха возвращает сохранённые байты и ETag даже после outage или rebind, при текущем catalog.manage и видимом продукте. write_ready всегда false.
+	SetProductCompanyWorkflow(ctx context.Context, id openapi_types.UUID, params *SetProductCompanyWorkflowParams, body SetProductCompanyWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetProductMetrics performs a GET /internal/platform/v1/managers/products/{id}/metrics (the `GetProductMetrics` operationId) request.
 	GetProductMetrics(ctx context.Context, id openapi_types.UUID, params *GetProductMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2778,6 +3150,45 @@ func (c *Client) ListAccountWidgets(ctx context.Context, id openapi_types.UUID, 
 // Только исходный BFF и субъект с актуальным правом на команду. Возвращает зарегистрированный исход по command ID; 404 не доказывает, что первый запрос не в пути.
 func (c *Client) GetCommandReceipt(ctx context.Context, id openapi_types.UUID, params *GetCommandReceiptParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetCommandReceiptRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListCompanies performs a GET /internal/platform/v1/managers/companies (the `ListCompanies` operationId) request.
+func (c *Client) ListCompanies(ctx context.Context, params *ListCompaniesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCompaniesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetCompany performs a GET /internal/platform/v1/managers/companies/{id} (the `GetCompany` operationId) request.
+func (c *Client) GetCompany(ctx context.Context, id openapi_types.UUID, params *GetCompanyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCompanyRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetCompanyWorkflowMetadata performs a GET /internal/platform/v1/managers/company-workflow-metadata (the `GetCompanyWorkflowMetadata` operationId) request.
+func (c *Client) GetCompanyWorkflowMetadata(ctx context.Context, params *GetCompanyWorkflowMetadataParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCompanyWorkflowMetadataRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3108,6 +3519,51 @@ func (c *Client) UpdateProductWithBody(ctx context.Context, id openapi_types.UUI
 // Takes a body of the `application/json` content type.
 func (c *Client) UpdateProduct(ctx context.Context, id openapi_types.UUID, params *UpdateProductParams, body UpdateProductJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateProductRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetProductCompanyWorkflow performs a GET /internal/platform/v1/managers/products/{id}/company-workflow (the `GetProductCompanyWorkflow` operationId) request.
+func (c *Client) GetProductCompanyWorkflow(ctx context.Context, id openapi_types.UUID, params *GetProductCompanyWorkflowParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProductCompanyWorkflowRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetProductCompanyWorkflowWithBody performs a PUT /internal/platform/v1/managers/products/{id}/company-workflow (the `SetProductCompanyWorkflow` operationId) request,
+// with any type of body and a specified content type.
+//
+// Команда product.company_workflow.set. Первая запись меняет виртуальную версию 1 на 2. Проверяет принятую карточку продукта и свежее полное поколение метаданных в SQL. 409/422 сохраняют receipt. 503 откатывает резервирование ключа. Точный повтор успеха возвращает сохранённые байты и ETag даже после outage или rebind, при текущем catalog.manage и видимом продукте. write_ready всегда false.
+func (c *Client) SetProductCompanyWorkflowWithBody(ctx context.Context, id openapi_types.UUID, params *SetProductCompanyWorkflowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetProductCompanyWorkflowRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetProductCompanyWorkflow performs a PUT /internal/platform/v1/managers/products/{id}/company-workflow (the `SetProductCompanyWorkflow` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Команда product.company_workflow.set. Первая запись меняет виртуальную версию 1 на 2. Проверяет принятую карточку продукта и свежее полное поколение метаданных в SQL. 409/422 сохраняют receipt. 503 откатывает резервирование ключа. Точный повтор успеха возвращает сохранённые байты и ETag даже после outage или rebind, при текущем catalog.manage и видимом продукте. write_ready всегда false.
+func (c *Client) SetProductCompanyWorkflow(ctx context.Context, id openapi_types.UUID, params *SetProductCompanyWorkflowParams, body SetProductCompanyWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetProductCompanyWorkflowRequest(c.Server, id, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4402,6 +4858,184 @@ func NewGetCommandReceiptRequest(server string, id openapi_types.UUID, params *G
 	}
 
 	operationPath := fmt.Sprintf("/internal/platform/v1/managers/commands/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewListCompaniesRequest constructs an http.Request for the ListCompanies method
+func NewListCompaniesRequest(server string, params *ListCompaniesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/companies")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGetCompanyRequest constructs an http.Request for the GetCompany method
+func NewGetCompanyRequest(server string, id openapi_types.UUID, params *GetCompanyParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/companies/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGetCompanyWorkflowMetadataRequest constructs an http.Request for the GetCompanyWorkflowMetadata method
+func NewGetCompanyWorkflowMetadataRequest(server string, params *GetCompanyWorkflowMetadataParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/company-workflow-metadata")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -5772,6 +6406,131 @@ func NewUpdateProductRequestWithBody(server string, id openapi_types.UUID, param
 	return req, nil
 }
 
+// NewGetProductCompanyWorkflowRequest constructs an http.Request for the GetProductCompanyWorkflow method
+func NewGetProductCompanyWorkflowRequest(server string, id openapi_types.UUID, params *GetProductCompanyWorkflowParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/products/%s/company-workflow", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewSetProductCompanyWorkflowRequest calls the generic SetProductCompanyWorkflow builder with application/json body
+func NewSetProductCompanyWorkflowRequest(server string, id openapi_types.UUID, params *SetProductCompanyWorkflowParams, body SetProductCompanyWorkflowJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetProductCompanyWorkflowRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewSetProductCompanyWorkflowRequestWithBody constructs an http.Request for the SetProductCompanyWorkflow method, with any body, and a specified content type
+func NewSetProductCompanyWorkflowRequestWithBody(server string, id openapi_types.UUID, params *SetProductCompanyWorkflowParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/products/%s/company-workflow", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
 // NewGetProductMetricsRequest constructs an http.Request for the GetProductMetrics method
 func NewGetProductMetricsRequest(server string, id openapi_types.UUID, params *GetProductMetricsParams) (*http.Request, error) {
 	var err error
@@ -6012,6 +6771,21 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetCommandReceiptWithResponse(ctx context.Context, id openapi_types.UUID, params *GetCommandReceiptParams, reqEditors ...RequestEditorFn) (*GetCommandReceiptResponse, error)
 
+	// ListCompaniesWithResponse performs a GET /internal/platform/v1/managers/companies (the `ListCompanies` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListCompaniesWithResponse(ctx context.Context, params *ListCompaniesParams, reqEditors ...RequestEditorFn) (*ListCompaniesResponse, error)
+
+	// GetCompanyWithResponse performs a GET /internal/platform/v1/managers/companies/{id} (the `GetCompany` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetCompanyWithResponse(ctx context.Context, id openapi_types.UUID, params *GetCompanyParams, reqEditors ...RequestEditorFn) (*GetCompanyResponse, error)
+
+	// GetCompanyWorkflowMetadataWithResponse performs a GET /internal/platform/v1/managers/company-workflow-metadata (the `GetCompanyWorkflowMetadata` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetCompanyWorkflowMetadataWithResponse(ctx context.Context, params *GetCompanyWorkflowMetadataParams, reqEditors ...RequestEditorFn) (*GetCompanyWorkflowMetadataResponse, error)
+
 	// ListFeedWithResponse performs a GET /internal/platform/v1/managers/feed (the `ListFeed` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -6133,6 +6907,25 @@ type ClientWithResponsesInterface interface {
 	// UpdateProductWithResponse performs a PATCH /internal/platform/v1/managers/products/{id} (the `UpdateProduct` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	UpdateProductWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateProductParams, body UpdateProductJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProductResponse, error)
+
+	// GetProductCompanyWorkflowWithResponse performs a GET /internal/platform/v1/managers/products/{id}/company-workflow (the `GetProductCompanyWorkflow` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetProductCompanyWorkflowWithResponse(ctx context.Context, id openapi_types.UUID, params *GetProductCompanyWorkflowParams, reqEditors ...RequestEditorFn) (*GetProductCompanyWorkflowResponse, error)
+
+	// SetProductCompanyWorkflowWithBodyWithResponse performs a PUT /internal/platform/v1/managers/products/{id}/company-workflow (the `SetProductCompanyWorkflow` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Команда product.company_workflow.set. Первая запись меняет виртуальную версию 1 на 2. Проверяет принятую карточку продукта и свежее полное поколение метаданных в SQL. 409/422 сохраняют receipt. 503 откатывает резервирование ключа. Точный повтор успеха возвращает сохранённые байты и ETag даже после outage или rebind, при текущем catalog.manage и видимом продукте. write_ready всегда false.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	SetProductCompanyWorkflowWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *SetProductCompanyWorkflowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProductCompanyWorkflowResponse, error)
+
+	// SetProductCompanyWorkflowWithResponse performs a PUT /internal/platform/v1/managers/products/{id}/company-workflow (the `SetProductCompanyWorkflow` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Команда product.company_workflow.set. Первая запись меняет виртуальную версию 1 на 2. Проверяет принятую карточку продукта и свежее полное поколение метаданных в SQL. 409/422 сохраняют receipt. 503 откатывает резервирование ключа. Точный повтор успеха возвращает сохранённые байты и ETag даже после outage или rebind, при текущем catalog.manage и видимом продукте. write_ready всегда false.
+	SetProductCompanyWorkflowWithResponse(ctx context.Context, id openapi_types.UUID, params *SetProductCompanyWorkflowParams, body SetProductCompanyWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProductCompanyWorkflowResponse, error)
 
 	// GetProductMetricsWithResponse performs a GET /internal/platform/v1/managers/products/{id}/metrics (the `GetProductMetrics` operationId) request.
 	//
@@ -7611,6 +8404,255 @@ func (r GetCommandReceiptResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetCommandReceiptResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListCompaniesResponse503Headers the declared response headers of an HTTP 503 response for ListCompanies
+type ListCompaniesResponse503Headers struct {
+	RetryAfter *string
+}
+
+type ListCompaniesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CompanyList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListCompaniesResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListCompaniesResponse) GetJSON200() *CompanyList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListCompaniesResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListCompaniesResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListCompaniesResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListCompaniesResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListCompaniesResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListCompaniesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCompaniesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCompaniesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListCompaniesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetCompanyResponse503Headers the declared response headers of an HTTP 503 response for GetCompany
+type GetCompanyResponse503Headers struct {
+	RetryAfter *string
+}
+
+type GetCompanyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CompanyDetail
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetCompanyResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetCompanyResponse) GetJSON200() *CompanyDetail {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetCompanyResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetCompanyResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetCompanyResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetCompanyResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetCompanyResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetCompanyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCompanyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCompanyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCompanyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetCompanyWorkflowMetadataResponse503Headers the declared response headers of an HTTP 503 response for GetCompanyWorkflowMetadata
+type GetCompanyWorkflowMetadataResponse503Headers struct {
+	RetryAfter *string
+}
+
+type GetCompanyWorkflowMetadataResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CompanyWorkflowMetadata
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetCompanyWorkflowMetadataResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetCompanyWorkflowMetadataResponse) GetJSON200() *CompanyWorkflowMetadata {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetCompanyWorkflowMetadataResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetCompanyWorkflowMetadataResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetCompanyWorkflowMetadataResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetCompanyWorkflowMetadataResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetCompanyWorkflowMetadataResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetCompanyWorkflowMetadataResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCompanyWorkflowMetadataResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCompanyWorkflowMetadataResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCompanyWorkflowMetadataResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -9358,6 +10400,200 @@ func (r UpdateProductResponse) ContentType() string {
 	return ""
 }
 
+// GetProductCompanyWorkflowResponse200Headers the declared response headers of an HTTP 200 response for GetProductCompanyWorkflow
+type GetProductCompanyWorkflowResponse200Headers struct {
+	ETag *string
+}
+
+// GetProductCompanyWorkflowResponse503Headers the declared response headers of an HTTP 503 response for GetProductCompanyWorkflow
+type GetProductCompanyWorkflowResponse503Headers struct {
+	RetryAfter *string
+}
+
+type GetProductCompanyWorkflowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProductCompanyWorkflow
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetProductCompanyWorkflowResponse200Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetProductCompanyWorkflowResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetProductCompanyWorkflowResponse) GetJSON200() *ProductCompanyWorkflow {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetProductCompanyWorkflowResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetProductCompanyWorkflowResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetProductCompanyWorkflowResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetProductCompanyWorkflowResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetProductCompanyWorkflowResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetProductCompanyWorkflowResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProductCompanyWorkflowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProductCompanyWorkflowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetProductCompanyWorkflowResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// SetProductCompanyWorkflowResponse200Headers the declared response headers of an HTTP 200 response for SetProductCompanyWorkflow
+type SetProductCompanyWorkflowResponse200Headers struct {
+	ETag *string
+}
+
+// SetProductCompanyWorkflowResponse503Headers the declared response headers of an HTTP 503 response for SetProductCompanyWorkflow
+type SetProductCompanyWorkflowResponse503Headers struct {
+	RetryAfter *string
+}
+
+type SetProductCompanyWorkflowResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProductCompanyWorkflow
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *SetProductCompanyWorkflowResponse200Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *SetProductCompanyWorkflowResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetProductCompanyWorkflowResponse) GetJSON200() *ProductCompanyWorkflow {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r SetProductCompanyWorkflowResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r SetProductCompanyWorkflowResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r SetProductCompanyWorkflowResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r SetProductCompanyWorkflowResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r SetProductCompanyWorkflowResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r SetProductCompanyWorkflowResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r SetProductCompanyWorkflowResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r SetProductCompanyWorkflowResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetProductCompanyWorkflowResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetProductCompanyWorkflowResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetProductCompanyWorkflowResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // GetProductMetricsResponse429Headers the declared response headers of an HTTP 429 response for GetProductMetrics
 type GetProductMetricsResponse429Headers struct {
 	RetryAfter *string
@@ -9685,6 +10921,39 @@ func (c *ClientWithResponses) GetCommandReceiptWithResponse(ctx context.Context,
 	return ParseGetCommandReceiptResponse(rsp)
 }
 
+// ListCompaniesWithResponse performs a GET /internal/platform/v1/managers/companies (the `ListCompanies` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListCompaniesWithResponse(ctx context.Context, params *ListCompaniesParams, reqEditors ...RequestEditorFn) (*ListCompaniesResponse, error) {
+	rsp, err := c.ListCompanies(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCompaniesResponse(rsp)
+}
+
+// GetCompanyWithResponse performs a GET /internal/platform/v1/managers/companies/{id} (the `GetCompany` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetCompanyWithResponse(ctx context.Context, id openapi_types.UUID, params *GetCompanyParams, reqEditors ...RequestEditorFn) (*GetCompanyResponse, error) {
+	rsp, err := c.GetCompany(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCompanyResponse(rsp)
+}
+
+// GetCompanyWorkflowMetadataWithResponse performs a GET /internal/platform/v1/managers/company-workflow-metadata (the `GetCompanyWorkflowMetadata` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetCompanyWorkflowMetadataWithResponse(ctx context.Context, params *GetCompanyWorkflowMetadataParams, reqEditors ...RequestEditorFn) (*GetCompanyWorkflowMetadataResponse, error) {
+	rsp, err := c.GetCompanyWorkflowMetadata(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCompanyWorkflowMetadataResponse(rsp)
+}
+
 // ListFeedWithResponse performs a GET /internal/platform/v1/managers/feed (the `ListFeed` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -9949,6 +11218,43 @@ func (c *ClientWithResponses) UpdateProductWithResponse(ctx context.Context, id 
 		return nil, err
 	}
 	return ParseUpdateProductResponse(rsp)
+}
+
+// GetProductCompanyWorkflowWithResponse performs a GET /internal/platform/v1/managers/products/{id}/company-workflow (the `GetProductCompanyWorkflow` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetProductCompanyWorkflowWithResponse(ctx context.Context, id openapi_types.UUID, params *GetProductCompanyWorkflowParams, reqEditors ...RequestEditorFn) (*GetProductCompanyWorkflowResponse, error) {
+	rsp, err := c.GetProductCompanyWorkflow(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProductCompanyWorkflowResponse(rsp)
+}
+
+// SetProductCompanyWorkflowWithBodyWithResponse performs a PUT /internal/platform/v1/managers/products/{id}/company-workflow (the `SetProductCompanyWorkflow` operationId) request,
+// with any type of body and a specified content type.
+//
+// Команда product.company_workflow.set. Первая запись меняет виртуальную версию 1 на 2. Проверяет принятую карточку продукта и свежее полное поколение метаданных в SQL. 409/422 сохраняют receipt. 503 откатывает резервирование ключа. Точный повтор успеха возвращает сохранённые байты и ETag даже после outage или rebind, при текущем catalog.manage и видимом продукте. write_ready всегда false.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) SetProductCompanyWorkflowWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *SetProductCompanyWorkflowParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProductCompanyWorkflowResponse, error) {
+	rsp, err := c.SetProductCompanyWorkflowWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetProductCompanyWorkflowResponse(rsp)
+}
+
+// SetProductCompanyWorkflowWithResponse performs a PUT /internal/platform/v1/managers/products/{id}/company-workflow (the `SetProductCompanyWorkflow` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Команда product.company_workflow.set. Первая запись меняет виртуальную версию 1 на 2. Проверяет принятую карточку продукта и свежее полное поколение метаданных в SQL. 409/422 сохраняют receipt. 503 откатывает резервирование ключа. Точный повтор успеха возвращает сохранённые байты и ETag даже после outage или rebind, при текущем catalog.manage и видимом продукте. write_ready всегда false.
+func (c *ClientWithResponses) SetProductCompanyWorkflowWithResponse(ctx context.Context, id openapi_types.UUID, params *SetProductCompanyWorkflowParams, body SetProductCompanyWorkflowJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProductCompanyWorkflowResponse, error) {
+	rsp, err := c.SetProductCompanyWorkflow(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetProductCompanyWorkflowResponse(rsp)
 }
 
 // GetProductMetricsWithResponse performs a GET /internal/platform/v1/managers/products/{id}/metrics (the `GetProductMetrics` operationId) request.
@@ -11363,6 +12669,228 @@ func ParseGetCommandReceiptResponse(rsp *http.Response) (*GetCommandReceiptRespo
 		response.Headers429 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetCommandReceiptResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListCompaniesResponse parses an HTTP response from a ListCompaniesWithResponse call
+func ParseListCompaniesResponse(rsp *http.Response) (*ListCompaniesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCompaniesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CompanyList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 503:
+		var headers ListCompaniesResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetCompanyResponse parses an HTTP response from a GetCompanyWithResponse call
+func ParseGetCompanyResponse(rsp *http.Response) (*GetCompanyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCompanyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CompanyDetail
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 503:
+		var headers GetCompanyResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetCompanyWorkflowMetadataResponse parses an HTTP response from a GetCompanyWorkflowMetadataWithResponse call
+func ParseGetCompanyWorkflowMetadataResponse(rsp *http.Response) (*GetCompanyWorkflowMetadataResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCompanyWorkflowMetadataResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CompanyWorkflowMetadata
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 503:
+		var headers GetCompanyWorkflowMetadataResponse503Headers
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -13041,6 +14569,188 @@ func ParseUpdateProductResponse(rsp *http.Response) (*UpdateProductResponse, err
 		response.Headers429 = &headers
 	case rsp.StatusCode == 503:
 		var headers UpdateProductResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetProductCompanyWorkflowResponse parses an HTTP response from a GetProductCompanyWorkflowWithResponse call
+func ParseGetProductCompanyWorkflowResponse(rsp *http.Response) (*GetProductCompanyWorkflowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProductCompanyWorkflowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProductCompanyWorkflow
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetProductCompanyWorkflowResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetProductCompanyWorkflowResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseSetProductCompanyWorkflowResponse parses an HTTP response from a SetProductCompanyWorkflowWithResponse call
+func ParseSetProductCompanyWorkflowResponse(rsp *http.Response) (*SetProductCompanyWorkflowResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetProductCompanyWorkflowResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProductCompanyWorkflow
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers SetProductCompanyWorkflowResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 503:
+		var headers SetProductCompanyWorkflowResponse503Headers
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {

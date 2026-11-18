@@ -57,6 +57,11 @@ func AccountEndpoints() []AccountEndpoint {
 	return []AccountEndpoint{
 		{apicontract.ManagerFeed, "listFeed", "", auth.GrantFeedRead, http.StatusOK, newManagerModel[wire.EventList]},
 		{apicontract.ManagerAccountHistory, "listAccountHistory", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.EventList]},
+		{apicontract.ManagerCompanies, "listCompanies", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.CompanyList]},
+		{apicontract.ManagerCompany, "getCompany", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.CompanyDetail]},
+		{apicontract.ManagerCompanyWorkflowMetadata, "getCompanyWorkflowMetadata", "", auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.CompanyWorkflowMetadata]},
+		{apicontract.ManagerProductCompanyWorkflow, "getProductCompanyWorkflow", "", auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.ProductCompanyWorkflow]},
+		{apicontract.ManagerProductCompanyWorkflowSet, "setProductCompanyWorkflow", kindCompanyWorkflow, auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.ProductCompanyWorkflow]},
 		{apicontract.ManagerProducts, "listProducts", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.ProductList]},
 		{apicontract.ManagerProduct, "getProduct", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.Product]},
 		{apicontract.ManagerProductMetrics, "getProductMetrics", "", auth.GrantStatsRead, http.StatusOK, newManagerModel[wire.ProductMetrics]},
@@ -365,6 +370,8 @@ func (c *Client) clientAccountRequest(ctx context.Context, principal auth.Princi
 
 func accountResponseVersion(value any) int {
 	switch model := value.(type) {
+	case *wire.ProductCompanyWorkflow:
+		return model.Version
 	case *wire.Product:
 		return model.Version
 	case *wire.AccountDetail:
@@ -385,6 +392,15 @@ func validManagerAccountDTO(
 	value any, target uuid.UUID, query url.Values, raw []byte, response *http.Response, item intent,
 ) bool {
 	switch model := value.(type) {
+	case *wire.CompanyList:
+		return validCompanyList(model, query)
+	case *wire.CompanyDetail:
+		return validCompanyDetail(model, target)
+	case *wire.CompanyWorkflowMetadata:
+		return validCompanyMetadata(model)
+	case *wire.ProductCompanyWorkflow:
+		return validCompanyWorkflow(model, target, item)
+
 	case *wire.EventList:
 		return validManagerEvents(model, target, query)
 	case *wire.Product:

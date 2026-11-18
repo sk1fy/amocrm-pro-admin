@@ -1,3 +1,4 @@
+import { sendWorkflowCommand, type WorkflowCommand, type CompanyWorkflow } from './companyApi'
 import { apiFetchResponse } from '../src/api/client'
 import {
   date,
@@ -316,10 +317,11 @@ const suffixes = {
   renewal: '/renewals',
 }
 
-export type ManagerCommand = AccountCommand | ProductCommand
+export type ManagerCommand = AccountCommand | ProductCommand | WorkflowCommand
 
 type Result =
   | { kind: 'completed'; product?: Product }
+  | { kind: 'workflow-saved'; workflow: CompanyWorkflow }
   | { kind: 'rejected' }
   | { kind: 'pending'; id: string; retryAt?: number; state: string }
 
@@ -375,6 +377,12 @@ export async function sendAccountCommand(
   command: ManagerCommand,
   signal: AbortSignal,
 ): Promise<Result> {
+  if (command.kind === 'company-workflow') {
+    const result = await sendWorkflowCommand(command, signal)
+    return result.kind === 'receipt'
+      ? parseOperation(result.response.data, result.response.retryNotBefore, command)
+      : result
+  }
   if (command.kind === 'product-create' || command.kind === 'product-update') {
     const result = await sendProductCommand(command, signal)
     return result.kind === 'receipt'

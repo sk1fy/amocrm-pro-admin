@@ -26,6 +26,17 @@ func (c *Client) callAccount(ctx context.Context, action accountAction, actor st
 		return c.wire.ListFeed(ctx, &wire.ListFeedParams{XPlatformActor: actor}, editQuery)
 	case "listAccountHistory":
 		return c.wire.ListAccountHistory(ctx, target, &wire.ListAccountHistoryParams{XPlatformActor: actor}, editQuery)
+	case "listCompanies":
+		return c.wire.ListCompanies(ctx, &wire.ListCompaniesParams{XPlatformActor: actor}, editQuery)
+	case "getCompany":
+		return c.wire.GetCompany(ctx, target, &wire.GetCompanyParams{XPlatformActor: actor}, editQuery)
+	case "getCompanyWorkflowMetadata":
+		return c.wire.GetCompanyWorkflowMetadata(ctx, &wire.GetCompanyWorkflowMetadataParams{XPlatformActor: actor}, editQuery)
+	case "getProductCompanyWorkflow":
+		return c.wire.GetProductCompanyWorkflow(ctx, target, &wire.GetProductCompanyWorkflowParams{XPlatformActor: actor}, editQuery)
+	case "setProductCompanyWorkflow":
+		return c.wire.SetProductCompanyWorkflowWithBody(ctx, target, &wire.SetProductCompanyWorkflowParams{XPlatformActor: actor, IdempotencyKey: item.Key, IfMatch: etag}, media, bytes.NewReader(body), editQuery)
+
 	case "listProducts":
 		return c.wire.ListProducts(ctx, &wire.ListProductsParams{XPlatformActor: actor}, editQuery)
 	case "getProduct":

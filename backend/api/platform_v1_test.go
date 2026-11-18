@@ -13,13 +13,13 @@ import (
 )
 
 func TestPinnedPlatformContract(t *testing.T) {
-	const wantHash = "78f2ce5efd5e842cf5fcf2f431a6a1376439bbba8561c9ca72ed1cb0a917dbf7"
+	const wantHash = "07d541a3da84691e6e9f8b426325b3dea44dc8812ec5e07828a9da806305a0c8"
 	body, err := os.ReadFile("platform-v1-openapi.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got := fmt.Sprintf("%x", sha256.Sum256(body)); got != wantHash {
-		t.Fatalf("Platform schema hash = %s, want P01 %s", got, wantHash)
+		t.Fatalf("Platform schema hash = %s, want accepted Core 6e62a610 %s", got, wantHash)
 	}
 	doc, err := openapi3.NewLoader().LoadFromData(body)
 	if err != nil {

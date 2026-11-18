@@ -5,7 +5,7 @@ import { BrandLogo } from '../src/components/BrandLogo'
 import { loginErrorMessage } from '../src/states/login'
 import { ManagerAccountCard } from './AccountCard'
 import { AccountCommands } from './accountCommands'
-import { AccountsPage } from './AccountsPage'
+import { ClientsPage } from './CompaniesPage'
 import { getAccountLocation, listSearch, ManagerLink } from './accountsLocation'
 import { Timeline } from './Timeline'
 import { WidgetsPage } from './WidgetsPage'
@@ -192,7 +192,7 @@ function AuthenticatedManagerApp() {
                   onForbidden={checkGrants}
                 />
               ) : clients ? (
-                <AccountsPage
+                <ClientsPage
                   {...location}
                   scope={scope}
                   onExpired={expire}

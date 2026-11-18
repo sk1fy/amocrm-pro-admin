@@ -120,6 +120,17 @@ func writeManagerAccountResponse(w http.ResponseWriter, response managerplatform
 		}})
 		return
 	}
+	switch value := response.Data.(type) {
+	case *wire.CompanyList:
+		httpx.WriteJSON(w, response.Status, managerCompanyListResponse{CompanyList: value, Sources: companySources(value.Source), Observation: companyObservation(value.Source)})
+		return
+	case *wire.CompanyDetail:
+		httpx.WriteJSON(w, response.Status, managerCompanyDetailResponse{CompanyDetail: value, Sources: companySources(value.Source), Observation: companyObservation(value.Source)})
+		return
+	case *wire.CompanyWorkflowMetadata:
+		httpx.WriteJSON(w, response.Status, managerCompanyMetadataResponse{CompanyWorkflowMetadata: value, Sources: companySources(value.Source), Observation: companyObservation(value.Source)})
+		return
+	}
 	httpx.WriteJSON(w, response.Status, response.Data)
 }
 
@@ -161,7 +172,7 @@ func writeManagerAccountPeerError(w http.ResponseWriter, r *http.Request, peer *
 	case http.StatusConflict:
 		response = httpx.Conflict("client command conflict")
 		switch peer.Code {
-		case "idempotency_conflict", "product_exists":
+		case "idempotency_conflict", "product_exists", "company_source_conflict", "company_metadata_conflict":
 			details = map[string]any{"code": peer.Code}
 		case "state_conflict":
 			details = map[string]any{"code": peer.Code}
@@ -182,7 +193,7 @@ func writeManagerAccountPeerError(w http.ResponseWriter, r *http.Request, peer *
 		response.Status = http.StatusUnprocessableEntity
 		switch peer.Code {
 		case "validation_failed", "business_rule_failed", "classification_unavailable", "renewal_unavailable", "target_not_extended",
-			"trial_policy_incompatible", "trial_evidence_required", "tariff_evidence_required", "integration_mapping_mismatch":
+			"company_stage_mismatch", "trial_policy_incompatible", "trial_evidence_required", "tariff_evidence_required", "integration_mapping_mismatch":
 			details = map[string]any{"code": peer.Code}
 		}
 	case http.StatusTooManyRequests:

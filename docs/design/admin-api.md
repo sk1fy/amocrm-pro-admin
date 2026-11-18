@@ -479,3 +479,31 @@ Staff содержит `id`, `email`, `name`, `status`, `grants`, `version`,
 `invitation_unavailable`. Собственная эскалация возвращает 403
 с `self_escalation`. Отключение последнего менеджерского администратора
 в техническом API также возвращает 409 с `last_administrator`.
+
+## Компании и workflow менеджеров P12.2
+
+Префикс `/api/v1/managers`. Источник — принятый manager API Platform.
+
+| Метод | Путь | Grant |
+| --- | --- | --- |
+| GET | `/companies` | clients.read |
+| GET | `/companies/{id}` | clients.read |
+| GET | `/company-workflow-metadata` | catalog.manage |
+| GET | `/products/{id}/company-workflow` | catalog.manage |
+| PUT | `/products/{id}/company-workflow` | catalog.manage |
+
+Источник, nullable снимки и строковые CRM ID сохраняют смысл владельца.
+Чтения компании и метаданных дополняются `observation` и `sources` BFF.
+GET workflow не создаёт строку: без настройки версия 1, конфигурация null.
+PUT использует собственный If-Match workflow, Idempotency-Key и CSRF.
+Первая запись возвращает версию 2 и ревизию настройки 1. Версия карточки
+продукта не меняется. Тело содержит только `source_account_id`,
+`binding_revision`, `metadata_generation_id`, `pipeline_id`,
+`initial_stage_id`. Источник — утверждение текущей привязки.
+
+Неизвестный исход возвращает существующую операцию 202; receipt и точный
+повтор используют сохранённый intent. Временный 503 не меняет ключ.
+409 с `company_source_conflict` или `company_metadata_conflict` требует
+явного применения сохранённого черновика; 422 `company_stage_mismatch`
+объясняет отсутствие членства этапа. Точный replay успеха проверяет текущие
+права и возвращает исходный результат владельца.

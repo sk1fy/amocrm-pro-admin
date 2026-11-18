@@ -30,6 +30,11 @@ output-options:
     - updatePortraitNiche
     - deletePortraitNiche
     - mergePortraitNiche
+    - listCompanies
+    - getCompany
+    - getCompanyWorkflowMetadata
+    - getProductCompanyWorkflow
+    - setProductCompanyWorkflow
     - listProducts
     - getProduct
     - createProduct

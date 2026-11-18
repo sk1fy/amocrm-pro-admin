@@ -3856,6 +3856,312 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
+  /api/v1/managers/companies:
+    get:
+      operationId: listCompaniesForManagers
+      security:
+      - managerSession: []
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 25
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: q
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      responses:
+        '200':
+          description: Успех
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerCompanyList'
+        '400':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      x-manager-grant: clients.read
+      tags:
+      - Managers
+  /api/v1/managers/companies/{id}:
+    get:
+      operationId: getCompanyForManagers
+      security:
+      - managerSession: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Успех
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerCompanyDetail'
+        '400':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      x-manager-grant: clients.read
+      tags:
+      - Managers
+  /api/v1/managers/company-workflow-metadata:
+    get:
+      operationId: getCompanyWorkflowMetadataForManagers
+      security:
+      - managerSession: []
+      parameters: []
+      responses:
+        '200':
+          description: Успех
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerCompanyWorkflowMetadata'
+        '400':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      x-manager-grant: catalog.manage
+      tags:
+      - Managers
+  /api/v1/managers/products/{id}/company-workflow:
+    get:
+      operationId: getProductCompanyWorkflowForManagers
+      security:
+      - managerSession: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Успех
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerProductCompanyWorkflow'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[1-9][0-9]*"$
+        '400':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      x-manager-grant: catalog.manage
+      tags:
+      - Managers
+    put:
+      operationId: setProductCompanyWorkflowForManagers
+      security:
+      - managerSession: []
+      parameters:
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      responses:
+        '200':
+          description: Успех
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerProductCompanyWorkflow'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[1-9][0-9]*"$
+        '400':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '202':
+          description: Исход команды пока неизвестен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManagerSetProductCompanyWorkflow'
+      description: Команда product.company_workflow.set. Первая запись меняет виртуальную версию
+        1 на 2. Проверяет принятую карточку продукта и свежее полное поколение метаданных в SQL.
+        409/422 сохраняют receipt. 503 откатывает резервирование ключа. Точный повтор успеха возвращает
+        сохранённые байты и ETag даже после outage или rebind, при текущем catalog.manage и видимом
+        продукте. write_ready всегда false.
+      x-manager-grant: catalog.manage
+      tags:
+      - Managers
 components:
   securitySchemes:
     adminSession:
@@ -5914,6 +6220,405 @@ components:
       - next_cursor
       - snapshot_at
       - query_hash
+
+    ManagerVersion:
+      type: integer
+      minimum: 1
+      maximum: 9007199254740991
+    ManagerCompanyProjectionId:
+      type: string
+      format: uuid
+      description: UUID проекции CRM-компании. Не является runtime account_id.
+    ManagerCompanySource:
+      type: object
+      additionalProperties: false
+      properties:
+        source_account_id:
+          anyOf:
+          - $ref: '#/components/schemas/ManagerAmoID'
+          - type: 'null'
+        binding_revision:
+          anyOf:
+          - type: string
+          - type: 'null'
+        state:
+          type: string
+          enum:
+          - fresh
+          - stale
+          - error
+          - disabled
+        complete:
+          type: boolean
+        observed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        fresh_until:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+        error_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+        retry_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+      required:
+      - source_account_id
+      - binding_revision
+      - state
+      - complete
+      - observed_at
+      - fresh_until
+      - error_code
+      - retry_at
+      description: Времена относятся к полному поколению данных. Ошибка последней попытки не заменяет
+        данные; локальное истечение переводит fresh в stale. Смена активной привязки очищает текущий
+        снимок.
+    ManagerCompanyRuntimeAccount:
+      type: object
+      additionalProperties: false
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        customer_account_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+      required:
+      - account_id
+      - customer_account_id
+    ManagerCompanySummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/ManagerCompanyProjectionId'
+        crm_company_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        name:
+          type: string
+        customer_account_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerAmoID'
+        source_resolution:
+          type: string
+          enum:
+          - unknown
+          - zero
+          - one
+          - multiple
+        runtime_resolution:
+          type: string
+          enum:
+          - unresolved
+          - resolved
+          - partial
+          - ambiguous
+        runtime_accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerCompanyRuntimeAccount'
+      required:
+      - id
+      - crm_company_id
+      - name
+      - customer_account_ids
+      - source_resolution
+      - runtime_resolution
+      - runtime_accounts
+    ManagerCompanyList:
+      type: object
+      additionalProperties: false
+      properties:
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceStatus'
+        observation:
+          type: object
+          required: [source, observed_at, freshness, data]
+          properties:
+            source: {type: string}
+            observed_at: {type: [string, 'null'], format: date-time}
+            freshness: {type: string}
+            data: {$ref: '#/components/schemas/ManagerCompanySource'}
+            error:
+              type: object
+              properties:
+                code: {type: string}
+                message: {type: string}
+        items:
+          anyOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/ManagerCompanySummary'
+          - type: 'null'
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+        source:
+          $ref: '#/components/schemas/ManagerCompanySource'
+      required:
+      - items
+      - next_cursor
+      - source
+      description: items=null до первого полного наблюдения; items=[] означает полный пустой каталог.
+        Курсор фиксирует поколение, активацию, сотрудника, версию прав и фильтры на 15 минут.
+    ManagerCompanyContactLink:
+      type: object
+      additionalProperties: false
+      properties:
+        crm_company_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        company_id:
+          anyOf:
+          - $ref: '#/components/schemas/ManagerCompanyProjectionId'
+          - type: 'null'
+      required:
+      - crm_company_id
+      - company_id
+    ManagerCompanyContact:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        name:
+          type: string
+        companies:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerCompanyContactLink'
+      required:
+      - id
+      - name
+      - companies
+    ManagerCompanyDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceStatus'
+        observation:
+          type: object
+          required: [source, observed_at, freshness, data]
+          properties:
+            source: {type: string}
+            observed_at: {type: [string, 'null'], format: date-time}
+            freshness: {type: string}
+            data: {$ref: '#/components/schemas/ManagerCompanySource'}
+            error:
+              type: object
+              properties:
+                code: {type: string}
+                message: {type: string}
+        id:
+          $ref: '#/components/schemas/ManagerCompanyProjectionId'
+        crm_company_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        name:
+          type: string
+        customer_account_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerAmoID'
+        source_resolution:
+          type: string
+          enum:
+          - unknown
+          - zero
+          - one
+          - multiple
+        runtime_resolution:
+          type: string
+          enum:
+          - unresolved
+          - resolved
+          - partial
+          - ambiguous
+        runtime_accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerCompanyRuntimeAccount'
+        source:
+          $ref: '#/components/schemas/ManagerCompanySource'
+        contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerCompanyContact'
+        unresolved_relations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerCompanyContactLink'
+      required:
+      - id
+      - crm_company_id
+      - name
+      - customer_account_ids
+      - source_resolution
+      - runtime_resolution
+      - runtime_accounts
+      - source
+      - contacts
+      - unresolved_relations
+    ManagerCompanyWorkflowStage:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        name:
+          type: string
+      required:
+      - id
+      - name
+    ManagerCompanyWorkflowPipeline:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        name:
+          type: string
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerCompanyWorkflowStage'
+      required:
+      - id
+      - name
+      - stages
+    ManagerCompanyWorkflowMetadata:
+      type: object
+      additionalProperties: false
+      properties:
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceStatus'
+        observation:
+          type: object
+          required: [source, observed_at, freshness, data]
+          properties:
+            source: {type: string}
+            observed_at: {type: [string, 'null'], format: date-time}
+            freshness: {type: string}
+            data: {$ref: '#/components/schemas/ManagerCompanySource'}
+            error:
+              type: object
+              properties:
+                code: {type: string}
+                message: {type: string}
+        generation_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        source:
+          $ref: '#/components/schemas/ManagerCompanySource'
+        pipelines:
+          anyOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/ManagerCompanyWorkflowPipeline'
+          - type: 'null'
+        required_fields_state:
+          type: string
+          enum:
+          - unknown
+        write_ready:
+          type: boolean
+          enum:
+          - false
+      required:
+      - generation_id
+      - source
+      - pipelines
+      - required_fields_state
+      - write_ready
+    ManagerCompanyWorkflowConfiguration:
+      type: object
+      additionalProperties: false
+      properties:
+        revision:
+          $ref: '#/components/schemas/ManagerVersion'
+        source_account_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        binding_revision:
+          type: string
+        metadata_generation_id:
+          type: string
+          format: uuid
+        pipeline_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        initial_stage_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        validated_at:
+          type: string
+          format: date-time
+      required:
+      - revision
+      - source_account_id
+      - binding_revision
+      - metadata_generation_id
+      - pipeline_id
+      - initial_stage_id
+      - validated_at
+    ManagerProductCompanyWorkflow:
+      type: object
+      additionalProperties: false
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        version:
+          $ref: '#/components/schemas/ManagerVersion'
+        configuration:
+          anyOf:
+          - $ref: '#/components/schemas/ManagerCompanyWorkflowConfiguration'
+          - type: 'null'
+        write_ready:
+          type: boolean
+          enum:
+          - false
+      required:
+      - product_id
+      - version
+      - configuration
+      - write_ready
+    ManagerSetProductCompanyWorkflow:
+      type: object
+      additionalProperties: false
+      properties:
+        source_account_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        binding_revision:
+          type: string
+          minLength: 1
+          maxLength: 256
+        metadata_generation_id:
+          type: string
+          format: uuid
+        pipeline_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        initial_stage_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+      required:
+      - source_account_id
+      - binding_revision
+      - metadata_generation_id
+      - pipeline_id
+      - initial_stage_id
 
   responses:
     ManagerPlatformRateLimited:

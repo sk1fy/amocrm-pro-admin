@@ -44,10 +44,32 @@ export type StateDomain =
   | 'product_access_source'
   | 'product_availability'
   | 'product_trial'
+  | 'company_source'
+  | 'company_runtime'
+  | 'company_claims'
 
 const unknownEntry: StateEntry = { tone: 'unknown', label: 'Неизвестно' }
 
 const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
+  company_source: {
+    fresh: { tone: 'ok', label: 'Актуально' },
+    stale: { tone: 'attention', label: 'Данные устарели' },
+    error: { tone: 'error', label: 'Ошибка источника' },
+    disabled: { tone: 'off', label: 'Источник выключен' },
+    unknown: { tone: 'unknown', label: 'Нет данных' },
+  },
+  company_runtime: {
+    resolved: { tone: 'ok', label: 'Аккаунты найдены' },
+    partial: { tone: 'attention', label: 'Найдена часть аккаунтов' },
+    ambiguous: { tone: 'attention', label: 'Неоднозначные аккаунты' },
+    unresolved: { tone: 'unknown', label: 'Аккаунты не найдены' },
+  },
+  company_claims: {
+    unknown: { tone: 'unknown', label: 'Неизвестно' },
+    zero: { tone: 'unknown', label: 'Нет ID аккаунта' },
+    one: { tone: 'ok', label: 'Один ID аккаунта' },
+    multiple: { tone: 'attention', label: 'Несколько ID аккаунтов' },
+  },
   manager_staff: {
     active: { tone: 'ok', label: 'Доступ открыт' },
     invited: { tone: 'attention', label: 'Ожидает приглашения' },

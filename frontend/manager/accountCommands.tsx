@@ -1,3 +1,4 @@
+import type { CompanyWorkflow } from './companyApi'
 import {
   createContext,
   useContext,
@@ -20,7 +21,7 @@ type CommandState =
   | { kind: 'idle' }
   | { kind: 'busy' }
   | { kind: 'pending'; pending: Pending }
-  | { kind: 'conflict'; version?: number }
+  | { kind: 'conflict'; version?: number; assertion?: boolean }
   | { kind: 'saved' }
   | { kind: 'error'; message: string }
 
@@ -60,6 +61,7 @@ export function useAccountCommand(
   id: string,
   options: {
     onSaved: (product?: Product) => void
+    onWorkflowSaved?: (workflow: CompanyWorkflow) => void
     onExpired: () => void
     onForbidden: () => void
   },
@@ -98,12 +100,17 @@ export function useAccountCommand(
       if (
         poll &&
         result.kind === 'completed' &&
-        (original.command.kind === 'product-create' || original.command.kind === 'product-update')
+        (original.command.kind === 'product-create' ||
+          original.command.kind === 'product-update' ||
+          original.command.kind === 'company-workflow')
       ) {
         result = await sendAccountCommand(original.command, signal)
         if (request.signal.aborted) return
       }
-      if (result.kind === 'completed') {
+      if (result.kind === 'workflow-saved') {
+        setState({ kind: 'saved' }, true)
+        options.onWorkflowSaved?.(result.workflow)
+      } else if (result.kind === 'completed') {
         setState({ kind: 'saved' }, true)
         options.onSaved(result.product)
       } else if (result.kind === 'rejected') {
@@ -124,8 +131,18 @@ export function useAccountCommand(
       if (isApiError(error)) {
         if (error.status === 401) options.onExpired()
         if (error.status === 403) options.onForbidden()
-        if (!poll && error.status === 409 && error.detailCode === 'version_conflict') {
-          setState({ kind: 'conflict', version: error.currentVersion })
+        if (
+          !poll &&
+          error.status === 409 &&
+          ['version_conflict', 'company_source_conflict', 'company_metadata_conflict'].includes(
+            error.detailCode ?? '',
+          )
+        ) {
+          setState({
+            kind: 'conflict',
+            version: error.currentVersion,
+            assertion: error.detailCode !== 'version_conflict',
+          })
           options.onSaved()
           return
         }
@@ -202,7 +219,8 @@ export function useAccountCommand(
           !previous.draft ||
           previous.state.kind !== 'conflict' ||
           (previous.state.version !== undefined && version < previous.state.version) ||
-          version <= previous.draft.base
+          version < previous.draft.base ||
+          (version === previous.draft.base && !previous.state.assertion)
         )
           return previous
         const { original, values } = previous.draft
@@ -262,7 +280,9 @@ export function VersionConflict({
 }) {
   const { draft, state } = command.entry
   if (!draft || state.kind !== 'conflict') return null
-  const ready = version > draft.base && (state.version === undefined || version >= state.version)
+  const ready =
+    (version > draft.base || (state.assertion && version === draft.base)) &&
+    (state.version === undefined || version >= state.version)
   return (
     <div className={styles.form}>
       <p role="alert">

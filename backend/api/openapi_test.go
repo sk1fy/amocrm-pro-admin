@@ -175,7 +175,7 @@ func TestManagerProductsContract(t *testing.T) {
 	}
 	var count int
 	for path, item := range browser.Paths.Map() {
-		if strings.HasPrefix(path, apicontract.ManagerPrefix+"/products") {
+		if strings.HasPrefix(path, apicontract.ManagerPrefix+"/products") && !strings.HasSuffix(path, "/company-workflow") {
 			count += len(item.Operations())
 		}
 	}
@@ -276,7 +276,7 @@ func assertManagerProductSchema(t *testing.T, browser, owner *openapi3.Schema) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, name := range []string{"Product", "ProductCode", "ProductList", "TrialPolicy", "ProductMetrics", "Event", "EventList"} {
+		for _, name := range []string{"Product", "ProductCode", "ProductList", "TrialPolicy", "ProductMetrics", "Event", "EventList", "AmoID", "Version", "SetProductCompanyWorkflow", "ProductCompanyWorkflow", "CompanyWorkflowConfiguration", "CompanySource", "CompanyProjectionId", "CompanySummary", "CompanyRuntimeAccount", "CompanyContact", "CompanyContactLink", "CompanyWorkflowPipeline", "CompanyWorkflowStage"} {
 			encoded = bytes.ReplaceAll(encoded, []byte("#/components/schemas/Manager"+name+`"`), []byte("#/components/schemas/"+name+`"`))
 		}
 		var value any

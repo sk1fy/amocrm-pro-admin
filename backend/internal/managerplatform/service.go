@@ -191,7 +191,7 @@ func (s *Service) GetOperation(ctx context.Context, id uuid.UUID) (Result, error
 		return Result{}, err
 	}
 	required := auth.GrantClientsRead
-	if item.Kind == kindCreateProduct || item.Kind == kindUpdateProduct {
+	if item.Kind == kindCreateProduct || item.Kind == kindUpdateProduct || item.Kind == kindCompanyWorkflow {
 		required = auth.GrantCatalogManage
 	}
 	if !hasGrant(actor, required) {
