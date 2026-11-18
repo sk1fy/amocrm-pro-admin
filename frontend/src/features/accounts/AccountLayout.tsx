@@ -46,48 +46,54 @@ export function AccountLayout() {
       ) : null}
       {data ? (
         <>
-          <PageHeader
-            title={data.domains[0] ?? `Аккаунт ${data.account_id}`}
-            meta={
-              <>
-                <span>ID {data.account_id}</span>
-                {data.domains.length > 1 ? (
-                  <span title={data.domains.join(', ')}>
-                    ещё доменов: {data.domains.length - 1}
-                  </span>
-                ) : null}
-                <span>{connectionsCountLabel(data.connections.length)}</span>
-                {data.state === 'ok' ? null : <StatusBadge domain="account" state={data.state} />}
-                <OriginTag origin={data.origin} />
-              </>
-            }
-            refresh={
-              <RefreshStatus
-                updatedAt={account.dataUpdatedAt}
-                fetching={account.isFetching}
-                failed={Boolean(account.error)}
-                onRefresh={() => void account.refetch({ cancelRefetch: false })}
-                sources={data.sources}
+          <div className={styles.profile}>
+            <div className={styles.profileSummary}>
+              <PageHeader
+                title={data.domains[0] ?? `Аккаунт ${data.account_id}`}
+                meta={
+                  <>
+                    <span className={styles.accountId}>ID {data.account_id}</span>
+                    {data.domains.length > 1 ? (
+                      <span title={data.domains.join(', ')}>
+                        ещё доменов: {data.domains.length - 1}
+                      </span>
+                    ) : null}
+                    <span>{connectionsCountLabel(data.connections.length)}</span>
+                    {data.state === 'ok' ? null : (
+                      <StatusBadge domain="account" state={data.state} />
+                    )}
+                    <OriginTag origin={data.origin} />
+                  </>
+                }
+                refresh={
+                  <RefreshStatus
+                    updatedAt={account.dataUpdatedAt}
+                    fetching={account.isFetching}
+                    failed={Boolean(account.error)}
+                    onRefresh={() => void account.refetch({ cancelRefetch: false })}
+                    sources={data.sources}
+                  />
+                }
               />
-            }
-          />
-          <AccountNotes account={data} />
+              <AccountNotes account={data} />
+            </div>
+            <nav className={page.tabs} aria-label="Вкладки аккаунта">
+              {tabs.map((tab) => {
+                const active = tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)
+                return (
+                  <Link
+                    key={tab.to}
+                    to={tab.to}
+                    className={active ? `${page.tab} ${page.tabActive}` : page.tab}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    {tab.label}
+                  </Link>
+                )
+              })}
+            </nav>
+          </div>
           <SourcesBanner sources={data.sources} />
-          <nav className={page.tabs} aria-label="Вкладки аккаунта">
-            {tabs.map((tab) => {
-              const active = tab.exact ? pathname === tab.to : pathname.startsWith(tab.to)
-              return (
-                <Link
-                  key={tab.to}
-                  to={tab.to}
-                  className={active ? `${page.tab} ${page.tabActive}` : page.tab}
-                  aria-current={active ? 'page' : undefined}
-                >
-                  {tab.label}
-                </Link>
-              )
-            })}
-          </nav>
         </>
       ) : account.isPending ? (
         <div className={page.skeleton} />

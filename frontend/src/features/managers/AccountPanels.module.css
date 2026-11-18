@@ -1,0 +1,189 @@
+.stack {
+  display: grid;
+  gap: 16px;
+}
+
+.panel {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.panelHead,
+.sectionTitle,
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.panelHead,
+.toolbar,
+.bordered {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.panelHead h2,
+.sectionTitle h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.panelHead > span,
+.muted,
+.empty,
+.funnel small {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.action,
+.sectionTitle button,
+.toolbar > input {
+  margin-left: auto;
+}
+
+.sectionTitle {
+  margin-bottom: 12px;
+}
+
+.toolbar > input {
+  width: min(100%, 260px);
+}
+
+.empty {
+  margin: 0;
+  padding: 28px 20px;
+  text-align: center;
+}
+
+.table > div {
+  border: 0;
+  border-radius: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chips button {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.chips button[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+
+.contact {
+  display: grid;
+  grid-template-columns: minmax(115px, 1fr) minmax(104px, 0.8fr);
+  gap: 6px;
+}
+
+.contact input:first-child {
+  grid-column: 1 / -1;
+  width: min(100%, 170px);
+}
+
+.contact :is(input, select),
+.companyForm :is(input, button),
+.peopleForm :is(input, select, button) {
+  min-width: 0;
+  width: 100%;
+}
+
+.widgetActions {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.widgetActions label {
+  white-space: nowrap;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.companyForm,
+.peopleForm {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr));
+  gap: 10px;
+  align-items: end;
+  padding: 16px 20px;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.peopleForm {
+  width: min(100%, 760px);
+}
+
+.companyForm label,
+.peopleForm label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.formError {
+  grid-column: 1 / -1;
+  color: var(--tone-error);
+  margin: 0;
+}
+
+.callsGrid {
+  display: grid;
+  grid-template-columns: minmax(135px, 0.65fr) minmax(0, 1.6fr) minmax(190px, 1.1fr);
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.callsGrid table {
+  min-width: 380px;
+}
+
+.callMetric,
+.auditTip {
+  display: grid;
+  gap: 5px;
+  justify-items: start;
+  align-content: center;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border-soft);
+}
+
+.callMetric small {
+  color: var(--color-muted);
+}
+
+.auditTip {
+  background: var(--tone-ok-bg);
+  color: var(--tone-ok);
+}
+
+.funnel {
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.funnel > summary {
+  cursor: pointer;
+  padding: 14px 20px;
+  font-weight: 700;
+}
+
+@media (max-width: 1060px) {
+  .callsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

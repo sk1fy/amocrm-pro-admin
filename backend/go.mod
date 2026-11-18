@@ -1,6 +1,6 @@
 module github.com/sk1fy/amocrm-pro-admin
 
-go 1.26.10
+go 1.26.11
 
 require (
 	github.com/getkin/kin-openapi v0.141.0

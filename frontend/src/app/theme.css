@@ -1,32 +1,38 @@
 :root {
   /* Status tones: the single source of colour for states (states/index.ts). */
-  --tone-ok: #2f6f4f;
-  --tone-ok-bg: #e7f0ea;
-  --tone-attention: #8a6018;
-  --tone-attention-bg: #fbf1de;
+  --tone-ok: #1a7743;
+  --tone-ok-bg: #e7f6ed;
+  --tone-attention: #8a5300;
+  --tone-attention-bg: #fff6e8;
   --tone-action: #b4571e;
   --tone-action-bg: #f9ece1;
-  --tone-error: #b23b3b;
-  --tone-error-bg: #f9e9e7;
-  --tone-off: #62675f;
-  --tone-off-bg: #eceeeb;
+  --tone-error: #b53838;
+  --tone-error-bg: #fdecec;
+  --tone-off: #6b6d72;
+  --tone-off-bg: #eeeeee;
   --tone-unknown: #5f5a7d;
   --tone-unknown-bg: #eeeaf5;
 
   /* Surfaces and ink. */
-  --color-bg: #f6f7f5;
+  --color-bg: #f5f5f5;
   --color-surface: #ffffff;
-  --color-surface-2: #fbfcfa;
-  --color-text: #171a18;
-  --color-muted: #62675f;
-  --color-subtle: #71776d;
-  --color-border: #e3e5e1;
-  --color-border-soft: #eceeeb;
-  --color-accent: #2f6f4f;
-  --color-accent-soft: #e7f0ea;
-  --color-focus: #2f6f4f;
-  --color-link: #2f6f4f;
-  --color-link-hover: #245a3f;
+  --color-surface-2: #fbfbfb;
+  --color-text: #363b44;
+  --color-muted: #6b6d72;
+  --color-subtle: #686e75;
+  --color-border: #e3e3e3;
+  --color-border-soft: #eeeeee;
+  --color-accent: #4c8bf7;
+  --color-accent-soft: #edf3fe;
+  --color-focus: #3272ce;
+  --color-focus-on-dark: #8fb5fa;
+  --color-link: #0057a9;
+  --color-link-hover: #004280;
+  --color-primary: #2467c7;
+  --color-primary-hover: #1c56a9;
+  --color-header: #162b3a;
+  --color-menu: #1b3446;
+  --color-menu-text: #b7c2ca;
 
   /* Geometry. */
   --space-1: 0.25rem;
@@ -40,10 +46,10 @@
   --radius-sm: 4px;
   --shadow-sm: 0 1px 2px rgb(20 25 20 / 4%);
   --shadow-pop: 0 10px 30px rgb(0 0 0 / 8%);
-  --sidebar-w: 236px;
-  --topbar-h: 57px;
+  --sidebar-w: 232px;
+  --topbar-h: 50px;
 
-  --font: 'Manrope Variable', 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font: 'PT Sans', Arial, sans-serif;
   --mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
@@ -76,14 +82,14 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text);
   border-radius: var(--radius);
-  padding: 7px 12px;
+  padding: 6px 12px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition:
     border-color 0.15s ease,
@@ -93,7 +99,7 @@ button {
 }
 
 button:hover {
-  border-color: #c9cdc5;
+  border-color: var(--color-accent);
 }
 
 button:active {
@@ -107,14 +113,14 @@ button:disabled {
 }
 
 button[data-variant='primary'] {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
   color: #fff;
 }
 
 button[data-variant='primary']:hover {
-  background: var(--color-link-hover);
-  border-color: var(--color-link-hover);
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
   color: #fff;
 }
 
@@ -142,10 +148,11 @@ button[data-variant='danger']:hover {
 }
 
 input,
-select {
+select,
+textarea {
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  padding: 6px 10px;
+  padding: 7px 10px;
   background: var(--color-surface);
   color: var(--color-text);
   font-size: 13px;
@@ -155,7 +162,8 @@ select {
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px var(--color-accent-soft);
@@ -170,22 +178,22 @@ h2,
 h3 {
   font-weight: 700;
   line-height: 1.25;
-  letter-spacing: -0.01em;
   margin: 0;
 }
 
 h1 {
-  font-size: 1.5rem;
+  font-size: 1.3125rem;
 }
 
 h2 {
-  font-size: 1.125rem;
+  font-size: 1rem;
 }
 
 h3 {
   font-size: 0.9375rem;
 }
 
+td,
 time,
 .mono {
   font-variant-numeric: tabular-nums;

@@ -27,7 +27,6 @@
 
 .active,
 .active:hover {
-  color: var(--color-text);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
+  color: var(--color-link);
+  background: var(--color-accent-soft);
 }

@@ -16,3 +16,33 @@
   color: var(--color-muted);
   font-size: 13px;
 }
+
+.profile {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.profileSummary {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.profileSummary h1 {
+  font-size: 20px;
+}
+
+.profile nav {
+  padding-inline: var(--space-2);
+  border-top: 1px solid var(--color-border-soft);
+  border-bottom: 0;
+}
+
+.accountId {
+  padding: 2px 8px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 999px;
+  background: var(--color-bg);
+  font-variant-numeric: tabular-nums;
+}

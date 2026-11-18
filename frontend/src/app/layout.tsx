@@ -11,26 +11,12 @@ import styles from './layout.module.css'
 
 type NavIconName = 'overview' | 'accounts' | 'widgets' | 'operations' | 'system'
 
-const navGroups: Array<{
-  label: string
-  items: Array<{ to: string; label: string; icon: NavIconName }>
-}> = [
-  {
-    label: 'Панель',
-    items: [{ to: '/', label: 'Обзор', icon: 'overview' }],
-  },
-  {
-    label: 'Управление',
-    items: [
-      { to: '/accounts', label: 'Аккаунты', icon: 'accounts' },
-      { to: '/widgets', label: 'Виджеты', icon: 'widgets' },
-      { to: '/operations', label: 'Операции', icon: 'operations' },
-    ],
-  },
-  {
-    label: 'Система',
-    items: [{ to: '/system', label: 'Система', icon: 'system' }],
-  },
+const navItems: Array<{ to: string; label: string; icon: NavIconName }> = [
+  { to: '/', label: 'Обзор', icon: 'overview' },
+  { to: '/accounts', label: 'Аккаунты', icon: 'accounts' },
+  { to: '/widgets', label: 'Виджеты', icon: 'widgets' },
+  { to: '/operations', label: 'Операции', icon: 'operations' },
+  { to: '/system', label: 'Система', icon: 'system' },
 ]
 
 function NavIcon({ name }: { name: NavIconName }) {
@@ -115,41 +101,32 @@ export function AppLayout() {
   const crumbs = breadcrumbsFor(pathname)
 
   return (
-    <div className={styles.shell}>
-      <aside className={menuOpen ? `${styles.sidebar} ${styles.sidebarOpen}` : styles.sidebar}>
+    <div className={menuOpen ? `${styles.shell} ${styles.menuOpen}` : styles.shell}>
+      <header className={styles.topbar}>
+        <button
+          className={styles.menuBtn}
+          type="button"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label="Меню"
+          aria-expanded={menuOpen}
+          aria-controls="app-sidebar"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            aria-hidden="true"
+          >
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
         <div className={styles.brand}>
           <BrandLogo className={styles.brandMark} />
-          <div>
-            <div className={styles.brandName}>Ракурс</div>
-            <div className={styles.brandEnv}>панель управления</div>
-          </div>
+          <span>Ракурс</span>
+          <span className={styles.brandTitle}>Сервер виджетов</span>
         </div>
-        <nav className={styles.nav} aria-label="Разделы">
-          {navGroups.map((group) => (
-            <div key={group.label} className={styles.navGroup}>
-              <div className={styles.navLabel}>{group.label}</div>
-              {group.items.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  aria-current={
-                    item.to === '/'
-                      ? pathname === '/'
-                        ? 'page'
-                        : undefined
-                      : pathname === item.to || pathname.startsWith(`${item.to}/`)
-                        ? 'page'
-                        : undefined
-                  }
-                >
-                  <NavIcon name={item.icon} />
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          ))}
-        </nav>
-        <div className={styles.sidebarFoot}>
+        <div className={styles.profile}>
           <div className={styles.avatar} aria-hidden="true">
             {initials(me)}
           </div>
@@ -179,40 +156,32 @@ export function AppLayout() {
             </svg>
           </button>
         </div>
-      </aside>
-      <div
-        className={menuOpen ? `${styles.backdrop} ${styles.backdropShow}` : styles.backdrop}
-        onClick={() => setMenuOpen(false)}
-        aria-hidden="true"
-      />
-      <div className={styles.main}>
-        <header className={styles.topbar}>
-          <div className={styles.topbarLeft}>
-            <button
-              className={styles.menuBtn}
-              type="button"
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-label="Меню"
-              aria-expanded={menuOpen}
+      </header>
+      <aside id="app-sidebar" className={styles.sidebar}>
+        <nav className={styles.nav} aria-label="Разделы">
+          {navItems.map((item) => (
+            <Link
+              key={item.to}
+              title={item.label}
+              to={item.to}
+              aria-current={
+                pathname === item.to || pathname.startsWith(`${item.to}/`) ? 'page' : undefined
+              }
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                aria-hidden="true"
-              >
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
+              <NavIcon name={item.icon} />
+              <span className={styles.navText}>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </aside>
+      <div className={styles.backdrop} onClick={() => setMenuOpen(false)} aria-hidden="true" />
+      <div className={styles.main}>
+        <main className={styles.content}>
+          {crumbs.length > 2 ? (
             <nav className={styles.crumbs} aria-label="Хлебные крошки">
               {crumbs.map((crumb, index) => (
                 <span key={`${crumb.href ?? crumb.label}-${index}`} className={styles.crumb}>
-                  {index > 0 ? (
-                    <span className={styles.crumbSep} aria-hidden="true">
-                      ›
-                    </span>
-                  ) : null}
+                  {index > 0 ? <span aria-hidden="true">›</span> : null}
                   {crumb.href ? (
                     <Link to={crumb.href} className={crumb.mono ? styles.crumbMono : undefined}>
                       {crumb.label}
@@ -232,9 +201,7 @@ export function AppLayout() {
                 </span>
               ))}
             </nav>
-          </div>
-        </header>
-        <main className={styles.content}>
+          ) : null}
           <Outlet />
         </main>
       </div>
