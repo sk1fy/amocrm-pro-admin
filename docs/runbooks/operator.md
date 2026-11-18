@@ -270,13 +270,19 @@ curl --fail --silent --show-error --head https://admin.example.com/
    (команда `\password` не печатает и не хранит его в истории):
    `dc exec admin-postgres psql -U admin -d postgres`, далее
    `\password admin`.
-3. Обновить `ADMIN_DB_PASSWORD` в `/etc/amocrm-admin/admin.env`.
+3. В `/etc/amocrm-admin/admin.env` обновить `ADMIN_DB_PASSWORD` и
+   пароль в `DATABASE_URL`. Это независимые значения: release compose
+   не строит DSN из `ADMIN_DB_PASSWORD`. В URL пароль должен быть
+   percent-encoded, в `ADMIN_DB_PASSWORD` хранится исходный пароль.
+   Не менять hostname `admin-postgres`, порт, имя БД и параметры DSN.
 4. Пересоздать postgres и admin-api, чтобы env совпал с БД:
    `dc up --detach --force-recreate admin-postgres admin-api`.
    Пересоздание postgres не трогает volume с данными; это важно и для
    `restore-check`, который читает `POSTGRES_PASSWORD` из контейнера.
-5. Проверить `/ready` и вход. Повторить для `migrate`/`admin-cli` не
-   нужно — они берут env при каждом запуске.
+5. Проверить `/ready` и вход. API, `migrate` и `admin-cli` используют
+   один `DATABASE_URL` из обновлённого env-файла. Отдельно пересоздавать
+   одноразовые `migrate`/`admin-cli` не нужно: каждый новый запуск `dc`
+   читает этот файл.
 
 ### Что означает «cookie secret»
 
@@ -318,11 +324,15 @@ curl --fail --silent --show-error --head https://admin.example.com/
 Метрики — `/metrics` на management listener `:8092`, без
 аутентификации, доступ только из внутренней сети
 ([ADR-0013](../adr/0013-admin-metrics.md)). Prometheus оператора
-подключается к сети Compose:
+подключается к внутренней сети `web` release compose, где доступен API.
+Для проекта `amocrm-admin`, указанного в функции `dc` выше:
 
 ```sh
-docker network connect amocrm-admin_admin <prometheus-container>
+docker network connect amocrm-admin_web <prometheus-container>
 ```
+
+Если изменён `-p`, заменить префикс `amocrm-admin` именем этого проекта.
+Management listener остаётся без опубликованного порта.
 
 Задача scrape: target `admin-api:8092` (или IP контейнера), job
 `admin-api`. Labels конечны: `route`, `method`, `status`, `backend`,

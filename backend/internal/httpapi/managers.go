@@ -69,12 +69,32 @@ func browserHosts(adminOrigin, managerOrigin string, admin, manager http.Handler
 	}))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case adminURL != nil && strings.EqualFold(r.Host, adminURL.Host):
+		case browserAuthorityMatches(r.Host, adminURL):
 			admin.ServeHTTP(w, r)
-		case managerURL != nil && strings.EqualFold(r.Host, managerURL.Host):
+		case browserAuthorityMatches(r.Host, managerURL):
 			manager.ServeHTTP(w, r)
 		default:
 			reject.ServeHTTP(w, r)
 		}
 	})
+}
+
+func browserAuthorityMatches(authority string, origin *url.URL) bool {
+	if origin == nil || origin.Host == "" {
+		return false
+	}
+	if strings.EqualFold(authority, origin.Host) {
+		return true
+	}
+	if origin.Port() != "" {
+		return false
+	}
+	switch origin.Scheme {
+	case "https":
+		return strings.EqualFold(authority, origin.Host+":443")
+	case "http":
+		return strings.EqualFold(authority, origin.Host+":80")
+	default:
+		return false
+	}
 }

@@ -15,6 +15,10 @@ P10 пропущен. Проверку собственного аккаунта
 `docs/runbooks/platform-v1-release.md`. A08 не меняет публичный API Core,
 семантику P11, контракты Admin или схемы БД.
 
+После review `e563540` добавлена узкая часть исправлений трёх P2.
+Она согласует browser Host с уже принятым ingress-контрактом и обновляет
+инструкции ротации DB-пароля и подключения Prometheus. Core не меняется.
+
 Первая единица меняет только сборку frontend и её потребителей.
 Назначения `core`, `managers`, `demo` выбирают фиксированные entry и output.
 Core больше не импортирует demo router, fixtures или chooser.
@@ -192,3 +196,49 @@ Ingress строится из `deploy/ingress.Dockerfile`. Operator runbook оп
 `internal/apicontract/routes.go` и `internal/serviceapi/contracts.go`
 прочитаны, A08 их не меняет. Принятая версия P11 остаётся `1b99ad0`.
 Новых пользовательских полей, HTTP contracts и миграций в единице 2 нет.
+
+### Исправления независимого review единицы 2
+
+В основе `e563540` приняты три P2. Core остаётся на принятой P11
+`1b99ad0`; соседний основной checkout имеет `47d5270`. Сверены текущие
+Core routes, service contracts, CLI entrypoints и миграции. Фактический
+объём ограничен совместимостью browser Host и двумя инструкциями оператора.
+
+API теперь сопоставляет канонический authority и единственный default-port
+alias схемы. HTTPS допускает `:443`, development HTTP допускает `:80`.
+Явно настроенный порт сравнивается точно. Это реализация уже принятого
+контракта [ADR-0029](../adr/0029-release-ingress-and-identities.md),
+а не новое решение. ADR не изменён. Исходный Host, ingress, Origin/CSRF,
+сессии, cookies и технический режим без managers сохраняют свои правила.
+
+Regression добавлен отдельным коммитом `7716102` до исправления.
+Настоящий `New` router без cookies на обоих HTTPS `Host:443` вернул 404
+вместо 401. Канонические Host и чужой маршрут дали ожидаемый результат.
+Development HTTP aliases также воспроизвели тот же дефект.
+
+Runbook ротации пароля обновляет независимый `DATABASE_URL` вместе с
+`ADMIN_DB_PASSWORD`, различая percent-encoded пароль DSN и исходное
+значение. API, CLI и migrate читают один DSN. Prometheus присоединяется
+к существующей сети `amocrm-admin_web` проекта `amocrm-admin`.
+
+Проверки выполнены через toolchain image `f208a20ef025`, Go 1.26.11,
+`--entrypoint sh` и mounts текущих backend/docs в `/src` и `/docs`.
+Отдельный Compose-проект `amocrm-admin-a08-fixes` поднял PostgreSQL,
+текущий `go run ./cmd/admin-migrate up` применил миграции. После проверки
+удалены только его контейнер, volume и сеть. Рабочий local-review сохранён.
+
+| Проверка | Результат |
+| --- | --- |
+| `go test -race -count=1 ./internal/httpapi -run '^(TestBrowserHost.*\|TestManagerSessionBoundary\|TestCSRFRejectedOnLogin)$' -v` | ok, 4 верхнеуровневых теста без skip |
+| `go test -race -count=1 ./internal/auth ./internal/platform/config` | ok с изолированной БД |
+| `go vet ./internal/httpapi ./internal/auth ./internal/platform/config` | ok |
+| `gofmt -l` двух изменённых Go-файлов | пусто |
+| `make docs-check`, `git diff --check` | ok |
+
+Логи до/после и focused run хранятся локально в `tmp/a08-fixes/`.
+Проверены реальные router/audience/CSRF и существующая DB cookie isolation.
+TLS proxy-only probe root не заменяет эту проверку backend auth.
+Ротация реальных credentials и подключение рабочего Prometheus не
+выполнялись. Инструкции сверены с общим `x-db-env` и API-сетью `web`
+release compose. Полные `make check`, независимый review и HTTPS browser
+acceptance остаются gates root. Новых полей, контрактов и миграций нет.
