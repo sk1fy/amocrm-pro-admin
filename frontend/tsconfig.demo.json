@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./.tmp/tsconfig.demo.tsbuildinfo"
+  },
+  "include": ["demo", "src/features/managers", "src/test/setup.ts"]
+}

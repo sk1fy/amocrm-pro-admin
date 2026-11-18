@@ -123,6 +123,13 @@ React + TypeScript + Vite, TanStack Router и TanStack Query, CSS Modules без
 UI-кита ([ADR-0002](../adr/0002-frontend-stack.md)). Одностраничное приложение,
 статика раздаётся nginx, `/api` проксируется в admin-api; cookie `SameSite=Strict`.
 
+Сборки `core`, `managers` и `demo` имеют отдельные entry и TypeScript
+programs. Технический router и demo router регистрируются независимо.
+Vite проверяет фактический emitted module graph и исключает demo modules
+из двух рабочих артефактов. Docker targets фиксируют назначение, default
+собирает технический Core Admin frontend. Демо не имеет API proxy.
+Решение описано в [ADR-0028](../adr/0028-frontend-build-purpose.md).
+
 ## Потоки
 
 **Поиск аккаунта.** Frontend → `GET /api/v1/accounts?q=` → Admin API нормализует

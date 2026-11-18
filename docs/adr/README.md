@@ -33,3 +33,5 @@
 - [0025: менеджерский BFF и операции Platform V1](0025-manager-platform-bff.md).
 - [0026. Версии карточки клиента и повтор команды](0026-manager-account-revisions.md).
 - [0027. Менеджерские identities и атомарный доступ](0027-manager-staff-identity.md).
+
+- [0028. Назначение frontend задаётся при сборке](0028-frontend-build-purpose.md).

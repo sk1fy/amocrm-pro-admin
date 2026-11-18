@@ -6,7 +6,17 @@ import tseslint from 'typescript-eslint'
 import prettier from 'eslint-config-prettier'
 
 export default tseslint.config(
-  { ignores: ['dist', 'dist-managers', 'node_modules', 'playwright-report', 'test-results'] },
+  {
+    ignores: [
+      'dist',
+      'dist-managers',
+      'dist-demo',
+      'node_modules',
+      '.tmp',
+      'playwright-report',
+      'test-results',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -30,7 +40,15 @@ export default tseslint.config(
     },
   },
   {
-    files: ['e2e/**/*.ts', 'playwright.config.ts', 'vite.config.ts', 'vitest.config.ts'],
+    files: [
+      'e2e/**/*.ts',
+      'e2e-demo/**/*.ts',
+      'scripts/**/*.mjs',
+      'playwright.demo.config.ts',
+      'playwright.config.ts',
+      'vite.config.ts',
+      'vitest.config.ts',
+    ],
     languageOptions: {
       globals: globals.node,
     },

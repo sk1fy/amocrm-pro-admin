@@ -134,10 +134,12 @@ services:
     build:
       context: ../frontend
       args:
+        BUILD_REVISION: "${BUILD_REVISION:-unknown}"
         VITE_BACKEND_DETAIL_INTERVAL_MS: "${VITE_BACKEND_DETAIL_INTERVAL_MS:-15000}"
         VITE_BACKEND_LIST_INTERVAL_MS: "${VITE_BACKEND_LIST_INTERVAL_MS:-90000}"
         VITE_OPERATION_INTERVAL_MS: "${VITE_OPERATION_INTERVAL_MS:-1500}"
       dockerfile: Dockerfile
+      target: core
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-5173}:80"
     depends_on:

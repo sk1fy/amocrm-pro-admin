@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Рабочий выпуск кабинета менеджеров V1, A08](manager-release-v1.md).
+
 - [Вход в кабинет менеджеров V1](manager-auth-v1.md).
 - [Менеджерский BFF и Platform V1](manager-platform-v1.md).
 - [Рабочие клиенты в кабинете менеджеров V1](manager-clients-v1.md).
