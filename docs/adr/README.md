@@ -27,3 +27,13 @@
 | [0020](0020-account-crm-users.md) | Пользователи amoCRM в карточке аккаунта | принято |
 | [0021](0021-calm-interface.md) | Спокойный интерфейс: норма без выделения | принято |
 | [0022](0022-rightmost-forwarded-address.md) | Правое значение X-Forwarded-For | принято |
+
+- [0023: локальная сессия менеджерского демо](0023-manager-demo-session.md).
+- [0024: отдельная сессия кабинета менеджеров](0024-manager-auth-audience.md).
+- [0025: менеджерский BFF и операции Platform V1](0025-manager-platform-bff.md).
+- [0026. Версии карточки клиента и повтор команды](0026-manager-account-revisions.md).
+- [0027. Менеджерские identities и атомарный доступ](0027-manager-staff-identity.md).
+
+- [0028. Назначение frontend задаётся при сборке](0028-frontend-build-purpose.md).
+
+- [0029. Единственный TLS ingress и точные образы выпуска](0029-release-ingress-and-identities.md).

@@ -62,6 +62,17 @@ type meDTO struct {
 	Permissions []string `json:"permissions"`
 }
 
+type managerMeDTO struct {
+	ID     string              `json:"id"`
+	Email  string              `json:"email"`
+	Name   string              `json:"name"`
+	Grants []auth.ManagerGrant `json:"grants"`
+}
+
+func toManagerMeDTO(account auth.Account) managerMeDTO {
+	return managerMeDTO{ID: account.ID.String(), Email: account.Email, Name: account.Name, Grants: account.ManagerGrants}
+}
+
 type sessionDTO struct {
 	ID           string     `json:"id"`
 	CreatedAt    time.Time  `json:"created_at"`
@@ -128,6 +139,7 @@ func (h *api) login(w http.ResponseWriter, r *http.Request) {
 			Outcome:    audit.OutcomeDenied,
 			RequestID:  httpx.RequestIDFromContext(r.Context()),
 			IP:         ip,
+			Metadata:   h.sessionAuditMetadata(),
 		})
 		httpx.WriteError(w, r, httpx.Unauthenticated(loginFailureMessage))
 		return
@@ -140,15 +152,28 @@ func (h *api) login(w http.ResponseWriter, r *http.Request) {
 		ObjectRef:  "employee:" + account.ID.String(),
 		RequestID:  httpx.RequestIDFromContext(r.Context()),
 		IP:         ip,
+		Metadata:   h.sessionAuditMetadata(),
 	})
 	h.sessions.SetCookie(w, token)
+	if h.sessions.Audience() == auth.Managers {
+		httpx.WriteJSON(w, http.StatusOK, toManagerMeDTO(account))
+		return
+	}
 	httpx.WriteJSON(w, http.StatusOK, toMeDTO(account.ID, account.Email, account.Name, account.Role))
+}
+
+func (h *api) sessionAuditMetadata() map[string]any {
+	if h.sessions.Audience() == auth.Managers {
+		return map[string]any{"audience": auth.Managers}
+	}
+	return nil
 }
 
 func (h *api) logout(w http.ResponseWriter, r *http.Request) {
 	principal, _ := auth.PrincipalFromContext(r.Context())
 	event := h.accessEvent(r)
 	event.Action = audit.ActionLogout
+	event.Metadata = h.sessionAuditMetadata()
 	if err := h.access.RevokeSession(r.Context(), principal.SessionID, principal.EmployeeID, event); err != nil && !errors.Is(err, auth.ErrNotFound) {
 		httpx.WriteError(w, r, httpx.Internal())
 		return
@@ -294,6 +319,11 @@ func (h *api) patchEmployee(w http.ResponseWriter, r *http.Request) {
 		Name: body.Name, Role: body.Role, Status: body.Status,
 	}, h.accessEvent(r))
 	if err != nil {
+		if errors.Is(err, employees.ErrLastManagerAdmin) {
+			writeManagerStaffError(w, r, err)
+			return
+		}
+
 		if errors.Is(err, employees.ErrNotFound) {
 			httpx.WriteError(w, r, httpx.NotFound("employee not found"))
 			return

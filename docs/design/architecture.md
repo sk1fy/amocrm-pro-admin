@@ -106,6 +106,7 @@
 | `audit` | Запись действий сотрудников в `admin_audit_log` |
 | `adapter` | Контракт адаптера бекенда v1, типы `Observation`, ошибки |
 | `adapter/core` | HTTP-клиент Core admin listener |
+| `managerplatform`, `platformwire` | Manager BFF: mTLS, intent, Platform V1 |
 | `adapter/fixture` | Тестовый адаптер (`kind: fixture`) |
 | `accounts` | Агрегация аккаунтов и подключений по адаптерам, частичная доступность |
 | `catalog` | Каталог продуктов и бекендов из конфигурации |
@@ -121,6 +122,13 @@ URL, имя env-переменной с токеном, таймауты). Се�
 React + TypeScript + Vite, TanStack Router и TanStack Query, CSS Modules без
 UI-кита ([ADR-0002](../adr/0002-frontend-stack.md)). Одностраничное приложение,
 статика раздаётся nginx, `/api` проксируется в admin-api; cookie `SameSite=Strict`.
+
+Сборки `core`, `managers` и `demo` имеют отдельные entry и TypeScript
+programs. Технический router и demo router регистрируются независимо.
+Vite проверяет фактический emitted module graph и исключает demo modules
+из двух рабочих артефактов. Docker targets фиксируют назначение, default
+собирает технический Core Admin frontend. Демо не имеет API proxy.
+Решение описано в [ADR-0028](../adr/0028-frontend-build-purpose.md).
 
 ## Потоки
 
@@ -156,12 +164,15 @@ command → результат/операция → аудит в admin DB и в
 
 ## Целевой хост
 
-Целевой хост запускает те же сервисы prod-оверлеем
-[deploy/docker-compose.prod.yml](../../deploy/docker-compose.prod.yml)
-поверх [deploy/docker-compose.yml](../../deploy/docker-compose.yml):
-образы из registry, `APP_ENV=production`, обязательные
-`ADMIN_PUBLIC_ORIGIN`, `CORE_ADMIN_API_TOKEN` и `ADMIN_DB_PASSWORD`,
-порты только на loopback за TLS-прокси оператора. Реестр бекендов
-заменяется хост-файлом (`BACKENDS_FILE_PATH`). Развёртывание, ротация
-credentials, наблюдаемость и аварийные сценарии —
-[runbooks/operator.md](../runbooks/operator.md).
+Самостоятельный [release compose](../../deploy/docker-compose.release.yml)
+запускает два frontend и единственный TLS ingress. `/api/` направляется
+прямо в Admin API. Только ingress публикует loopback TLS порт. API,
+management, frontend и PostgreSQL не публикуются. Внешние сети Core и
+Platform задаются оператором, egress bridge сохраняет исходящие вызовы.
+Файлы TLS и BFF mTLS монтируются read-only без создания пустых путей.
+
+Manifest проверяет точные image IDs, labels, revision и origin.
+Production отвергает fixture-kind при загрузке registry. Dev compose
+остаётся отдельным. Обоснование находится в
+[ADR-0029](../adr/0029-release-ingress-and-identities.md), запуск и откат
+описаны в [инструкции оператора](../runbooks/operator.md).

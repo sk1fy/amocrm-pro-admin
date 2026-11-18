@@ -2,16 +2,23 @@ import { expect, test } from '@playwright/test'
 
 test('workspace choice opens the manager demo without sending credentials', async ({ page }) => {
   let apiRequests = 0
-  await page.route('**/api/**', (route) => {
-    apiRequests++
-    return route.abort()
-  })
+  await page.route(
+    (url) => url.pathname.startsWith('/api/'),
+    (route) => {
+      apiRequests++
+      return route.abort()
+    },
+  )
 
   await page.goto('/login?next=/accounts/91000001')
   await expect(page.getByRole('radio', { name: 'core-admin' })).toBeChecked()
   await expect(page.getByTestId('login-form')).toBeVisible()
+  await page.getByLabel('Email').fill('demo@example.invalid')
+  await page.getByLabel('Пароль', { exact: true }).fill('synthetic-demo-password')
+  await page.getByRole('button', { name: 'Войти', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('Рабочий вход недоступен в демо')
   await page.getByRole('radio', { name: 'partners' }).check()
-  await expect(page.getByText('Кабинет партнёров готовится.')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Открыть демо для партнёров' })).toBeVisible()
   await expect(page.getByTestId('login-form')).toHaveCount(0)
   await page.getByRole('radio', { name: 'managers' }).check()
   await page.getByRole('link', { name: 'Открыть демо для менеджеров' }).click()
@@ -63,7 +70,16 @@ test('manager sections have test data and client cards can be opened directly', 
   ]) {
     await navigation.getByRole('link', { name: section, exact: true }).click()
     await expect(page.getByRole('heading', { name: section, exact: true })).toBeVisible()
-    await expect(page.getByRole('table').getByRole('row').nth(1)).toBeVisible()
+    if (section === 'Лента событий') {
+      await expect(
+        page.getByRole('list', { name: 'События' }).getByRole('listitem').first(),
+      ).toBeVisible()
+    } else if (section === 'Статистика') {
+      await page.getByLabel('Таблица: Новые установки по неделям').click()
+      await expect(page.getByRole('table', { name: 'Новые установки по неделям' })).toBeVisible()
+    } else {
+      await expect(page.getByRole('table').first().getByRole('row').nth(1)).toBeVisible()
+    }
   }
 
   await page.setViewportSize({ width: 375, height: 850 })
@@ -123,10 +139,13 @@ test('installation phone search and date filters narrow the demo list together',
 
 test('account tabs show distinct demo panels and preserve a company draft', async ({ page }) => {
   let apiRequests = 0
-  await page.route('**/api/**', (route) => {
-    apiRequests++
-    return route.abort()
-  })
+  await page.route(
+    (url) => url.pathname.startsWith('/api/'),
+    (route) => {
+      apiRequests++
+      return route.abort()
+    },
+  )
   await page.goto('/managers?section=installs&client=91001001')
   const tabs = page.getByRole('group', { name: 'Разделы карточки' })
   await expect(page.getByRole('heading', { name: 'Наши виджеты', exact: true })).toBeVisible()
@@ -157,8 +176,10 @@ test('account tabs show distinct demo panels and preserve a company draft', asyn
   await page.getByRole('button', { name: /Выставить счёт/ }).click()
   await page.getByLabel('За что', { exact: true }).fill('Демо-подписка')
   await page.getByLabel('Сумма, ₽', { exact: true }).fill('1200')
-  await page.getByRole('button', { name: 'Создать демо-черновик' }).click()
-  await expect(page.getByRole('row').filter({ hasText: 'Демо-подписка' })).toContainText('Черновик')
+  await page.getByRole('button', { name: 'Выставить демо-счёт' }).click()
+  await expect(page.getByRole('row').filter({ hasText: 'Демо-подписка' })).toContainText(
+    'Ждём оплату',
+  )
   await page.getByLabel('ИНН', { exact: true }).fill('9900000008')
   await page.getByLabel('Название', { exact: true }).fill('ООО Демо')
   await tabs.getByRole('button', { name: /^Наши виджеты/ }).click()

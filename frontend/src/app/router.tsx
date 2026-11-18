@@ -4,7 +4,6 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
-  lazyRouteComponent,
   redirect,
   useRouter,
 } from '@tanstack/react-router'
@@ -41,14 +40,13 @@ import {
   statsAccountsSearch,
 } from './search'
 import { clearSession } from './session'
-import { managersSearch } from '../features/managers/sections'
 
 export type RouterContext = {
   queryClient: QueryClient
 }
 
 function isPublicPath(pathname: string) {
-  return ['/login', '/managers'].includes(pathname.replace(/\/$/, ''))
+  return pathname.replace(/\/$/, '') === '/login'
 }
 
 function RootComponent() {
@@ -99,13 +97,6 @@ const loginRoute = createRoute({
     next: typeof search.next === 'string' ? search.next : undefined,
   }),
   component: LoginPage,
-})
-
-const managersRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/managers',
-  validateSearch: managersSearch,
-  component: lazyRouteComponent(() => import('../features/managers/ManagersPage'), 'ManagersPage'),
 })
 
 const appRoute = createRoute({
@@ -245,7 +236,6 @@ const auditRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  managersRoute,
   appRoute.addChildren([
     indexRoute,
     accountsRoute,

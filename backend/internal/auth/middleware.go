@@ -23,7 +23,7 @@ func ContextWithPrincipal(ctx context.Context, principal Principal) context.Cont
 
 func (s *Service) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie(CookieName)
+		cookie, err := r.Cookie(s.cookieName())
 		if err != nil || cookie.Value == "" {
 			httpx.WriteError(w, r, httpx.Unauthenticated("authentication required"))
 			return

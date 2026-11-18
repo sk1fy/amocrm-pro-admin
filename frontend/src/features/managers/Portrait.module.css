@@ -638,3 +638,26 @@
     padding-inline: 12px;
   }
 }
+
+.marketWidgets {
+  padding: 16px 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.marketWidgets h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.marketWidgets ul {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.marketWidgets small {
+  display: block;
+  color: var(--color-muted);
+}

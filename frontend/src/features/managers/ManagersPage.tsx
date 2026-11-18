@@ -3,8 +3,23 @@ import { Link, useSearch } from '@tanstack/react-router'
 import { BrandLogo } from '../../components/BrandLogo'
 import { DataTable, type DataTableColumn } from '../../components/DataTable'
 import { EmptyState } from '../../components/EmptyState'
-import { boards, clients, installs, type DemoRow } from './fixtures'
+import { boards, type DemoRow } from './fixtures'
+import { DemoSession, useDemo, can, canView, today } from './DemoSession'
+import { InvoiceDrawer } from './Finance'
+import { WidgetsBoard } from './WidgetsBoard'
+import { MarketBoard } from './MarketBoard'
+import { StaffBoard } from './StaffBoard'
+import { StatsBoard } from './StatsBoard'
+import { PartnerEntry, usePartnerPaymentRequests } from './Partners'
+import { PartnersBoard } from './PartnersBoard'
+import { PaymentsBoard, useUnreviewedPaymentCount } from './PaymentsBoard'
+import { AccountDrafts, DraftAccount, useAccountDraft } from './AccountDrafts'
 import { AccountProfile } from './AccountProfile'
+import { ClientsBoard } from './ClientsBoard'
+import { InvoicesBoard } from './InvoicesBoard'
+import { FeedBoard } from './FeedBoard'
+import { isInvoiceStale } from './invoiceFixtures'
+import { findDemoClient } from './clientDirectory'
 import { portraitTopics } from './portraitTopics'
 import { CellValue } from './CellValue'
 import { sections, type Section } from './sections'
@@ -26,14 +41,6 @@ const icons = {
   person: 'M5 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2m-3-13a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',
 }
 
-const clientColumns: Partial<Record<Section, number>> = {
-  installs: 2,
-  clients: 0,
-  invoices: 1,
-  payments: 1,
-  feed: 2,
-}
-
 function matches(row: DemoRow, query: string) {
   const term = query.trim().toLocaleLowerCase('ru')
   const text = row.cells
@@ -49,27 +56,60 @@ function matches(row: DemoRow, query: string) {
   return (
     !term ||
     text.includes(term) ||
-    (digits.length >= 3 && /^[+()\d\s-]+$/.test(term) && phone.includes(digits))
+    (digits.length >= 3 &&
+      /^[+()\d\s-]+$/.test(term) &&
+      phone.replace(/^[78](?=\d{10}$)/, '').includes(digits.replace(/^[78](?=\d{10}$)/, '')))
   )
 }
 
 export function ManagersPage() {
+  const { mode } = useSearch({ from: '/managers' })
+  return (
+    <DemoSession>
+      <AccountDrafts>{mode === 'partner' ? <PartnerEntry /> : <ManagerWorkspace />}</AccountDrafts>
+    </DemoSession>
+  )
+}
+
+function ManagerWorkspace() {
+  const { state, actor, actorId, selectActor, dispatch } = useDemo()
   const { section, client } = useSearch({ from: '/managers' })
-  const [topics, setTopics] = useState(portraitTopics)
-  const [checked, setChecked] = useState<Record<string, boolean>>({})
+  const [partnerPaymentRequests] = usePartnerPaymentRequests()
+  const unreviewedPayments = useUnreviewedPaymentCount()
+  const [topics, setTopics] = useAccountDraft('/portraitTopics', portraitTopics)
   const [menuOpen, setMenuOpen] = useState(() => window.innerWidth >= 1440)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const menuButton = useRef<HTMLButtonElement>(null)
-  const customer = clients.find((item) => item.id === client)
-  const rows = installs.map((item) =>
-    item.id in checked
-      ? { ...item, group: checked[item.id] ? 'Проверенные' : 'Непроверенные' }
-      : item,
-  )
+  const customer = findDemoClient(client)
+  const rows = state.rows
+  const check = (id: string, value: boolean) =>
+    dispatch({
+      type: 'install',
+      id,
+      patch: {
+        group: value ? 'Проверенные' : 'Непроверенные',
+        checkedBy: value ? actor.name : undefined,
+      },
+      title: value ? 'Установка проверена' : 'Проверка снята',
+    })
   const uncheckedCount = rows.filter((item) => item.group === 'Непроверенные').length
 
+  const sectionOverview = section !== 'installs' && !client
+  const counts: Partial<Record<Section, number>> = {
+    installs: uncheckedCount,
+    payments: unreviewedPayments,
+    partners: partnerPaymentRequests.filter((request) => request.status === 'pending').length,
+    invoices: state.invoices.filter((invoice) => !invoice.legacy && isInvoiceStale(invoice, today))
+      .length,
+  }
+
   return (
-    <div className={styles.shell} data-menu-open={menuOpen} data-mobile-open={mobileMenuOpen}>
+    <div
+      className={styles.shell}
+      data-overview={sectionOverview || undefined}
+      data-menu-open={menuOpen}
+      data-mobile-open={mobileMenuOpen}
+    >
       <header className={styles.topbar}>
         <button
           type="button"
@@ -87,11 +127,29 @@ export function ManagersPage() {
         </span>
         <span className={styles.product}>Сервер виджетов</span>
         <div className={styles.profile}>
-          <span>Менеджер · демо</span>
+          <label>
+            {sectionOverview ? 'Вы вошли как ' : 'Войти как '}
+            <select
+              aria-label="Демо-сотрудник"
+              value={actorId}
+              onChange={(e) => selectActor(e.target.value)}
+            >
+              {state.staff.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <Link to="/login" search={{ next: undefined }}>
             Сменить кабинет
           </Link>
         </div>
+        {sectionOverview ? (
+          <span className={styles.demoServer} title="Статус в демо-данных">
+            w.rkrs.ru · работает
+          </span>
+        ) : null}
       </header>
       <aside id="manager-nav" className={styles.sidebar}>
         <button
@@ -106,64 +164,68 @@ export function ManagersPage() {
           {menuOpen ? 'Свернуть меню' : null}
         </button>
         <nav className={styles.menu} aria-label="Разделы менеджеров">
-          {sectionKeys.map((key) => {
-            const item = sections[key]
-            const count =
-              key === 'installs'
-                ? uncheckedCount
-                : key === 'invoices'
-                  ? boards.invoices.rows.filter((row) => row.group === 'Без движения').length
-                  : 0
-            return (
-              <Link
-                key={key}
-                to="/managers"
-                search={{ section: key, client: undefined }}
-                aria-current={section === key ? 'page' : undefined}
-                aria-label={item.title}
-                title={item.title}
-                onClick={() => {
-                  if (window.innerWidth <= 760) {
-                    menuButton.current?.focus()
-                    setMobileMenuOpen(false)
-                  }
-                }}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  aria-hidden="true"
+          {sectionKeys
+            .filter((key) => canView(actor, key))
+            .map((key) => {
+              const item = sections[key]
+              const count = counts[key] ?? 0
+              return (
+                <Link
+                  key={key}
+                  to="/managers"
+                  search={{ section: key, client: undefined }}
+                  aria-current={section === key ? 'page' : undefined}
+                  aria-label={item.title}
+                  title={item.title}
+                  onClick={() => {
+                    if (window.innerWidth <= 760) {
+                      menuButton.current?.focus()
+                      setMobileMenuOpen(false)
+                    }
+                  }}
                 >
-                  <path d={icons[item.icon]} strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span className={styles.menuLabel}>
-                  {item.title}
-                  <small>{item.hint}</small>
-                </span>
-                {count > 0 ? (
-                  <span className={styles.menuCount} aria-hidden="true">
-                    {count}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    aria-hidden="true"
+                  >
+                    <path d={icons[item.icon]} strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className={styles.menuLabel}>
+                    {item.title}
+                    <small>{item.hint}</small>
                   </span>
-                ) : null}
-              </Link>
-            )
-          })}
+                  {count > 0 ? (
+                    <span className={styles.menuCount} aria-hidden="true">
+                      {count}
+                      {key === 'partners' ? ' запр.' : ''}
+                    </span>
+                  ) : null}
+                </Link>
+              )
+            })}
         </nav>
       </aside>
       <main className={styles.main}>
-        <div className={styles.demo}>Демо-данные. Изменения действуют до обновления страницы.</div>
+        <div className={styles.demo}>
+          {sectionOverview
+            ? 'Демо-данные: виджеты, компании, партнёры, люди и телефоны выдуманы. Правки и кнопки работают только в этой вкладке.'
+            : 'Демо-данные. Изменения действуют до обновления страницы.'}
+        </div>
         {customer ? (
-          <AccountProfile
-            key={customer.id}
-            client={customer}
-            section={section}
-            rows={rows}
-            topics={topics}
-            changeTopics={setTopics}
-            check={(id, value) => setChecked((previous) => ({ ...previous, [id]: value }))}
-          />
+          <DraftAccount id={customer.id}>
+            <AccountProfile
+              key={customer.id}
+              client={customer}
+              section={section}
+              rows={rows}
+              topics={topics}
+              changeTopics={setTopics}
+              check={check}
+            />
+          </DraftAccount>
         ) : client ? (
           <EmptyState
             title="Клиент не найден"
@@ -173,53 +235,67 @@ export function ManagersPage() {
               </Link>
             }
           />
-        ) : (
-          <BoardView
-            key={section}
-            section={section}
-            rows={section === 'installs' ? rows : boards[section].rows}
-            check={(id, value) => setChecked((previous) => ({ ...previous, [id]: value }))}
+        ) : !canView(actor, section) ? (
+          <EmptyState
+            title="Нет доступа к разделу"
+            description="Выберите доступный раздел или смените демо-сотрудника."
           />
+        ) : section === 'clients' ? (
+          <ClientsBoard />
+        ) : section === 'widgets' ? (
+          <WidgetsBoard />
+        ) : section === 'market' ? (
+          <MarketBoard />
+        ) : section === 'staff' ? (
+          <StaffBoard />
+        ) : section === 'partners' ? (
+          <PartnersBoard />
+        ) : section === 'invoices' ? (
+          <InvoicesBoard />
+        ) : section === 'payments' ? (
+          <PaymentsBoard />
+        ) : section === 'stats' ? (
+          <StatsBoard />
+        ) : section === 'feed' ? (
+          <FeedBoard />
+        ) : (
+          <InstallationsBoard rows={rows} check={check} />
         )}
       </main>
+      <InvoiceDrawer />
     </div>
   )
 }
 
-function BoardView({
-  section,
+function InstallationsBoard({
   rows,
   check,
 }: {
-  section: Section
   rows: readonly DemoRow[]
   check: (id: string, checked: boolean) => void
 }) {
-  const board = boards[section]
+  const { actor } = useDemo()
+  const board = boards.installs
   const [group, setGroup] = useState(board.filters?.[0] ?? '')
   const [query, setQuery] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const [tariff, setTariff] = useState('')
   const candidates = rows.filter(
     (row) =>
-      matches(row, query) &&
-      (!from || (row.date ?? '') >= from) &&
-      (!to || (row.date ?? '') <= to) &&
-      (!tariff || row.cells[3] === tariff),
+      matches(row, query) && (!from || (row.date ?? '') >= from) && (!to || (row.date ?? '') <= to),
   )
-  const showAll = !group || group === 'Все' || group === 'Все виджеты'
-  const visible = candidates.filter((row) => showAll || row.group === group)
+  const visible = candidates.filter((row) => !group || row.group === group)
   const columns: DataTableColumn<DemoRow>[] = board.columns.map((header, index) => ({
     id: header,
     header,
     cell: (row) => (
       <>
-        {row.client &&
-        (clientColumns[section] === index ||
-          (section === 'installs' && index === 3) ||
-          (section === 'clients' && index === 1)) ? (
-          <Link className={styles.rowLink} to="/managers" search={{ section, client: row.client }}>
+        {row.client && (index === 2 || index === 3) ? (
+          <Link
+            className={styles.rowLink}
+            to="/managers"
+            search={{ section: 'installs', client: row.client }}
+          >
             <CellValue value={row.cells[index]} />
           </Link>
         ) : (
@@ -228,7 +304,7 @@ function BoardView({
       </>
     ),
   }))
-  if (section === 'installs') {
+  if (can(actor, 'clients')) {
     columns.push({
       id: 'check',
       header: 'Проверка',
@@ -240,7 +316,7 @@ function BoardView({
           onClick={() => check(row.id, row.group !== 'Проверенные')}
         >
           {row.group === 'Проверенные' ? (
-            'Вернуть'
+            `Вернуть · ${row.checkedBy ?? 'демо'}`
           ) : (
             <>
               <span aria-hidden="true">✓</span> Проверен
@@ -254,17 +330,12 @@ function BoardView({
   return (
     <>
       <header>
-        <h1>{sections[section].title}</h1>
+        <h1>{sections.installs.title}</h1>
         <p className={styles.description}>{board.description}</p>
       </header>
-      {section === 'stats' ? <Statistics /> : null}
-      <div className={section === 'installs' ? styles.installControls : styles.controls}>
+      <div className={styles.installControls}>
         {board.filters ? (
-          <div
-            className={section === 'clients' ? styles.summary : styles.tabs}
-            aria-label="Фильтр по состоянию"
-            role="group"
-          >
+          <div className={styles.tabs} aria-label="Фильтр по состоянию" role="group">
             {board.filters.map((filter) => (
               <button
                 key={filter}
@@ -274,17 +345,24 @@ function BoardView({
               >
                 {filter}
                 <span className={styles.count}>
-                  {
-                    candidates.filter(
-                      (row) => filter === 'Все' || filter === 'Все виджеты' || row.group === filter,
-                    ).length
-                  }
+                  {candidates.filter((row) => row.group === filter).length}
                 </span>
               </button>
             ))}
           </div>
         ) : null}
         <div className={styles.filters}>
+          <button
+            type="button"
+            onClick={() => {
+              setFrom('')
+              setTo('')
+              setQuery('')
+              setGroup(board.filters?.[0] ?? '')
+            }}
+          >
+            Сбросить фильтры
+          </button>
           {board.dateLabel ? (
             <>
               <label>
@@ -296,26 +374,11 @@ function BoardView({
               </label>
             </>
           ) : null}
-          {section === 'clients' ? (
-            <label>
-              Тариф
-              <select value={tariff} onChange={(event) => setTariff(event.target.value)}>
-                <option value="">Все тарифы</option>
-                {[...new Set(clients.map((client) => client.tariff))].map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
-              </select>
-            </label>
-          ) : null}
           <input
             type="search"
             className={styles.search}
             aria-label="Поиск"
-            placeholder={
-              section === 'installs' || section === 'clients'
-                ? 'Телефон, ID, поддомен, название, имя или email'
-                : 'Поиск по разделу'
-            }
+            placeholder="Телефон, ID, поддомен, название, имя или email"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -330,39 +393,5 @@ function BoardView({
         />
       )}
     </>
-  )
-}
-
-function Statistics() {
-  const counts = [18, 26, 22, 34, 29, 40]
-  return (
-    <div className={styles.statistics}>
-      <div className={styles.summary}>
-        {[
-          ['Новые аккаунты', '74'],
-          ['Новые установки', '169'],
-          ['Оплатили', '28'],
-        ].map(([label, value]) => (
-          <div key={label}>
-            <strong>{value}</strong>
-            <span>{label}</span>
-          </div>
-        ))}
-      </div>
-      <section className={styles.chart}>
-        <h2>Новые установки по неделям</h2>
-        <ul>
-          {counts.map((count, index) => (
-            <li key={index} aria-label={`Неделя ${index + 1}: ${count}`}>
-              <span>{count}</span>
-              <span className={styles.barTrack} aria-hidden="true">
-                <span className={styles.bar} style={{ height: `${(count / 40) * 100}%` }} />
-              </span>
-              <small>{index + 1} нед.</small>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
   )
 }

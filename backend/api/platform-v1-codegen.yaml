@@ -1,0 +1,44 @@
+package: platformwire
+generate:
+  models: true
+  client: true
+output-options:
+  include-operation-ids:
+    - listFeed
+    - listAccountHistory
+    - listInstallations
+    - getCommandReceipt
+    - getOperation
+    - setInstallationReview
+    - retryInstallationDeal
+    - listAccounts
+    - searchAccounts
+    - getAccount
+    - updateAccountProfile
+    - requestAccountRefresh
+    - getAccountLicenseHistory
+    - listAccountWidgets
+    - getAccountCRMUsers
+    - createAccountRenewal
+    - getAccountPortrait
+    - updateAccountPortrait
+    - createPortraitAuditDate
+    - getPortraitTemplate
+    - setPortraitTemplate
+    - listPortraitNiches
+    - createPortraitNiche
+    - updatePortraitNiche
+    - deletePortraitNiche
+    - mergePortraitNiche
+    - listCompanies
+    - getCompany
+    - getCompanyWorkflowMetadata
+    - getProductCompanyWorkflow
+    - setProductCompanyWorkflow
+    - listProducts
+    - getProduct
+    - createProduct
+    - updateProduct
+    - getProductMetrics
+  skip-prune: true
+  nullable-type: true

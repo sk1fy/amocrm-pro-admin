@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { fetchSessions } from '../../api/queries'
@@ -60,7 +60,8 @@ describe('SessionsPage', () => {
       ],
     })
     renderPage()
-    expect(await screen.findByRole('button', { name: 'Отозвать…' })).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('Загрузка сессий…')).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'Отозвать…' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Отозвать…' }))
     expect(screen.getByRole('heading', { name: 'Отозвать сессию' })).toBeInTheDocument()
     expect(screen.getByText(/сразу станет недействительной/)).toBeInTheDocument()

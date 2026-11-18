@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react'
+import { useDemo, can, type Company } from './DemoSession'
+import { Renewal, InvoiceForm, InvoiceActions } from './Finance'
 import { DataTable, type DataTableColumn } from '../../components/DataTable'
 import { Filters, Panel, Table } from './AccountPanel'
 import { CellValue } from './CellValue'
@@ -12,22 +14,47 @@ import {
 import { type DemoRow } from './fixtures'
 import styles from './AccountPanels.module.css'
 
-const contactRoles = ['Неизвестно', 'Технический специалист', 'Собственник', 'ЛПР', 'Партнёр']
+const contactRoles = ['Неизвестно', 'Технический специалист', 'Собственник', 'ЛПР']
 
 function ContactEditor({ row }: { row: DemoRow }) {
+  const { actor, dispatch } = useDemo()
   const contact = row.cells[4]
-  const phone = typeof contact === 'object' && contact.text.startsWith('+') ? contact.text : ''
+  const phone = typeof contact === 'object' && contact.text !== '—' ? contact.text : ''
   const name = phone && typeof contact === 'object' ? contact.note?.split(' · ')[0] : ''
+  const change = (field: 'phone' | 'name' | 'role', value: string) => {
+    const previous = typeof contact === 'object' ? contact : { text: '' }
+    const cells = [...row.cells]
+    cells[4] = {
+      ...previous,
+      text: field === 'phone' ? value : previous.text,
+      note: field === 'name' ? value : previous.note,
+      detail: field === 'role' ? value : previous.detail,
+    }
+    dispatch({ type: 'install', id: row.id, patch: { cells }, title: 'Контакт установки изменён' })
+  }
   return (
     <div className={styles.contact}>
       <input
         type="tel"
         aria-label={`Телефон, ${row.id}`}
         placeholder="Телефон не указан"
-        defaultValue={phone}
+        value={phone}
+        disabled={!can(actor, 'clients')}
+        onChange={(e) => change('phone', e.target.value)}
       />
-      <input aria-label={`Имя, ${row.id}`} placeholder="Имя не указано" defaultValue={name} />
-      <select aria-label={`Роль, ${row.id}`}>
+      <input
+        aria-label={`Имя, ${row.id}`}
+        placeholder="Имя не указано"
+        value={name ?? ''}
+        disabled={!can(actor, 'clients')}
+        onChange={(e) => change('name', e.target.value)}
+      />
+      <select
+        aria-label={`Роль, ${row.id}`}
+        disabled={!can(actor, 'clients')}
+        value={typeof contact === 'object' ? (contact.detail ?? 'Неизвестно') : 'Неизвестно'}
+        onChange={(e) => change('role', e.target.value)}
+      >
         {contactRoles.map((role) => (
           <option key={role}>{role}</option>
         ))}
@@ -43,6 +70,7 @@ export function OurWidgets({
   rows: readonly DemoRow[]
   check: (id: string, checked: boolean) => void
 }) {
+  const { actor, dispatch } = useDemo()
   const [renewing, setRenewing] = useState<string | null>(null)
   const columns: DataTableColumn<DemoRow>[] = [
     {
@@ -72,7 +100,11 @@ export function OurWidgets({
       header: 'Действия',
       cell: (row) => (
         <div className={styles.widgetActions}>
-          <button type="button" onClick={() => check(row.id, row.group !== 'Проверенные')}>
+          <button
+            type="button"
+            disabled={!can(actor, 'clients')}
+            onClick={() => check(row.id, row.group !== 'Проверенные')}
+          >
             {row.group === 'Проверенные' ? 'Вернуть' : 'Проверен'}
           </button>
           {typeof row.cells[1] === 'object' && row.cells[1].line === 'TOP' ? (
@@ -80,18 +112,30 @@ export function OurWidgets({
               <button
                 type="button"
                 data-variant="primary"
+                disabled={!can(actor, 'pay')}
                 aria-expanded={renewing === row.id}
                 onClick={() => setRenewing((current) => (current === row.id ? null : row.id))}
               >
                 Продлить
               </button>
-              {renewing === row.id ? (
-                <small>Демо: текущий срок указан в колонке «Оплачен до».</small>
-              ) : null}
+              {renewing === row.id ? <Renewal row={row} close={() => setRenewing(null)} /> : null}
             </>
           ) : null}
           <label>
-            <input type="checkbox" /> Отзыв
+            <input
+              type="checkbox"
+              disabled={!can(actor, 'clients')}
+              checked={row.reviewed ?? false}
+              onChange={(e) =>
+                dispatch({
+                  type: 'install',
+                  id: row.id,
+                  patch: { reviewed: e.target.checked },
+                  title: 'Отметка отзыва изменена',
+                })
+              }
+            />{' '}
+            Отзыв
           </label>
         </div>
       ),
@@ -176,8 +220,6 @@ export function History({ events }: { events: readonly DemoEvent[] }) {
   )
 }
 
-type Company = { name: string; inn: string; kpp: string; address: string; email: string }
-
 export function Companies({
   invoices,
   client,
@@ -185,27 +227,15 @@ export function Companies({
   invoices: readonly DemoRow[]
   client: DemoClient
 }) {
-  const [companies, setCompanies] = useState<Company[]>([])
+  const { state, actor, dispatch } = useDemo()
+  const companies = state.accounts[client.id].companies
   const [problem, setProblem] = useState('')
   const [invoiceDraftOpen, setInvoiceDraftOpen] = useState(false)
-  const [drafts, setDrafts] = useState<{ description: string; amount: number }[]>([])
-
-  function addInvoiceDraft(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const form = event.currentTarget
-    const values = new FormData(form)
-    const description = String(values.get('description') ?? '').trim()
-    const amount = Number(values.get('amount'))
-    if (!description || !Number.isFinite(amount) || amount <= 0) return
-    setDrafts((previous) => [...previous, { description, amount }])
-    form.reset()
-    setInvoiceDraftOpen(false)
-  }
   function addCompany(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = event.currentTarget
     const values = new FormData(form)
-    const company = {
+    const company: Company = {
       name: String(values.get('name') ?? '').trim(),
       inn: String(values.get('inn') ?? '').trim(),
       kpp: String(values.get('kpp') ?? '').trim(),
@@ -216,7 +246,13 @@ export function Companies({
       setProblem(company.name ? 'Компания с этим ИНН уже есть.' : 'Укажите название компании.')
       return
     }
-    setCompanies((previous) => [...previous, company])
+    dispatch({
+      type: 'account',
+      client: client.id,
+      block: 'pay',
+      title: 'Компания добавлена',
+      patch: { companies: [...companies, company] },
+    })
     setProblem('')
     form.reset()
   }
@@ -230,6 +266,7 @@ export function Companies({
           <button
             type="button"
             data-variant="primary"
+            disabled={!can(actor, 'pay')}
             aria-expanded={invoiceDraftOpen}
             onClick={() => setInvoiceDraftOpen((open) => !open)}
           >
@@ -237,7 +274,7 @@ export function Companies({
           </button>
         }
       >
-        {invoices.length || drafts.length ? (
+        {invoices.length ? (
           <Table
             columns={['Счёт', 'За что', 'Сумма', 'Клиент выбрал', 'Статус']}
             rows={[
@@ -245,34 +282,20 @@ export function Companies({
                 id: invoice.id,
                 cells: [invoice.cells[0], ...invoice.cells.slice(2)],
               })),
-              ...drafts.map((draft, index) => ({
-                id: `draft-${index + 1}`,
-                cells: [
-                  `Демо-${index + 1}`,
-                  draft.description,
-                  `${draft.amount.toLocaleString('ru-RU')} ₽`,
-                  '—',
-                  { text: 'Черновик', tone: 'gray' as const },
-                ],
-              })),
             ]}
           />
         ) : (
           <p className={styles.empty}>Счетов ещё не было.</p>
         )}
+        <div className={styles.chips}>
+          {invoices.map((invoice) => (
+            <span key={invoice.id}>
+              {invoice.id} <InvoiceActions id={invoice.id} />
+            </span>
+          ))}
+        </div>
         {invoiceDraftOpen ? (
-          <form className={styles.peopleForm} onSubmit={addInvoiceDraft}>
-            <label>
-              За что
-              <input name="description" required />
-            </label>
-            <label>
-              Сумма, ₽<input type="number" min="0.01" step="0.01" name="amount" required />
-            </label>
-            <button type="submit" data-variant="primary">
-              Создать демо-черновик
-            </button>
-          </form>
+          <InvoiceForm client={client.id} close={() => setInvoiceDraftOpen(false)} />
         ) : null}
       </Panel>
       <Panel
@@ -299,40 +322,42 @@ export function Companies({
           </p>
         )}
         <form className={styles.companyForm} onSubmit={addCompany}>
-          <label>
-            ИНН
-            <input
-              name="inn"
-              inputMode="numeric"
-              pattern="[0-9]{10}|[0-9]{12}"
-              placeholder="10 или 12 цифр"
-              required
-            />
-          </label>
-          <label>
-            Название
-            <input name="name" placeholder="ООО «…»" required />
-          </label>
-          <label>
-            КПП
-            <input name="kpp" inputMode="numeric" pattern="[0-9]{9}" placeholder="Для ООО" />
-          </label>
-          <label>
-            Адрес
-            <input name="address" placeholder="Юридический адрес" />
-          </label>
-          <label>
-            Почта для счетов
-            <input name="email" type="email" placeholder="buh@example.invalid" />
-          </label>
-          <button type="submit" data-variant="primary">
-            Добавить компанию
-          </button>
-          {problem ? (
-            <p role="alert" className={styles.formError}>
-              {problem}
-            </p>
-          ) : null}
+          <fieldset disabled={!can(actor, 'pay')}>
+            <label>
+              ИНН
+              <input
+                name="inn"
+                inputMode="numeric"
+                pattern="[0-9]{10}|[0-9]{12}"
+                placeholder="10 или 12 цифр"
+                required
+              />
+            </label>
+            <label>
+              Название
+              <input name="name" placeholder="ООО «…»" required />
+            </label>
+            <label>
+              КПП
+              <input name="kpp" inputMode="numeric" pattern="[0-9]{9}" placeholder="Для ООО" />
+            </label>
+            <label>
+              Адрес
+              <input name="address" placeholder="Юридический адрес" />
+            </label>
+            <label>
+              Почта для счетов
+              <input name="email" type="email" placeholder="buh@example.invalid" />
+            </label>
+            <button type="submit" data-variant="primary">
+              Добавить компанию
+            </button>
+            {problem ? (
+              <p role="alert" className={styles.formError}>
+                {problem}
+              </p>
+            ) : null}
+          </fieldset>
         </form>
       </Panel>
     </div>

@@ -219,3 +219,101 @@ Docker Compose передаёт эти переменные как build args в
 изменения выполнить `docker-compose -f deploy/docker-compose.yml build frontend`
 и пересоздать frontend средствами обычного deployment. Перезапуск готового
 образа без сборки не меняет build-time настройки.
+
+## Локальная демонстрация менеджеров
+
+В `frontend` выполните `npm run dev:demo` и откройте `/login` на его origin.
+Выберите демо менеджера или партнёра. Это синтетическая сессия без вызовов
+Admin API и платежей. Форма core-admin в демо не принимает рабочий вход.
+Перезагрузка сбрасывает демо.
+
+Для статических артефактов используйте `npm run build:core`,
+`npm run build:managers` или `npm run build:demo`. Docker targets имеют
+те же имена. Default Docker target и `npm run build` собирают технический
+Core Admin frontend. Рабочие сборки не содержат demo entry и fixtures.
+Core nginx возвращает 404 на legacy `/managers`, manager nginx сохраняет
+этот рабочий URL. Demo nginx не проксирует `/api/`.
+
+Собранный demo проверяется `npm run test:e2e:demo` с
+`E2E_DEMO_BASE_URL`. Канонический `make e2e` поднимает отдельный demo
+service и проверяет его отдельно от технического frontend.
+
+Проверочный путь: клиент → «Счета и компании» → выставить демо-счёт
+с бонусами → общий раздел «Счета» → открыть и подтвердить демо-оплату →
+квитанция → история клиента. Отмена неоплаченного счёта возвращает резерв.
+Переключатель сотрудника проверяет блоки доступа. В карточке партнёра
+можно открыть его кабинет; выбранный partner ID сохраняется в URL.
+
+## Вход менеджеров V1
+
+1. Укажите `MANAGERS_PUBLIC_ORIGIN=http://localhost:5176` для Admin API.
+   Для технического Origin оставьте `http://127.0.0.1:5173`. Оба кабинета
+   должны иметь разные имена хоста.
+2. Примените миграции Admin. Создайте сотрудника через обычную команду
+   `admin-cli employee create`, если подходящего сотрудника ещё нет.
+3. Выдайте этому сотруднику первый менеджерский доступ через
+   `admin-cli employee bootstrap-manager --email manager@example.invalid`.
+   Для привязки записи аудита к оператору передайте его email в `--actor`.
+4. Запустите `npm run dev:managers -- --port 5176 --strictPort` в
+   `frontend`. Откройте `http://localhost:5176/managers` и войдите.
+5. Для статической сборки выполните `npm run build:managers`.
+   Результат появится в `frontend/dist-managers`.
+
+### Подключение Platform V1
+
+Вход в кабинет работает без подключения Platform. Чтобы включить
+закрытый клиент, дополнительно задайте:
+
+- `MANAGERS_PLATFORM_URL`: HTTPS origin с DNS-именем Platform и
+  при необходимости портом. Имя должно совпасть с DNS SAN сервера.
+- `MANAGERS_PLATFORM_CA_FILE`: путь к доверенному CA Platform.
+- `MANAGERS_PLATFORM_CERT_FILE` и `MANAGERS_PLATFORM_KEY_FILE`: пути к
+  сертификату и ключу Manager BFF. URI SAN нужен ровно один:
+  `spiffe://amocrm-pro/manager-bff`.
+- `MANAGERS_PLATFORM_TIMEOUT`: от 1 до 30 секунд, по умолчанию 10 секунд.
+
+При запуске в Compose смонтируйте эти три файла только для чтения
+через локальный override для сервиса `admin-api`. Передайте пути внутри
+контейнера. Закрытый listener Platform должен быть доступен контейнеру
+по настроенному DNS. Частичная конфигурация останавливает запуск.
+Публичный вход и техническое API не используют эти файлы.
+
+`make platform-contract-check` сверяет сгенерированный клиент. Контракт
+и сценарий потери ответа проверяются в `make integration-test` на
+PostgreSQL и тестовом mTLS peer.
+
+## Локальная проверка release topology
+
+Dev compose и demo не являются release-контуром. Для двух рабочих HTTPS
+origins используйте самостоятельный
+[release compose](../../deploy/docker-compose.release.yml) и
+[инструкцию оператора](operator.md). Значения origin, image IDs, Platform
+и mTLS mounts обязательны. Единственный опубликованный порт принадлежит
+TLS ingress и слушает loopback. Никаких production изменений это не требует.
+
+`make release-config-check` проверяет resolved topology, обязательные
+параметры и настоящий `nginx -t` в собранном ingress image. Нужны Docker,
+Compose, Python 3 и openssl для временного тестового certificate.
+`make scripts-test` включает отрицательные проверки release manifest.
+Полная HTTPS browser acceptance из
+[плана A08](../plan/manager-release-v1.md) остаётся следующим шагом.
+
+## Компании и workflow P12.2
+
+Используйте Platform из принятой ревизии
+`6e62a610b8c5935cd188c738e9afdd0cdccd9b45` и фиксированный manager BFF mTLS.
+Админка не получает credentials источника CRM. Источник настраивает и
+активирует владелец Platform по своему runbook.
+
+В менеджерском frontend откройте Клиенты → Компании, затем карточку по
+UUID проекции. Компания без runtime account остаётся доступной сама по
+себе. В Виджетах откройте существующий UUID и форму воронки/этапа.
+Для сотрудника только с catalog.manage используйте прямую ссылку
+`/managers?section=widgets&product=<UUID>`. Новый пункт меню не нужен.
+Проверяйте происхождение, полноту и время наблюдения. Сохранение не
+создаёт сделку; создание сделок пока не включено.
+
+После потерянного ответа сохраните вкладку: проверьте результат команды
+или повторите ту же команду. После конфликта обновите данные и явно
+примените черновик к текущему состоянию. Production этой частью не
+разрешён; реальные CRM данные для локальной демонстрации не используются.

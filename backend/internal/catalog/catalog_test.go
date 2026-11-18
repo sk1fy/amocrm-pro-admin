@@ -14,6 +14,7 @@ import (
 	"github.com/sk1fy/amocrm-pro-admin/internal/adapter"
 	"github.com/sk1fy/amocrm-pro-admin/internal/adapter/core"
 	"github.com/sk1fy/amocrm-pro-admin/internal/adapter/fixture"
+	"github.com/sk1fy/amocrm-pro-admin/internal/platform/config"
 )
 
 func TestLoadCoreHTTPRequiresToken(t *testing.T) {
@@ -573,4 +574,27 @@ func writeYAML(t *testing.T, body string) string {
 		t.Fatal(err)
 	}
 	return path
+}
+
+func TestEnvironmentFixturePolicy(t *testing.T) {
+	for _, environment := range []string{"production", "development"} {
+		t.Run(environment, func(t *testing.T) {
+			t.Setenv("APP_ENV", environment)
+			t.Setenv("DATABASE_URL", "postgres://admin:unused@database.example.invalid/admin")
+			t.Setenv("ADMIN_PUBLIC_ORIGIN", "https://admin.example.invalid")
+			cfg, err := config.LoadAPI()
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := writeYAML(t, "version: 1\nbackends:\n  - code: demo\n    kind: fixture\n")
+			_, err = Load(path, Options{RejectFixtures: cfg.RejectFixtureBackends})
+			if environment == "production" {
+				if err == nil || !strings.Contains(err.Error(), "fixture backends are forbidden") {
+					t.Fatalf("error=%v", err)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
 }

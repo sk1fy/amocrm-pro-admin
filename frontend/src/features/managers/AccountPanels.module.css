@@ -187,3 +187,10 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.readonlyFields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}

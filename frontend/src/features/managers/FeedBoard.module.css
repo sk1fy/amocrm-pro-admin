@@ -1,0 +1,121 @@
+.board {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.board h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.description {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  line-height: 20px;
+}
+
+.list {
+  margin: 0;
+  padding: 18px;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.row + .row {
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.account {
+  min-width: 0;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+a.account:hover .domain {
+  color: var(--color-link);
+}
+
+.domain {
+  display: block;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.account small,
+.date {
+  color: #788188;
+  font-size: 12px;
+}
+
+.account small {
+  display: block;
+  line-height: 1.45;
+}
+
+.date {
+  padding-left: 12px;
+  white-space: nowrap;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--color-border-soft);
+  color: var(--color-muted);
+}
+
+.icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.icon[data-kind='install'],
+.icon[data-kind='activate'] {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.icon[data-kind='renew'],
+.icon[data-kind='sub'] {
+  background: var(--tone-ok-bg);
+  color: var(--tone-ok);
+}
+
+.icon[data-kind='end'] {
+  background: var(--tone-attention-bg);
+  color: var(--tone-attention);
+}
+
+.icon[data-kind='remove'] {
+  background: var(--tone-error-bg);
+  color: var(--tone-error);
+}
+
+@media (max-width: 760px) {
+  .list {
+    padding: 10px 12px;
+  }
+
+  .row {
+    gap: 8px;
+  }
+
+  .date {
+    padding-left: 0;
+  }
+}

@@ -18,14 +18,15 @@ import (
 )
 
 const (
-	ActionLogin           = "auth.login"
-	ActionLoginFailed     = "auth.login_failed"
-	ActionLogout          = "auth.logout"
-	ActionEmployeeCreate  = "employee.create"
-	ActionEmployeeUpdate  = "employee.update"
-	ActionEmployeeDisable = "employee.disable"
-	ActionSessionsRevoke  = "employee.sessions.revoke"
-	ActionSessionRevoke   = "session.revoke"
+	ActionManagerBootstrap = "manager.bootstrap"
+	ActionLogin            = "auth.login"
+	ActionLoginFailed      = "auth.login_failed"
+	ActionLogout           = "auth.logout"
+	ActionEmployeeCreate   = "employee.create"
+	ActionEmployeeUpdate   = "employee.update"
+	ActionEmployeeDisable  = "employee.disable"
+	ActionSessionsRevoke   = "employee.sessions.revoke"
+	ActionSessionRevoke    = "session.revoke"
 
 	OutcomeOK     = "ok"
 	OutcomeDenied = "denied"

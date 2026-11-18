@@ -32,6 +32,13 @@
 
 ## Текущая часть
 
+- [Компании и workflow кабинета менеджеров V1, P12.2](company-workflows-v1.md).
+- [Рабочий выпуск кабинета менеджеров V1, A08](manager-release-v1.md).
+
+- [Вход в кабинет менеджеров V1](manager-auth-v1.md).
+- [Менеджерский BFF и Platform V1](manager-platform-v1.md).
+- [Рабочие клиенты в кабинете менеджеров V1](manager-clients-v1.md).
+- [Рабочие виджеты в кабинете менеджеров V1](manager-widgets-v1.md).
 - [Регистрация MVP контроля активности](activity-mvp-registration.md).
 - [Пользователи amoCRM в карточке аккаунта](account-crm-users.md).
 - [Спокойный интерфейс админки](calm-interface.md).

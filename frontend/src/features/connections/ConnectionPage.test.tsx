@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fetchAdminOperation, fetchConnection } from '../../api/queries'
@@ -213,7 +213,9 @@ describe('connection page (ADR-0021)', () => {
     vi.mocked(fetchConnection).mockResolvedValue(card())
     renderPage()
 
-    const result = await screen.findByRole('region', { name: 'Результат операции' })
+    await waitFor(() => expect(screen.queryByText('Загрузка подключения…')).not.toBeInTheDocument())
+    await screen.findByText('Подробности выполнения')
+    const result = screen.getByRole('region', { name: 'Результат операции' })
     const bar = screen.getByRole('group', { name: 'Действия с подключением' })
     expect(within(bar).getByRole('button', { name: 'Проверить подключение' })).toBeVisible()
     expect(within(bar).getByRole('button', { name: 'Отключить подключение' })).toBeVisible()

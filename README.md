@@ -32,6 +32,13 @@ amoCRM, проверка подключённых виджетов, диагно
 Запуск: [local-run.md](docs/runbooks/local-run.md), эксплуатация:
 [operator.md](docs/runbooks/operator.md).
 
+Рабочие frontend собираются отдельными targets `core` и `managers`.
+`demo` предназначен для тестового контура. Самостоятельный
+[release compose](deploy/docker-compose.release.yml) требует точные образы,
+два HTTPS origin и read-only TLS/mTLS файлы. Dev compose остаётся отдельным.
+Проверки и безопасный откат описаны в
+[инструкции оператора](docs/runbooks/operator.md).
+
 ## С чего начать
 
 | Кому | Читать |

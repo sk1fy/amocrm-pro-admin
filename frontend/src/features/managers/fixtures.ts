@@ -7,7 +7,7 @@ export type Cell =
       text: string
       note?: string
       tone?: Tone
-      line?: 'FREE' | 'TOP'
+      line?: 'FREE' | 'TOP' | 'PRO'
       tags?: readonly string[]
       detail?: string
     }
@@ -21,6 +21,9 @@ export type DemoRow = {
   installedAt?: string
   paidUntil?: Cell
   installationStatus?: Cell
+  needsAuthorization?: boolean
+  reviewed?: boolean
+  checkedBy?: string
   installer?: Cell
 }
 
@@ -263,6 +266,7 @@ export const installs: DemoRow[] = installationCases
       id: `install-${index + 1}`,
       client: client.id,
       date: item.date,
+      needsAuthorization: item.account === 4,
       installedAt: `${item.date}T${item.time.slice(0, 5)}:00+03:00`,
       group: item.checked ? 'Проверенные' : 'Непроверенные',
       installationStatus: {
@@ -377,7 +381,7 @@ export const boards: Record<Section, Board> = {
       row(
         `widget-${index}`,
         [
-          { text: widget, line: index % 2 ? 'FREE' : 'TOP' },
+          { text: widget, line: index === 5 ? 'PRO' : index % 2 ? 'FREE' : 'TOP' },
           String(128 - index * 13),
           String(91 - index * 8),
           String(76 - index * 7),
@@ -398,32 +402,7 @@ export const boards: Record<Section, Board> = {
       'Отметка',
       'В портрет',
     ],
-    rows: [
-      row('market-1', [
-        { text: 'Телефония', note: 'demo_telephony' },
-        '32',
-        '8',
-        '14.08.2026',
-        'Связь',
-        'Да',
-      ]),
-      row('market-2', [
-        { text: 'Мессенджеры', note: 'demo_messenger' },
-        '24',
-        '3',
-        '20.08.2026',
-        'Коммуникации',
-        'Да',
-      ]),
-      row('market-3', [
-        { text: 'Уведомления', note: 'demo_notifications' },
-        '16',
-        '5',
-        '02.09.2026',
-        'Автоматизация',
-        '—',
-      ]),
-    ],
+    rows: [],
   },
   partners: {
     description: 'Партнёры, их клиенты, установки и бонусы.',

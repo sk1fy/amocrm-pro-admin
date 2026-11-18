@@ -4,13 +4,27 @@ export class ApiError extends Error {
   readonly status: number
   readonly code: string
   readonly requestId: string
+  readonly detailCode?: string
+  readonly retryNotBefore?: number
+  readonly currentVersion?: number
 
-  constructor(status: number, code: string, message: string, requestId: string) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    requestId: string,
+    detailCode?: string,
+    retryNotBefore?: number,
+    currentVersion?: number,
+  ) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
     this.requestId = requestId
+    this.detailCode = detailCode
+    this.retryNotBefore = retryNotBefore
+    this.currentVersion = currentVersion
   }
 }
 
@@ -44,25 +58,56 @@ function currentPath(): string {
   return `${window.location.pathname}${window.location.search}`
 }
 
+function retryDeadline(headers: Headers): number | undefined {
+  const seconds = headers.get('Retry-After')
+  if (seconds === null || !/^\d+$/.test(seconds)) return undefined
+  return Math.min(performance.now() + Number(seconds) * 1000, Number.MAX_SAFE_INTEGER)
+}
+
 async function parseError(response: Response): Promise<ApiError> {
   const requestId = response.headers.get('X-Request-ID') ?? ''
+  const retryNotBefore =
+    response.status === 429 || response.status === 503 ? retryDeadline(response.headers) : undefined
   try {
     const body = (await response.json()) as ApiErrorBody
     if (body && typeof body === 'object' && body.error) {
+      const details: unknown = body.error.details
       return new ApiError(
         response.status,
         body.error.code || 'internal',
         body.error.message || 'ошибка запроса',
         body.error.request_id || requestId,
+        typeof details === 'object' &&
+        details !== null &&
+        'code' in details &&
+        typeof details.code === 'string'
+          ? details.code
+          : undefined,
+        retryNotBefore,
+        typeof details === 'object' &&
+        details !== null &&
+        'current_version' in details &&
+        typeof details.current_version === 'number' &&
+        Number.isSafeInteger(details.current_version) &&
+        details.current_version > 0
+          ? details.current_version
+          : undefined,
       )
     }
   } catch {
     // envelope missing
   }
-  return new ApiError(response.status, 'internal', 'ошибка запроса', requestId)
+  return new ApiError(
+    response.status,
+    'internal',
+    'ошибка запроса',
+    requestId,
+    undefined,
+    retryNotBefore,
+  )
 }
 
-export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function apiFetchResponse<T>(path: string, init: RequestInit = {}) {
   const signal = init.signal
     ? AbortSignal.any([init.signal, sessionController.signal])
     : sessionController.signal
@@ -92,12 +137,18 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   if (!response.ok) {
     throw await parseError(response)
   }
+  const etag = response.headers.get('ETag')
   if (response.status === 204) {
-    return undefined as T
+    return { data: undefined as T, status: response.status, etag, retryNotBefore: undefined }
   }
+  const retryNotBefore = retryDeadline(response.headers)
   const data = (await response.json()) as T
   signal.throwIfAborted()
-  return data
+  return { data, status: response.status, etag, retryNotBefore }
+}
+
+export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  return (await apiFetchResponse<T>(path, init)).data
 }
 
 export function apiGet<T>(path: string): Promise<T> {

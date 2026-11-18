@@ -7,3 +7,19 @@ services:
       LOGIN_RATE_PER_MINUTE: "1000"
     volumes:
       - ./backends-e2e.yaml:/etc/admin/backends-e2e.yaml:ro
+
+  demo:
+    image: amocrm-admin-demo:e2e
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      target: demo
+      args:
+        BUILD_REVISION: "${BUILD_REVISION:-unknown}"
+    networks:
+      - admin
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

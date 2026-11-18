@@ -125,11 +125,15 @@ migrate: ## Apply pending admin DB migrations
 # Checks (each target requires the corresponding source tree to exist)
 # ---------------------------------------------------------------------------
 
-lint: ## gofmt/vet/golangci-lint in Docker; eslint + tsc in Docker
+.PHONY: platform-contract-check release-config-check
+platform-contract-check: ## Verify the pinned Platform V1 client is reproducible
+	$(DOCKER_GO) sh internal/platformwire/generate.sh --check
+
+lint: platform-contract-check ## gofmt/vet/golangci-lint in Docker; eslint + tsc in Docker
 	@test -d backend || { echo "backend/ is not created yet (stage 1, part 1.2)" >&2; exit 1; }
 	$(DOCKER_GO) sh -ec 'files="$$(gofmt -l .)"; if [ -n "$$files" ]; then printf "%s\n" "$$files"; exit 1; fi; go vet ./...'
 	$(DOCKER_GOLANGCI) golangci-lint run --timeout 5m
-	@if [ -d frontend ]; then $(DOCKER_NODE) sh -ec 'npm ci --no-audit --no-fund && npm run lint && npx tsc --noEmit'; fi
+	@if [ -d frontend ]; then $(DOCKER_NODE) sh -ec 'npm ci --no-audit --no-fund && npm run lint'; fi
 
 test: ## Race-enabled Go tests and Vitest in Docker
 	@test -d backend || { echo "backend/ is not created yet (stage 1, part 1.2)" >&2; exit 1; }
@@ -139,7 +143,7 @@ test: ## Race-enabled Go tests and Vitest in Docker
 		--volume "$(CURDIR)/backend:/src" --volume "$(CURDIR)/docs:/docs:ro" \
 		--workdir /src $(GO_IMAGE) \
 		sh -ec 'apk add --no-cache build-base >/dev/null && go test -race -count=1 ./...'
-	@if [ -d frontend ]; then $(DOCKER_NODE) sh -ec 'npm ci --no-audit --no-fund && npm test -- --run'; fi
+	@if [ -d frontend ]; then $(DOCKER_NODE) sh -ec 'npm ci --no-audit --no-fund && npm test -- --run && npm run test:build-boundaries'; fi
 
 bench-admin: ## Run the large-list account benchmarks (10^4/10^5, no DB, not in check)
 	@test -d backend || { echo "backend/ is not created yet (stage 1, part 1.2)" >&2; exit 1; }
@@ -174,18 +178,23 @@ e2e: ## Playwright scenarios against the built stack with the fixture adapter
 	  --add-host=host.docker.internal:host-gateway \
 	  --env HOME=/tmp \
 	  --env E2E_BASE_URL='$(E2E_BASE_URL)' \
+	  --env E2E_DEMO_BASE_URL='http://demo' \
 	  --env E2E_EMAIL='$(E2E_EMAIL)' \
 	  --env E2E_PASSWORD='$(E2E_PASSWORD)' \
 	  $(E2E_ARTIFACT_MOUNT) \
 	  --volume "$(CURDIR)/frontend:/src:ro" \
 	  --workdir /tmp/e2e \
 	  $(PLAYWRIGHT_IMAGE) \
-	  bash -ec 'cp -a /src/. . && rm -rf node_modules && npm ci --no-audit --no-fund && npx playwright test'
+	  bash -ec 'cp -a /src/. . && rm -rf node_modules && npm ci --no-audit --no-fund && npx playwright test && npm run test:e2e:demo'
 
-scripts-test: ## Safety tests for backup/restore using command doubles, no database
+scripts-test: ## Safety tests for backup/restore and immutable release manifest
 	sh deploy/scripts/test-backup-restore.sh
+	python3 deploy/scripts/test-release.py
 
-check: docs-check lint test integration-test e2e scripts-test vulncheck ## Everything required before merging
+release-config-check: ## Validate standalone release topology and actual TLS nginx configuration
+	COMPOSE='$(COMPOSE)' python3 deploy/scripts/test-release-config.py
+
+check: docs-check lint test integration-test e2e scripts-test release-config-check vulncheck ## Everything required before merging
 
 # ---------------------------------------------------------------------------
 # Admin DB backup and restore verification (stage 4.3)

@@ -87,7 +87,7 @@ func (s *Store) Get(ctx context.Context, id uuid.UUID) (rbac.Employee, error) {
 	err := s.pool.QueryRow(ctx, `
 		SELECT id, email, name, role, status
 		FROM employees
-		WHERE id = $1`, id).Scan(&emp.ID, &emp.Email, &emp.Name, &emp.Role, &emp.Status)
+		WHERE id = $1 AND technical_access`, id).Scan(&emp.ID, &emp.Email, &emp.Name, &emp.Role, &emp.Status)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return rbac.Employee{}, ErrNotFound
@@ -192,6 +192,13 @@ func (s *Store) lockRecord(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Employ
 
 // UpdateTx returns the state read under the row lock for a consistent audit diff.
 func (s *Store) UpdateTx(ctx context.Context, tx pgx.Tx, id uuid.UUID, in UpdateInput) (Employee, Employee, error) {
+	if err := lockManagerAccess(ctx, tx); err != nil {
+		return Employee{}, Employee{}, err
+	}
+	beforeAdmin, err := eligibleManagerAdmin(ctx, tx, id)
+	if err != nil {
+		return Employee{}, Employee{}, err
+	}
 	before, err := s.lockRecord(ctx, tx, id)
 	if err != nil {
 		return Employee{}, Employee{}, err
@@ -211,6 +218,11 @@ func (s *Store) UpdateTx(ctx context.Context, tx pgx.Tx, id uuid.UUID, in Update
 	).Scan(&emp.ID, &emp.Email, &emp.Name, &emp.Role, &emp.Status, &emp.CreatedAt, &emp.UpdatedAt)
 	if err != nil {
 		return Employee{}, Employee{}, fmt.Errorf("update employee: %w", err)
+	}
+	if beforeAdmin {
+		if err := requireManagerAdmin(ctx, tx); err != nil {
+			return Employee{}, Employee{}, err
+		}
 	}
 	return before, emp, nil
 }

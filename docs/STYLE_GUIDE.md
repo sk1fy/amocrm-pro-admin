@@ -252,7 +252,7 @@ integration-test`; Activity-части — `make activity-ci`. Host Go там н
 
 | Цель | Что делает |
 | --- | --- |
-| `make lint` | `gofmt -l`, `go vet`, `golangci-lint`; `npm run lint`, `tsc --noEmit` |
+| `make lint` | `gofmt -l`, `go vet`, `golangci-lint`; `npm run lint` с `tsc -b` всей solution |
 | `make test` | `go test -race ./...`; `npm test` (Vitest) |
 | `make integration-test` | миграции up/down и `*_integration_test.go` с PostgreSQL в изолированном compose-проекте |
 | `make e2e` | Playwright против собранного стека с fixture-адаптером |

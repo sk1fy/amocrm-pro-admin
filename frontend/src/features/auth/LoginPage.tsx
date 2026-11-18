@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useRouter } from '@tanstack/react-router'
+import { useRouter } from '@tanstack/react-router'
 import { useRouteSearch } from '../../app/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { loginErrorMessage } from '../../states/login'
@@ -9,13 +9,10 @@ import { clearSession } from '../../app/session'
 import { BrandLogo } from '../../components/BrandLogo'
 import styles from './LoginPage.module.css'
 
-type Workspace = 'core-admin' | 'managers' | 'partners'
-
 export function LoginPage() {
   const { next } = useRouteSearch<{ next?: string }>()
   const router = useRouter()
   const queryClient = useQueryClient()
-  const [workspace, setWorkspace] = useState<Workspace>('core-admin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -80,111 +77,81 @@ export function LoginPage() {
           </div>
           <h1 id="login-heading">С возвращением</h1>
           <p className={styles.intro}>Войдите, чтобы продолжить работу.</p>
-          <fieldset className={styles.workspace}>
-            <legend>Выберите кабинет</legend>
-            <div className={styles.workspaceChoices}>
-              {(['core-admin', 'managers', 'partners'] as const).map((item) => (
-                <label key={item}>
-                  <input
-                    type="radio"
-                    name="workspace"
-                    value={item}
-                    checked={workspace === item}
-                    disabled={pending}
-                    onChange={() => setWorkspace(item)}
-                  />
-                  {item}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          {workspace === 'managers' ? (
-            <Link
-              to="/managers"
-              search={{ section: 'installs', client: undefined }}
-              className={styles.demoLink}
-            >
-              Открыть демо для менеджеров
-            </Link>
-          ) : workspace === 'partners' ? (
-            <p className={styles.intro}>Кабинет партнёров готовится.</p>
-          ) : (
-            <form
-              className={styles.form}
-              onSubmit={(event) => void onSubmit(event)}
-              data-testid="login-form"
-              aria-busy={pending}
-            >
-              {error ? (
-                <p className={styles.error} role="alert">
-                  {error}
-                </p>
-              ) : null}
-              <label className={styles.field}>
-                <span>Email</span>
+          <form
+            className={styles.form}
+            onSubmit={(event) => void onSubmit(event)}
+            data-testid="login-form"
+            aria-busy={pending}
+          >
+            {error ? (
+              <p className={styles.error} role="alert">
+                {error}
+              </p>
+            ) : null}
+            <label className={styles.field}>
+              <span>Email</span>
+              <input
+                name="email"
+                type="email"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="Ваш email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+            <div className={styles.field}>
+              <label htmlFor="login-password">Пароль</label>
+              <div className={styles.passwordWrap}>
                 <input
-                  name="email"
-                  type="email"
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  placeholder="Ваш email"
+                  id="login-password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="Введите пароль"
                   required
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                 />
-              </label>
-              <div className={styles.field}>
-                <label htmlFor="login-password">Пароль</label>
-                <div className={styles.passwordWrap}>
-                  <input
-                    id="login-password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    placeholder="Введите пароль"
-                    required
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className={styles.passwordToggle}
-                    aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-                    aria-pressed={showPassword}
-                    onClick={() => setShowPassword((visible) => !visible)}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      aria-hidden="true"
-                    >
-                      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
-                      <circle cx="12" cy="12" r="2.5" />
-                      {showPassword ? <path d="m4 3 16 18" /> : null}
-                    </svg>
-                  </button>
-                </div>
-              </div>
-              <button type="submit" className={styles.submit} disabled={pending}>
-                Войти
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  aria-hidden="true"
+                <button
+                  type="button"
+                  className={styles.passwordToggle}
+                  aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((visible) => !visible)}
                 >
-                  <path d="M4 12h15m-6-6 6 6-6 6" />
-                </svg>
-              </button>
-              <div className={styles.progress} role="status">
-                {pending ? 'Выполняется вход…' : ''}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    aria-hidden="true"
+                  >
+                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+                    <circle cx="12" cy="12" r="2.5" />
+                    {showPassword ? <path d="m4 3 16 18" /> : null}
+                  </svg>
+                </button>
               </div>
-            </form>
-          )}
+            </div>
+            <button type="submit" className={styles.submit} disabled={pending}>
+              Войти
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                aria-hidden="true"
+              >
+                <path d="M4 12h15m-6-6 6 6-6 6" />
+              </svg>
+            </button>
+            <div className={styles.progress} role="status">
+              {pending ? 'Выполняется вход…' : ''}
+            </div>
+          </form>
           <p className={styles.help}>Нет доступа? Обратитесь к администратору вашей команды.</p>
         </div>
         <div className={styles.entryFoot}>Вход для сотрудников</div>

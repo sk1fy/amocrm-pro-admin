@@ -1,5 +1,8 @@
 node_modules
 dist
+dist-managers
+dist-demo
 playwright-report
 test-results
 .git
+.tmp

@@ -347,3 +347,163 @@ Summary распределения содержит необязательный
 с inbox/triggers типа DistributionBacklog. Null означает отсутствие
 фактов у источника. Права и URL маршрута не изменились; live ключи
 и тела событий не возвращаются. Поля описаны в backend/api/openapi.yaml.
+
+## Вход в кабинет менеджеров
+
+Маршруты включаются через `MANAGERS_PUBLIC_ORIGIN`. Сервер сверяет Host
+с конфигурацией обоих кабинетов. Публичный прокси передаёт фактический Host.
+
+| Метод и маршрут | Результат |
+| --- | --- |
+| `POST /api/v1/managers/auth/login` | Проверяет email, пароль и наличие менеджерских прав. Возвращает профиль и host-only cookie `manager_session`. |
+| `GET /api/v1/managers/me` | Возвращает `id`, `email`, `name` и актуальные `grants`. |
+| `POST /api/v1/managers/auth/logout` | Отзывает текущую менеджерскую сессию и очищает cookie. |
+
+Вход и выход требуют `X-Requested-With: admin-ui` и Origin кабинета
+менеджеров. При отсутствии прав на вход сервер возвращает обычный `401`.
+Запросы на другой host получают `404`.
+
+### Очередь установок
+
+`GET /api/v1/managers/installations` требует `clients.read`. Список
+показывает эпизоды установки и срок доступа к продукту на `snapshot_at`.
+Поле `amo_account_id` содержит строку с десятичным числом. Счётчики
+`summary` относятся ко всему снимку с выбранными фильтрами.
+
+Курсор `next_cursor` связан с сотрудником, его правами, фильтрами,
+сортировкой и размером страницы. Ответ `400` с
+`details.code=invalid_cursor` требует загрузить первую страницу.
+При `query_too_broad` требуется сузить фильтры. Недоступность Platform
+возвращает `503`.
+
+`PUT /api/v1/managers/installations/{id}/review` требует `clients.write`,
+Origin кабинета, `X-Requested-With: admin-ui`, UUID в `Idempotency-Key`
+и версию установки в `If-Match` в кавычках. Тело команды содержит
+`reviewed` и необязательный `reason`. Успех возвращает эпизод и актуальный
+`ETag`. Ответ `202` содержит ID исходной команды и `Location` для
+проверки результата. Для безопасного повтора нужны исходные тело, версия
+и ключ. Ответ `409` различает `version_conflict` и
+`idempotency_conflict` через `details.code`.
+
+### Клиенты
+
+Префикс маршрутов `/api/v1/managers`. UUID клиента в маршруте обозначает
+запись Platform. Права действуют в текущей менеджерской сессии.
+
+| Маршрут | Право | Результат |
+| --- | --- | --- |
+| `GET /accounts`, `POST /accounts/search` | `clients.read` | Список, итог Platform, курсор, время снимка и `sources` |
+| `GET /accounts/{id}` | `clients.read` | Карточка и `ETag` профиля |
+| `GET /accounts/{id}/widgets` | `clients.read` | Собственные виджеты с версиями сроков |
+| `GET /accounts/{id}/license-history` | `clients.read` | Подтверждённые наблюдения лицензии |
+| `GET /accounts/{id}/crm-users` | `clients.read` | Последний полный список пользователей и его свежесть |
+| `GET /accounts/{id}/portrait` | `clients.read` | Портрет и его `ETag` |
+| `PATCH /accounts/{id}/profile` | `clients.write` | Сохранённый профиль и `ETag` |
+| `PATCH /accounts/{id}/portrait`, `POST /accounts/{id}/portrait/audit-dates` | `clients.write` | Сохранённый портрет и `ETag` |
+| `POST /accounts/{id}/refresh` | `clients.write` | `202` с ID команды и локальным адресом опроса |
+| `POST /accounts/{id}/renewals` | `clients.renew` | `201` и `ETag` срока выбранного продукта |
+| `GET /portrait-template`, `GET /portrait-niches` | `clients.read` | Версия шаблона и справочник ниш |
+| `PUT /portrait-template` | `configuration.manage` | Сохранённый шаблон и `ETag` |
+| `POST /portrait-niches`, `PATCH /portrait-niches/{id}`, `POST /portrait-niches/{id}/merge` | `configuration.manage` | Созданная, изменённая или оставшаяся после объединения ниша и `ETag` |
+| `DELETE /portrait-niches/{id}` | `configuration.manage` | `204` после подтверждённого удаления |
+
+Список и поиск поддерживают фильтры P01, включая дерево условий
+`portrait_filter` в теле `POST /accounts/search`. Поиск требует Origin
+кабинета и `X-Requested-With: admin-ui` и сохраняет семантику чтения.
+
+Мутации дополнительно требуют UUID `Idempotency-Key`. Для обновления
+ресурса нужен сильный `If-Match` соответствующей версии. Для продления
+это `access.entitlement_version` выбранного виджета. Создание ниши и
+обновление наблюдений обходятся без версии. Наблюдения `unknown`,
+`stale` и `unsupported` остаются данными ответа. Общая история клиента
+подключается в P09 и A06.
+
+При потере ответа команда возвращает `202` со `state=unknown_outcome`,
+`Location` и, при ограничении частоты, `Retry-After`. Подтверждённое
+фоновое обновление возвращает `202` со `state=platform_operation` и
+таким же локальным `Location`. Повтор использует исходные тело, ключ
+и версию. Ответ `409` различает конфликты ключа, версии и состояния по
+`details.code`. Например, `state_conflict` сообщает, что дата аудита уже
+есть или ниша используется. `details.current_version` содержит целое
+значение при `version_conflict` и при наличии версии у `state_conflict`.
+
+### Состояние менеджерской команды
+
+`GET /api/v1/managers/operations/{id}` требует активную менеджерскую
+сессию, исходного владельца, `clients.read` и актуальное право на вид
+команды. Для чтения ранее запущенного повтора сделки по установке
+достаточно `clients.read`. Platform проверяет право на ресурс.
+Идентификатор совпадает с `command_id`.
+
+Ответ `200` содержит `id` и `state`: `unknown_outcome`, `completed`,
+`rejected` или `platform_operation`. В последнем случае блок
+`operation` содержит состояние Platform, тип, ID цели и даты. Поля
+ошибок Platform не передаются в браузер. Клиент может учитывать
+`retry_after_seconds` или заголовок `Retry-After` у ответов `429` и
+`503`. Код `503` означает, что Admin сейчас не может прочитать состояние.
+
+### Сотрудники кабинета менеджеров
+
+Все маршруты `/api/v1/managers/staff` обслуживает Admin без Platform.
+Чтение списка, карточки и `/grants` требует `staff.manage`.
+Создание через POST, `/invitation/reissue` и `/sessions/revoke`
+дополнительно требуют `identity.manage`. PATCH заменяет набор grants.
+Пустой набор отзывает менеджерский доступ. Собственное добавление
+прав запрещено. PATCH и перевыпуск требуют сильный `If-Match` из
+`ETag` карточки. Мутации требуют CSRF и UUID `Idempotency-Key`.
+
+Staff содержит `id`, `email`, `name`, `status`, `grants`, `version`,
+`changed_at`, nullable UUID `changed_by`. Список поддерживает поиск
+`search`, `limit` 25/100 и подписанный `cursor`. Ответ содержит `items`
+и nullable `next_cursor`. Канонический каталог grants возвращает `items`.
+Команда возвращает `staff` и `link_unavailable`. Создание возвращает 201,
+остальные команды 200. Первая выдача приглашения дополнительно содержит
+`invitation_url` с фрагментом `#invitation=`. Ответы имеют `no-store`.
+Квитанция не хранит ссылку; точный повтор сообщает `link_unavailable`.
+
+`POST /api/v1/managers/auth/invitations/accept` принимает `token`,
+`password`, UUID `Idempotency-Key`, Origin и `X-Requested-With`.
+Сессия не требуется, действует ограничитель попыток входа по IP.
+Успех возвращает `accepted=true`. Повтор с теми же токеном, ключом
+и паролем безопасен после потери ответа. Другая команда отвергается.
+Принятую identity нельзя сбросить перевыпуском приглашения.
+
+`GET /api/v1/managers/security/audit` требует `security.audit.read`.
+Он возвращает безопасные поля события без metadata, IP и секретов.
+Разрешены фиксированные действия manager и события входа/выхода
+с явным `metadata.audience=managers`. Технический аудит исключён.
+Пагинация использует подписанный cursor и лимит 25/100.
+
+Коды конфликта в `details.code` различают `version_conflict`,
+`idempotency_conflict`, `email_exists`, `last_administrator`,
+`invitation_unavailable`. Собственная эскалация возвращает 403
+с `self_escalation`. Отключение последнего менеджерского администратора
+в техническом API также возвращает 409 с `last_administrator`.
+
+## Компании и workflow менеджеров P12.2
+
+Префикс `/api/v1/managers`. Источник — принятый manager API Platform.
+
+| Метод | Путь | Grant |
+| --- | --- | --- |
+| GET | `/companies` | clients.read |
+| GET | `/companies/{id}` | clients.read |
+| GET | `/company-workflow-metadata` | catalog.manage |
+| GET | `/products/{id}/company-workflow` | catalog.manage |
+| PUT | `/products/{id}/company-workflow` | catalog.manage |
+
+Источник, nullable снимки и строковые CRM ID сохраняют смысл владельца.
+Чтения компании и метаданных дополняются `observation` и `sources` BFF.
+GET workflow не создаёт строку: без настройки версия 1, конфигурация null.
+PUT использует собственный If-Match workflow, Idempotency-Key и CSRF.
+Первая запись возвращает версию 2 и ревизию настройки 1. Версия карточки
+продукта не меняется. Тело содержит только `source_account_id`,
+`binding_revision`, `metadata_generation_id`, `pipeline_id`,
+`initial_stage_id`. Источник — утверждение текущей привязки.
+
+Неизвестный исход возвращает существующую операцию 202; receipt и точный
+повтор используют сохранённый intent. Временный 503 не меняет ключ.
+409 с `company_source_conflict` или `company_metadata_conflict` требует
+явного применения сохранённого черновика; 422 `company_stage_mismatch`
+объясняет отсутствие членства этапа. Точный replay успеха проверяет текущие
+права и возвращает исходный результат владельца.

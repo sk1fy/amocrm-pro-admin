@@ -31,12 +31,51 @@ export type StateDomain =
   | 'origin'
   | 'problem'
   | 'employee_status'
+  | 'manager_staff'
   | 'connection_health'
   | 'audit_outcome'
+  | 'installation_kind'
+  | 'installation_lifecycle'
+  | 'installation_event'
+  | 'installation_authorization'
+  | 'installation_activation'
+  | 'installation_review'
+  | 'product_access'
+  | 'product_access_source'
+  | 'product_availability'
+  | 'product_trial'
+  | 'company_source'
+  | 'company_runtime'
+  | 'company_claims'
 
 const unknownEntry: StateEntry = { tone: 'unknown', label: 'Неизвестно' }
 
 const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
+  company_source: {
+    fresh: { tone: 'ok', label: 'Актуально' },
+    stale: { tone: 'attention', label: 'Данные устарели' },
+    error: { tone: 'error', label: 'Ошибка источника' },
+    disabled: { tone: 'off', label: 'Источник выключен' },
+    unknown: { tone: 'unknown', label: 'Нет данных' },
+  },
+  company_runtime: {
+    resolved: { tone: 'ok', label: 'Аккаунты найдены' },
+    partial: { tone: 'attention', label: 'Найдена часть аккаунтов' },
+    ambiguous: { tone: 'attention', label: 'Неоднозначные аккаунты' },
+    unresolved: { tone: 'unknown', label: 'Аккаунты не найдены' },
+  },
+  company_claims: {
+    unknown: { tone: 'unknown', label: 'Неизвестно' },
+    zero: { tone: 'unknown', label: 'Нет ID аккаунта' },
+    one: { tone: 'ok', label: 'Один ID аккаунта' },
+    multiple: { tone: 'attention', label: 'Несколько ID аккаунтов' },
+  },
+  manager_staff: {
+    active: { tone: 'ok', label: 'Доступ открыт' },
+    invited: { tone: 'attention', label: 'Ожидает приглашения' },
+    revoked: { tone: 'off', label: 'Доступ отозван' },
+    disabled: { tone: 'off', label: 'Учётная запись отключена' },
+  },
   distribution: {
     pending: { tone: 'attention', label: 'Ожидает' },
     processed: { tone: 'ok', label: 'Обработано' },
@@ -70,6 +109,7 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
   freshness: {
     fresh: { tone: 'ok', label: 'Актуально' },
     stale: { tone: 'attention', label: 'Данные устарели' },
+    unsupported: { tone: 'off', label: 'Источник не поддерживается' },
     unavailable: { tone: 'error', label: 'Источник недоступен' },
     unknown: { tone: 'unknown', label: 'Нет данных' },
   },
@@ -225,6 +265,57 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     ok: { tone: 'ok', label: 'Успех' },
     denied: { tone: 'action', label: 'Отклонено' },
     failed: { tone: 'error', label: 'Ошибка' },
+  },
+  installation_kind: {
+    install: { tone: 'ok', label: 'Первая установка' },
+    reinstall: { tone: 'ok', label: 'Повторная установка' },
+  },
+  installation_lifecycle: {
+    current: { tone: 'ok', label: 'Текущая' },
+    removed: { tone: 'off', label: 'Удалена' },
+  },
+  installation_event: {
+    installed: { tone: 'ok', label: 'Установка' },
+    reinstalled: { tone: 'ok', label: 'Повторная установка' },
+    reauthorized: { tone: 'ok', label: 'Повторная авторизация' },
+    uninstalled: { tone: 'off', label: 'Удаление' },
+  },
+  installation_authorization: {
+    authorized: { tone: 'ok', label: 'Авторизована' },
+    reauth_required: { tone: 'action', label: 'Нужна повторная авторизация' },
+    disabled: { tone: 'off', label: 'Отключена' },
+    unknown: { tone: 'unknown', label: 'Нет сведений об авторизации' },
+  },
+  installation_activation: {
+    activated: { tone: 'ok', label: 'Активирована' },
+    pending: { tone: 'attention', label: 'Ожидает активации' },
+    unavailable: { tone: 'unknown', label: 'Нет сведений об активации' },
+  },
+  installation_review: {
+    reviewed: { tone: 'ok', label: 'Проверена' },
+    unreviewed: { tone: 'attention', label: 'Не проверена' },
+  },
+  product_availability: {
+    draft: { tone: 'off', label: 'Черновик' },
+    pilot: { tone: 'attention', label: 'Пилот' },
+    active: { tone: 'ok', label: 'Доступен' },
+    archived: { tone: 'off', label: 'Архив' },
+  },
+  product_trial: {
+    none: { tone: 'off', label: 'Отключён' },
+    free: { tone: 'ok', label: 'Бесплатный' },
+    once: { tone: 'attention', label: 'Однократный пробный период' },
+  },
+  product_access: {
+    active: { tone: 'ok', label: 'Действует' },
+    inactive: { tone: 'off', label: 'Не действует' },
+  },
+  product_access_source: {
+    own_trial: { tone: 'attention', label: 'Пробный период' },
+    free: { tone: 'ok', label: 'Бесплатный доступ' },
+    own_paid: { tone: 'ok', label: 'Оплата продукта' },
+    manual: { tone: 'ok', label: 'Ручное назначение' },
+    none: { tone: 'off', label: 'Нет источника' },
   },
 }
 

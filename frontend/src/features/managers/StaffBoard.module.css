@@ -1,0 +1,209 @@
+.board {
+  display: grid;
+  min-width: 0;
+  gap: 16px;
+}
+
+.board h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.description {
+  max-width: 620px;
+  margin: 5px 0 0;
+  color: var(--color-muted);
+  line-height: 20px;
+}
+
+.panel {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.scroll {
+  min-width: 0;
+  overflow-x: auto;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table th,
+.table td {
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table thead {
+  background-color: #f8f8f8;
+}
+
+.table thead th {
+  height: 68px;
+  border-bottom: 1px solid var(--color-border);
+  color: #666e74;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 14px;
+  text-transform: uppercase;
+}
+
+.table small {
+  display: block;
+  color: #687178;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 15px;
+  text-transform: none;
+}
+
+.table thead small {
+  max-width: 190px;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.table tbody tr + tr {
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.table tbody th,
+.table tbody td {
+  height: 58px;
+}
+
+.table tbody th {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.inherited {
+  color: #687178;
+  font-size: 12px;
+}
+
+.switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #687178;
+  font-size: 12px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.switch[data-owned='true'] {
+  color: var(--color-text);
+}
+
+.switch[data-locked='true'] {
+  cursor: not-allowed;
+}
+
+.switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: #c5c5c5;
+  pointer-events: none;
+}
+
+.track::after {
+  position: absolute;
+  inset: 2px auto auto 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 24%);
+  content: '';
+}
+
+.switch input:checked + .track {
+  background: var(--color-accent);
+}
+
+.switch input:checked + .track::after {
+  transform: translateX(16px);
+}
+
+.switch input:focus-visible + .track {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.table td.actions {
+  text-align: right;
+}
+
+.actions button {
+  min-height: 32px;
+  color: var(--tone-error);
+}
+
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 20px 30px;
+}
+
+.form input,
+.form select {
+  flex: 1 1 160px;
+  min-width: 0;
+  height: 34px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.form button {
+  min-height: 38px;
+  padding-inline: 20px;
+  border-radius: 5px;
+}
+
+.feedback {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.feedback[role='alert'] {
+  color: var(--tone-error);
+}
+
+@media (max-width: 760px) {
+  .form {
+    padding: 16px;
+  }
+}
