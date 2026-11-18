@@ -6,7 +6,7 @@ import { loginErrorMessage } from '../src/states/login'
 import { ManagerAccountCard } from './AccountCard'
 import { AccountCommands } from './accountCommands'
 import { ClientsPage } from './CompaniesPage'
-import { getAccountLocation, listSearch, ManagerLink } from './accountsLocation'
+import { getAccountLocation } from './accountsLocation'
 import { Timeline } from './Timeline'
 import { WidgetsPage } from './WidgetsPage'
 import { InstallationsPage } from './InstallationsPage'
@@ -15,6 +15,7 @@ import { fetchManager, loginManager, logoutManager } from './session'
 import styles from './ManagerApp.module.css'
 import { StaffPage } from './StaffPage'
 import { AcceptInvitationPage } from './AcceptInvitationPage'
+import { Workspace, workspaceSection } from './Workspace'
 
 const sessionKey = ['managers', 'me']
 
@@ -74,143 +75,81 @@ function AuthenticatedManagerApp() {
   if (session.isSuccess && session.data) {
     const manager = session.data
     const scope = JSON.stringify([manager.id, manager.grants.slice().sort()])
-    const params = new URLSearchParams(location.search)
-    const section = params.get('section')
-    const installations = section === null || section === 'installations'
+    const section = workspaceSection(location.search)
     const clients = section === 'clients'
     const widgets = section === 'widgets'
     const feed = section === 'feed'
     const selected = getAccountLocation(location.search)
     const canRead = manager.grants.includes('clients.read')
     return (
-      <>
-        <header className={styles.header}>
-          <div className={styles.headerInner}>
-            <div className={styles.brand}>
-              <BrandLogo />
-              <span>Ракурс</span>
-            </div>
-            <nav aria-label="Кабинет менеджеров">
-              <ManagerLink
-                search={listSearch(location.search, 'installations')}
-                navigate={location.navigate}
-                current={installations}
-              >
-                Установки
-              </ManagerLink>
-              <ManagerLink
-                search={listSearch(location.search, 'clients')}
-                navigate={location.navigate}
-                current={clients}
-              >
-                Клиенты
-              </ManagerLink>
-              <ManagerLink
-                search={listSearch(location.search, 'widgets')}
-                navigate={location.navigate}
-                current={widgets}
-              >
-                Виджеты
-              </ManagerLink>
-              <ManagerLink
-                search={listSearch(location.search, 'feed')}
-                navigate={location.navigate}
-                current={feed}
-              >
-                Лента событий
-              </ManagerLink>
-              <ManagerLink
-                search={listSearch(location.search, 'staff')}
-                navigate={location.navigate}
-                current={section === 'staff'}
-              >
-                Сотрудники
-              </ManagerLink>
-            </nav>
-            <div className={styles.identity}>
-              <span>{manager.name}</span>
-              <button type="button" onClick={() => logout.mutate()} disabled={logout.isPending}>
-                Выйти
-              </button>
-            </div>
-          </div>
-        </header>
-        <main className={styles.workspace}>
-          {logout.isError ? <p role="alert">Не удалось выйти. Повторите попытку.</p> : null}
-          {logout.isPending ? <p role="status">Завершаем сеанс…</p> : null}
-          <div hidden={logout.isPending}>
-            <AccountCommands key={scope}>
-              {section === 'staff' ? (
-                <StaffPage
-                  key={scope}
-                  {...location}
-                  scope={scope}
-                  grants={manager.grants}
-                  managerId={manager.id}
-                  onExpired={expire}
-                  onForbidden={checkGrants}
-                />
-              ) : feed && !selected ? (
-                <Timeline
-                  key={scope}
-                  {...location}
-                  context={{ kind: 'feed' }}
-                  scope={scope}
-                  grants={manager.grants}
-                  onExpired={expire}
-                  onForbidden={checkGrants}
-                />
-              ) : widgets ? (
-                <WidgetsPage
-                  key={scope}
-                  {...location}
-                  scope={scope}
-                  grants={manager.grants}
-                  onExpired={expire}
-                  onForbidden={checkGrants}
-                />
-              ) : !installations && !clients && !selected ? (
-                <>
-                  <h1>{section === 'staff' ? 'Сотрудники' : 'Кабинет менеджеров'}</h1>
-                  <p>Раздел пока недоступен.</p>
-                </>
-              ) : !canRead ? (
-                <>
-                  <h1>{clients ? 'Клиенты' : 'Установки'}</h1>
-                  <p role="alert">
-                    {clients || selected ? 'Нет доступа к клиентам.' : 'Нет доступа к установкам.'}
-                  </p>
-                </>
-              ) : selected ? (
-                <ManagerAccountCard
-                  key={selected.id}
-                  {...location}
-                  selected={selected}
-                  scope={scope}
-                  grants={manager.grants}
-                  onExpired={expire}
-                  onForbidden={checkGrants}
-                />
-              ) : clients ? (
-                <ClientsPage
-                  {...location}
-                  scope={scope}
-                  onExpired={expire}
-                  onForbidden={checkGrants}
-                />
-              ) : (
-                <InstallationsPage
-                  {...location}
-                  scope={scope}
-                  canWrite={manager.grants.includes('clients.write')}
-                  onExpired={expire}
-                  onForbidden={checkGrants}
-                />
-              )}
-            </AccountCommands>
-          </div>
-        </main>
-      </>
+      <Workspace
+        {...location}
+        name={manager.name}
+        accountSelected={selected !== null}
+        onLogout={() => logout.mutate()}
+        logoutPending={logout.isPending}
+        logoutFailed={logout.isError}
+      >
+        <AccountCommands key={scope}>
+          {section === 'staff' ? (
+            <StaffPage
+              key={scope}
+              {...location}
+              scope={scope}
+              grants={manager.grants}
+              managerId={manager.id}
+              onExpired={expire}
+              onForbidden={checkGrants}
+            />
+          ) : feed && !selected ? (
+            <Timeline
+              key={scope}
+              {...location}
+              context={{ kind: 'feed' }}
+              scope={scope}
+              grants={manager.grants}
+              onExpired={expire}
+              onForbidden={checkGrants}
+            />
+          ) : widgets ? (
+            <WidgetsPage
+              key={scope}
+              {...location}
+              scope={scope}
+              grants={manager.grants}
+              onExpired={expire}
+              onForbidden={checkGrants}
+            />
+          ) : !canRead ? (
+            <>
+              <h1>{clients ? 'Клиенты' : 'Установки'}</h1>
+              <p role="alert">
+                {clients || selected ? 'Нет доступа к клиентам.' : 'Нет доступа к установкам.'}
+              </p>
+            </>
+          ) : selected ? (
+            <ManagerAccountCard
+              key={selected.id}
+              {...location}
+              selected={selected}
+              scope={scope}
+              grants={manager.grants}
+              onExpired={expire}
+              onForbidden={checkGrants}
+            />
+          ) : clients ? (
+            <ClientsPage {...location} scope={scope} onExpired={expire} onForbidden={checkGrants} />
+          ) : (
+            <InstallationsPage
+              {...location}
+              scope={scope}
+              canWrite={manager.grants.includes('clients.write')}
+              onExpired={expire}
+              onForbidden={checkGrants}
+            />
+          )}
+        </AccountCommands>
+      </Workspace>
     )
   }
 

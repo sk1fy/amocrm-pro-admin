@@ -32,13 +32,14 @@ export function ClientsPage(
   accounts.delete('company')
   return (
     <>
-      <nav className={styles.actions} aria-label="Вид клиентов">
-        <ManagerLink search={accounts.toString()} navigate={props.navigate}>
+      <nav className={styles.tabs} aria-label="Вид клиентов">
+        <ManagerLink search={accounts.toString()} navigate={props.navigate} current={!companies}>
           Аккаунты
         </ManagerLink>
         <ManagerLink
           search={companySearch(props.search, { company: null })}
           navigate={props.navigate}
+          current={companies}
         >
           Компании
         </ManagerLink>

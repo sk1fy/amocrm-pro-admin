@@ -65,17 +65,21 @@ export function ManagerLink({
   search,
   navigate,
   current,
+  label,
   children,
 }: {
   search: string
   navigate: (search: string) => void
   current?: boolean
+  label?: string
   children: ReactNode
 }) {
   return (
     <a
       href={search ? '?' + search : window.location.pathname}
       aria-current={current ? 'page' : undefined}
+      aria-label={label}
+      title={label}
       onClick={(event) => {
         if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
         event.preventDefault()

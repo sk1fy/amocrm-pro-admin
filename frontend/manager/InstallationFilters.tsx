@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import { installationFilters } from './installationsLocation'
 import styles from './InstallationsPage.module.css'
+import workspace from '../src/components/ManagerWorkspace.module.css'
 
 type Filter = (typeof installationFilters)[number]
 type Changes = Partial<Record<Filter, string | null>>
@@ -34,6 +35,12 @@ function FilterSelect({
   )
 }
 
+const reviewGroups = [
+  ['', 'Все установки'],
+  ['unreviewed', 'Не проверены'],
+  ['reviewed', 'Проверены'],
+] as const
+
 export function InstallationFilters({
   filters,
   apply,
@@ -41,15 +48,21 @@ export function InstallationFilters({
   filters: URLSearchParams
   apply: (changes: Changes) => void
 }) {
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const data = new FormData(event.currentTarget)
-    const changes: Changes = { cursor: null }
+  const review = filters.get('review') ?? ''
+
+  function applyForm(form: HTMLFormElement, nextReview: string) {
+    const data = new FormData(form)
+    const changes: Changes = { cursor: null, review: nextReview }
     for (const key of installationFilters) {
       const field = data.get(key)
       if (typeof field === 'string') changes[key] = field.trim()
     }
     apply(changes)
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    applyForm(event.currentTarget, review)
   }
 
   function clear() {
@@ -60,20 +73,26 @@ export function InstallationFilters({
 
   return (
     <form className={styles.filters} aria-label="Фильтры установок" onSubmit={submit}>
+      <div className={workspace.tabs} aria-label="Проверка установок" role="group">
+        {reviewGroups.map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={review === value}
+            onClick={(event) => {
+              const form = event.currentTarget.form
+              if (form) applyForm(form, value)
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className={styles.fields}>
         <label className={styles.search}>
           Аккаунт или продукт
           <input name="q" type="search" defaultValue={filters.get('q') ?? ''} maxLength={200} />
         </label>
-        <FilterSelect
-          name="review"
-          label="Проверка"
-          filters={filters}
-          options={[
-            ['unreviewed', 'Не проверены'],
-            ['reviewed', 'Проверены'],
-          ]}
-        />
         <FilterSelect
           name="kind"
           label="Тип установки"

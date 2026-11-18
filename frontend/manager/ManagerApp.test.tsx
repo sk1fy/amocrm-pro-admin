@@ -4,7 +4,7 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resetApiSession } from '../src/api/client'
 import { ManagerApp } from './ManagerApp'
@@ -88,6 +88,30 @@ function replaceFetch(handler: (url: URL, init?: RequestInit) => Response) {
 afterEach(() => {
   resetApiSession()
   vi.unstubAllGlobals()
+})
+
+it('keeps future sections out of the workspace and uses the real review filter', async () => {
+  const fetch = replaceFetch((url) =>
+    url.pathname.endsWith('/me') ? Response.json(manager) : installationPage(row),
+  )
+  openManager('?section=payments&q=rakurs')
+  const nav = within(await screen.findByRole('navigation', { name: 'Кабинет менеджеров' }))
+  expect(nav.getAllByRole('link').map((link) => link.getAttribute('aria-label'))).toEqual([
+    'Установки',
+    'Клиенты',
+    'Виджеты',
+    'Лента событий',
+    'Сотрудники',
+  ])
+  expect(nav.getByRole('link', { name: 'Установки' })).toHaveAttribute('aria-current', 'page')
+  await screen.findByRole('heading', { name: 'Установки' })
+  fireEvent.click(screen.getByRole('button', { name: 'Проверены' }))
+  expect(window.location.search).toContain('review=reviewed')
+  expect(window.location.search).toContain('q=rakurs')
+  expect(screen.getByRole('button', { name: 'Проверены' })).toHaveAttribute('aria-pressed', 'true')
+  await waitFor(() =>
+    expect(fetch.mock.calls.some(([path]) => String(path).includes('review=reviewed'))).toBe(true),
+  )
 })
 
 describe('manager installation queue', () => {

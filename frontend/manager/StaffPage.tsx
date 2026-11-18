@@ -425,12 +425,14 @@ export function StaffPage(props: Props) {
   }
   return (
     <section className={styles.workspace}>
-      <h1>Сотрудники</h1>
-      {canManage && !selected ? (
-        <button type="button" onClick={() => void list.refetch()}>
-          Обновить список сотрудников
-        </button>
-      ) : null}
+      <header className={styles.toolbar}>
+        <h1>Сотрудники</h1>
+        {canManage && !selected ? (
+          <button type="button" onClick={() => void list.refetch()}>
+            Обновить список сотрудников
+          </button>
+        ) : null}
+      </header>
       {canManage ? (
         <>
           {selected ? (

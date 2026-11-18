@@ -7,6 +7,7 @@ import { ReadFailure, useAccountAccessError, type AccountAccess } from './Accoun
 import { eventKinds, listEvents, type ManagerEvent, type TimelineScope } from './eventsApi'
 import { productSearch } from './WidgetsPage'
 import styles from './Accounts.module.css'
+import timeline from './Timeline.module.css'
 const filters = ['kind', 'product_id', 'from', 'to', 'limit', 'cursor', 'account_id']
 export function eventQuery(search: string, context: TimelineScope) {
   const params = new URLSearchParams(search),
@@ -102,7 +103,12 @@ export function Timeline({
       className={styles.workspace}
       aria-label={context.kind === 'feed' ? 'Лента событий' : 'История аккаунта'}
     >
-      <h1>{context.kind === 'feed' ? 'Лента событий' : 'История аккаунта'}</h1>
+      <header className={styles.toolbar}>
+        <h1>{context.kind === 'feed' ? 'Лента событий' : 'История аккаунта'}</h1>
+        <button type="button" onClick={() => void refresh()} disabled={page.isFetching}>
+          Обновить события
+        </button>
+      </header>
       <form key={filterKey.toString()} className={styles.actions} onSubmit={apply}>
         <label>
           Виды событий
@@ -137,9 +143,6 @@ export function Timeline({
           Сбросить
         </button>
       </form>
-      <button type="button" onClick={() => void refresh()} disabled={page.isFetching}>
-        Обновить события
-      </button>
       {page.isFetching ? <p role="status">Загружаем события…</p> : null}
       {page.isError ? (
         query.has('cursor') &&
@@ -167,23 +170,27 @@ export function Timeline({
           {page.data.items.length === 0 ? (
             <p>Событий по выбранным условиям нет.</p>
           ) : (
-            <ol>
+            <ol className={timeline.list}>
               {page.data.items.map((event) => (
-                <li key={event.id} className={styles.panel}>
-                  <strong>{eventKinds[event.kind]}</strong> ·{' '}
-                  <time dateTime={event.occurred_at}>{formatTime(event.occurred_at)}</time>
-                  <p>{event.summary}</p>
-                  <p>{event.actor_display ?? 'Исполнитель не указан'}</p>
-                  <p className={styles.meta}>
-                    ID события {event.id} · записано {formatTime(event.recorded_at)}
-                  </p>
-                  <div className={styles.actions}>
-                    {eventLinks(event, grants, search).map((link) => (
-                      <ManagerLink key={link.search} search={link.search} navigate={navigate}>
-                        {link.label}
-                      </ManagerLink>
-                    ))}
+                <li key={event.id} className={timeline.row}>
+                  <div className={timeline.event}>
+                    <strong>{eventKinds[event.kind]}</strong>
+                    <p>{event.summary}</p>
+                    <p className={styles.meta}>{event.actor_display ?? 'Исполнитель не указан'}</p>
+                    <p className={styles.meta}>
+                      ID события {event.id} · записано {formatTime(event.recorded_at)}
+                    </p>
+                    <div className={styles.actions}>
+                      {eventLinks(event, grants, search).map((link) => (
+                        <ManagerLink key={link.search} search={link.search} navigate={navigate}>
+                          {link.label}
+                        </ManagerLink>
+                      ))}
+                    </div>
                   </div>
+                  <time className={styles.meta} dateTime={event.occurred_at}>
+                    {formatTime(event.occurred_at)}
+                  </time>
                 </li>
               ))}
             </ol>
