@@ -164,12 +164,15 @@ command → результат/операция → аудит в admin DB и в
 
 ## Целевой хост
 
-Целевой хост запускает те же сервисы prod-оверлеем
-[deploy/docker-compose.prod.yml](../../deploy/docker-compose.prod.yml)
-поверх [deploy/docker-compose.yml](../../deploy/docker-compose.yml):
-образы из registry, `APP_ENV=production`, обязательные
-`ADMIN_PUBLIC_ORIGIN`, `CORE_ADMIN_API_TOKEN` и `ADMIN_DB_PASSWORD`,
-порты только на loopback за TLS-прокси оператора. Реестр бекендов
-заменяется хост-файлом (`BACKENDS_FILE_PATH`). Развёртывание, ротация
-credentials, наблюдаемость и аварийные сценарии —
-[runbooks/operator.md](../runbooks/operator.md).
+Самостоятельный [release compose](../../deploy/docker-compose.release.yml)
+запускает два frontend и единственный TLS ingress. `/api/` направляется
+прямо в Admin API. Только ingress публикует loopback TLS порт. API,
+management, frontend и PostgreSQL не публикуются. Внешние сети Core и
+Platform задаются оператором, egress bridge сохраняет исходящие вызовы.
+Файлы TLS и BFF mTLS монтируются read-only без создания пустых путей.
+
+Manifest проверяет точные image IDs, labels, revision и origin.
+Production отвергает fixture-kind при загрузке registry. Dev compose
+остаётся отдельным. Обоснование находится в
+[ADR-0029](../adr/0029-release-ingress-and-identities.md), запуск и откат
+описаны в [инструкции оператора](../runbooks/operator.md).

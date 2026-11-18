@@ -93,9 +93,10 @@ type probeState struct {
 }
 
 type Options struct {
-	LookupEnv func(string) (string, bool)
-	CoreHTTP  coreHTTP
-	Fixtures  map[string]adapter.Backend
+	RejectFixtures bool
+	LookupEnv      func(string) (string, bool)
+	CoreHTTP       coreHTTP
+	Fixtures       map[string]adapter.Backend
 }
 
 type coreHTTP func(core.Options) (*core.Client, error)
@@ -127,6 +128,9 @@ func Load(path string, opts Options) (*Registry, error) {
 	items := make([]Backend, 0, len(parsed.Backends))
 	seen := map[string]bool{}
 	for _, cfg := range parsed.Backends {
+		if opts.RejectFixtures && strings.TrimSpace(cfg.Kind) == adapter.KindFixture {
+			return nil, fmt.Errorf("fixture backends are forbidden in production")
+		}
 		item, err := buildBackend(cfg, lookup, newCore, opts.Fixtures)
 		if err != nil {
 			return nil, err

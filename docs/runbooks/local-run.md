@@ -281,3 +281,19 @@ service и проверяет его отдельно от техническо�
 `make platform-contract-check` сверяет сгенерированный клиент. Контракт
 и сценарий потери ответа проверяются в `make integration-test` на
 PostgreSQL и тестовом mTLS peer.
+
+## Локальная проверка release topology
+
+Dev compose и demo не являются release-контуром. Для двух рабочих HTTPS
+origins используйте самостоятельный
+[release compose](../../deploy/docker-compose.release.yml) и
+[инструкцию оператора](operator.md). Значения origin, image IDs, Platform
+и mTLS mounts обязательны. Единственный опубликованный порт принадлежит
+TLS ingress и слушает loopback. Никаких production изменений это не требует.
+
+`make release-config-check` проверяет resolved topology, обязательные
+параметры и настоящий `nginx -t` в собранном ingress image. Нужны Docker,
+Compose, Python 3 и openssl для временного тестового certificate.
+`make scripts-test` включает отрицательные проверки release manifest.
+Полная HTTPS browser acceptance из
+[плана A08](../plan/manager-release-v1.md) остаётся следующим шагом.

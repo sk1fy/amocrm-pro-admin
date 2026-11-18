@@ -62,11 +62,30 @@ TanStack Register разделён независимыми TypeScript programs.
   Транзитивные импорты не возвращают запрещённый router.
 - [x] Guard проверяет modules реальных emitted chunks. Negative builds
   с импортом настоящих demo fixtures падают для core и managers.
-- [ ] Docker targets фиксированы, default target core. Core nginx
+- [x] Docker targets фиксированы, default target core. Core nginx
   отвергает legacy `/managers`, managers сохраняет рабочий `/managers`.
-- [ ] Демо suites запускаются отдельно, рабочие credentials не уходят
+- [x] Демо suites запускаются отдельно, рабочие credentials не уходят
   в API. Demo nginx возвращает 404 на `/api/`.
-- [ ] Независимая проверка собранных Docker images root завершена.
+- [x] Независимая проверка собранных Docker images root завершена.
+  `/tmp/rakurs-a08-first-artifacts.log`, exit 0. Astra review без findings.
+  Root также проверил Docker lint, 49 Vitest files, 225 tests и 6 build
+  boundary cases. `/tmp/rakurs-a08-frontend-all.log`, exit 0.
+
+### Единица 2, release topology
+
+- [x] Старый production overlay удалён, все действующие инструкции
+  используют самостоятельный release compose. Dev и demo отделены.
+- [x] API, management, PostgreSQL и frontend не публикуются. Только ingress
+  публикует loopback TLS. Platform network внешний, egress сохранён.
+- [x] Обязательные images, origins и TLS/mTLS mounts не имеют dev fallback.
+- [x] Production config запрещает fixture-kind, development сохраняет его.
+  Проверка проходит через настоящий `config.LoadAPI` и `catalog.Load`.
+- [x] Manifest проверяет Admin image IDs, revision, purpose labels,
+  migration head и origins. Отрицательные mismatches отклоняются.
+- [x] Постоянный `release-config-check` проверяет topology, отсутствие
+  обязательных параметров, реальный `nginx -t` и неверные origins.
+- [ ] Root независимо проверяет runtime Host/SNI/port и forwarding headers
+  собранного ingress. Затем полная HTTPS browser acceptance.
 
 ### Полная A08
 
@@ -92,7 +111,8 @@ A09 запускается после принятия A08 как локальн
 
 ## Отчёт
 
-Дата 2026-11-18. Первая единица реализована, независимый Docker gate открыт. Коммит Admin фиксируется в Git
+Дата 2026-11-18. Первые две единицы реализованы. Первая принята root и Astra.
+Release topology ожидает независимый runtime gate root. Коммит Admin фиксируется в Git
 после проверок, база `495cead`. Core `1b99ad0` не менялся.
 
 ### Реализованные экраны и операции
@@ -122,8 +142,8 @@ Focused Node-проверки выполнены на Darwin с существу
 runtime acceptance. TypeScript lists содержат 0 demo modules для core
 и managers, 52 для demo. Production emitted graphs также проверены
 настоящими Vite builds. Browser suite проверяет отсутствие API requests
-при demo chooser, синтетической форме и переходах. Полный `make check`,
-Docker images и nginx runtime независимо проверяет root до следующей единицы.
+при demo chooser, синтетической форме и переходах. Root проверил Docker images и nginx runtime до начала единицы 2.
+Полный `make check` остаётся обязательной проверкой после неё.
 
 ### Инструкция запуска и демонстрационный сценарий
 
@@ -144,3 +164,31 @@ Docker images и nginx runtime независимо проверяет root до
 A08 открыта до release topology, manifest, HTTPS acceptance, полного
 `make check` и независимого review. Первая единица не доказывает TLS,
 серверные права или восстановление. A09 ещё не начата.
+
+### Проверки release topology
+
+`deploy/docker-compose.release.yml` заменяет старый production overlay.
+Ingress строится из `deploy/ingress.Dockerfile`. Operator runbook описывает
+точные image identities, обязательные mounts, bootstrap через существующую
+техническую identity и минимальный безопасный rollback A07 `495cead`.
+Все старые Admin binaries останавливаются до приглашений. Схема 000011
+и `technical_access` не меняются.
+
+| Проверка | Результат |
+| --- | --- |
+| Docker `go test -race -count=1 ./internal/catalog ./internal/platform/config ./cmd/admin-api` | ok, текущий source mounted в `/src` |
+| `python3 deploy/scripts/test-release.py` | ok, точный manifest и 8 отрицательных mismatches |
+| `release-config-check` | ok, реальный nginx image и пять неверных origins |
+
+Для focused Go использован существующий toolchain image
+`amocrm-admin-integration-test:local`, `f208a20ef025`, Go 1.26.11 с GCC.
+Запуск через `--entrypoint sh` монтирует текущий backend; cached source
+не используется. Логи находятся в `/tmp/rakurs-a08-topology-go.log` и
+`/tmp/rakurs-a08-release-config.log`. Полный `make check` запускает root
+после передачи. Параметры Core и Platform для следующей HTTPS единицы
+берутся из принятого P11 manifest, а не соседнего main.
+
+Соседний `../amocrm-pro` сейчас имеет main `47d5270`. Исходники
+`internal/apicontract/routes.go` и `internal/serviceapi/contracts.go`
+прочитаны, A08 их не меняет. Принятая версия P11 остаётся `1b99ad0`.
+Новых пользовательских полей, HTTP contracts и миграций в единице 2 нет.

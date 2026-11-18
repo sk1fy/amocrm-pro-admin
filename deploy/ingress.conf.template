@@ -1,0 +1,32 @@
+map "$ssl_server_name|$http_host" $release_frontend {
+    default "";
+    ~*^${CORE_MATCH}$ core-frontend:80;
+    ~*^${MANAGERS_MATCH}$ managers-frontend:80;
+}
+server {
+    listen 443 ssl default_server;
+    ssl_reject_handshake on;
+    return 421;
+}
+server {
+    listen 443 ssl;
+    server_name ${CORE_HOST} ${MANAGERS_HOST};
+    ssl_certificate /etc/admin-tls/server.crt;
+    ssl_certificate_key /etc/admin-tls/server.key;
+    ssl_protocols TLSv1.3;
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    if ($release_frontend = "") { return 421; }
+    location /api/ {
+        proxy_pass http://admin-api:8090;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Host "";
+        proxy_set_header Forwarded "";
+    }
+    location / {
+        proxy_pass http://$release_frontend;
+        proxy_set_header Host $http_host;
+    }
+}

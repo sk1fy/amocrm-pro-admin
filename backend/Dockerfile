@@ -61,6 +61,7 @@ ARG BUILD_REVISION=unknown
 RUN go build -trimpath -ldflags="-s -w" -o /out/admin-migrate ./cmd/admin-migrate
 
 FROM runtime AS migrate
+LABEL io.rakurs.release.purpose=migrate
 
 COPY --from=migrate-build --chown=app:app /out/admin-migrate /usr/local/bin/admin-migrate
 COPY --from=migrate-build --chown=app:app /src/migrations /migrations
@@ -77,6 +78,7 @@ ARG BUILD_REVISION=unknown
 RUN go build -trimpath -ldflags="-s -w" -o /out/admin-cli ./cmd/admin-cli
 
 FROM runtime AS admin-cli
+LABEL io.rakurs.release.purpose=admin-cli
 
 COPY --from=admin-cli-build --chown=app:app /out/admin-cli /usr/local/bin/admin-cli
 
@@ -89,6 +91,7 @@ ARG BUILD_REVISION=unknown
 RUN go build -trimpath -ldflags="-s -w" -o /out/admin-api ./cmd/admin-api
 
 FROM runtime AS admin-api
+LABEL io.rakurs.release.purpose=admin-api
 
 COPY --from=admin-api-build --chown=app:app /out/admin-api /usr/local/bin/admin-api
 COPY --from=admin-api-build --chown=app:app /src/migrations /migrations

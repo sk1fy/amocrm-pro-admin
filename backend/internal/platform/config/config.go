@@ -21,6 +21,7 @@ const (
 )
 
 type API struct {
+	RejectFixtureBackends bool
 	ServiceName           string
 	Environment           string
 	LogLevel              string
@@ -168,6 +169,7 @@ func LoadAPI() (API, error) {
 
 	return API{
 		ServiceName:           "admin-api",
+		RejectFixtureBackends: environment == envProduction,
 		Environment:           environment,
 		LogLevel:              logLevel,
 		HTTPAddress:           httpAddress,

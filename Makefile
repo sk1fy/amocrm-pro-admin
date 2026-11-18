@@ -125,7 +125,7 @@ migrate: ## Apply pending admin DB migrations
 # Checks (each target requires the corresponding source tree to exist)
 # ---------------------------------------------------------------------------
 
-.PHONY: platform-contract-check
+.PHONY: platform-contract-check release-config-check
 platform-contract-check: ## Verify the pinned Platform V1 client is reproducible
 	$(DOCKER_GO) sh internal/platformwire/generate.sh --check
 
@@ -187,10 +187,14 @@ e2e: ## Playwright scenarios against the built stack with the fixture adapter
 	  $(PLAYWRIGHT_IMAGE) \
 	  bash -ec 'cp -a /src/. . && rm -rf node_modules && npm ci --no-audit --no-fund && npx playwright test && npm run test:e2e:demo'
 
-scripts-test: ## Safety tests for backup/restore using command doubles, no database
+scripts-test: ## Safety tests for backup/restore and immutable release manifest
 	sh deploy/scripts/test-backup-restore.sh
+	python3 deploy/scripts/test-release.py
 
-check: docs-check lint test integration-test e2e scripts-test vulncheck ## Everything required before merging
+release-config-check: ## Validate standalone release topology and actual TLS nginx configuration
+	COMPOSE='$(COMPOSE)' python3 deploy/scripts/test-release-config.py
+
+check: docs-check lint test integration-test e2e scripts-test release-config-check vulncheck ## Everything required before merging
 
 # ---------------------------------------------------------------------------
 # Admin DB backup and restore verification (stage 4.3)

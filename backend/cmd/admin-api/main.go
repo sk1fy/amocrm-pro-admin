@@ -66,7 +66,7 @@ func run() error {
 	if cfg.BackendsFile == "" {
 		return fmt.Errorf("BACKENDS_FILE is required")
 	}
-	registry, err := catalog.Load(cfg.BackendsFile, catalog.Options{})
+	registry, err := catalog.Load(cfg.BackendsFile, catalog.Options{RejectFixtures: cfg.RejectFixtureBackends})
 	if err != nil {
 		return err
 	}

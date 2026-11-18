@@ -35,3 +35,5 @@
 - [0027. Менеджерские identities и атомарный доступ](0027-manager-staff-identity.md).
 
 - [0028. Назначение frontend задаётся при сборке](0028-frontend-build-purpose.md).
+
+- [0029. Единственный TLS ingress и точные образы выпуска](0029-release-ingress-and-identities.md).

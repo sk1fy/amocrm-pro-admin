@@ -410,3 +410,12 @@ Admin API, Core и платёжные системы не вызываются (
 Чтение и команды работают при недоступной Platform. Подписанный cursor
 связан с текущей сессией и её версией прав. Ошибка БД не означает пустой
 список. Технические роли и флаг доступа не входят в Staff DTO.
+
+## Конфигурация выпуска
+
+Рабочие интерфейсы не получают новых полей. Immutable image identities,
+revision и origin берутся из операторского manifest и resolved release
+Compose. Это не бизнес-данные и не источник grants. Production registry
+не принимает `kind: fixture`. Development fixtures сохраняют прежние
+пометки происхождения. Решение находится в
+[ADR-0029](../adr/0029-release-ingress-and-identities.md).

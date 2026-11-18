@@ -1,0 +1,140 @@
+x-hardening: &hardening
+  read_only: true
+  security_opt: [no-new-privileges:true]
+x-db-env: &db-env
+  DATABASE_URL: "${DATABASE_URL:?set DATABASE_URL for the private admin-postgres service}"
+services:
+  admin-postgres:
+    image: "${ADMIN_POSTGRES_IMAGE:?set immutable ADMIN_POSTGRES_IMAGE}"
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:?set POSTGRES_DB}"
+      POSTGRES_USER: "${POSTGRES_USER:?set POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${ADMIN_DB_PASSWORD:?set ADMIN_DB_PASSWORD}"
+    volumes: [admin-postgres-data:/var/lib/postgresql/data]
+    networks: [database]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  migrate:
+    <<: *hardening
+    image: "${MIGRATE_IMAGE:?set immutable MIGRATE_IMAGE}"
+    environment:
+      <<: *db-env
+      MIGRATIONS_DIR: /migrations
+      MIGRATION_TIMEOUT: "${MIGRATION_TIMEOUT:?set MIGRATION_TIMEOUT}"
+    depends_on:
+      admin-postgres: {condition: service_healthy}
+    networks: [database]
+    restart: "no"
+  admin-cli:
+    <<: *hardening
+    profiles: [tools]
+    image: "${ADMIN_CLI_IMAGE:?set immutable ADMIN_CLI_IMAGE}"
+    environment: *db-env
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    networks: [database]
+  admin-api:
+    <<: *hardening
+    image: "${ADMIN_API_IMAGE:?set immutable ADMIN_API_IMAGE}"
+    init: true
+    environment:
+      <<: *db-env
+      APP_ENV: production
+      HTTP_ADDRESS: :8090
+      MANAGEMENT_HTTP_ADDRESS: :8092
+      TRUST_PROXY_HEADERS: "true"
+      ADMIN_PUBLIC_ORIGIN: "${ADMIN_PUBLIC_ORIGIN:?set ADMIN_PUBLIC_ORIGIN}"
+      MANAGERS_PUBLIC_ORIGIN: "${MANAGERS_PUBLIC_ORIGIN:?set MANAGERS_PUBLIC_ORIGIN}"
+      MANAGERS_PLATFORM_URL: "${MANAGERS_PLATFORM_URL:?set MANAGERS_PLATFORM_URL}"
+      MANAGERS_PLATFORM_CA_FILE: /etc/platform/ca.crt
+      MANAGERS_PLATFORM_CERT_FILE: /etc/platform/client.crt
+      MANAGERS_PLATFORM_KEY_FILE: /etc/platform/client.key
+      MANAGERS_PLATFORM_TIMEOUT: "${MANAGERS_PLATFORM_TIMEOUT:?set MANAGERS_PLATFORM_TIMEOUT}"
+      CORE_ADMIN_API_TOKEN: "${CORE_ADMIN_API_TOKEN:?set CORE_ADMIN_API_TOKEN}"
+      BACKENDS_FILE: /etc/admin/backends.yaml
+      MIGRATIONS_DIR: /migrations
+    volumes:
+      - type: bind
+        source: "${BACKENDS_FILE_PATH:?set BACKENDS_FILE_PATH}"
+        target: /etc/admin/backends.yaml
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: "${MANAGERS_PLATFORM_CA_PATH:?set MANAGERS_PLATFORM_CA_PATH}"
+        target: /etc/platform/ca.crt
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: "${MANAGERS_PLATFORM_CERT_PATH:?set MANAGERS_PLATFORM_CERT_PATH}"
+        target: /etc/platform/client.crt
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: "${MANAGERS_PLATFORM_KEY_PATH:?set MANAGERS_PLATFORM_KEY_PATH}"
+        target: /etc/platform/client.key
+        read_only: true
+        bind: {create_host_path: false}
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    stop_grace_period: 20s
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:8092/live']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks: [database, web, core, platform, egress]
+    restart: unless-stopped
+  core-frontend:
+    <<: *hardening
+    image: "${ADMIN_CORE_IMAGE:?set immutable ADMIN_CORE_IMAGE}"
+    tmpfs: [/var/cache/nginx, /var/run]
+    networks: [web]
+    restart: unless-stopped
+  managers-frontend:
+    <<: *hardening
+    image: "${ADMIN_MANAGERS_IMAGE:?set immutable ADMIN_MANAGERS_IMAGE}"
+    tmpfs: [/var/cache/nginx, /var/run]
+    networks: [web]
+    restart: unless-stopped
+  ingress:
+    <<: *hardening
+    image: "${ADMIN_INGRESS_IMAGE:?set immutable ADMIN_INGRESS_IMAGE}"
+    environment:
+      ADMIN_PUBLIC_ORIGIN: "${ADMIN_PUBLIC_ORIGIN:?set ADMIN_PUBLIC_ORIGIN}"
+      MANAGERS_PUBLIC_ORIGIN: "${MANAGERS_PUBLIC_ORIGIN:?set MANAGERS_PUBLIC_ORIGIN}"
+    ports: ["127.0.0.1:${ADMIN_TLS_PORT:-443}:443"]
+    tmpfs: [/etc/nginx/conf.d, /var/cache/nginx, /var/run]
+    volumes:
+      - type: bind
+        source: "${ADMIN_TLS_CERT_PATH:?set ADMIN_TLS_CERT_PATH}"
+        target: /etc/admin-tls/server.crt
+        read_only: true
+        bind: {create_host_path: false}
+      - type: bind
+        source: "${ADMIN_TLS_KEY_PATH:?set ADMIN_TLS_KEY_PATH}"
+        target: /etc/admin-tls/server.key
+        read_only: true
+        bind: {create_host_path: false}
+    depends_on:
+      admin-api: {condition: service_healthy}
+      core-frontend: {condition: service_started}
+      managers-frontend: {condition: service_started}
+    networks: [web, egress]
+    restart: unless-stopped
+volumes:
+  admin-postgres-data:
+networks:
+  database: {internal: true}
+  web: {internal: true}
+  egress: {}
+  core:
+    external: true
+    name: "${CORE_ADMIN_NETWORK:?set CORE_ADMIN_NETWORK}"
+  platform:
+    external: true
+    name: "${MANAGERS_PLATFORM_NETWORK:?set MANAGERS_PLATFORM_NETWORK}"

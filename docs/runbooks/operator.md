@@ -1,7 +1,7 @@
 # Инструкция оператора
 
 Эксплуатация админки на целевом хосте: роли и доступ, развёртывание
-prod-оверлея, ротация credentials, наблюдаемость, retention, backup и
+самостоятельного выпуска, ротация credentials, наблюдаемость, retention, backup и
 аварийные сценарии. Локальный стек и e2e — [local-run.md](local-run.md).
 Сквозной сценарий экранов — [demo-stage-4.md](demo-stage-4.md).
 Подключение нового модуля — [new-module.md](new-module.md).
@@ -39,162 +39,179 @@ dc --profile tools run --rm admin-cli employee revoke-sessions \
 
 ## 2. Подготовка хоста
 
-- DNS `admin.example.com` указывает на хост; сертификат выпущен на
-  операторском reverse proxy (Let's Encrypt или корпоративный CA).
-- Reverse proxy terminates TLS и маршрутизирует:
-  - `https://admin.example.com/` → `127.0.0.1:5173` (frontend, SPA);
-  - `https://admin.example.com/api/` → `127.0.0.1:8090` (admin-api).
-  Proxy **перезаписывает** `X-Forwarded-For` адресом клиента
-  (`proxy_set_header X-Forwarded-For $remote_addr;`, не
-  `$proxy_add_x_forwarded_for`) и выставляет `X-Real-IP`;
-  `TRUST_PROXY_HEADERS=true`. Admin API берёт правое значение
-  `X-Forwarded-For`, поэтому перед этим прокси не должно быть других
-  прокси или балансировщиков: иначе лимит входа и аудит увидят их адрес
-  ([ADR-0006](../adr/0006-trusted-proxy-headers.md),
-  [ADR-0022](../adr/0022-rightmost-forwarded-address.md)). Оба порта
-  публикуются только на loopback: management listener `:8092` и
-  PostgreSQL наружу не выходят.
-- Docker Engine и Compose с поддержкой `!reset`/`!override` (v2.24+ или
-  standalone `docker-compose`). Дальше примеры для `docker-compose`;
-  при plugin-версии задайте `DC="docker compose"`.
-- Checkout репозитория, env-файл, постоянный диск под volume
-  `admin-postgres-data` и каталог бэкапов, например
-  `/var/backups/amocrm-admin`.
-- Core admin listener доступен из контейнера admin-api (адрес — в
-  `backends.yaml`, см. ниже).
+Подготовьте два DNS имени и TLS certificate с обоими SAN. Единственный
+TLS ingress из выпуска принимает оба origin. Перед ним нет другого
+proxy или балансировщика. Он публикуется только на loopback. Для доступа
+снаружи требуется отдельно разрешённая сетевая конфигурация хоста.
+Прямые API, management, frontend и БД не публикуются.
+
+Подготовьте Docker Engine, Compose, Python 3 для verifier, постоянный
+volume `admin-postgres-data`, каталог backups и внешние Docker networks
+Core admin и Platform. API имеет обычную egress bridge для исходящих
+запросов. Это не firewall по адресатам.
 
 ```sh
 cd /opt/amocrm-pro-admin
 ENV_FILE=/etc/amocrm-admin/admin.env
-FILES="-f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml"
+FILES="-f deploy/docker-compose.release.yml"
 DC=${DC:-docker-compose}
 dc() { $DC -p amocrm-admin --env-file "$ENV_FILE" $FILES "$@"; }
 ```
 
-`-p amocrm-admin` фиксирует имена проекта, сети (`amocrm-admin_admin`) и
-volume. Не меняйте его между запусками.
+Не накладывайте release compose на dev compose. Проект `amocrm-admin`
+фиксирует volume и сети. При переходе со старого проекта сначала
+остановите все старые Admin API, сохранив volume и схему. Проверьте,
+что не осталось старых реплик, systemd units и API на другом хосте.
+До этого не открывайте приглашения. Pre-A07 binary игнорирует
+`technical_access=false` и может разрешить технический вход приглашённому.
 
-## 3. Сборка и публикация образов
+## 3. Соберите и зафиксируйте образы
 
-Публикуйте образы с release-машины; на целевой хост они только
-загружаются. `backend/Dockerfile` собирает три образа из разных target,
-`frontend/Dockerfile` — статику за nginx. `make build` собирает только
-локальный dev-стек, для публикации используйте `docker build`:
+Соберите backend targets `admin-api`, `migrate`, `admin-cli`, frontend
+`core`, `managers` и `deploy/ingress.Dockerfile`. Для всех передайте
+одинаковый `BUILD_REVISION` с полной Git revision чистого checkout.
+`make build` остаётся dev-командой. Demo image в release не входит.
 
 ```sh
-cd /opt/amocrm-pro-admin/backend
-REV=$(git rev-parse --short HEAD)
+REV=$(git rev-parse HEAD)
 docker build --target admin-api --build-arg BUILD_REVISION="$REV" \
-  -t registry.example.com/amocrm-admin-api:2026.09.13 .
+  -t admin-api:release backend
 docker build --target migrate --build-arg BUILD_REVISION="$REV" \
-  -t registry.example.com/amocrm-admin-migrate:2026.09.13 .
+  -t admin-migrate:release backend
 docker build --target admin-cli --build-arg BUILD_REVISION="$REV" \
-  -t registry.example.com/amocrm-admin-cli:2026.09.13 .
-cd ../frontend
-docker build -t registry.example.com/amocrm-admin-frontend:2026.09.13 .
-docker push registry.example.com/amocrm-admin-api:2026.09.13
-# …то же для migrate, cli, frontend
+  -t admin-cli:release backend
+docker build --target core --build-arg BUILD_REVISION="$REV" \
+  -t admin-core:release frontend
+docker build --target managers --build-arg BUILD_REVISION="$REV" \
+  -t admin-managers:release frontend
+docker build -f deploy/ingress.Dockerfile \
+  --build-arg BUILD_REVISION="$REV" -t admin-ingress:release deploy
 ```
 
-Теги — неизменяемые (дата/SHA), `latest` не использовать. Ревизия
-попадает в label `org.opencontainers.image.revision`.
+Для локального запуска получите `docker image inspect --format
+'{{.Id}}' IMAGE`. В env используйте этот `sha256` ID. Для уже
+опубликованного образа используйте reference с registry digest.
+Публикация образов является отдельным действием оператора.
+PostgreSQL также закрепляется immutable reference.
 
-## 4. `backends.yaml` на хосте
+## 4. Подготовьте registry и файлы mTLS
 
-`deploy/backends.yaml` — шаблон без секретов: бекенд указывает
-`token_env` (имя переменной), а не токен. Скопируйте его на хост,
-поправьте `base_url` бекенда `core` на адрес admin listener Core,
-доступный из контейнера (`host.docker.internal:18083` — если Core на
-том же хосте), и удалите блок `fixture`: тестовый адаптер в проде
-показывал бы синтетические данные. Путь задаётся в env:
+Скопируйте `deploy/backends.yaml` в операторский файл. Удалите fixture
+entries и задайте доступные из контейнера Core admin и CRM listener.
+Production API отвергает весь registry, содержащий `kind: fixture`.
+Секреты задаются через имена `token_env`, без значений в YAML.
+
+Подготовьте CA Platform и отдельный BFF client certificate и key с URI
+`spiffe://amocrm-pro/manager-bff`. Файлы монтируются read-only. API
+работает как UID 10001. Дайте ему чтение файлов, сохранив ограниченные
+права на приватный ключ. Не кладите ключи в image, Git или логи.
+
+Отсутствующий файл, невалидный PEM, несовпадающая key pair и неверный
+локальный BFF URI останавливают API. Корректный чужой CA или неверный
+удалённый SAN обнаруживаются во время handshake запроса. Они дают
+недоступность Platform. Core и Staff продолжают работать. Сетевой
+startup probe отсутствует.
+
+## 5. Заполните release environment и manifest
+
+В `/etc/amocrm-admin/admin.env` с правами 0600 задайте все переменные.
+Локальных fallback для release images, origins и секретов нет.
+
+| Переменные | Значение |
+| --- | --- |
+| `ADMIN_API_IMAGE`, `MIGRATE_IMAGE`, `ADMIN_CLI_IMAGE` | Immutable references трёх backend targets |
+| `ADMIN_CORE_IMAGE`, `ADMIN_MANAGERS_IMAGE` | Immutable references двух frontend targets |
+| `ADMIN_INGRESS_IMAGE`, `ADMIN_POSTGRES_IMAGE` | Immutable references ingress и PostgreSQL |
+| `POSTGRES_DB`, `POSTGRES_USER`, `ADMIN_DB_PASSWORD` | Параметры отдельной Admin DB |
+| `DATABASE_URL` | DSN этой БД на `admin-postgres:5432`, согласованный с credentials |
+| `MIGRATION_TIMEOUT` | Положительная длительность миграции |
+| `ADMIN_PUBLIC_ORIGIN`, `MANAGERS_PUBLIC_ORIGIN` | Разные точные HTTPS DNS origins |
+| `ADMIN_TLS_PORT` | Loopback порт хоста, по умолчанию 443 |
+| `ADMIN_TLS_CERT_PATH`, `ADMIN_TLS_KEY_PATH` | Абсолютные пути TLS certificate и key |
+| `BACKENDS_FILE_PATH`, `CORE_ADMIN_API_TOKEN` | Registry и токен Core listener |
+| `CORE_ADMIN_NETWORK`, `MANAGERS_PLATFORM_NETWORK` | Существующие внешние Docker networks |
+| `MANAGERS_PLATFORM_URL` | HTTPS адрес Platform с DNS именем из SAN |
+| `MANAGERS_PLATFORM_TIMEOUT` | Длительность от 1s до 30s |
+| `MANAGERS_PLATFORM_CA_PATH` | Абсолютный путь CA Platform |
+| `MANAGERS_PLATFORM_CERT_PATH`, `MANAGERS_PLATFORM_KEY_PATH` | Абсолютные пути BFF certificate и key |
+
+Origin не содержит path, завершающий slash, query или fragment.
+Нестандартный порт входит в origin и совпадает с опубликованным портом.
+Host без порта и с `:443` допустимы только для стандартного HTTPS.
+
+Сохраните JSON manifest с `schemaVersion=1`, `adminRevision` полной
+Git revision, `minimumCompatibleAdminRevision="495cead"`,
+`migrationHead="000011"`. Объект `origins` содержит точные значения
+`ADMIN_PUBLIC_ORIGIN` и `MANAGERS_PUBLIC_ORIGIN`. Объект `images` содержит
+ровно ключи `admin-api`, `admin-cli`, `migrate`, `core-frontend`,
+`managers-frontend`, `ingress`, `admin-postgres`. Каждое значение содержит
+`reference` из env и `imageId` из Docker inspect. Labels фиксируют
+назначение и revision всех Admin images. PostgreSQL проверяется по ID.
 
 ```sh
-BACKENDS_FILE_PATH=/etc/amocrm-admin/backends.yaml
+umask 077
+dc --profile tools config --format json > /tmp/admin-release.json
+python3 deploy/scripts/verify-release.py \
+  /etc/amocrm-admin/release.json /tmp/admin-release.json
+rm /tmp/admin-release.json
 ```
 
-Файл монтируется read-only в `/etc/admin/backends.yaml`. Контракт —
-[backend-adapter.md](../design/backend-adapter.md).
+Resolved Compose содержит секреты. Не сохраняйте его в отчёт или Git.
+Verifier сверяет локальные image metadata и выбор компонентов. Он не
+подтверждает происхождение бинаря или поведение. У Admin API нет
+`--version`. После проверки нужны сценарии acceptance из плана A08.
 
-## 5. Переменные окружения
-
-```sh
-# /etc/amocrm-admin/admin.env (0600), значения — из хранилища секретов
-ADMIN_API_IMAGE=registry.example.com/amocrm-admin-api:2026.09.13
-ADMIN_FRONTEND_IMAGE=registry.example.com/amocrm-admin-frontend:2026.09.13
-MIGRATE_IMAGE=registry.example.com/amocrm-admin-migrate:2026.09.13
-ADMIN_CLI_IMAGE=registry.example.com/amocrm-admin-cli:2026.09.13
-ADMIN_DB_PASSWORD=<сгенерированный пароль>
-ADMIN_PUBLIC_ORIGIN=https://admin.example.com
-CORE_ADMIN_API_TOKEN=<токен admin listener Core>
-BACKENDS_FILE_PATH=/etc/amocrm-admin/backends.yaml
-```
-
-`ADMIN_PUBLIC_ORIGIN` — точный origin браузера (схема и хост, без
-завершающего `/`): по нему проверяется `Origin` мутаций.
-`ADMIN_API_IMAGE`, `ADMIN_FRONTEND_IMAGE`, `ADMIN_DB_PASSWORD`,
-`ADMIN_PUBLIC_ORIGIN`, `CORE_ADMIN_API_TOKEN` обязательны: без них
-Compose не стартует, dev-значений по умолчанию нет. Если
-`MIGRATE_IMAGE`/`ADMIN_CLI_IMAGE` не заданы, Compose ожидает локальные
-теги `amocrm-admin-migrate:local`/`amocrm-admin-cli:local`.
-
-## 6. Первый запуск
+## 6. Запустите выпуск и назначьте первого manager admin
 
 ```sh
-dc config --quiet          # синтаксис и обязательные переменные
-dc pull
+dc config --quiet
 dc up --detach --wait
-dc ps                      # health: healthy у postgres, api, frontend
+dc ps
 ```
 
-Первый администратор (пароль только через stdin, из хранилища секретов):
+Registry digest предварительно загрузите через `dc pull`.
+Локальные image IDs не требуют registry. Миграции выполняются до API.
+Два origin обслуживает ingress, неизвестный Host или SNI отвергается.
+
+Первого manager admin назначьте существующей уполномоченной технической
+identity с паролем, без смены её `technical_access`.
 
 ```sh
-printf '%s' "$ADMIN_BOOTSTRAP_PASSWORD" | \
-  dc --profile tools run --rm -T admin-cli employee create \
-  --email admin@example.com --name Admin --role admin --password-stdin
+dc --profile tools run --rm admin-cli employee bootstrap-manager \
+  --email authorized-admin@example.invalid
 ```
 
-Вход: `https://admin.example.com`, созданный email.
+Затем через manager Staff пригласите отдельную manager-only identity.
+Проверьте вход, grants и отказ технического login. Не расширяйте права
+приглашённого ради bootstrap. Сохраните исходную техническую identity
+для восстановления. Последнего manager admin нельзя удалить или лишить
+права администрирования без замены.
 
-## 7. Миграции
+## 7. Примените миграции и выполните безопасный откат
 
-admin-api при старте проверяет актуальность схемы (`EnsureCurrent`) и
-падает, если есть непримененные миграции. Перед любыми миграциями
-сделайте backup (раздел 13). Применение:
+Сделайте backup перед обновлением. API проверяет `EnsureCurrent` и
+не запускается при неприменённых миграциях.
 
 ```sh
 dc run --rm migrate up
 ```
 
-Через `make` (базовый файл передаётся внутри `COMPOSE`, потому что
-`COMPOSE_FILE` принимает один путь):
+Минимальная совместимая версия Admin API для отката имеет revision
+`495cead`, A07. Сохраните схему 000011, identities, grants, receipts и
+history. Не выполняйте `000011 down`. Pre-A07 binary игнорирует
+`technical_access=false` и запрещён после появления manager-only identity.
 
-```sh
-make migrate \
-  COMPOSE="docker-compose -p amocrm-admin \
-    --env-file /etc/amocrm-admin/admin.env \
-    -f deploy/docker-compose.yml" \
-  COMPOSE_FILE=deploy/docker-compose.prod.yml
-```
+Для отката UI оставьте текущий API. Для отката API остановите приём
+новых manager команд, дождитесь завершения текущих intent сверок либо
+остановите текущий процесс. Запустите A07 с полной сохранённой схемой
+миграций и совместимым intent protocol. Локальная проверка
+current → A07 → current с сохранением данных остаётся обязательной
+приёмкой A08. Пока она не принята, безопасная альтернатива сохраняет
+текущий API и закрывает manager ingress операторским правилом доступа.
 
-`migrate down` выполняется только осознанно и требует
-`MIGRATION_DOWN_CONFIRM=revert-all-migrations`; на общих данных
-запрещено (раздел 16 стайл-гайда).
-
-### Откат раздела «Клиенты» V1
-
-Сохраните схему `000009` и журнал `manager_command_intents` после начала
-работы с клиентами. Миграция `down` останавливается, если журнал уже
-содержит команды клиентов или справочника портрета.
-
-Для отката интерфейса подключите прежнюю сборку к текущему Admin API.
-Перед откатом API остановите приём новых команд и дождитесь завершения
-сверок по журналу на текущей версии либо остановите её процесс.
-Укажите в `MIGRATIONS_DIR` полный набор применённых миграций. В старом
-API отключите менеджерское подключение к Platform, убрав
-`MANAGERS_PLATFORM_URL` и пути к трём файлам mTLS. Это отключит старый
-воркер сверки и менеджерские вызовы Platform. После возврата текущей
-версии включите подключение, чтобы возобновить сверку команд.
+Не удаляйте identities и историю и не меняйте `technical_access` для
+облегчения отката. После возврата текущего API проверьте восстановление
+сверок и отказ технического login приглашённому сотруднику.
 
 ## 8. Проверки здоровья
 
@@ -379,9 +396,8 @@ dc --profile tools run --rm -T admin-cli prune \
 ```sh
 make backup-db BACKUP_DIR=/var/backups/amocrm-admin \
   COMPOSE="docker-compose -p amocrm-admin \
-    --env-file /etc/amocrm-admin/admin.env \
-    -f deploy/docker-compose.yml" \
-  COMPOSE_FILE=deploy/docker-compose.prod.yml
+    --env-file /etc/amocrm-admin/admin.env" \
+  COMPOSE_FILE=deploy/docker-compose.release.yml
 ```
 
 Эквивалент без make (тот же `pg_dump` внутри контейнера):
@@ -399,9 +415,8 @@ dc exec -T admin-postgres pg_dump --format=custom --no-owner \
 make restore-check RESTORE_CONFIRM=restore-check \
   BACKUP_FILE=/var/backups/amocrm-admin/admin-20260913-033000.dump \
   COMPOSE="docker-compose -p amocrm-admin \
-    --env-file /etc/amocrm-admin/admin.env \
-    -f deploy/docker-compose.yml" \
-  COMPOSE_FILE=deploy/docker-compose.prod.yml
+    --env-file /etc/amocrm-admin/admin.env" \
+  COMPOSE_FILE=deploy/docker-compose.release.yml
 ```
 
 После успешной проверки и автоматического удаления scratch DB снова запустите
@@ -416,7 +431,7 @@ make restore-check RESTORE_CONFIRM=restore-check \
 **admin-api недоступен.** `dc ps`, затем `dc logs --tail=200 admin-api`
 и `dc exec -T admin-api wget -qO- http://127.0.0.1:8092/ready`. Частые
 причины: непримененная миграция (`dc run --rm migrate up`), рассинхрон
-`ADMIN_DB_PASSWORD` с БД (раздел 10), занятый порт 8090, невалидный env
+`ADMIN_DB_PASSWORD` с БД (раздел 10), занятый TLS порт, невалидный env
 (ошибка конфигурации в логах). Поднять: `dc up --detach admin-api`.
 
 **Один бекенд недоступен.** Частичная доступность: его данные —
