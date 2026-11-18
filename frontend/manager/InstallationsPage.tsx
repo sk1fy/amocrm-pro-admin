@@ -35,23 +35,10 @@ function ReviewBadge({ row }: { row: Installation }) {
   )
 }
 
-function AccountCard({
-  row,
-  snapshot,
-  search,
-  navigate,
-}: {
-  row: Installation
-  snapshot: string
-  search: string
-  navigate: Props['navigate']
-}) {
+function InstallationDetails({ row, snapshot }: { row: Installation; snapshot: string }) {
   return (
-    <section className={styles.accountCard} aria-labelledby={'account-' + row.id}>
-      <h2 id={'account-' + row.id}>Аккаунт amoCRM {row.amo_account_id}</h2>
-      <ManagerLink search={accountSearch(search, row.account_id)} navigate={navigate}>
-        Открыть карточку клиента
-      </ManagerLink>
+    <section className={styles.accountCard} aria-labelledby={'installation-' + row.id}>
+      <h2 id={'installation-' + row.id}>Аккаунт amoCRM {row.amo_account_id}</h2>
       <div className={styles.cardFacts}>
         <div>
           <h3>Установка</h3>
@@ -62,11 +49,12 @@ function AccountCard({
             <dd className={styles.id}>{row.id}</dd>
             <dt>Продукт</dt>
             <dd>{row.product_name}</dd>
-            <dt>Эпизод</dt>
+            <dt>{row.kind === 'observed' ? 'Источник' : 'Эпизод'}</dt>
             <dd>
-              <StatusBadge domain="installation_kind" state={row.kind} calm /> № {row.generation}
+              <StatusBadge domain="installation_kind" state={row.kind} calm />
+              {row.kind === 'observed' ? null : ' № ' + row.generation}
             </dd>
-            <dt>Установлена</dt>
+            <dt>{row.kind === 'observed' ? 'Зарегистрирована в Core' : 'Установлена'}</dt>
             <dd>
               <ObservedTime value={row.installed_at} />
             </dd>
@@ -211,6 +199,7 @@ export function InstallationsPage({
   const error = list.error
   const errorCode = isApiError(error) ? error.detailCode : undefined
   const lockReview = review.state.kind === 'checking' || review.state.kind === 'uncertain'
+  const ascending = filters.get('sort') === 'installed_at'
 
   if (unauthorized) return null
 
@@ -223,7 +212,12 @@ export function InstallationsPage({
         </p>
       ) : (
         <>
-          <InstallationFilters key={searchKey} filters={filters} apply={updateFilters} />
+          <InstallationFilters
+            key={searchKey}
+            filters={filters}
+            apply={updateFilters}
+            summary={snapshot?.summary}
+          />
           {review.state.kind === 'checking' ? (
             <p className={styles.message} role="status">
               Проверяем результат изменения отметки…
@@ -279,18 +273,6 @@ export function InstallationsPage({
           ) : null}
           {snapshot ? (
             <>
-              <div className={styles.summary}>
-                <p>
-                  Найдено <strong>{snapshot.summary.total}</strong> · Проверено{' '}
-                  <strong>{snapshot.summary.reviewed}</strong> · Не проверено{' '}
-                  <strong>{snapshot.summary.unreviewed}</strong>
-                </p>
-                <p>
-                  Platform ·{' '}
-                  <StatusBadge domain="source" state={snapshot.source.status} variant="text" /> ·
-                  Снимок на <ObservedTime value={snapshot.snapshot_at} />
-                </p>
-              </div>
               <div className={styles.results}>
                 {snapshot.items.length === 0 ? (
                   <EmptyState title="Установки не найдены" />
@@ -305,11 +287,23 @@ export function InstallationsPage({
                     <table className={styles.table}>
                       <thead>
                         <tr>
-                          <th scope="col">Аккаунт amoCRM</th>
-                          <th scope="col">Продукт</th>
-                          <th scope="col">Установка</th>
-                          <th scope="col">Авторизация</th>
-                          <th scope="col">Доступ к продукту</th>
+                          <th scope="col" aria-sort={ascending ? 'ascending' : 'descending'}>
+                            <button
+                              className={styles.sortButton}
+                              type="button"
+                              onClick={() =>
+                                updateFilters({
+                                  sort: ascending ? '-installed_at' : 'installed_at',
+                                  cursor: null,
+                                })
+                              }
+                            >
+                              Дата установки <span aria-hidden="true">{ascending ? '↑' : '↓'}</span>
+                            </button>
+                          </th>
+                          <th scope="col">Виджет</th>
+                          <th scope="col">ID amoCRM</th>
+                          <th scope="col">Подробности</th>
                           <th scope="col">Проверка</th>
                         </tr>
                       </thead>
@@ -321,22 +315,21 @@ export function InstallationsPage({
                             <Fragment key={row.id}>
                               <tr>
                                 <td>
-                                  <button
-                                    type="button"
-                                    className={styles.accountLink}
-                                    aria-expanded={selected}
-                                    onClick={() =>
-                                      setSelection(
-                                        selected ? null : { search: searchKey, id: row.id },
-                                      )
-                                    }
-                                  >
-                                    {row.amo_account_id}
-                                  </button>
+                                  <ObservedTime value={row.installed_at} />
+                                  {row.kind === 'observed' ? <small>Импорт из Core</small> : null}
                                 </td>
                                 <td>
                                   <strong>{row.product_name}</strong>
                                   <small>{row.product_code}</small>
+                                </td>
+                                <td>
+                                  <ManagerLink
+                                    className={styles.accountLink}
+                                    search={accountSearch(search, row.account_id)}
+                                    navigate={navigate}
+                                  >
+                                    {row.amo_account_id}
+                                  </ManagerLink>
                                 </td>
                                 <td>
                                   <StatusBadge
@@ -344,50 +337,35 @@ export function InstallationsPage({
                                     state={row.lifecycle}
                                     calm
                                   />
-                                  <small>
-                                    <ObservedTime value={row.installed_at} />
-                                  </small>
+                                  <br />
+                                  <button
+                                    type="button"
+                                    className={styles.detailButton}
+                                    aria-expanded={selected}
+                                    onClick={() =>
+                                      setSelection(
+                                        selected ? null : { search: searchKey, id: row.id },
+                                      )
+                                    }
+                                  >
+                                    {selected ? 'Свернуть' : 'Подробнее'}
+                                  </button>
                                 </td>
                                 <td>
-                                  <StatusBadge
-                                    domain="installation_authorization"
-                                    state={row.authorization}
-                                    calm
-                                  />
-                                </td>
-                                <td>
-                                  <StatusBadge
-                                    domain="product_access"
-                                    state={row.access.active ? 'active' : 'inactive'}
-                                    calm
-                                  />
-                                  <small>
-                                    <StatusBadge
-                                      domain="product_access_source"
-                                      state={row.access.source}
-                                      variant="text"
-                                    />
-                                  </small>
-                                  <small>
-                                    {row.access.valid_until === null ? (
-                                      'Срок не указан'
-                                    ) : (
-                                      <>
-                                        До <ObservedTime value={row.access.valid_until} />
-                                      </>
-                                    )}
-                                  </small>
-                                </td>
-                                <td>
-                                  <ReviewBadge row={row} />
+                                  {row.kind === 'observed' ? (
+                                    <span>История не подтверждена</span>
+                                  ) : (
+                                    <ReviewBadge row={row} />
+                                  )}
                                   {row.review.reviewed_at ? (
                                     <small>
                                       <ObservedTime value={row.review.reviewed_at} />
                                     </small>
                                   ) : null}
-                                  {canWrite ? (
+                                  {canWrite && row.kind !== 'observed' ? (
                                     <button
                                       className={styles.reviewButton}
+                                      data-variant={row.review.reviewed ? undefined : 'primary'}
                                       type="button"
                                       onClick={() => review.start(row)}
                                       disabled={lockReview}
@@ -401,12 +379,10 @@ export function InstallationsPage({
                               </tr>
                               {selected ? (
                                 <tr>
-                                  <td className={styles.detailCell} colSpan={6}>
-                                    <AccountCard
+                                  <td className={styles.detailCell} colSpan={5}>
+                                    <InstallationDetails
                                       row={row}
                                       snapshot={snapshot.source.observed_at}
-                                      search={search}
-                                      navigate={navigate}
                                     />
                                   </td>
                                 </tr>
@@ -426,6 +402,11 @@ export function InstallationsPage({
                   onReset={() => updateFilters({ cursor: null })}
                   resetDisabled={!filters.has('cursor')}
                 />
+                <p className={styles.provenance}>
+                  Platform ·{' '}
+                  <StatusBadge domain="source" state={snapshot.source.status} variant="text" /> ·
+                  Снимок на <ObservedTime value={snapshot.snapshot_at} />
+                </p>
               </div>
             </>
           ) : null}

@@ -7,6 +7,8 @@ import { ReadFailure, useAccountAccessError, type AccountAccess } from './Accoun
 import { eventKinds, listEvents, type ManagerEvent, type TimelineScope } from './eventsApi'
 import { productSearch } from './WidgetsPage'
 import styles from './Accounts.module.css'
+import timeline from './Timeline.module.css'
+import card from './AccountCard.module.css'
 const filters = ['kind', 'product_id', 'from', 'to', 'limit', 'cursor', 'account_id']
 export function eventQuery(search: string, context: TimelineScope) {
   const params = new URLSearchParams(search),
@@ -52,7 +54,8 @@ export function Timeline({
   const cache = useQueryClient()
   const query = eventQuery(search, context),
     queryString = query.toString()
-  const allowed = grants.includes(context.kind === 'feed' ? 'feed.read' : 'clients.read')
+  const history = context.kind === 'history'
+  const allowed = grants.includes(history ? 'clients.read' : 'feed.read')
   const page = useQuery({
     queryKey: ['managers', 'timeline', scope, context, queryString],
     queryFn: ({ signal }) => listEvents(context, queryString, signal),
@@ -99,11 +102,20 @@ export function Timeline({
   filterKey.delete('cursor')
   return (
     <section
-      className={styles.workspace}
-      aria-label={context.kind === 'feed' ? 'Лента событий' : 'История аккаунта'}
+      className={history ? card.surface : styles.workspace}
+      aria-label={history ? 'История аккаунта' : 'Лента событий'}
     >
-      <h1>{context.kind === 'feed' ? 'Лента событий' : 'История аккаунта'}</h1>
-      <form key={filterKey.toString()} className={styles.actions} onSubmit={apply}>
+      <header className={history ? card.sectionHeader : styles.toolbar}>
+        {history ? <h2>История аккаунта</h2> : <h1>Лента событий</h1>}
+        <button type="button" onClick={() => void refresh()} disabled={page.isFetching}>
+          Обновить события
+        </button>
+      </header>
+      <form
+        key={filterKey.toString()}
+        className={history ? timeline.historyFilters : styles.actions}
+        onSubmit={apply}
+      >
         <label>
           Виды событий
           <select name="kind" multiple defaultValue={query.getAll('kind')}>
@@ -137,9 +149,6 @@ export function Timeline({
           Сбросить
         </button>
       </form>
-      <button type="button" onClick={() => void refresh()} disabled={page.isFetching}>
-        Обновить события
-      </button>
       {page.isFetching ? <p role="status">Загружаем события…</p> : null}
       {page.isError ? (
         query.has('cursor') &&
@@ -163,42 +172,89 @@ export function Timeline({
         )
       ) : page.data ? (
         <>
-          <p className={styles.meta}>Platform · снимок на {formatTime(page.data.snapshot_at)}</p>
+          <p className={history ? timeline.historyMeta : styles.meta}>
+            Platform · снимок на {formatTime(page.data.snapshot_at)}
+          </p>
           {page.data.items.length === 0 ? (
-            <p>Событий по выбранным условиям нет.</p>
+            <p className={history ? card.empty : undefined}>Событий по выбранным условиям нет.</p>
+          ) : history ? (
+            <div className={card.tableScroll}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th scope="col">Дата</th>
+                    <th scope="col">Событие</th>
+                    <th scope="col">Подробности</th>
+                    <th scope="col">Исполнитель</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {page.data.items.map((event) => (
+                    <tr key={event.id}>
+                      <td>
+                        <time dateTime={event.occurred_at}>{formatTime(event.occurred_at)}</time>
+                      </td>
+                      <td>
+                        <strong>{eventKinds[event.kind]}</strong>
+                      </td>
+                      <td>
+                        {event.summary}
+                        <span className={card.cellSecondary}>
+                          Записано {formatTime(event.recorded_at)} · ID {event.id}
+                        </span>
+                        <div className={styles.actions}>
+                          {eventLinks(event, grants, search).map((link) => (
+                            <ManagerLink key={link.search} search={link.search} navigate={navigate}>
+                              {link.label}
+                            </ManagerLink>
+                          ))}
+                        </div>
+                      </td>
+                      <td>{event.actor_display ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
-            <ol>
+            <ol className={timeline.list}>
               {page.data.items.map((event) => (
-                <li key={event.id} className={styles.panel}>
-                  <strong>{eventKinds[event.kind]}</strong> ·{' '}
-                  <time dateTime={event.occurred_at}>{formatTime(event.occurred_at)}</time>
-                  <p>{event.summary}</p>
-                  <p>{event.actor_display ?? 'Исполнитель не указан'}</p>
-                  <p className={styles.meta}>
-                    ID события {event.id} · записано {formatTime(event.recorded_at)}
-                  </p>
-                  <div className={styles.actions}>
-                    {eventLinks(event, grants, search).map((link) => (
-                      <ManagerLink key={link.search} search={link.search} navigate={navigate}>
-                        {link.label}
-                      </ManagerLink>
-                    ))}
+                <li key={event.id} className={timeline.row}>
+                  <div className={timeline.event}>
+                    <strong>{eventKinds[event.kind]}</strong>
+                    <p>{event.summary}</p>
+                    <p className={styles.meta}>{event.actor_display ?? 'Исполнитель не указан'}</p>
+                    <p className={styles.meta}>
+                      ID события {event.id} · записано {formatTime(event.recorded_at)}
+                    </p>
+                    <div className={styles.actions}>
+                      {eventLinks(event, grants, search).map((link) => (
+                        <ManagerLink key={link.search} search={link.search} navigate={navigate}>
+                          {link.label}
+                        </ManagerLink>
+                      ))}
+                    </div>
                   </div>
+                  <time className={styles.meta} dateTime={event.occurred_at}>
+                    {formatTime(event.occurred_at)}
+                  </time>
                 </li>
               ))}
             </ol>
           )}
           {page.data.next_cursor ? (
-            <button
-              type="button"
-              onClick={() => {
-                const next = new URLSearchParams(query)
-                next.set('cursor', page.data.next_cursor ?? '')
-                change(next)
-              }}
-            >
-              Следующая страница
-            </button>
+            <div className={history ? card.pager : undefined}>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = new URLSearchParams(query)
+                  next.set('cursor', page.data.next_cursor ?? '')
+                  change(next)
+                }}
+              >
+                Следующая страница
+              </button>
+            </div>
           ) : null}
         </>
       ) : null}

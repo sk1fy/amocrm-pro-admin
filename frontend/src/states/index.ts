@@ -267,6 +267,7 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     failed: { tone: 'error', label: 'Ошибка' },
   },
   installation_kind: {
+    observed: { tone: 'unknown', label: 'Импорт из Core' },
     install: { tone: 'ok', label: 'Первая установка' },
     reinstall: { tone: 'ok', label: 'Повторная установка' },
   },
@@ -275,6 +276,7 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     removed: { tone: 'off', label: 'Удалена' },
   },
   installation_event: {
+    unknown: { tone: 'unknown', label: 'История не подтверждена' },
     installed: { tone: 'ok', label: 'Установка' },
     reinstalled: { tone: 'ok', label: 'Повторная установка' },
     reauthorized: { tone: 'ok', label: 'Повторная авторизация' },

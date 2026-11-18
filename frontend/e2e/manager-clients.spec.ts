@@ -26,6 +26,10 @@ async function signIn(page: Page, email: string, address: string) {
 }
 
 async function editNote(page: Page, note: string) {
+  await page
+    .getByRole('region', { name: 'Примечание' })
+    .getByRole('button', { name: /^(Добавить|Изменить)$/ })
+    .click()
   await page.getByRole('textbox', { name: 'Заметка', exact: true }).fill(note)
   await page
     .getByRole('textbox', { name: 'Причина изменения' })
@@ -60,7 +64,7 @@ test('two managers see a saved client profile and a stale draft survives conflic
   await page.goBack()
   await expect(page).toHaveURL(list)
   await page.getByRole('link', { name: 'Pilot 1', exact: true }).click()
-  await expect(page.getByRole('textbox', { name: 'Заметка', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Pilot 1', exact: true })).toBeVisible()
   const id = new URL(page.url()).searchParams.get('account')
   expect(id).toMatch(/^[a-f0-9-]{36}$/)
   const cardPath = new URL(accountPath + '/' + id, origin).href
@@ -70,8 +74,7 @@ test('two managers see a saved client profile and a stale draft survives conflic
   try {
     const install = url('section=installations&q=' + encodeURIComponent(amoAccount))
     await signIn(other, colleague, install)
-    await other.getByRole('button', { name: amoAccount, exact: true }).click()
-    await other.getByRole('link', { name: 'Открыть карточку клиента' }).click()
+    await other.getByRole('link', { name: amoAccount, exact: true }).first().click()
     await expect(other).toHaveURL(new RegExp('account=' + id))
     await editNote(other, colleagueDraft)
 
@@ -122,16 +125,20 @@ test('two managers see a saved client profile and a stale draft survives conflic
     await readonly.getByRole('link', { name: 'История' }).click()
     await expect(readonly.getByText('История событий пока недоступна.')).toBeVisible()
 
-    await page.getByRole('link', { name: 'Портрет' }).click()
+    await page.getByRole('link', { name: 'Портрет клиента' }).click()
     await page.getByRole('spinbutton', { name: 'Рейтинг' }).fill('3')
     const portrait = page.waitForResponse(
       (response) =>
         response.url() === cardPath + '/portrait' && response.request().method() === 'PATCH',
     )
-    await page.getByRole('button', { name: 'Сохранить', exact: true }).first().click()
+    await page
+      .getByRole('region', { name: 'Портрет клиента', exact: true })
+      .getByRole('button', { name: 'Сохранить', exact: true })
+      .click()
     expect((await portrait).status()).toBe(200)
 
     await page.getByRole('link', { name: 'Наши виджеты' }).click()
+    await page.getByText('Продлить', { exact: true }).first().click()
     await page.getByLabel('Продлить до').fill('2090-07-01T12:00')
     await page.getByLabel('Причина продления').fill('Проверка ручного срока')
     const renewal = page.waitForResponse(
@@ -153,7 +160,7 @@ test('saved client changes survive the Admin and Platform restart', async ({ pag
   await signIn(page, colleague, url('section=clients&clients_q=' + encodeURIComponent(amoAccount)))
   await page.getByRole('link', { name: 'Pilot 1', exact: true }).click()
   await expect(page.getByRole('definition').filter({ hasText: firstNote })).toBeVisible()
-  await page.getByRole('link', { name: 'Портрет' }).click()
+  await page.getByRole('link', { name: 'Портрет клиента' }).click()
   await expect(page.getByRole('spinbutton', { name: 'Рейтинг' })).toHaveValue('3')
   await page.getByRole('link', { name: 'Наши виджеты' }).click()
   await expect(page.getByText('Ручное назначение', { exact: true }).first()).toBeVisible()

@@ -31,11 +31,12 @@ async function signIn(page: Page, address: string, url: URL) {
 function installationRow(page: Page) {
   return page
     .getByRole('row')
-    .filter({ has: page.getByRole('button', { name: accountId, exact: true }) })
+    .filter({ has: page.getByRole('link', { name: accountId, exact: true }) })
+    .filter({ hasText: productCode })
 }
 
 async function openAccount(page: Page) {
-  await installationRow(page).getByRole('button', { name: accountId, exact: true }).click()
+  await installationRow(page).getByRole('button', { name: 'Подробнее', exact: true }).click()
   const card = page.getByRole('region', { name: 'Аккаунт amoCRM ' + accountId })
   await expect(card).toBeVisible()
   await expect(card.getByText('Авторизована', { exact: true })).toBeVisible()
@@ -127,8 +128,7 @@ test('the live OAuth installation can be reviewed and grants protect direct requ
   expect(result.headers().etag).toMatch(/^"\d+"$/)
   await expect(page.getByText('Установки не найдены')).toBeVisible()
 
-  await page.getByRole('combobox', { name: 'Проверка', exact: true }).selectOption('reviewed')
-  await page.getByRole('button', { name: 'Применить' }).click()
+  await page.getByRole('button', { name: /^Проверенные/ }).click()
   await expect(row.getByText('Проверена', { exact: true })).toBeVisible()
   const reader = await browser.newPage()
   const limited = await browser.newPage()
@@ -189,8 +189,7 @@ test('the review and account details survive Admin and Platform restart', async 
   await row.getByRole('button', { name: 'Снять отметку' }).click()
   expect((await put).status()).toBe(200)
   await expect(page.getByText('Установки не найдены')).toBeVisible()
-  await page.getByRole('combobox', { name: 'Проверка', exact: true }).selectOption('unreviewed')
-  await page.getByRole('button', { name: 'Применить' }).click()
+  await page.getByRole('button', { name: /^Непроверенные/ }).click()
   await expect(row.getByText('Не проверена', { exact: true })).toBeVisible()
   await page.reload()
   await expect(row.getByText('Не проверена', { exact: true })).toBeVisible()

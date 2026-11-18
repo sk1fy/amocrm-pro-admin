@@ -136,7 +136,7 @@ it('uses catalog-only workflow, clears stage on pipeline change, and retains exa
   expect(
     within(screen.getByRole('navigation', { name: 'Кабинет менеджеров' }))
       .getAllByRole('link')
-      .map((link) => link.textContent),
+      .map((link) => link.getAttribute('aria-label')),
   ).toEqual(['Установки', 'Клиенты', 'Виджеты', 'Лента событий', 'Сотрудники'])
 })
 it('preserves the draft on metadata assertion conflict and explicitly creates a new command', async () => {

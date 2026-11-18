@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Рабочая очередь установок и карточка клиента](manager-installations-redesign.md).
+
 - [Компании и workflow кабинета менеджеров V1, P12.2](company-workflows-v1.md).
 - [Рабочий выпуск кабинета менеджеров V1, A08](manager-release-v1.md).
 

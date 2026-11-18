@@ -1,6 +1,7 @@
 .workspace {
   display: grid;
-  gap: 20px;
+  min-width: 0;
+  gap: 16px;
 }
 
 .heading,
@@ -24,7 +25,6 @@
 }
 
 .toolbar,
-.tabs,
 .actions {
   align-items: center;
   display: flex;
@@ -33,12 +33,12 @@
 }
 
 .tabs {
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 10px;
+  composes: tabs from '../src/components/ManagerWorkspace.module.css';
 }
 
-.tabs a[aria-current='page'] {
-  font-weight: 700;
+.actions,
+.toolbar {
+  min-width: 0;
 }
 
 .filters,
@@ -64,6 +64,8 @@
 }
 
 .panel {
+  min-width: 0;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 16px;
@@ -93,21 +95,11 @@
 }
 
 .tableScroll {
-  max-width: 100%;
-  overflow-x: auto;
+  composes: wrap from '../src/components/DataTable.module.css';
 }
 
 .table {
-  border-collapse: collapse;
-  min-width: max-content;
-  width: 100%;
-}
-
-.table th,
-.table td {
-  border-bottom: 1px solid var(--color-border);
-  padding: 8px 10px;
-  text-align: left;
+  composes: table from '../src/components/DataTable.module.css';
 }
 
 .facts {
@@ -131,4 +123,12 @@
 
 .form fieldset:disabled {
   opacity: 0.75;
+}
+
+.inlineFields {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }

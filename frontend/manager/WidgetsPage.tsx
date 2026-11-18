@@ -254,39 +254,41 @@ export function WidgetsPage({
               {list.data.items.length === 0 ? (
                 <p>Виджеты не найдены</p>
               ) : (
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th scope="col">Виджет</th>
-                      <th scope="col">Код</th>
-                      <th scope="col">Линейка</th>
-                      <th scope="col">Доступность</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {list.data.items.map((row) => (
-                      <tr key={row.id}>
-                        <td>
-                          <ManagerLink
-                            search={productSearch(search, { product: row.id })}
-                            navigate={navigate}
-                          >
-                            {row.display_name}
-                          </ManagerLink>
-                        </td>
-                        <td>{row.code}</td>
-                        <td>{row.line}</td>
-                        <td>
-                          <StatusBadge
-                            domain="product_availability"
-                            state={row.availability}
-                            calm
-                          />
-                        </td>
+                <div className={styles.tableScroll}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th scope="col">Виджет</th>
+                        <th scope="col">Код</th>
+                        <th scope="col">Линейка</th>
+                        <th scope="col">Доступность</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {list.data.items.map((row) => (
+                        <tr key={row.id}>
+                          <td>
+                            <ManagerLink
+                              search={productSearch(search, { product: row.id })}
+                              navigate={navigate}
+                            >
+                              {row.display_name}
+                            </ManagerLink>
+                          </td>
+                          <td>{row.code}</td>
+                          <td>{row.line}</td>
+                          <td>
+                            <StatusBadge
+                              domain="product_availability"
+                              state={row.availability}
+                              calm
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
               <div className={styles.actions}>
                 {query.has('cursor') ? (
