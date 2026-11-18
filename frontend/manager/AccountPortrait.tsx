@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { createRequestKey } from '../src/features/operations/intents'
 import { StatusBadge } from '../src/components/StatusBadge'
 import {
@@ -13,7 +14,8 @@ import {
 import { AccountForm } from './AccountForms'
 import type { AccountActions } from './AccountOverview'
 import { accountsKey, ReadFailure, useAccountAccessError } from './AccountsPage'
-import styles from './Accounts.module.css'
+import accountStyles from './Accounts.module.css'
+import styles from './AccountPortrait.module.css'
 
 const maturitySignals = [
   ['09ccc1b9-741c-50a5-91b1-05a3e1ac8beb', 'Воронка под их продажи'],
@@ -44,7 +46,7 @@ function triState(value: boolean | undefined) {
 
 function TemplateEditor({ template, ...actions }: AccountActions & { template: PortraitTemplate }) {
   return (
-    <details className={styles.panel}>
+    <details className={styles.template}>
       <summary>Настроить шаблон тем</summary>
       <AccountForm
         id="portrait-template"
@@ -103,7 +105,7 @@ function TemplateEditor({ template, ...actions }: AccountActions & { template: P
                       }
                     />
                   </label>
-                  <div className={styles.actions}>
+                  <div className={accountStyles.actions}>
                     <button
                       type="button"
                       disabled={index === 0}
@@ -145,18 +147,224 @@ function TemplateEditor({ template, ...actions }: AccountActions & { template: P
 
 type Niche = Awaited<ReturnType<typeof listNiches>>['items'][number]
 
+type PortraitRecordProps = {
+  portrait: Portrait
+  template?: PortraitTemplate
+  niches: Niche[]
+}
+
+type PortraitEditor = {
+  fields: Record<string, string>
+  edit: (name: string, value: string) => void
+  loadNiches?: () => void
+}
+
+function CompanyField({
+  label,
+  value,
+  children,
+}: {
+  label: string
+  value: string | number | null | undefined
+  children?: ReactNode
+}) {
+  return children ? (
+    <label className={styles.field}>
+      <span>{label}</span>
+      {children}
+    </label>
+  ) : (
+    <div className={styles.field}>
+      <span>{label}</span>
+      <p className={styles.fieldValue}>{value ?? '—'}</p>
+    </div>
+  )
+}
+
+function CompanyProfile({
+  portrait,
+  niches,
+  editor,
+}: Omit<PortraitRecordProps, 'template'> & { editor?: PortraitEditor }) {
+  const { company, maturity_signals: signals } = portrait
+  const nicheName = niches.find((item) => item.id === company.niche_id)?.name ?? company.niche_id
+  const { fields, edit, loadNiches } = editor ?? {}
+  return (
+    <section className={styles.company}>
+      <div className={styles.companyColumn}>
+        <h3>О компании</h3>
+        <CompanyField label="Ниша" value={nicheName}>
+          {fields && edit ? (
+            <select value={fields.niche} onChange={(event) => edit('niche', event.target.value)}>
+              <option value="">Не указана</option>
+              {fields.niche && !niches.some((niche) => niche.id === fields.niche) ? (
+                <option value={fields.niche}>Выбранная ниша</option>
+              ) : null}
+              {niches.map((niche) => (
+                <option value={niche.id} key={niche.id}>
+                  {niche.name}
+                </option>
+              ))}
+            </select>
+          ) : null}
+        </CompanyField>
+        {loadNiches ? (
+          <button type="button" className={styles.more} onClick={loadNiches}>
+            Загрузить ещё ниши
+          </button>
+        ) : null}
+        <CompanyField label="Сайт" value={company.site}>
+          {fields && edit ? (
+            <input
+              type="url"
+              value={fields.site}
+              onChange={(event) => edit('site', event.target.value)}
+            />
+          ) : null}
+        </CompanyField>
+        <CompanyField label="Рейтинг" value={company.rating}>
+          {fields && edit ? (
+            <input
+              type="number"
+              min="0"
+              max="5"
+              value={fields.rating}
+              onChange={(event) => edit('rating', event.target.value)}
+            />
+          ) : null}
+        </CompanyField>
+      </div>
+      <div className={styles.companyColumn}>
+        <h3>Работа и клиенты</h3>
+        <CompanyField
+          label={editor ? 'Типы работы, по одному на строку' : 'Типы работы'}
+          value={company.work_types?.length ? company.work_types.join(', ') : null}
+        >
+          {fields && edit ? (
+            <textarea
+              rows={2}
+              value={fields.work}
+              onChange={(event) => edit('work', event.target.value)}
+            />
+          ) : null}
+        </CompanyField>
+        <CompanyField
+          label={editor ? 'Типы клиентов, по одному на строку' : 'Типы клиентов'}
+          value={company.customer_types?.length ? company.customer_types.join(', ') : null}
+        >
+          {fields && edit ? (
+            <textarea
+              rows={2}
+              value={fields.customers}
+              onChange={(event) => edit('customers', event.target.value)}
+            />
+          ) : null}
+        </CompanyField>
+      </div>
+      <div className={styles.companyColumn}>
+        <h3>Ручные отметки amoCRM</h3>
+        <ul className={styles.signals}>
+          {maturitySignals.map(([id, label]) => {
+            const signal = signals.find((item) => item.id === id)
+            return (
+              <li key={id}>
+                {fields && edit ? (
+                  <label className={styles.signalChoice}>
+                    <span>{label}</span>
+                    <select value={fields[id]} onChange={(event) => edit(id, event.target.value)}>
+                      <option value="">—</option>
+                      <option value="true">Да</option>
+                      <option value="false">Нет</option>
+                    </select>
+                  </label>
+                ) : (
+                  <div className={styles.signalChoice}>
+                    <span>{label}</span>
+                    <span className={styles.signalValue}>{triState(signal?.manual)}</span>
+                  </div>
+                )}
+                {signal?.observed !== undefined || signal?.source ? (
+                  <p className={styles.observed}>
+                    Наблюдение: {triState(signal.observed)}
+                    {signal.source ? <> · {signal.source}</> : null}
+                  </p>
+                ) : null}
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
+function PortraitTopics({
+  portrait,
+  template,
+  editor,
+}: Pick<PortraitRecordProps, 'portrait' | 'template'> & { editor?: PortraitEditor }) {
+  const configured = template?.topics ?? []
+  const notes = new Map(portrait.topics.map((topic) => [topic.id, topic.note]))
+  const unconfigured = portrait.topics
+    .filter((topic) => !configured.some(({ id }) => id === topic.id))
+    .map(({ id }) => ({ id, title: id, prompts: [] }))
+  const topics = [...configured, ...unconfigured]
+
+  return (
+    <section className={styles.topics}>
+      <h3>Темы портрета</h3>
+      {topics.length ? (
+        <>
+          <div className={styles.topicHead} aria-hidden="true">
+            <span>Тема</span>
+            <span>Вопросы</span>
+            <span>Заметка</span>
+          </div>
+          {topics.map((topic) => {
+            const name = 'topic:' + topic.id
+            const note = notes.get(topic.id) ?? ''
+            const editable = editor && configured.some(({ id }) => id === topic.id)
+            return (
+              <div className={styles.topic} key={topic.id}>
+                <h4>{topic.title}</h4>
+                {topic.prompts.length ? (
+                  <ul className={styles.prompts}>
+                    {topic.prompts.map((prompt, index) => (
+                      <li key={index}>{prompt}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className={styles.noPrompt}>—</span>
+                )}
+                {editable ? (
+                  <textarea
+                    aria-label={`Заметка: ${topic.title}`}
+                    rows={2}
+                    placeholder="Добавить заметку"
+                    value={editor.fields[name] ?? note}
+                    onChange={(event) => editor.edit(name, event.target.value)}
+                  />
+                ) : (
+                  <p className={styles.note}>{note.trim() ? note : '—'}</p>
+                )}
+              </div>
+            )
+          })}
+        </>
+      ) : (
+        <p className={styles.empty}>{template ? 'Тем пока нет' : 'Темы пока недоступны'}</p>
+      )}
+    </section>
+  )
+}
+
 function PortraitFields({
   portrait,
   template,
   niches,
   loadNiches,
   ...actions
-}: AccountActions & {
-  portrait: Portrait
-  template: PortraitTemplate
-  niches: Niche[]
-  loadNiches?: () => void
-}) {
+}: AccountActions & PortraitRecordProps & { template: PortraitTemplate; loadNiches?: () => void }) {
   const account = portrait.account_id
   const initial: Record<string, string> = {
     niche: portrait.company.niche_id ?? '',
@@ -180,14 +388,17 @@ function PortraitFields({
   return (
     <AccountForm
       {...actions}
+      inline
       id={account + ':portrait'}
       title="Редактирование портрета"
       version={portrait.version}
       initial={initial}
       current={
-        <p>
-          Текущий рейтинг: {portrait.company.rating ?? '—'}. Сайт: {portrait.company.site ?? '—'}.
-        </p>
+        <details className={styles.currentPortrait}>
+          <summary>Посмотреть текущий портрет</summary>
+          <CompanyProfile portrait={portrait} niches={niches} />
+          <PortraitTopics portrait={portrait} template={template} />
+        </details>
       }
       command={(fields, original, version, key) => ({
         kind: 'portrait',
@@ -229,80 +440,30 @@ function PortraitFields({
     >
       {(fields, edit) => (
         <>
-          <div>
-            <label>
-              Ниша
-              <select value={fields.niche} onChange={(event) => edit('niche', event.target.value)}>
-                <option value="">Не указана</option>
-                {fields.niche && !niches.some((niche) => niche.id === fields.niche) ? (
-                  <option value={fields.niche}>Выбранная ниша</option>
-                ) : null}
-                {niches.map((niche) => (
-                  <option value={niche.id} key={niche.id}>
-                    {niche.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {loadNiches ? (
-              <button type="button" onClick={loadNiches}>
-                Загрузить ещё ниши
-              </button>
-            ) : null}
-          </div>
-          <label>
-            Сайт
-            <input
-              type="url"
-              value={fields.site}
-              onChange={(event) => edit('site', event.target.value)}
-            />
-          </label>
-          <label>
-            Рейтинг
-            <input
-              type="number"
-              min="0"
-              max="5"
-              value={fields.rating}
-              onChange={(event) => edit('rating', event.target.value)}
-            />
-          </label>
-          <label>
-            Типы работы, по одному на строку
-            <textarea value={fields.work} onChange={(event) => edit('work', event.target.value)} />
-          </label>
-          <label>
-            Типы клиентов, по одному на строку
-            <textarea
-              value={fields.customers}
-              onChange={(event) => edit('customers', event.target.value)}
-            />
-          </label>
-          {maturitySignals.map(([id, label]) => (
-            <label key={id}>
-              {label}
-              <select value={fields[id]} onChange={(event) => edit(id, event.target.value)}>
-                <option value="">Не указано</option>
-                <option value="true">Да</option>
-                <option value="false">Нет</option>
-              </select>
-            </label>
-          ))}
-          {template.topics.map((topic) => (
-            <label key={topic.id}>
-              {topic.title}
-              {topic.prompts.length ? <small>{topic.prompts.join(' · ')}</small> : null}
-              <textarea
-                value={fields['topic:' + topic.id] ?? initial['topic:' + topic.id]}
-                onChange={(event) => edit('topic:' + topic.id, event.target.value)}
-              />
-            </label>
-          ))}
+          <CompanyProfile
+            portrait={portrait}
+            niches={niches}
+            editor={{ fields, edit, loadNiches }}
+          />
+          <PortraitTopics portrait={portrait} template={template} editor={{ fields, edit }} />
         </>
       )}
     </AccountForm>
   )
+}
+
+type PortraitTabProps = AccountActions & {
+  account: AccountId
+  scope: string
+  canWrite: boolean
+}
+
+function usePortrait(account: AccountId, scope: string) {
+  return useQuery({
+    queryKey: [...accountsKey, scope, account, 'portrait'],
+    queryFn: ({ signal }) => getPortrait(account, signal),
+    retry: false,
+  })
 }
 
 export function AccountPortrait({
@@ -311,17 +472,8 @@ export function AccountPortrait({
   canWrite,
   canConfigure,
   ...actions
-}: AccountActions & {
-  account: AccountId
-  scope: string
-  canWrite: boolean
-  canConfigure: boolean
-}) {
-  const portrait = useQuery({
-    queryKey: [...accountsKey, scope, account, 'portrait'],
-    queryFn: ({ signal }) => getPortrait(account, signal),
-    retry: false,
-  })
+}: PortraitTabProps & { canConfigure: boolean }) {
+  const portrait = usePortrait(account, scope)
   const template = useQuery({
     queryKey: [...accountsKey, scope, 'template'],
     queryFn: ({ signal }) => getTemplate(signal),
@@ -336,141 +488,150 @@ export function AccountPortrait({
   })
   const error = portrait.error ?? template.error ?? niches.error
   useAccountAccessError(error, actions.onExpired, actions.onForbidden)
-  if (portrait.isError)
-    return <ReadFailure error={portrait.error} retry={() => void portrait.refetch()} />
-  if (!portrait.data) return <p role="status">Загружаем портрет…</p>
-  const current = portrait.data
+  const current = portrait.isError ? undefined : portrait.data
   const globalTemplate = template.isError ? undefined : template.data
   const allNiches = niches.isError ? [] : (niches.data?.pages.flatMap((page) => page.items) ?? [])
-  const niche = allNiches.find((item) => item.id === current.company.niche_id)
   return (
-    <div className={styles.workspace}>
-      {template.isError ? (
-        <ReadFailure error={template.error} retry={() => void template.refetch()} />
-      ) : null}
-      {niches.isError ? (
-        <ReadFailure error={niches.error} retry={() => void niches.refetch()} />
-      ) : null}
-      {template.isPending || niches.isPending ? (
-        <p role="status">Загружаем шаблон и ниши…</p>
-      ) : null}
-      <dl className={styles.facts}>
-        <dt>Ниша</dt>
-        <dd>{niche?.name ?? current.company.niche_id ?? '—'}</dd>
-        <dt>Сайт</dt>
-        <dd>{current.company.site ?? '—'}</dd>
-        <dt>Рейтинг</dt>
-        <dd>{current.company.rating ?? '—'}</dd>
-        <dt>Типы работы</dt>
-        <dd>{current.company.work_types?.join(', ') || '—'}</dd>
-        <dt>Типы клиентов</dt>
-        <dd>{current.company.customer_types?.join(', ') || '—'}</dd>
-        <dt>Версия портрета</dt>
-        <dd>{current.version}</dd>
-        <dt>Версия шаблона</dt>
-        <dd>{current.template_version}</dd>
-      </dl>
-      {current.maturity_signals.length > 0 ? (
-        <section>
-          <h3>Сохранённые отметки</h3>
-          <dl className={styles.facts}>
-            {maturitySignals.map(([id, label]) => {
-              const signal = current.maturity_signals.find((item) => item.id === id)
-              return signal ? (
-                <div key={id}>
-                  <dt>{label}</dt>
-                  <dd>
-                    Ручная отметка: {triState(signal.manual)} · наблюдение:{' '}
-                    {triState(signal.observed)}
-                    {signal.source ? <> · {signal.source}</> : null}
-                  </dd>
-                </div>
-              ) : null
-            })}
-          </dl>
-        </section>
-      ) : null}
-      {current.topics.length ? (
-        <section>
-          <h3>Сохранённые заметки по темам</h3>
-          <ul>
-            {current.topics.map((topic) => (
-              <li key={topic.id}>
-                {globalTemplate?.topics.find((item) => item.id === topic.id)?.title ?? topic.id}:{' '}
-                {topic.note}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-      {canWrite && globalTemplate && niches.data && !niches.isError ? (
-        <PortraitFields
-          {...actions}
-          portrait={current}
-          template={globalTemplate}
-          niches={allNiches}
-          loadNiches={niches.hasNextPage ? () => void niches.fetchNextPage() : undefined}
-        />
-      ) : null}
-      <section>
-        <h3>Даты аудита</h3>
-        {current.audit_dates.length ? (
-          <ul>
-            {current.audit_dates.map((audit) => (
-              <li key={audit.id}>
-                <time dateTime={audit.date}>{audit.date}</time>
-                {audit.note ? ' · ' + audit.note : null}
-              </li>
-            ))}
-          </ul>
+    <section className={styles.panel} aria-label="Портрет клиента">
+      <header className={styles.header}>
+        <div className={styles.headerText}>
+          <h2>Портрет клиента</h2>
+          {current ? (
+            <p className={styles.meta}>
+              Версия портрета {current.version} · Версия шаблона {current.template_version}
+              {globalTemplate && current.template_version !== globalTemplate.version ? (
+                <StatusBadge domain="freshness" state="stale" calm />
+              ) : null}
+            </p>
+          ) : null}
+        </div>
+        {current && canConfigure && globalTemplate ? (
+          <TemplateEditor {...actions} template={globalTemplate} />
+        ) : null}
+      </header>
+      <div className={styles.body}>
+        {portrait.isError ? (
+          <ReadFailure error={portrait.error} retry={() => void portrait.refetch()} />
+        ) : current ? (
+          <>
+            {template.isError ? (
+              <ReadFailure error={template.error} retry={() => void template.refetch()} />
+            ) : null}
+            {niches.isError ? (
+              <ReadFailure error={niches.error} retry={() => void niches.refetch()} />
+            ) : null}
+            {template.isPending || niches.isPending ? (
+              <p className={styles.meta} role="status">
+                Загружаем шаблон и ниши…
+              </p>
+            ) : null}
+            {canWrite && globalTemplate && niches.data && !niches.isError ? (
+              <PortraitFields
+                {...actions}
+                portrait={current}
+                template={globalTemplate}
+                niches={allNiches}
+                loadNiches={niches.hasNextPage ? () => void niches.fetchNextPage() : undefined}
+              />
+            ) : (
+              <>
+                <CompanyProfile portrait={current} niches={allNiches} />
+                {globalTemplate || template.isError || current.topics.length > 0 ? (
+                  <PortraitTopics portrait={current} template={globalTemplate} />
+                ) : null}
+              </>
+            )}
+          </>
         ) : (
-          <p>Дат аудита пока нет</p>
+          <p className={styles.meta} role="status">
+            Загружаем портрет…
+          </p>
         )}
-      </section>
-      {canWrite ? (
-        <AccountForm
-          {...actions}
-          id={account + ':audit'}
-          title="Добавить дату аудита"
-          version={current.version}
-          initial={{ date: '', note: '' }}
-          submitLabel="Добавить дату"
-          command={(fields, _, version, key) => ({
-            kind: 'audit',
-            account,
-            version,
-            key,
-            body: JSON.stringify({ date: fields.date, note: fields.note || null }),
-          })}
-        >
-          {(fields, edit) => (
-            <>
-              <label>
-                Дата
-                <input
-                  type="date"
-                  required
-                  value={fields.date}
-                  onChange={(event) => edit('date', event.target.value)}
-                />
-              </label>
-              <label>
-                Заметка аудита
-                <textarea
-                  value={fields.note}
-                  onChange={(event) => edit('note', event.target.value)}
-                />
-              </label>
-            </>
-          )}
-        </AccountForm>
-      ) : null}
-      {canConfigure && globalTemplate ? (
-        <TemplateEditor {...actions} template={globalTemplate} />
-      ) : null}
-      {globalTemplate && current.template_version !== globalTemplate.version ? (
-        <StatusBadge domain="freshness" state="stale" calm />
-      ) : null}
-    </div>
+      </div>
+    </section>
+  )
+}
+
+export function AccountAudit({ account, scope, canWrite, ...actions }: PortraitTabProps) {
+  const portrait = usePortrait(account, scope)
+  useAccountAccessError(portrait.error, actions.onExpired, actions.onForbidden)
+  const current = portrait.isError ? undefined : portrait.data
+
+  return (
+    <section className={styles.panel} aria-label="Аудит клиента">
+      <header className={styles.header}>
+        <h2>Аудит клиента</h2>
+      </header>
+      <div className={styles.body}>
+        {portrait.isError ? (
+          <ReadFailure error={portrait.error} retry={() => void portrait.refetch()} />
+        ) : current ? (
+          <div className={styles.auditLayout} data-editor={canWrite}>
+            <section className={styles.auditHistory}>
+              <h3>Даты аудита</h3>
+              {current.audit_dates.length ? (
+                <ul className={styles.auditDates}>
+                  {current.audit_dates.map((audit) => (
+                    <li key={audit.id}>
+                      <time dateTime={audit.date}>{audit.date}</time>
+                      <span className={styles.note}>{audit.note ?? '—'}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className={styles.empty}>Дат аудита пока нет</p>
+              )}
+            </section>
+            {canWrite ? (
+              <div className={styles.auditEditor}>
+                <h3>Добавить дату аудита</h3>
+                <AccountForm
+                  {...actions}
+                  inline
+                  id={account + ':audit'}
+                  title="Добавить дату аудита"
+                  version={current.version}
+                  initial={{ date: '', note: '' }}
+                  submitLabel="Добавить дату"
+                  command={(fields, _, version, key) => ({
+                    kind: 'audit',
+                    account,
+                    version,
+                    key,
+                    body: JSON.stringify({ date: fields.date, note: fields.note || null }),
+                  })}
+                >
+                  {(fields, edit) => (
+                    <>
+                      <label className={styles.field}>
+                        Дата
+                        <input
+                          type="date"
+                          required
+                          value={fields.date}
+                          onChange={(event) => edit('date', event.target.value)}
+                        />
+                      </label>
+                      <label className={styles.field}>
+                        Заметка аудита
+                        <textarea
+                          rows={3}
+                          value={fields.note}
+                          onChange={(event) => edit('note', event.target.value)}
+                        />
+                      </label>
+                    </>
+                  )}
+                </AccountForm>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p className={styles.meta} role="status">
+            Загружаем даты аудита…
+          </p>
+        )}
+      </div>
+    </section>
   )
 }

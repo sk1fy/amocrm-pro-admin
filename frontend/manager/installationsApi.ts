@@ -30,7 +30,7 @@ export type Installation = {
   version: number
 }
 
-type InstallationPage = {
+export type InstallationPage = {
   items: Installation[]
   next_cursor: string | null
   snapshot_at: string
@@ -123,7 +123,7 @@ export function parseInstallation(value: unknown): Installation {
     amo_account_id: item.amo_account_id,
     product_code: string(item.product_code),
     product_name: string(item.product_name),
-    generation: integer(item.generation, 1),
+    generation: integer(item.generation, item.kind === 'observed' ? 0 : 1),
     kind: string(item.kind),
     installed_at: date(item.installed_at),
     removed_at: nullableDate(item.removed_at),

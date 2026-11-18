@@ -29,3 +29,31 @@
 .event p {
   margin: 2px 0;
 }
+
+.historyFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.historyFilters label {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.historyFilters select {
+  max-height: 5rem;
+}
+
+.historyMeta {
+  margin: 0;
+  padding: 8px 20px;
+  color: var(--color-muted);
+  font-size: 12px;
+}

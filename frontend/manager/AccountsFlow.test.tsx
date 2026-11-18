@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { resetApiSession } from '../src/api/client'
 import {
@@ -30,6 +30,23 @@ function managerCard(
     const url = String(input)
     if (url === '/api/v1/managers/me') return Response.json(manager)
     if (url === path + '/profile') return update(init)
+    if (url === path + '/crm-users')
+      return Response.json({
+        state: 'fresh',
+        source: 'amoCRM',
+        observed_at: '2026-11-18T19:30:00Z',
+        value: [
+          { id: '10001', name: 'Ирина', is_active: true, is_admin: true },
+          { id: '10002', name: 'Алексей', is_active: false, is_admin: false },
+        ],
+      })
+    if (url === path + '/widgets?limit=100' || url === path + '/history')
+      return Response.json({
+        items: [],
+        next_cursor: null,
+        snapshot_at: '2026-11-18T19:30:00Z',
+        query_hash: 'fixture',
+      })
     if (url !== path) throw new Error('unexpected request ' + url)
     const { version, note } = current()
     return Response.json(
@@ -63,6 +80,9 @@ function managerCard(
 }
 
 async function editNote(value: string) {
+  const add = await screen.findByRole('region', { name: 'Примечание' })
+  const edit = within(add).queryByRole('button', { name: /^(Добавить|Изменить)$/ })
+  if (edit) fireEvent.click(edit)
   fireEvent.change(await screen.findByRole('textbox', { name: 'Заметка' }), {
     target: { value },
   })
@@ -157,10 +177,34 @@ it('keeps an uncertain command across tabs and repeats the exact request', async
   fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
   await screen.findByText('Результат команды пока неизвестен.')
   fireEvent.click(screen.getByRole('link', { name: 'История' }))
-  fireEvent.click(screen.getByRole('link', { name: 'Сводка' }))
+  fireEvent.click(screen.getByRole('link', { name: 'Наши виджеты' }))
   expect(screen.getByRole('textbox', { name: 'Заметка' })).toHaveValue('Одна команда')
   fireEvent.click(screen.getByRole('button', { name: 'Повторить ту же команду' }))
   await screen.findByRole('button', { name: 'Проверить результат' })
   expect(calls).toHaveLength(2)
   expect(calls[1]).toEqual(calls[0])
+})
+
+it('filters the CRM users snapshot by status and name using the account URL', async () => {
+  managerCard(
+    () => {
+      throw new Error('unexpected write')
+    },
+    () => ({ version: 1, note: null }),
+  )
+  fireEvent.click(await screen.findByRole('link', { name: 'Пользователи' }))
+  expect(await screen.findByRole('cell', { name: 'Ирина' })).toBeVisible()
+  expect(screen.getByRole('cell', { name: 'Алексей' })).toBeVisible()
+  fireEvent.click(screen.getByRole('link', { name: 'Администраторы · 1' }))
+  expect(new URLSearchParams(window.location.search).get('users_filter')).toBe('admins')
+  expect(screen.getByRole('cell', { name: 'Ирина' })).toBeVisible()
+  expect(screen.queryByRole('cell', { name: 'Алексей' })).not.toBeInTheDocument()
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Имя или ID пользователя' }), {
+    target: { value: '10002' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Найти' }))
+  expect(screen.getByText('Пользователи по фильтру не найдены.')).toBeVisible()
+  fireEvent.click(screen.getByRole('link', { name: 'Все · 2' }))
+  expect(screen.getByRole('cell', { name: 'Алексей' })).toBeVisible()
+  expect(screen.queryByRole('cell', { name: 'Ирина' })).not.toBeInTheDocument()
 })

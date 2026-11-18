@@ -1,47 +1,103 @@
 .page {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
 }
 
 .page h1,
-.summary p,
 .message {
   margin: 0;
 }
 
 .message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
 }
 
-.message {
-  padding: var(--space-4);
-}
-
 .filters {
   display: grid;
-  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-2) var(--space-3);
 }
 
-.fields,
-.actions,
-.summary,
-.message {
+.toolbar,
+.primaryFields,
+.fields {
   display: flex;
   flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.toolbar {
+  grid-column: 1 / -1;
   align-items: end;
-  gap: var(--space-3);
-}
-
-.summary {
-  align-items: center;
   justify-content: space-between;
-  color: var(--color-muted);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.summary strong {
-  color: var(--color-text);
+.toolbar [role='group'] {
+  border-bottom: 0;
+}
+
+.primaryFields {
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-end;
+  padding-block: 0 var(--space-1);
+  column-gap: var(--space-2);
+}
+
+.primaryFields label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.primaryFields input[type='date'] {
+  min-width: 0;
+  width: 8.25rem;
+}
+
+.search {
+  min-width: 0;
+  width: 15rem;
+  max-width: 100%;
+}
+
+.count {
+  min-width: 20px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: var(--color-border-soft);
+  font-size: 11px;
+  text-align: center;
+}
+
+.toolbar button[aria-pressed='true'] .count {
+  background: var(--color-primary);
+  color: white;
+}
+
+.reset {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  min-height: 1.5rem;
+  color: var(--color-link);
+  font-weight: 400;
+}
+
+.reset:hover {
+  text-decoration: underline;
 }
 
 .fields label {
@@ -49,10 +105,6 @@
   flex: 0 1 11rem;
   min-width: 0;
   gap: var(--space-1);
-}
-
-.fields .search {
-  flex: 1 0 min(16rem, 100%);
 }
 
 .fields input,
@@ -93,11 +145,7 @@
 
 .table {
   composes: table from '../src/components/DataTable.module.css';
-  min-width: 48rem;
-}
-
-.table td {
-  vertical-align: top;
+  min-width: 42rem;
 }
 
 .table small {
@@ -108,20 +156,37 @@
 .id,
 .accountLink {
   font-family: var(--mono);
+}
+
+.id {
   overflow-wrap: anywhere;
 }
 
 .accountLink {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sortButton {
+  composes: sortButton from '../src/components/DataTable.module.css';
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+.detailButton {
   padding: 0;
-  min-height: 1.75rem;
   border: 0;
   background: transparent;
   color: var(--color-link);
   font-weight: 400;
 }
 
-.accountLink:hover {
+.detailButton:hover {
   text-decoration: underline;
+}
+
+.table th:last-child {
+  width: 1%;
 }
 
 .reviewButton {
@@ -170,6 +235,22 @@
   margin: 0;
 }
 
-.provenance {
+.accountCard .provenance {
   margin: 0;
+}
+
+.provenance {
+  margin: var(--space-2) 0 0;
+  font-size: 12.5px;
+}
+
+@media (max-width: 780px) {
+  .primaryFields {
+    justify-content: flex-start;
+  }
+
+  .primaryFields input[type='date'] {
+    width: 7.5rem;
+    padding-inline: var(--space-2);
+  }
 }

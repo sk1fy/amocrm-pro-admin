@@ -213,6 +213,10 @@ export function useAccountCommand(
           values: { ...(previous.draft?.values ?? initial), [name]: value },
         },
       })),
+    discardDraft: () => {
+      if (entry.state.kind !== 'busy' && entry.state.kind !== 'pending')
+        store.update(id, () => emptyEntry)
+    },
     rebase: (version: number, latest: Values) =>
       store.update(id, (previous) => {
         if (

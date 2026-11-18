@@ -3,9 +3,9 @@ import { isUUID, record } from './installationsApi'
 import { isAccountId } from './accountsApi'
 
 export const accountTabs = {
-  overview: 'Сводка',
   widgets: 'Наши виджеты',
-  portrait: 'Портрет',
+  portrait: 'Портрет клиента',
+  audit: 'Аудит',
   history: 'История',
   users: 'Пользователи',
 }
@@ -22,20 +22,24 @@ export function getAccountLocation(search: string) {
   const tab = params.get('tab')
   return {
     id,
-    tab: isTab(tab) ? tab : ('overview' as const),
+    tab: isTab(tab) ? tab : ('widgets' as const),
     productCursor: params.get('widget_cursor') ?? '',
     episode: params.get('episode'),
   }
 }
 
-export function accountSearch(search: string, id: string, tab: AccountTab = 'overview') {
+export function accountSearch(search: string, id: string, tab: AccountTab = 'widgets') {
   const params = new URLSearchParams(search)
   if (!isAccountId(params.get('account'))) {
     const priorTab = params.get('tab')
     if (priorTab !== null && !isTab(priorTab)) params.set('list_tab', priorTab)
     params.delete('widget_cursor')
   }
-  if (params.get('account') !== id) params.delete('widget_cursor')
+  if (params.get('account') !== id) {
+    params.delete('widget_cursor')
+    params.delete('users_filter')
+    params.delete('users_q')
+  }
   params.delete('product')
   params.delete('product_new')
   params.set('account', id)
@@ -53,6 +57,8 @@ export function listSearch(search: string, section?: string) {
     params.delete('list_tab')
     params.delete('widget_cursor')
     params.delete('account')
+    params.delete('users_filter')
+    params.delete('users_q')
   }
   params.delete('product')
   params.delete('product_new')
@@ -66,16 +72,19 @@ export function ManagerLink({
   navigate,
   current,
   label,
+  className,
   children,
 }: {
   search: string
   navigate: (search: string) => void
   current?: boolean
   label?: string
+  className?: string
   children: ReactNode
 }) {
   return (
     <a
+      className={className}
       href={search ? '?' + search : window.location.pathname}
       aria-current={current ? 'page' : undefined}
       aria-label={label}

@@ -85,7 +85,6 @@ function AuthenticatedManagerApp() {
       <Workspace
         {...location}
         name={manager.name}
-        accountSelected={selected !== null}
         onLogout={() => logout.mutate()}
         logoutPending={logout.isPending}
         logoutFailed={logout.isError}

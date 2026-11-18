@@ -94,7 +94,7 @@ it('keeps future sections out of the workspace and uses the real review filter',
   const fetch = replaceFetch((url) =>
     url.pathname.endsWith('/me') ? Response.json(manager) : installationPage(row),
   )
-  openManager('?section=payments&q=rakurs')
+  openManager('?section=payments&q=rakurs&from=2026-11-17')
   const nav = within(await screen.findByRole('navigation', { name: 'Кабинет менеджеров' }))
   expect(nav.getAllByRole('link').map((link) => link.getAttribute('aria-label'))).toEqual([
     'Установки',
@@ -104,11 +104,21 @@ it('keeps future sections out of the workspace and uses the real review filter',
     'Сотрудники',
   ])
   expect(nav.getByRole('link', { name: 'Установки' })).toHaveAttribute('aria-current', 'page')
-  await screen.findByRole('heading', { name: 'Установки' })
-  fireEvent.click(screen.getByRole('button', { name: 'Проверены' }))
+  const link = await screen.findByRole('link', { name: accountId })
+  const destination = new URL(link.getAttribute('href') ?? '', window.location.href)
+  expect(destination.searchParams.get('account')).toBe(row.account_id)
+  expect(destination.searchParams.get('q')).toBe('rakurs')
+  expect(destination.searchParams.get('from')).toBe('2026-11-17')
+  expect(screen.getByRole('button', { name: /^Непроверенные/ })).toHaveTextContent('1')
+  expect(screen.getByRole('button', { name: /^Проверенные/ })).toHaveTextContent('0')
+  fireEvent.click(screen.getByRole('button', { name: /^Проверенные/ }))
   expect(window.location.search).toContain('review=reviewed')
   expect(window.location.search).toContain('q=rakurs')
-  expect(screen.getByRole('button', { name: 'Проверены' })).toHaveAttribute('aria-pressed', 'true')
+  expect(window.location.search).toContain('from=2026-11-17')
+  expect(screen.getByRole('button', { name: /^Проверенные/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
   await waitFor(() =>
     expect(fetch.mock.calls.some(([path]) => String(path).includes('review=reviewed'))).toBe(true),
   )
@@ -150,7 +160,7 @@ describe('manager installation queue', () => {
     openManager('?section=installations&q=' + accountId + '&limit=25&cursor=opaque%2B%2F%3D&tab=7')
     await screen.findByRole('heading', { name: 'Установки' })
     await waitFor(() => expect(screen.queryByText('Загружаем установки…')).not.toBeInTheDocument())
-    expect(screen.getByRole('button', { name: accountId })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: accountId })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Отметить проверенной' }))
 
     const retry = await screen.findByRole(
@@ -249,7 +259,7 @@ describe('manager installation queue', () => {
       return installationPage(row)
     })
     openManager('')
-    await screen.findByRole('button', { name: accountId })
+    await screen.findByRole('link', { name: accountId })
     try {
       act(() => {
         focusManager.setFocused(false)
@@ -303,12 +313,12 @@ describe('manager installation queue', () => {
       return installationPage(row)
     })
     openManager('?section=installations')
-    fireEvent.click(await screen.findByRole('button', { name: accountId }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Подробнее' }))
     expect(screen.getByRole('heading', { name: 'Аккаунт amoCRM ' + accountId })).toBeVisible()
     fireEvent.click(screen.getByRole('button', { name: 'Отметить проверенной' }))
 
     expect(await screen.findByText('Нет доступа к установкам.')).toBeVisible()
-    expect(screen.queryByRole('button', { name: accountId })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: accountId })).not.toBeInTheDocument()
     expect(
       screen.queryByRole('heading', { name: 'Аккаунт amoCRM ' + accountId }),
     ).not.toBeInTheDocument()
@@ -324,8 +334,7 @@ describe('manager installation queue', () => {
       return installationPage(row)
     })
     openManager('?section=installations')
-    await screen.findByText(accountId, { selector: 'button' })
-    expect(screen.getByRole('button', { name: accountId })).toBeVisible()
+    expect(await screen.findByRole('link', { name: accountId })).toBeVisible()
     fireEvent.change(screen.getByRole('searchbox', { name: 'Аккаунт или продукт' }), {
       target: { value: accountId },
     })

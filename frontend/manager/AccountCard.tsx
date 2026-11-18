@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Timeline } from './Timeline'
 import { resolveEpisode } from './episodeResolver'
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { formatTime } from '../src/lib/format'
 import { getAccount, listUsers, listWidgets, type AccountWidget } from './accountsApi'
@@ -14,11 +14,17 @@ import {
   type AccountTab,
 } from './accountsLocation'
 import { AccountForm } from './AccountForms'
-import { AccountEvidence, AccountOverview, type AccountActions } from './AccountOverview'
-import { AccountPortrait } from './AccountPortrait'
+import {
+  AccountEvidence,
+  AccountOverview,
+  accountTitle,
+  type AccountActions,
+} from './AccountOverview'
+import { AccountAudit, AccountPortrait } from './AccountPortrait'
 import { accountsKey, ReadFailure, useAccountAccessError, type AccountAccess } from './AccountsPage'
 import { installationsKey } from './InstallationsPage'
 import styles from './Accounts.module.css'
+import card from './AccountCard.module.css'
 
 type AccountLocation = NonNullable<ReturnType<typeof getAccountLocation>>
 type Props = AccountAccess & {
@@ -56,35 +62,57 @@ function Widgets({
     navigate(params.toString())
   }
   return (
-    <div className={styles.workspace}>
-      <p className={styles.meta}>Platform · снимок на {formatTime(widgets.data.snapshot_at)}</p>
+    <section className={card.surface} aria-label="Наши виджеты">
+      <header className={card.sectionHeader}>
+        <h2>Наши виджеты</h2>
+        <span className={styles.meta}>
+          Platform · снимок на {formatTime(widgets.data.snapshot_at)}
+        </span>
+      </header>
       {rows.length === 0 ? (
-        <p>Установок пока нет</p>
+        <p className={card.empty}>Установок пока нет.</p>
       ) : (
-        rows.map((row) => (
-          <Widget
-            key={row.id}
-            row={row}
-            selected={selected}
-            scope={scope}
-            canRenew={canRenew && row.lifecycle === 'current'}
-            actions={actions}
-          />
-        ))
+        <div className={card.tableScroll}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th scope="col">Статус · дата</th>
+                <th scope="col">Виджет</th>
+                <th scope="col">Доступ до</th>
+                <th scope="col">Авторизация</th>
+                {canRenew ? <th scope="col">Действия</th> : null}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <Widget
+                  key={row.id}
+                  row={row}
+                  selected={selected}
+                  scope={scope}
+                  canRenew={canRenew}
+                  actions={actions}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-      <div className={styles.actions}>
-        {selected.productCursor ? (
-          <button type="button" onClick={() => page(null)}>
-            Первая страница
-          </button>
-        ) : null}
-        {widgets.data.next_cursor ? (
-          <button type="button" onClick={() => page(widgets.data.next_cursor)}>
-            Следующая страница
-          </button>
-        ) : null}
-      </div>
-    </div>
+      {selected.productCursor || widgets.data.next_cursor ? (
+        <div className={card.pager}>
+          {selected.productCursor ? (
+            <button type="button" onClick={() => page(null)}>
+              Первая страница
+            </button>
+          ) : null}
+          {widgets.data.next_cursor ? (
+            <button type="button" onClick={() => page(widgets.data.next_cursor)}>
+              Следующая страница
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
   )
 }
 
@@ -102,87 +130,130 @@ function Widget({
   actions: AccountActions
 }) {
   const [renewing, setRenewing] = useState(false)
+  const canRenewRow = canRenew && snapshotRow.lifecycle === 'current'
   const fromSnapshot = selected.productCursor !== ''
   const product = snapshotRow.product_id
   const current = useQuery({
     queryKey: [...accountsKey, scope, selected.id, 'widget-current', product],
     queryFn: ({ signal }) =>
       listWidgets(selected.id, '', signal, { kind: 'currentProduct', product }),
-    enabled: canRenew && fromSnapshot && renewing,
+    enabled: canRenewRow && fromSnapshot && renewing,
     retry: false,
   })
   useAccountAccessError(current.error, actions.onExpired, actions.onForbidden)
   const latest = current.isError ? undefined : current.data?.items[0]
   const row = latest ?? snapshotRow
   return (
-    <section className={styles.panel}>
-      <h3>{row.product_name || row.product_code}</h3>
-      <WidgetFacts row={row} />
-      {canRenew && fromSnapshot && !renewing ? (
-        <button type="button" onClick={() => setRenewing(true)}>
-          Открыть продление
-        </button>
+    <tr>
+      <td>
+        <StatusBadge domain="installation_lifecycle" state={row.lifecycle} calm />
+        <time className={card.cellSecondary} dateTime={row.installed_at}>
+          {formatTime(row.installed_at)}
+        </time>
+        {row.removed_at ? (
+          <time className={card.cellSecondary} dateTime={row.removed_at}>
+            Удалён {formatTime(row.removed_at)}
+          </time>
+        ) : null}
+      </td>
+      <td>
+        <strong>{row.product_name || row.product_code}</strong>
+        <span className={card.cellSecondary}>
+          {row.product_code}
+          {row.kind === 'observed' ? ' · Наблюдение Core' : ' · Эпизод ' + row.generation}
+        </span>
+      </td>
+      <td>
+        {formatTime(row.access.valid_until)}
+        <div className={card.cellSecondary}>
+          <StatusBadge domain="product_access_source" state={row.access.source} calm />
+        </div>
+        <span className={card.cellSecondary}>Расчёт {formatTime(row.access.computed_at)}</span>
+      </td>
+      <td>
+        <StatusBadge domain="installation_authorization" state={row.authorization} calm />
+        <div className={card.cellSecondary}>
+          <StatusBadge
+            domain="product_access"
+            state={row.access.active ? 'active' : 'inactive'}
+            calm
+          />
+        </div>
+      </td>
+      {canRenew ? (
+        <td className={card.widgetActions}>
+          {canRenewRow ? (
+            <details
+              onToggle={(event) => {
+                if (event.currentTarget.open) setRenewing(true)
+              }}
+            >
+              <summary>Продлить</summary>
+              {fromSnapshot && renewing ? (
+                current.isError ? (
+                  <ReadFailure error={current.error} retry={() => void current.refetch()} />
+                ) : current.isPending ? (
+                  <p role="status">Проверяем текущий срок…</p>
+                ) : !latest ? (
+                  <p role="alert">Текущая установка не найдена.</p>
+                ) : null
+              ) : null}
+              {!fromSnapshot || latest ? (
+                <AccountForm
+                  {...actions}
+                  id={selected.id + ':renewal:' + row.product_id}
+                  title="Ручное продление"
+                  version={row.entitlement_version}
+                  initial={{ until: '', reason: '' }}
+                  current={
+                    <p>
+                      Текущий срок:{' '}
+                      {row.access.valid_until ? formatTime(row.access.valid_until) : '—'}.
+                    </p>
+                  }
+                  submitLabel="Продлить доступ"
+                  command={(fields, _, version, key) => ({
+                    kind: 'renewal',
+                    account: selected.id,
+                    product: row.product_id,
+                    version,
+                    key,
+                    body: JSON.stringify({
+                      product_id: row.product_id,
+                      target_until: new Date(fields.until).toISOString(),
+                      reason: fields.reason.trim(),
+                    }),
+                  })}
+                >
+                  {(fields, edit) => (
+                    <>
+                      <label>
+                        Продлить до
+                        <input
+                          type="datetime-local"
+                          required
+                          value={fields.until}
+                          onChange={(event) => edit('until', event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Причина продления
+                        <input
+                          required
+                          maxLength={1000}
+                          value={fields.reason}
+                          onChange={(event) => edit('reason', event.target.value)}
+                        />
+                      </label>
+                    </>
+                  )}
+                </AccountForm>
+              ) : null}
+            </details>
+          ) : null}
+        </td>
       ) : null}
-      {canRenew && fromSnapshot && renewing ? (
-        current.isError ? (
-          <ReadFailure error={current.error} retry={() => void current.refetch()} />
-        ) : current.isPending ? (
-          <p role="status">Проверяем текущий срок…</p>
-        ) : !latest ? (
-          <p role="alert">Текущая установка не найдена.</p>
-        ) : null
-      ) : null}
-      {canRenew && (!fromSnapshot || (renewing && latest)) ? (
-        <AccountForm
-          {...actions}
-          id={selected.id + ':renewal:' + row.product_id}
-          title="Ручное продление"
-          version={row.entitlement_version}
-          initial={{ until: '', reason: '' }}
-          current={
-            <p>
-              Текущий срок: {row.access.valid_until ? formatTime(row.access.valid_until) : '—'}.
-            </p>
-          }
-          submitLabel="Продлить доступ"
-          command={(fields, _, version, key) => ({
-            kind: 'renewal',
-            account: selected.id,
-            product: row.product_id,
-            version,
-            key,
-            body: JSON.stringify({
-              product_id: row.product_id,
-              target_until: new Date(fields.until).toISOString(),
-              reason: fields.reason.trim(),
-            }),
-          })}
-        >
-          {(fields, edit) => (
-            <>
-              <label>
-                Продлить до
-                <input
-                  type="datetime-local"
-                  required
-                  value={fields.until}
-                  onChange={(event) => edit('until', event.target.value)}
-                />
-              </label>
-              <label>
-                Причина продления
-                <input
-                  required
-                  maxLength={1000}
-                  value={fields.reason}
-                  onChange={(event) => edit('reason', event.target.value)}
-                />
-              </label>
-            </>
-          )}
-        </AccountForm>
-      ) : null}
-    </section>
+    </tr>
   )
 }
 
@@ -191,7 +262,7 @@ function WidgetFacts({ row }: { row: AccountWidget }) {
     <dl className={styles.facts}>
       <dt>Поколение установки</dt>
       <dd>{row.generation}</dd>
-      <dt>Установлен</dt>
+      <dt>{row.kind === 'observed' ? 'Зарегистрирован в Core' : 'Установлен'}</dt>
       <dd>{formatTime(row.installed_at)}</dd>
       <dt>Удалён</dt>
       <dd>{row.removed_at ? formatTime(row.removed_at) : '—'}</dd>
@@ -262,12 +333,30 @@ function HistoricalWidget({
   )
 }
 
+const userFilters = {
+  all: 'Все',
+  active: 'Активные',
+  inactive: 'Деактивированные',
+  admins: 'Администраторы',
+} as const
+type UserFilter = keyof typeof userFilters
+type CrmUser = NonNullable<Awaited<ReturnType<typeof listUsers>>['value']>[number]
+
+function matchesUser(user: CrmUser, filter: UserFilter) {
+  if (filter === 'active') return user.is_active
+  if (filter === 'inactive') return !user.is_active
+  if (filter === 'admins') return user.is_admin
+  return true
+}
+
 function Users({
   selected,
   scope,
+  search,
+  navigate,
   onExpired,
   onForbidden,
-}: Pick<Props, 'selected' | 'scope' | 'onExpired' | 'onForbidden'>) {
+}: Pick<Props, 'selected' | 'scope' | 'search' | 'navigate' | 'onExpired' | 'onForbidden'>) {
   const users = useQuery({
     queryKey: [...accountsKey, scope, selected.id, 'crm-users'],
     queryFn: ({ signal }) => listUsers(selected.id, signal),
@@ -276,36 +365,101 @@ function Users({
   useAccountAccessError(users.error, onExpired, onForbidden)
   if (users.isError) return <ReadFailure error={users.error} retry={() => void users.refetch()} />
   if (users.isPending) return <p role="status">Загружаем пользователей…</p>
+  const params = new URLSearchParams(search)
+  const filterValue = params.get('users_filter')
+  const filter =
+    filterValue && Object.hasOwn(userFilters, filterValue) ? (filterValue as UserFilter) : 'all'
+  const searchValue = params.get('users_q') ?? ''
+  const term = searchValue.trim().toLocaleLowerCase('ru-RU')
+  function apply(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const value = String(new FormData(event.currentTarget).get('query') ?? '').trim()
+    if (value) params.set('users_q', value)
+    else params.delete('users_q')
+    navigate(params.toString())
+  }
   return (
     <AccountEvidence title="Пользователи amoCRM" value={users.data}>
-      {(items) =>
-        items.length === 0 ? (
-          <p>Пользователей нет</p>
-        ) : (
-          <div className={styles.tableScroll}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col">Имя</th>
-                  <th scope="col">ID</th>
-                  <th scope="col">Активность</th>
-                  <th scope="col">Администратор</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.name}</td>
-                    <td>{user.id}</td>
-                    <td>{user.is_active ? 'Активен' : 'Неактивен'}</td>
-                    <td>{user.is_admin ? 'Да' : 'Нет'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {(items) => {
+        const counts = { all: items.length, active: 0, inactive: 0, admins: 0 }
+        for (const user of items) {
+          counts[user.is_active ? 'active' : 'inactive']++
+          if (user.is_admin) counts.admins++
+        }
+        const rows = items.filter(
+          (user) =>
+            matchesUser(user, filter) &&
+            (user.name.toLocaleLowerCase('ru-RU').includes(term) || user.id.includes(term)),
         )
-      }
+        return (
+          <>
+            <div className={card.userToolbar}>
+              <nav className={card.userFilters} aria-label="Статус пользователей">
+                {(Object.keys(userFilters) as UserFilter[]).map((key) => {
+                  const next = new URLSearchParams(search)
+                  if (key === 'all') next.delete('users_filter')
+                  else next.set('users_filter', key)
+                  return (
+                    <ManagerLink
+                      key={key}
+                      current={filter === key}
+                      search={next.toString()}
+                      navigate={navigate}
+                    >
+                      {userFilters[key]} · {counts[key]}
+                    </ManagerLink>
+                  )
+                })}
+              </nav>
+              <form key={searchValue} onSubmit={apply} className={card.userSearch}>
+                <input
+                  type="search"
+                  name="query"
+                  aria-label="Имя или ID пользователя"
+                  placeholder="Имя или ID"
+                  defaultValue={searchValue}
+                  maxLength={256}
+                />
+                <button type="submit">Найти</button>
+              </form>
+            </div>
+            {rows.length === 0 ? (
+              <p className={card.empty}>
+                {items.length ? 'Пользователи по фильтру не найдены.' : 'Пользователей нет.'}
+              </p>
+            ) : (
+              <div className={card.tableScroll}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th scope="col">Имя</th>
+                      <th scope="col">ID</th>
+                      <th scope="col">Права</th>
+                      <th scope="col">Статус</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((user) => (
+                      <tr key={user.id} className={user.is_active ? undefined : card.inactiveUser}>
+                        <td>{user.name}</td>
+                        <td>{user.id}</td>
+                        <td>{user.is_admin ? 'Администратор' : 'Пользователь'}</td>
+                        <td>
+                          <StatusBadge
+                            domain="crm_user"
+                            state={user.is_active ? 'active' : 'inactive'}
+                            calm
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )
+      }}
     </AccountEvidence>
   )
 }
@@ -332,40 +486,52 @@ export function ManagerAccountCard({
     onSaved: () => {
       void cache.invalidateQueries({ queryKey: [...accountsKey, scope] })
       void cache.invalidateQueries({ queryKey: [...installationsKey, scope] })
+      void cache.invalidateQueries({ queryKey: ['managers', 'timeline', scope] })
     },
   }
-  const tabLinks: [AccountTab, string][] = [
-    ['overview', accountTabs.overview],
-    ['widgets', accountTabs.widgets],
-    ['portrait', accountTabs.portrait],
-    ['history', accountTabs.history],
-    ['users', accountTabs.users],
-  ]
+  const tabLinks = Object.entries(accountTabs) as [AccountTab, string][]
   const account = detail.isError ? undefined : detail.data
+  const canWrite = grants.includes('clients.write')
+  const canWritePortrait =
+    canWrite &&
+    (account?.capabilities.some(
+      (capability) => capability.action === 'account.portrait' && capability.allowed,
+    ) ??
+      false)
+  const parent = new URLSearchParams(search).get('section')
   return (
     <article className={styles.workspace}>
-      <header className={styles.heading}>
-        <div>
-          <ManagerLink search={listSearch(search)} navigate={navigate}>
-            К списку
-          </ManagerLink>
-        </div>
-        <h1>
-          {account?.display_name ??
-            (account ? 'Аккаунт amoCRM ' + account.amo_account_id : 'Карточка клиента')}
-        </h1>
+      <nav aria-label="Путь к карточке аккаунта" className={card.breadcrumb}>
+        <ManagerLink search={listSearch(search)} navigate={navigate}>
+          {parent === 'clients' ? 'Клиенты' : parent === 'feed' ? 'Лента событий' : 'Установки'}
+        </ManagerLink>
         {account ? (
-          <p className={styles.meta}>
-            amoCRM {account.amo_account_id} · ID Platform {account.account_id}
-          </p>
+          <>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{accountTitle(account)}</span>
+          </>
         ) : null}
-      </header>
+      </nav>
       {detail.isError ? (
         <ReadFailure error={detail.error} retry={() => void detail.refetch()} />
       ) : detail.isPending || !account ? (
         <p role="status">Загружаем карточку…</p>
       ) : (
         <>
+          <AccountOverview
+            account={account}
+            canWrite={canWrite}
+            usersLink={(label) => (
+              <ManagerLink
+                search={accountSearch(search, account.account_id, 'users')}
+                navigate={navigate}
+                label={'Пользователи amoCRM, активных ' + label}
+              >
+                {label}
+              </ManagerLink>
+            )}
+            {...actions}
+          />
           <nav className={styles.tabs} aria-label="Вкладки клиента">
             {tabLinks.map(([tab, label]) => (
               <ManagerLink
@@ -378,13 +544,6 @@ export function ManagerAccountCard({
               </ManagerLink>
             ))}
           </nav>
-          {selected.tab === 'overview' ? (
-            <AccountOverview
-              account={account}
-              canWrite={grants.includes('clients.write')}
-              {...actions}
-            />
-          ) : null}
           {selected.tab === 'widgets' && selected.episode ? (
             <HistoricalWidget
               selected={selected}
@@ -411,13 +570,22 @@ export function ManagerAccountCard({
             <AccountPortrait
               account={selected.id}
               scope={scope}
+              canWrite={canWritePortrait}
+              canConfigure={grants.includes('configuration.manage')}
+              {...actions}
+            />
+          ) : null}
+          {selected.tab === 'audit' ? (
+            <AccountAudit
+              account={selected.id}
+              scope={scope}
               canWrite={
-                grants.includes('clients.write') &&
+                canWrite &&
                 account.capabilities.some(
-                  (capability) => capability.action === 'account.portrait' && capability.allowed,
+                  (capability) =>
+                    capability.action === 'account.portrait_audit_date' && capability.allowed,
                 )
               }
-              canConfigure={grants.includes('configuration.manage')}
               {...actions}
             />
           ) : null}
@@ -435,6 +603,8 @@ export function ManagerAccountCard({
           {selected.tab === 'users' ? (
             <Users
               selected={selected}
+              search={search}
+              navigate={navigate}
               scope={scope}
               onExpired={onExpired}
               onForbidden={onForbidden}

@@ -46,7 +46,6 @@ export function Workspace({
   search,
   navigate,
   name,
-  accountSelected,
   onLogout,
   logoutPending,
   logoutFailed,
@@ -55,7 +54,6 @@ export function Workspace({
   search: string
   navigate: (search: string) => void
   name: string
-  accountSelected: boolean
   onLogout: () => void
   logoutPending: boolean
   logoutFailed: boolean
@@ -77,7 +75,7 @@ export function Workspace({
   return (
     <div
       className={shell.shell}
-      data-overview={section !== 'installations' && !accountSelected ? true : undefined}
+      data-overview="true"
       data-menu-open={menuOpen}
       data-mobile-open={mobileMenuOpen}
     >
