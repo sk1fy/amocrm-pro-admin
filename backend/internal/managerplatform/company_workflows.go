@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/oapi-codegen/nullable"
 	wire "github.com/sk1fy/amocrm-pro-admin/internal/platformwire"
 )
 
@@ -167,12 +168,19 @@ func validCompanyMetadata(item *wire.CompanyWorkflowMetadata) bool {
 }
 
 func validCompanyWorkflow(item *wire.ProductCompanyWorkflow, target uuid.UUID, command intent) bool {
-	if ProductID(item.ProductId) != ProductID(target) || target == uuid.Nil || item.Version < 1 || item.Version > MaxVersion || int64(item.Version) < command.Version || bool(item.WriteReady) || !item.Configuration.IsSpecified() {
+	if ProductID(item.ProductId) != ProductID(target) || target == uuid.Nil || bool(item.WriteReady) {
 		return false
 	}
-	configuration, err := item.Configuration.Get()
-	if err != nil {
-		return item.Version == 1 && command.Kind == ""
+	return validWorkflowConfiguration(item.Version, item.Configuration, command)
+}
+
+func validWorkflowConfiguration(version int, value nullable.Nullable[wire.CompanyWorkflowConfiguration], command intent) bool {
+	if version < 1 || version > MaxVersion || int64(version) < command.Version || !value.IsSpecified() {
+		return false
 	}
-	return item.Version > 1 && configuration.Revision == item.Version-1 && validCRMID(configuration.SourceAccountId) && configuration.BindingRevision != "" && configuration.MetadataGenerationId != uuid.Nil && validCRMID(configuration.PipelineId) && validCRMID(configuration.InitialStageId) && !configuration.ValidatedAt.IsZero()
+	configuration, err := value.Get()
+	if err != nil {
+		return version == 1 && command.Kind == ""
+	}
+	return version > 1 && configuration.Revision == version-1 && validCRMID(configuration.SourceAccountId) && configuration.BindingRevision != "" && configuration.MetadataGenerationId != uuid.Nil && validCRMID(configuration.PipelineId) && validCRMID(configuration.InitialStageId) && !configuration.ValidatedAt.IsZero()
 }

@@ -353,3 +353,55 @@
     padding-inline: var(--space-2);
   }
 }
+
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.heading h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.settingsDialog {
+  width: min(34rem, calc(100% - var(--space-6)));
+  max-height: calc(100% - var(--space-6));
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.settingsDialog::backdrop {
+  background: rgb(0 0 0 / 35%);
+}
+
+.settingsDialog fieldset {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.settingsDialog select {
+  max-width: 100%;
+}
+
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.saveSettings:enabled {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}

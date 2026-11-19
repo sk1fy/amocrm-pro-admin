@@ -6,6 +6,8 @@ import { EmptyState } from '../src/components/EmptyState'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { EMPTY, formatRelativeTime, formatTime } from '../src/lib/format'
 import { accountSearch, ManagerLink } from './accountsLocation'
+import { InstallationDealSettings } from './CompanyWorkflowPanel'
+import type { AccountAccess } from './AccountsPage'
 import { InstallationFilters } from './InstallationFilters'
 import { listInstallations, retryInstallationDeal, type Installation } from './installationsApi'
 import { getInstallationSearch, type useManagerLocation } from './installationsLocation'
@@ -17,6 +19,7 @@ export const installationsKey = ['managers', 'installations']
 type Props = ReturnType<typeof useManagerLocation> & {
   scope: string
   canWrite: boolean
+  canConfigureDeals: boolean
   onExpired: () => void
   onForbidden: () => void
 }
@@ -232,12 +235,25 @@ function InstallationDetails({ row, snapshot }: { row: Installation; snapshot: s
   )
 }
 
+export function InstallationsHeading({
+  canConfigureDeals,
+  ...access
+}: AccountAccess & { canConfigureDeals: boolean }) {
+  return (
+    <header className={styles.heading}>
+      <h1 id="installations-heading">Установки</h1>
+      {canConfigureDeals ? <InstallationDealSettings {...access} /> : null}
+    </header>
+  )
+}
+
 export function InstallationsPage({
   search,
   updateFilters,
   navigate,
   scope,
   canWrite,
+  canConfigureDeals,
   onExpired,
   onForbidden,
 }: Props) {
@@ -307,7 +323,12 @@ export function InstallationsPage({
 
   return (
     <section className={styles.page} aria-labelledby="installations-heading">
-      <h1 id="installations-heading">Установки</h1>
+      <InstallationsHeading
+        canConfigureDeals={canConfigureDeals}
+        scope={scope}
+        onExpired={onExpired}
+        onForbidden={onForbidden}
+      />
       {forbidden ? (
         <p className={styles.message} role="alert">
           Нет доступа к установкам.

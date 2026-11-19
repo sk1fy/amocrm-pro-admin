@@ -1,3 +1,4 @@
+import { useId, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createRequestKey } from '../src/features/operations/intents'
 import { formatTime } from '../src/lib/format'
@@ -5,16 +6,48 @@ import { CommandFeedback, useAccountCommand, VersionConflict } from './accountCo
 import { ReadFailure, useAccountAccessError, type AccountAccess } from './AccountsPage'
 import { getCompanyWorkflow, getWorkflowMetadata, type CompanyWorkflow } from './companyApi'
 import { CompanySource } from './CompanySource'
-import type { ProductId } from './productsApi'
 import styles from './Accounts.module.css'
+import dialogStyles from './InstallationsPage.module.css'
 
-export function CompanyWorkflowPanel({
-  productId,
-  ...access
-}: AccountAccess & { productId: ProductId }) {
+export function InstallationDealSettings(access: AccountAccess) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  const title = useId()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => {
+          dialog.current?.showModal()
+          setOpen(true)
+        }}
+      >
+        Настройка сделок
+      </button>
+      <dialog
+        ref={dialog}
+        className={dialogStyles.settingsDialog}
+        aria-labelledby={title}
+        onClose={() => setOpen(false)}
+      >
+        <div className={dialogStyles.heading}>
+          <h2 id={title}>Настройка сделок</h2>
+          <button type="button" onClick={() => dialog.current?.close()}>
+            Закрыть
+          </button>
+        </div>
+        {open ? <CompanyWorkflowPanel {...access} /> : null}
+      </dialog>
+    </>
+  )
+}
+
+function CompanyWorkflowPanel(access: AccountAccess) {
   const workflow = useQuery({
-    queryKey: ['managers', 'company-workflow', access.scope, productId],
-    queryFn: ({ signal }) => getCompanyWorkflow(productId, signal),
+    queryKey: ['managers', 'company-workflow', access.scope],
+    queryFn: ({ signal }) => getCompanyWorkflow(signal),
     retry: false,
   })
   const metadata = useQuery({
@@ -29,7 +62,7 @@ export function CompanyWorkflowPanel({
     void metadata.refetch()
   }
   const saved = (_value: CompanyWorkflow) => refresh()
-  const attempt = useAccountCommand('company-workflow:' + productId, {
+  const attempt = useAccountCommand('installation-deal-settings', {
     ...access,
     onSaved: refresh,
     onWorkflowSaved: saved,
@@ -41,30 +74,30 @@ export function CompanyWorkflowPanel({
   const meta = metadata.data
   const pipeline = meta?.pipelines?.find((p) => p.id === fields.pipeline)
   const stage = pipeline?.stages.find((s) => s.id === fields.stage)
+  const sameSource =
+    !config ||
+    (config.source_account_id === meta?.source.source_account_id &&
+      config.binding_revision === meta.source.binding_revision)
   const ready =
+    !workflow.isError &&
+    !metadata.isError &&
+    sameSource &&
     meta?.source.state === 'fresh' &&
     meta.source.complete &&
     meta.generation_id !== null &&
     meta.pipelines !== null
   const invalidSelection = Boolean((fields.pipeline && !pipeline) || (fields.stage && !stage))
   return (
-    <section className={styles.panel} aria-label="CRM workflow">
-      <h2>Воронка и начальный этап CRM</h2>
-      <p>Сохранённая настройка виджета. Создание сделок пока не включено.</p>
+    <div>
+      <p>Настройка применяется ко всем новым сделкам по установкам наших виджетов в rakurscrm.</p>
       {workflow.isPending ? (
         <p role="status">Загружаем настройку…</p>
       ) : workflow.isError ? (
         <ReadFailure error={workflow.error} retry={refresh} />
       ) : (
         <>
-          <p className={styles.meta}>
-            Версия настройки: {workflow.data.version}. Версия карточки виджета независима.
-          </p>
           {config ? (
-            <p>
-              Сохранены воронка {config.pipeline_id}, этап {config.initial_stage_id}. Проверено{' '}
-              {formatTime(config.validated_at)}.
-            </p>
+            <p className={styles.meta}>Последнее сохранение {formatTime(config.validated_at)}.</p>
           ) : (
             <p>Настройка ещё не сохранена.</p>
           )}
@@ -75,17 +108,19 @@ export function CompanyWorkflowPanel({
       ) : metadata.isError ? (
         <ReadFailure error={metadata.error} retry={refresh} />
       ) : (
-        <CompanySource source={metadata.data.source} />
+        <CompanySource source={metadata.data.source} compact />
       )}
       {meta?.pipelines === null ? (
         <p>Полного снимка воронок пока нет.</p>
       ) : meta?.pipelines.length === 0 ? (
         <p>В полном снимке нет воронок.</p>
       ) : null}
-      {invalidSelection ? (
+      {!sameSource && meta ? (
+        <p role="alert">Подключение amoCRM изменилось. Обновите данные, чтобы продолжить.</p>
+      ) : null}
+      {invalidSelection && ready ? (
         <p role="alert">
-          Выбранная воронка или этап отсутствует в текущем снимке. Черновик сохранён: выберите
-          подтверждённые значения.
+          Выбранная воронка или этап отсутствует в текущем снимке. Выберите подтверждённые значения.
         </p>
       ) : null}
       <form
@@ -103,7 +138,6 @@ export function CompanyWorkflowPanel({
             return
           attempt.start({
             kind: 'company-workflow',
-            product: productId,
             key: createRequestKey(),
             version: draft?.base ?? workflow.data.version,
             body: JSON.stringify({
@@ -116,8 +150,11 @@ export function CompanyWorkflowPanel({
           })
         }}
       >
-        <fieldset disabled={attempt.locked || !workflow.data || !ready} className={styles.fields}>
-          <legend>Настройка CRM для виджета {productId}</legend>
+        <fieldset
+          aria-label="Место создания сделки"
+          disabled={attempt.locked || !workflow.data || !ready}
+          className={styles.fields}
+        >
           <label>
             Воронка
             <select
@@ -142,6 +179,7 @@ export function CompanyWorkflowPanel({
             Начальный этап
             <select
               value={fields.stage}
+              disabled={!pipeline}
               onChange={(e) =>
                 attempt.edit('stage', e.target.value, initial, workflow.data?.version ?? 1)
               }
@@ -158,26 +196,29 @@ export function CompanyWorkflowPanel({
             </select>
           </label>
         </fieldset>
-        <button
-          disabled={
-            attempt.locked ||
-            state.kind === 'conflict' ||
-            !ready ||
-            !stage ||
-            !workflow.data ||
-            !draft
-          }
-        >
-          Сохранить настройку CRM
-        </button>
-        <button type="button" onClick={refresh}>
-          Обновить настройку и метаданные
-        </button>
+        <div className={dialogStyles.dialogActions}>
+          <button type="button" onClick={refresh}>
+            Обновить данные
+          </button>
+          <button
+            className={dialogStyles.saveSettings}
+            disabled={
+              attempt.locked ||
+              state.kind === 'conflict' ||
+              !ready ||
+              !stage ||
+              !workflow.data ||
+              !draft
+            }
+          >
+            Сохранить настройку
+          </button>
+        </div>
       </form>
       <VersionConflict command={attempt} version={workflow.data?.version ?? 0} latest={initial}>
         <p>Проверьте текущий источник и значения перед применением черновика.</p>
       </VersionConflict>
       <CommandFeedback command={attempt} />
-    </section>
+    </div>
   )
 }

@@ -18,6 +18,7 @@ func TestManagerCompanyWorkflowContract(t *testing.T) {
 	}
 	for _, route := range []struct{ method, path, grant string }{
 		{"GET", "/companies", "clients.read"}, {"GET", "/companies/{id}", "clients.read"},
+		{"GET", "/installation-deal-settings", "catalog.manage"}, {"PUT", "/installation-deal-settings", "catalog.manage"},
 		{"GET", "/company-workflow-metadata", "catalog.manage"}, {"GET", "/products/{id}/company-workflow", "catalog.manage"}, {"PUT", "/products/{id}/company-workflow", "catalog.manage"},
 	} {
 		t.Run(route.method+route.path, func(t *testing.T) {

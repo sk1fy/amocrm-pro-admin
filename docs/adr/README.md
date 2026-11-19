@@ -37,3 +37,5 @@
 - [0028. Назначение frontend задаётся при сборке](0028-frontend-build-purpose.md).
 
 - [0029. Единственный TLS ingress и точные образы выпуска](0029-release-ingress-and-identities.md).
+
+- [0031. Общая настройка сделок в разделе «Установки»](0031-shared-installation-deal-settings.md).

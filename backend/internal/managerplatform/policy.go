@@ -9,21 +9,22 @@ import (
 type commandKind string
 
 const (
-	kindCompanyWorkflow commandKind = "product.company_workflow.set"
-	kindCreateProduct   commandKind = "product.create"
-	kindUpdateProduct   commandKind = "product.update"
-	kindReview          commandKind = "installation.review"
-	kindRetryDeal       commandKind = "installation.crm_deal.retry"
-	kindProfile         commandKind = "account.profile"
-	kindPortrait        commandKind = "account.portrait"
-	kindAuditDate       commandKind = "account.portrait_audit_date"
-	kindRefresh         commandKind = "account.refresh"
-	kindRenewal         commandKind = "account.renewal"
-	kindTemplate        commandKind = "portrait.template"
-	kindCreateNiche     commandKind = "portrait.niche.create"
-	kindUpdateNiche     commandKind = "portrait.niche.update"
-	kindDeleteNiche     commandKind = "portrait.niche.delete"
-	kindMergeNiche      commandKind = "portrait.niche.merge"
+	kindInstallationDealSettings commandKind = "installation.deal_settings.set"
+	kindCompanyWorkflow          commandKind = "product.company_workflow.set"
+	kindCreateProduct            commandKind = "product.create"
+	kindUpdateProduct            commandKind = "product.update"
+	kindReview                   commandKind = "installation.review"
+	kindRetryDeal                commandKind = "installation.crm_deal.retry"
+	kindProfile                  commandKind = "account.profile"
+	kindPortrait                 commandKind = "account.portrait"
+	kindAuditDate                commandKind = "account.portrait_audit_date"
+	kindRefresh                  commandKind = "account.refresh"
+	kindRenewal                  commandKind = "account.renewal"
+	kindTemplate                 commandKind = "portrait.template"
+	kindCreateNiche              commandKind = "portrait.niche.create"
+	kindUpdateNiche              commandKind = "portrait.niche.update"
+	kindDeleteNiche              commandKind = "portrait.niche.delete"
+	kindMergeNiche               commandKind = "portrait.niche.merge"
 )
 
 type commandPolicy struct {
@@ -37,6 +38,8 @@ type commandPolicy struct {
 
 func (kind commandKind) policy() commandPolicy {
 	switch kind {
+	case kindInstallationDealSettings:
+		return commandPolicy{grant: auth.GrantCatalogManage, target: "installation_deal_settings", version: true}
 	case kindCreateProduct:
 		return commandPolicy{grant: auth.GrantCatalogManage, target: "product"}
 	case kindUpdateProduct, kindCompanyWorkflow:

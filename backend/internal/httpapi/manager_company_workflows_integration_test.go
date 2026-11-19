@@ -23,6 +23,18 @@ import (
 )
 
 func TestManagerCompanyWorkflowCatalogOnlyExactRetry(t *testing.T) {
+	t.Run("product workflow", func(t *testing.T) {
+		product := uuid.New()
+		checkManagerWorkflowRetry(t, "/products/"+product.String()+"/company-workflow", "product.company_workflow.set", map[string]any{"product_id": product, "write_ready": false})
+	})
+	t.Run("shared installation settings", func(t *testing.T) {
+		checkManagerWorkflowRetry(t, "/installation-deal-settings", "installation.deal_settings.set", nil)
+	})
+}
+
+func checkManagerWorkflowRetry(t *testing.T, path, kind string, fields map[string]any) {
+	t.Helper()
+
 	pool := testkit.Postgres(t)
 	testkit.Reset(t, pool)
 	ctx := t.Context()
@@ -45,7 +57,7 @@ func TestManagerCompanyWorkflowCatalogOnlyExactRetry(t *testing.T) {
 		}
 		cookies[grant] = token
 	}
-	product, generation, key := uuid.New(), uuid.New(), uuid.New()
+	generation, key := uuid.New(), uuid.New()
 	var command uuid.UUID
 	body := `{"source_account_id":"71","binding_revision":"fixture-v1","metadata_generation_id":"` + generation.String() + `","pipeline_id":"11","initial_stage_id":"12"}`
 	attempts := 0
@@ -57,14 +69,21 @@ func TestManagerCompanyWorkflowCatalogOnlyExactRetry(t *testing.T) {
 		if json.Unmarshal(raw, &actor) != nil || actor.Actor.SubjectId != ids["catalog.manage"] {
 			t.Error("current catalog-only actor required")
 		}
-		path := strings.TrimPrefix(r.URL.Path, "/internal/platform/v1/managers")
-		if strings.HasPrefix(path, "/commands/") {
+		upstreamPath := strings.TrimPrefix(r.URL.Path, "/internal/platform/v1/managers")
+		if strings.HasPrefix(upstreamPath, "/commands/") {
 			if mode == "retry" {
 				httpx.WriteJSON(w, 404, map[string]any{"error": map[string]any{"request_id": uuid.New(), "code": "not_found", "message": "not found", "retryable": false}})
 				return
 			}
-			httpx.WriteJSON(w, 200, map[string]any{"id": command, "kind": "product.company_workflow.set", "state": "completed"})
+			httpx.WriteJSON(w, 200, map[string]any{"id": command, "kind": kind, "state": "completed"})
 			return
+		}
+		if upstreamPath != path {
+			t.Errorf("upstream path %s, want %s", upstreamPath, path)
+		}
+		response := map[string]any{"version": 1, "configuration": nil}
+		for name, value := range fields {
+			response[name] = value
 		}
 		if r.Method == "PUT" {
 			received, _ := io.ReadAll(r.Body)
@@ -84,11 +103,13 @@ func TestManagerCompanyWorkflowCatalogOnlyExactRetry(t *testing.T) {
 			}
 			mode = "committed"
 			w.Header().Set("ETag", `"2"`)
-			httpx.WriteJSON(w, 200, map[string]any{"product_id": product, "version": 2, "configuration": map[string]any{"revision": 1, "source_account_id": "71", "binding_revision": "fixture-v1", "metadata_generation_id": generation, "pipeline_id": "11", "initial_stage_id": "12", "validated_at": time.Now().UTC()}, "write_ready": false})
+			response["version"] = 2
+			response["configuration"] = map[string]any{"revision": 1, "source_account_id": "71", "binding_revision": "fixture-v1", "metadata_generation_id": generation, "pipeline_id": "11", "initial_stage_id": "12", "validated_at": time.Now().UTC()}
+			httpx.WriteJSON(w, 200, response)
 			return
 		}
 		w.Header().Set("ETag", `"1"`)
-		httpx.WriteJSON(w, 200, map[string]any{"product_id": product, "version": 1, "configuration": nil, "write_ready": false})
+		httpx.WriteJSON(w, 200, response)
 	}))
 	client, err := managerplatform.NewClient(cfg)
 	if err != nil {
@@ -118,7 +139,6 @@ func TestManagerCompanyWorkflowCatalogOnlyExactRetry(t *testing.T) {
 		}
 		return w
 	}
-	path := "/products/" + product.String() + "/company-workflow"
 	call("GET", path, "catalog.manage", "", true, 200)
 	call("GET", path, "clients.read", "", true, 403)
 	call("PUT", path, "catalog.manage", body, false, 403)

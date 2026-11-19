@@ -35,6 +35,8 @@ output-options:
     - getCompanyWorkflowMetadata
     - getProductCompanyWorkflow
     - setProductCompanyWorkflow
+    - getInstallationDealSettings
+    - setInstallationDealSettings
     - listProducts
     - getProduct
     - createProduct

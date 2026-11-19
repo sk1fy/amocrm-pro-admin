@@ -489,15 +489,15 @@ Staff содержит `id`, `email`, `name`, `status`, `grants`, `version`,
 | GET | `/companies` | clients.read |
 | GET | `/companies/{id}` | clients.read |
 | GET | `/company-workflow-metadata` | catalog.manage |
-| GET | `/products/{id}/company-workflow` | catalog.manage |
-| PUT | `/products/{id}/company-workflow` | catalog.manage |
+| GET | `/installation-deal-settings` | catalog.manage |
+| PUT | `/installation-deal-settings` | catalog.manage |
 
 Источник, nullable снимки и строковые CRM ID сохраняют смысл владельца.
 Чтения компании и метаданных дополняются `observation` и `sources` BFF.
 GET workflow не создаёт строку: без настройки версия 1, конфигурация null.
 PUT использует собственный If-Match workflow, Idempotency-Key и CSRF.
-Первая запись возвращает версию 2 и ревизию настройки 1. Версия карточки
-продукта не меняется. Тело содержит только `source_account_id`,
+Первая запись возвращает версию 2 и ревизию настройки 1. Версия
+относится к активной привязке компании. Тело содержит `source_account_id`,
 `binding_revision`, `metadata_generation_id`, `pipeline_id`,
 `initial_stage_id`. Источник — утверждение текущей привязки.
 

@@ -415,12 +415,11 @@ Core 401 переводится в unavailable с причиной автори�
 
 ## P12.2: компании и workflow
 
-Схема Platform скопирована побайтно с принятой ревизии
-`6e62a610b8c5935cd188c738e9afdd0cdccd9b45`; SHA-256:
-`07d541a3da84691e6e9f8b426325b3dea44dc8812ec5e07828a9da806305a0c8`.
-`platformwire` генерируется закреплённым oapi-codegen 2.8.2; allowlist
-содержит пять новых операций. Registry manager endpoints сохраняет
-существующие ограниченные mTLS вызовы, current actor и intent.
+Схема Platform синхронизирована с контрактом владельца. Хеш проверяет
+`TestPinnedPlatformContract`. `platformwire` генерируется закреплённым
+oapi-codegen 2.8.2. Реестр маршрутов сохраняет mTLS и передачу актуального
+сотрудника. Команда `installation.deal_settings.set` использует
+существующий журнал намерений с миграцией Admin 000013.
 
 Явные валидаторы проверяют nullable generation/data, десятичные CRM ID,
 версии, соответствие цели и происхождение. BFF понижает fresh до stale

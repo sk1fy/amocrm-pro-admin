@@ -32,6 +32,10 @@ func (c *Client) callAccount(ctx context.Context, action accountAction, actor st
 		return c.wire.GetCompany(ctx, target, &wire.GetCompanyParams{XPlatformActor: actor}, editQuery)
 	case "getCompanyWorkflowMetadata":
 		return c.wire.GetCompanyWorkflowMetadata(ctx, &wire.GetCompanyWorkflowMetadataParams{XPlatformActor: actor}, editQuery)
+	case "getInstallationDealSettings":
+		return c.wire.GetInstallationDealSettings(ctx, &wire.GetInstallationDealSettingsParams{XPlatformActor: actor}, editQuery)
+	case "setInstallationDealSettings":
+		return c.wire.SetInstallationDealSettingsWithBody(ctx, &wire.SetInstallationDealSettingsParams{XPlatformActor: actor, IdempotencyKey: item.Key, IfMatch: etag}, media, bytes.NewReader(body), editQuery)
 	case "getProductCompanyWorkflow":
 		return c.wire.GetProductCompanyWorkflow(ctx, target, &wire.GetProductCompanyWorkflowParams{XPlatformActor: actor}, editQuery)
 	case "setProductCompanyWorkflow":
