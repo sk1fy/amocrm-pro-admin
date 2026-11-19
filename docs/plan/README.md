@@ -32,6 +32,10 @@
 
 ## Текущая часть
 
+- [Контакт активации и сделки по установкам](installation-activation-company-deals.md).
+
+- [Очередь установок по макету](manager-installation-queue-layout.md).
+
 - [Рабочая очередь установок и карточка клиента](manager-installations-redesign.md).
 
 - [Компании и workflow кабинета менеджеров V1, P12.2](company-workflows-v1.md).

@@ -541,6 +541,7 @@ func (e InstallationCrmWorkflow) Valid() bool {
 // Defines values for InstallationKind.
 const (
 	InstallationKindInstall   InstallationKind = "install"
+	InstallationKindObserved  InstallationKind = "observed"
 	InstallationKindReinstall InstallationKind = "reinstall"
 )
 
@@ -549,7 +550,36 @@ func (e InstallationKind) Valid() bool {
 	switch e {
 	case InstallationKindInstall:
 		return true
+	case InstallationKindObserved:
+		return true
 	case InstallationKindReinstall:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InstallationLastLifecycleEvent.
+const (
+	InstallationLastLifecycleEventInstalled    InstallationLastLifecycleEvent = "installed"
+	InstallationLastLifecycleEventReauthorized InstallationLastLifecycleEvent = "reauthorized"
+	InstallationLastLifecycleEventReinstalled  InstallationLastLifecycleEvent = "reinstalled"
+	InstallationLastLifecycleEventUninstalled  InstallationLastLifecycleEvent = "uninstalled"
+	InstallationLastLifecycleEventUnknown      InstallationLastLifecycleEvent = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the InstallationLastLifecycleEvent enum.
+func (e InstallationLastLifecycleEvent) Valid() bool {
+	switch e {
+	case InstallationLastLifecycleEventInstalled:
+		return true
+	case InstallationLastLifecycleEventReauthorized:
+		return true
+	case InstallationLastLifecycleEventReinstalled:
+		return true
+	case InstallationLastLifecycleEventUninstalled:
+		return true
+	case InstallationLastLifecycleEventUnknown:
 		return true
 	default:
 		return false
@@ -568,6 +598,54 @@ func (e InstallationLifecycle) Valid() bool {
 	case InstallationLifecycleCurrent:
 		return true
 	case InstallationLifecycleRemoved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InstallationProductLine.
+const (
+	InstallationProductLineFREE InstallationProductLine = "FREE"
+	InstallationProductLinePRO  InstallationProductLine = "PRO"
+	InstallationProductLineTOP  InstallationProductLine = "TOP"
+)
+
+// Valid indicates whether the value is a known member of the InstallationProductLine enum.
+func (e InstallationProductLine) Valid() bool {
+	switch e {
+	case InstallationProductLineFREE:
+		return true
+	case InstallationProductLinePRO:
+		return true
+	case InstallationProductLineTOP:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InstallationDealState.
+const (
+	InstallationDealStateFailed      InstallationDealState = "failed"
+	InstallationDealStatePending     InstallationDealState = "pending"
+	InstallationDealStateReconciling InstallationDealState = "reconciling"
+	InstallationDealStateSkipped     InstallationDealState = "skipped"
+	InstallationDealStateSucceeded   InstallationDealState = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the InstallationDealState enum.
+func (e InstallationDealState) Valid() bool {
+	switch e {
+	case InstallationDealStateFailed:
+		return true
+	case InstallationDealStatePending:
+		return true
+	case InstallationDealStateReconciling:
+		return true
+	case InstallationDealStateSkipped:
+		return true
+	case InstallationDealStateSucceeded:
 		return true
 	default:
 		return false
@@ -1562,25 +1640,32 @@ type Grant string
 
 // Installation defines model for Installation.
 type Installation struct {
-	Access             AccessState                  `json:"access"`
-	AccountId          openapi_types.UUID           `json:"account_id"`
-	ActivationStatus   InstallationActivationStatus `json:"activation_status"`
-	AmoAccountId       AmoID                        `json:"amo_account_id"`
-	Authorization      InstallationAuthorization    `json:"authorization"`
-	CoreInstallationId openapi_types.UUID           `json:"core_installation_id"`
-	CrmWorkflow        InstallationCrmWorkflow      `json:"crm_workflow"`
-	Generation         int                          `json:"generation"`
-	Id                 openapi_types.UUID           `json:"id"`
-	InstalledAt        time.Time                    `json:"installed_at"`
-	Kind               InstallationKind             `json:"kind"`
-	LastLifecycleEvent LifecycleKind                `json:"last_lifecycle_event"`
-	Lifecycle          InstallationLifecycle        `json:"lifecycle"`
-	ProductCode        ProductCode                  `json:"product_code"`
-	ProductId          openapi_types.UUID           `json:"product_id"`
-	ProductName        string                       `json:"product_name"`
-	RemovedAt          nullable.Nullable[time.Time] `json:"removed_at"`
-	Review             Review                       `json:"review"`
-	Version            int                          `json:"version"`
+	Access                AccessState                    `json:"access"`
+	AccountClassification *string                        `json:"account_classification,omitempty"`
+	AccountDomain         *string                        `json:"account_domain,omitempty"`
+	AccountId             openapi_types.UUID             `json:"account_id"`
+	AccountName           *string                        `json:"account_name,omitempty"`
+	AccountTimeZone       *string                        `json:"account_time_zone,omitempty"`
+	ActivationStatus      InstallationActivationStatus   `json:"activation_status"`
+	AmoAccountId          AmoID                          `json:"amo_account_id"`
+	Authorization         InstallationAuthorization      `json:"authorization"`
+	Contact               *InstallationActivationContact `json:"contact,omitempty"`
+	CoreInstallationId    openapi_types.UUID             `json:"core_installation_id"`
+	CrmWorkflow           InstallationCrmWorkflow        `json:"crm_workflow"`
+	Deal                  *InstallationDeal              `json:"deal,omitempty"`
+	Generation            int                            `json:"generation"`
+	Id                    openapi_types.UUID             `json:"id"`
+	InstalledAt           time.Time                      `json:"installed_at"`
+	Kind                  InstallationKind               `json:"kind"`
+	LastLifecycleEvent    InstallationLastLifecycleEvent `json:"last_lifecycle_event"`
+	Lifecycle             InstallationLifecycle          `json:"lifecycle"`
+	ProductCode           ProductCode                    `json:"product_code"`
+	ProductId             openapi_types.UUID             `json:"product_id"`
+	ProductLine           *InstallationProductLine       `json:"product_line,omitempty"`
+	ProductName           string                         `json:"product_name"`
+	RemovedAt             nullable.Nullable[time.Time]   `json:"removed_at"`
+	Review                Review                         `json:"review"`
+	Version               int                            `json:"version"`
 }
 
 // InstallationActivationStatus defines model for Installation.ActivationStatus.
@@ -1595,16 +1680,48 @@ type InstallationCrmWorkflow string
 // InstallationKind defines model for Installation.Kind.
 type InstallationKind string
 
+// InstallationLastLifecycleEvent defines model for Installation.LastLifecycleEvent.
+type InstallationLastLifecycleEvent string
+
 // InstallationLifecycle defines model for Installation.Lifecycle.
 type InstallationLifecycle string
+
+// InstallationProductLine defines model for Installation.ProductLine.
+type InstallationProductLine string
+
+// InstallationActivationContact defines model for InstallationActivationContact.
+type InstallationActivationContact struct {
+	AmoUserId string  `json:"amo_user_id"`
+	Email     *string `json:"email,omitempty"`
+	Name      string  `json:"name"`
+	Phone     string  `json:"phone"`
+	Role      *string `json:"role,omitempty"`
+}
+
+// InstallationDeal defines model for InstallationDeal.
+type InstallationDeal struct {
+	CanRetry     bool                  `json:"can_retry"`
+	Id           *string               `json:"id,omitempty"`
+	NextRunAt    *time.Time            `json:"next_run_at,omitempty"`
+	Reason       *string               `json:"reason,omitempty"`
+	RetryVersion int                   `json:"retry_version"`
+	State        InstallationDealState `json:"state"`
+	Url          *string               `json:"url,omitempty"`
+}
+
+// InstallationDealState defines model for InstallationDeal.State.
+type InstallationDealState string
 
 // InstallationList defines model for InstallationList.
 type InstallationList struct {
 	Items      []Installation            `json:"items"`
 	NextCursor nullable.Nullable[string] `json:"next_cursor"`
 	QueryHash  string                    `json:"query_hash"`
-	SnapshotAt time.Time                 `json:"snapshot_at"`
-	Summary    InstallationSummary       `json:"summary"`
+
+	// QueueCounts Counts before applying the review filter, from the same snapshot.
+	QueueCounts *InstallationSummary `json:"queue_counts,omitempty"`
+	SnapshotAt  time.Time            `json:"snapshot_at"`
+	Summary     InstallationSummary  `json:"summary"`
 }
 
 // InstallationSummary defines model for InstallationSummary.
@@ -1940,6 +2057,16 @@ type TrialPolicyKind string
 
 // Version defines model for Version.
 type Version = int
+
+// WidgetActivationStatus defines model for WidgetActivationStatus.
+type WidgetActivationStatus struct {
+	Activated bool `json:"activated"`
+	Profile   *struct {
+		Email *string `json:"email,omitempty"`
+		Name  string  `json:"name"`
+		Role  *string `json:"role,omitempty"`
+	} `json:"profile,omitempty"`
+}
 
 // Actor defines model for Actor.
 type Actor = string

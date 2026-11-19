@@ -1,12 +1,20 @@
 .page {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .page h1,
 .message {
   margin: 0;
+}
+
+.intro {
+  margin: -3px 0 var(--space-2);
+  max-width: 65ch;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .message {
@@ -20,37 +28,30 @@
   background: var(--color-surface);
 }
 
-.filters {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: var(--space-2) var(--space-3);
-}
-
 .toolbar,
-.primaryFields,
-.fields {
+.primaryFields {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
+  gap: var(--space-2);
 }
 
 .toolbar {
-  grid-column: 1 / -1;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--color-border);
 }
 
 .toolbar [role='group'] {
   border-bottom: 0;
 }
 
+.toolbar [role='group'] button[aria-pressed='true'] {
+  background: transparent;
+}
+
 .primaryFields {
   flex: 1 1 auto;
   align-items: center;
   justify-content: flex-end;
-  padding-block: 0 var(--space-1);
   column-gap: var(--space-2);
 }
 
@@ -64,12 +65,12 @@
 
 .primaryFields input[type='date'] {
   min-width: 0;
-  width: 8.25rem;
+  width: 9rem;
 }
 
 .search {
   min-width: 0;
-  width: 15rem;
+  width: 16rem;
   max-width: 100%;
 }
 
@@ -100,33 +101,6 @@
   text-decoration: underline;
 }
 
-.fields label {
-  display: grid;
-  flex: 0 1 11rem;
-  min-width: 0;
-  gap: var(--space-1);
-}
-
-.fields input,
-.fields select {
-  min-height: 2.375rem;
-  min-width: 0;
-}
-
-.advanced {
-  margin: 0;
-}
-
-.advanced summary {
-  width: fit-content;
-  color: var(--color-link);
-  cursor: pointer;
-}
-
-.advanced[open] .fields {
-  margin-top: var(--space-2);
-}
-
 .message[role='alert'] {
   color: var(--tone-error);
 }
@@ -145,7 +119,125 @@
 
 .table {
   composes: table from '../src/components/DataTable.module.css';
-  min-width: 42rem;
+  min-width: 69rem;
+  table-layout: fixed;
+}
+
+.dateColumn {
+  width: 126px;
+}
+.productColumn {
+  width: 17%;
+}
+.accountColumn {
+  width: 21%;
+}
+.idColumn {
+  width: 8%;
+}
+.contactColumn {
+  width: 17%;
+}
+.dealColumn {
+  width: 18%;
+}
+.reviewColumn {
+  width: 11%;
+}
+
+.table th,
+.table td {
+  padding-inline: 12px;
+}
+
+.table td {
+  height: 58px;
+  padding-block: 8px;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+
+.table th {
+  padding-block: 10px;
+}
+
+.table td:last-child,
+.table th:last-child {
+  text-align: right;
+}
+
+.widgetName {
+  line-height: 1.35;
+}
+
+.productLine {
+  margin-inline-end: 5px;
+}
+
+.dateCell .cellPrimary {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.dateCell time {
+  white-space: nowrap;
+}
+
+.cellPrimary,
+.tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+
+.tags {
+  margin-top: 2px;
+}
+
+.tags span,
+.productLine span {
+  border-radius: 4px;
+  line-height: 1.15;
+  font-size: 10px;
+}
+
+.productLine span {
+  padding: 2px 5px;
+  font-weight: 700;
+}
+
+.productLine span::before {
+  display: none;
+}
+
+.productLine[data-line='FREE'] span {
+  background: #158445;
+  color: #fff;
+}
+
+.productLine[data-line='TOP'] span {
+  background: #ffb02d;
+  color: #372500;
+}
+
+.zone {
+  padding: 2px 5px;
+  background: var(--color-surface-2);
+  color: var(--color-muted);
+}
+
+.domainLink,
+.accountLink {
+  display: inline-block;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.domainLink:hover,
+.accountLink:hover {
+  color: var(--color-link);
+  text-decoration: underline;
 }
 
 .table small {
@@ -163,8 +255,7 @@
 }
 
 .accountLink {
-  font-weight: 700;
-  white-space: nowrap;
+  font-weight: 500;
 }
 
 .sortButton {
@@ -177,25 +268,33 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--color-link);
-  font-weight: 400;
+  color: var(--color-muted);
+  font-weight: 700;
+  line-height: 1;
 }
 
 .detailButton:hover {
   text-decoration: underline;
 }
 
-.table th:last-child {
-  width: 1%;
-}
-
 .reviewButton {
-  display: block;
-  margin-top: var(--space-1);
+  min-width: 90px;
+  padding: 5px 10px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
+.reviewButton span {
+  margin-right: 4px;
+}
+
+.reviewInfo {
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
 .table .detailCell {
+  text-align: left;
   padding: var(--space-4);
   background: var(--color-surface-2);
 }

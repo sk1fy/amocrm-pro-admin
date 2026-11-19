@@ -1,13 +1,13 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useState } from 'react'
 import { isApiError, isForbidden, isUnauthorized } from '../src/api/client'
 import { DataTablePager } from '../src/components/DataTable'
 import { EmptyState } from '../src/components/EmptyState'
 import { StatusBadge } from '../src/components/StatusBadge'
-import { EMPTY, formatTime } from '../src/lib/format'
+import { EMPTY, formatRelativeTime, formatTime } from '../src/lib/format'
 import { accountSearch, ManagerLink } from './accountsLocation'
 import { InstallationFilters } from './InstallationFilters'
-import { listInstallations, type Installation } from './installationsApi'
+import { listInstallations, retryInstallationDeal, type Installation } from './installationsApi'
 import { getInstallationSearch, type useManagerLocation } from './installationsLocation'
 import { useInstallationReview } from './useInstallationReview'
 import styles from './InstallationsPage.module.css'
@@ -23,6 +23,98 @@ type Props = ReturnType<typeof useManagerLocation> & {
 
 function ObservedTime({ value }: { value: string | null | undefined }) {
   return <time dateTime={value ?? undefined}>{formatTime(value)}</time>
+}
+
+const installationDate = new Intl.DateTimeFormat('ru-RU', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+const dayMs = 86_400_000
+const relativeDays = new Intl.RelativeTimeFormat('ru-RU')
+
+function installationAge(installed: string, snapshot: string) {
+  const age = Date.parse(snapshot) - Date.parse(installed)
+  const days = Math.floor(Math.abs(age) / dayMs)
+  return days < 1
+    ? formatRelativeTime(installed, new Date(snapshot))
+    : relativeDays.format(-Math.sign(age) * days, 'day')
+}
+
+function zoneOffset(timeZone: string, date: Date) {
+  const offset = new Intl.DateTimeFormat('en', { timeZone, timeZoneName: 'longOffset' })
+    .formatToParts(date)
+    .find((part) => part.type === 'timeZoneName')?.value
+  if (offset === 'GMT') return 0
+  const parts = offset?.match(/^GMT([+-])(\d{2}):(\d{2})$/)
+  if (!parts) return null
+  return (parts[1] === '-' ? -1 : 1) * (Number(parts[2]) * 60 + Number(parts[3]))
+}
+
+function moscowOffset(timeZone: string | undefined, snapshot: string) {
+  if (!timeZone) return null
+  try {
+    const date = new Date(snapshot)
+    const account = zoneOffset(timeZone, date)
+    const moscow = zoneOffset('Europe/Moscow', date)
+    if (account === null || moscow === null || account === moscow) return null
+    const minutes = Math.abs(account - moscow)
+    const hours = Math.floor(minutes / 60)
+    const fraction = minutes % 60
+    const sign = account > moscow ? '+' : '−'
+    return sign + hours + (fraction ? ':' + String(fraction).padStart(2, '0') : '') + ' МСК'
+  } catch (error) {
+    if (error instanceof RangeError) return null
+    throw error
+  }
+}
+
+function ContactCell({ contact }: { contact: Installation['contact'] }) {
+  if (!contact)
+    return <StatusBadge domain="installation_contact" state="unavailable" variant="text" />
+  return (
+    <>
+      <a href={'tel:' + contact.phone}>{contact.phone}</a>
+      <small>
+        Активировал: {contact.name}
+        {contact.role ? ' · ' + contact.role : null}
+      </small>
+      {contact.email ? <small>{contact.email}</small> : null}
+    </>
+  )
+}
+
+function DealCell({
+  deal,
+  retry,
+  disabled,
+}: {
+  deal: Installation['deal']
+  retry?: () => void
+  disabled: boolean
+}) {
+  if (deal?.url) {
+    return (
+      <a href={deal.url} target="_blank" rel="noopener noreferrer">
+        №{deal.id} ↗
+      </a>
+    )
+  }
+  return (
+    <>
+      <StatusBadge domain="installation_deal" state={deal?.state ?? 'unavailable'} variant="text" />
+      {deal?.next_run_at ? (
+        <small>
+          <ObservedTime value={deal.next_run_at} />
+        </small>
+      ) : null}
+      {deal?.can_retry && retry ? (
+        <button type="button" className={styles.detailButton} onClick={retry} disabled={disabled}>
+          {deal.state === 'reconciling' ? 'Проверить сделку' : 'Повторить'}
+        </button>
+      ) : null}
+    </>
+  )
 }
 
 function ReviewBadge({ row }: { row: Installation }) {
@@ -49,6 +141,8 @@ function InstallationDetails({ row, snapshot }: { row: Installation; snapshot: s
             <dd className={styles.id}>{row.id}</dd>
             <dt>Продукт</dt>
             <dd>{row.product_name}</dd>
+            <dt>Код продукта</dt>
+            <dd>{row.product_code}</dd>
             <dt>{row.kind === 'observed' ? 'Источник' : 'Эпизод'}</dt>
             <dd>
               <StatusBadge domain="installation_kind" state={row.kind} calm />
@@ -149,6 +243,8 @@ export function InstallationsPage({
 }: Props) {
   const client = useQueryClient()
   const filters = getInstallationSearch(search)
+  if (!filters.has('review')) filters.set('review', 'unreviewed')
+  const activeQueue = filters.get('review') === 'reviewed' ? 'reviewed' : 'unreviewed'
   const searchKey = filters.toString()
   const [denied, setDenied] = useState(false)
   const [selection, setSelection] = useState<{ search: string; id: Installation['id'] } | null>(
@@ -163,6 +259,12 @@ export function InstallationsPage({
       void client.invalidateQueries({ queryKey: installationsKey })
     }
   }
+
+  const dealRetry = useMutation({
+    mutationFn: ({ id, version }: { id: Installation['id']; version: number }) =>
+      retryInstallationDeal(id, version),
+    onSettled: refresh,
+  })
 
   const review = useInstallationReview({
     onAccessError(error) {
@@ -212,12 +314,23 @@ export function InstallationsPage({
         </p>
       ) : (
         <>
+          <p className={styles.intro}>
+            Новые установки идут сверху. Нажмите на аккаунт или ID amoCRM, чтобы открыть карточку
+            клиента. Если клиент разобрался с виджетом и ему не нужна помощь, нажмите «Проверен».
+          </p>
           <InstallationFilters
-            key={searchKey}
             filters={filters}
             apply={updateFilters}
-            summary={snapshot?.summary}
+            summary={
+              snapshot?.queue_counts ??
+              (snapshot ? { [activeQueue]: snapshot.summary[activeQueue] } : undefined)
+            }
           />
+          {dealRetry.isError ? (
+            <p className={styles.message} role="alert">
+              Не удалось подтвердить повтор. Проверьте состояние сделки.
+            </p>
+          ) : null}
           {review.state.kind === 'checking' ? (
             <p className={styles.message} role="status">
               Проверяем результат изменения отметки…
@@ -285,6 +398,15 @@ export function InstallationsPage({
                     tabIndex={0}
                   >
                     <table className={styles.table}>
+                      <colgroup>
+                        <col className={styles.dateColumn} />
+                        <col className={styles.productColumn} />
+                        <col className={styles.accountColumn} />
+                        <col className={styles.idColumn} />
+                        <col className={styles.contactColumn} />
+                        <col className={styles.dealColumn} />
+                        <col className={styles.reviewColumn} />
+                      </colgroup>
                       <thead>
                         <tr>
                           <th scope="col" aria-sort={ascending ? 'ascending' : 'descending'}>
@@ -302,65 +424,147 @@ export function InstallationsPage({
                             </button>
                           </th>
                           <th scope="col">Виджет</th>
+                          <th scope="col">Аккаунт</th>
                           <th scope="col">ID amoCRM</th>
-                          <th scope="col">Подробности</th>
-                          <th scope="col">Проверка</th>
+                          <th scope="col">Контакт</th>
+                          <th scope="col">Сделка в rakurscrm</th>
+                          <th scope="col" aria-label="Проверка">
+                            {activeQueue === 'reviewed' ? 'Проверен' : null}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {snapshot.items.map((row) => {
                           const selected =
                             selection?.search === searchKey && selection.id === row.id
+                          const link = accountSearch(search, row.account_id)
+                          const account = row.account_domain?.split('.')[0]
+                          const zone = moscowOffset(row.account_time_zone, snapshot.snapshot_at)
                           return (
                             <Fragment key={row.id}>
                               <tr>
-                                <td>
-                                  <ObservedTime value={row.installed_at} />
-                                  {row.kind === 'observed' ? <small>Импорт из Core</small> : null}
+                                <td className={styles.dateCell}>
+                                  <div className={styles.cellPrimary}>
+                                    <time
+                                      dateTime={row.installed_at}
+                                      title={formatTime(row.installed_at)}
+                                    >
+                                      {installationDate.format(new Date(row.installed_at))}
+                                    </time>
+                                    <button
+                                      type="button"
+                                      className={styles.detailButton}
+                                      title="Подробнее об установке"
+                                      aria-label={selected ? 'Свернуть' : 'Подробнее'}
+                                      aria-expanded={selected}
+                                      onClick={() =>
+                                        setSelection(
+                                          selected ? null : { search: searchKey, id: row.id },
+                                        )
+                                      }
+                                    >
+                                      ⋯
+                                    </button>
+                                  </div>
+                                  <small>
+                                    {row.kind === 'observed'
+                                      ? 'Регистрация в Core'
+                                      : installationAge(row.installed_at, snapshot.snapshot_at)}
+                                  </small>
                                 </td>
                                 <td>
-                                  <strong>{row.product_name}</strong>
-                                  <small>{row.product_code}</small>
+                                  <div className={styles.widgetName}>
+                                    {row.product_line ? (
+                                      <span
+                                        className={styles.productLine}
+                                        data-line={row.product_line}
+                                      >
+                                        <StatusBadge
+                                          domain="product_line"
+                                          state={row.product_line}
+                                        />
+                                      </span>
+                                    ) : null}
+                                    <span title={row.product_code}>{row.product_name}</span>
+                                  </div>
+                                  {row.kind === 'reinstall' ? (
+                                    <span className={styles.tags}>
+                                      <StatusBadge domain="installation_kind" state={row.kind} />
+                                    </span>
+                                  ) : null}
+                                </td>
+                                <td>
+                                  {account || row.account_name ? (
+                                    <ManagerLink
+                                      className={styles.domainLink}
+                                      search={link}
+                                      navigate={navigate}
+                                    >
+                                      {account ?? row.account_name}
+                                    </ManagerLink>
+                                  ) : (
+                                    EMPTY
+                                  )}
+                                  {account && row.account_name && account !== row.account_name ? (
+                                    <small>{row.account_name}</small>
+                                  ) : null}
+                                  {zone || row.account_classification ? (
+                                    <div className={styles.tags}>
+                                      {zone ? <span className={styles.zone}>{zone}</span> : null}
+                                      {row.account_classification ? (
+                                        <StatusBadge
+                                          domain="account_classification"
+                                          state={row.account_classification}
+                                        />
+                                      ) : null}
+                                    </div>
+                                  ) : null}
                                 </td>
                                 <td>
                                   <ManagerLink
                                     className={styles.accountLink}
-                                    search={accountSearch(search, row.account_id)}
+                                    search={link}
                                     navigate={navigate}
                                   >
                                     {row.amo_account_id}
                                   </ManagerLink>
                                 </td>
                                 <td>
-                                  <StatusBadge
-                                    domain="installation_lifecycle"
-                                    state={row.lifecycle}
-                                    calm
-                                  />
-                                  <br />
-                                  <button
-                                    type="button"
-                                    className={styles.detailButton}
-                                    aria-expanded={selected}
-                                    onClick={() =>
-                                      setSelection(
-                                        selected ? null : { search: searchKey, id: row.id },
-                                      )
+                                  <ContactCell contact={row.contact} />
+                                </td>
+                                <td>
+                                  <DealCell
+                                    deal={row.deal}
+                                    disabled={dealRetry.isPending}
+                                    retry={
+                                      canWrite && row.deal
+                                        ? () => {
+                                            if (row.deal)
+                                              dealRetry.mutate({
+                                                id: row.id,
+                                                version: row.deal.retry_version,
+                                              })
+                                          }
+                                        : undefined
                                     }
-                                  >
-                                    {selected ? 'Свернуть' : 'Подробнее'}
-                                  </button>
+                                  />
                                 </td>
                                 <td>
                                   {row.kind === 'observed' ? (
-                                    <span>История не подтверждена</span>
-                                  ) : (
-                                    <ReviewBadge row={row} />
-                                  )}
-                                  {row.review.reviewed_at ? (
-                                    <small>
-                                      <ObservedTime value={row.review.reviewed_at} />
-                                    </small>
+                                    <StatusBadge
+                                      domain="installation_event"
+                                      state={row.last_lifecycle_event}
+                                      variant="text"
+                                    />
+                                  ) : row.review.reviewed ? (
+                                    <div className={styles.reviewInfo}>
+                                      {row.review.reviewed_by_name ?? <ReviewBadge row={row} />}
+                                      {row.review.reviewed_at ? (
+                                        <small>
+                                          <ObservedTime value={row.review.reviewed_at} />
+                                        </small>
+                                      ) : null}
+                                    </div>
                                   ) : null}
                                   {canWrite && row.kind !== 'observed' ? (
                                     <button
@@ -370,16 +574,20 @@ export function InstallationsPage({
                                       onClick={() => review.start(row)}
                                       disabled={lockReview}
                                     >
-                                      {row.review.reviewed
-                                        ? 'Снять отметку'
-                                        : 'Отметить проверенной'}
+                                      {row.review.reviewed ? (
+                                        'Вернуть'
+                                      ) : (
+                                        <>
+                                          <span aria-hidden="true">✓</span> Проверен
+                                        </>
+                                      )}
                                     </button>
                                   ) : null}
                                 </td>
                               </tr>
                               {selected ? (
                                 <tr>
-                                  <td className={styles.detailCell} colSpan={5}>
+                                  <td className={styles.detailCell} colSpan={7}>
                                     <InstallationDetails
                                       row={row}
                                       snapshot={snapshot.source.observed_at}

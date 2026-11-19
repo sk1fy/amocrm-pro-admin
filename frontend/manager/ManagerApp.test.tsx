@@ -24,6 +24,9 @@ const row = {
   amo_account_id: accountId,
   product_name: 'Тестовый продукт',
   product_code: 'test-product',
+  product_line: 'TOP',
+  account_domain: 'fixture-retail.amocrm.test',
+  account_name: 'Тестовый аккаунт',
   generation: 1,
   kind: 'install',
   installed_at: time,
@@ -55,6 +58,11 @@ function installationPage(item: typeof row, next: string | null = null) {
     snapshot_at: time,
     query_hash: 'test-query',
     summary: {
+      total: 1,
+      reviewed: Number(item.review.reviewed),
+      unreviewed: Number(!item.review.reviewed),
+    },
+    queue_counts: {
       total: 1,
       reviewed: Number(item.review.reviewed),
       unreviewed: Number(!item.review.reviewed),
@@ -109,6 +117,12 @@ it('keeps future sections out of the workspace and uses the real review filter',
   expect(destination.searchParams.get('account')).toBe(row.account_id)
   expect(destination.searchParams.get('q')).toBe('rakurs')
   expect(destination.searchParams.get('from')).toBe('2026-11-17')
+  expect(screen.getByRole('link', { name: 'fixture-retail' })).toHaveAttribute(
+    'href',
+    link.getAttribute('href'),
+  )
+  expect(screen.getByText('TOP', { exact: true })).toBeVisible()
+  expect(screen.getByRole('columnheader', { name: 'Сделка в rakurscrm' })).toBeVisible()
   expect(screen.getByRole('button', { name: /^Непроверенные/ })).toHaveTextContent('1')
   expect(screen.getByRole('button', { name: /^Проверенные/ })).toHaveTextContent('0')
   fireEvent.click(screen.getByRole('button', { name: /^Проверенные/ }))
@@ -125,6 +139,41 @@ it('keeps future sections out of the workspace and uses the real review filter',
 })
 
 describe('manager installation queue', () => {
+  it('shows the verified activation contact and allows a versioned deal retry', async () => {
+    const contact = {
+      amo_user_id: '42',
+      name: 'Сотрудник amoCRM',
+      role: 'Менеджер',
+      phone: '+79001234567',
+      email: 'employee@example.invalid',
+    }
+    const target = 'https://fixture-company.amocrm.ru/leads/detail/123'
+    let retrySent = false
+    replaceFetch((url, init) => {
+      if (url.pathname.endsWith('/me')) return Response.json(manager)
+      if (url.pathname.endsWith('/crm-deal/retry')) {
+        const headers = new Headers(init?.headers)
+        expect(headers.get('If-Match')).toBe('"2"')
+        expect(headers.get('Idempotency-Key')).toMatch(/^[a-f0-9-]{36}$/)
+        retrySent = true
+        return Response.json({ id: operationId, state: 'accepted' }, { status: 202 })
+      }
+      const deal = retrySent
+        ? { state: 'succeeded', id: '123', url: target, retry_version: 3, can_retry: false }
+        : { state: 'reconciling', retry_version: 2, can_retry: true }
+      const item = { ...row, contact, deal }
+      return installationPage(item)
+    })
+    openManager('?section=installations')
+    expect(await screen.findByRole('link', { name: contact.phone })).toHaveAttribute(
+      'href',
+      'tel:' + contact.phone,
+    )
+    expect(screen.getByText('Активировал: Сотрудник amoCRM · Менеджер')).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Проверить сделку' }))
+    expect(await screen.findByRole('link', { name: /^№123/ })).toHaveAttribute('href', target)
+  })
+
   it('retries an uncertain review with its original key, version and body and refreshes off the old snapshot', async () => {
     vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) })
     const commands: { key: string | null; version: string | null; body: RequestInit['body'] }[] = []
@@ -161,14 +210,14 @@ describe('manager installation queue', () => {
     await screen.findByRole('heading', { name: 'Установки' })
     await waitFor(() => expect(screen.queryByText('Загружаем установки…')).not.toBeInTheDocument())
     expect(screen.getByRole('link', { name: accountId })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Отметить проверенной' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Проверен' }))
 
     const retry = await screen.findByRole(
       'button',
       { name: 'Повторить запрос отметки' },
       { timeout: 3_000 },
     )
-    expect(screen.getByRole('button', { name: 'Отметить проверенной' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Проверен' })).toBeDisabled()
     expect(queries[0]?.get('cursor')).toBe('opaque+/=')
     expect(queries[0]?.has('tab')).toBe(false)
     expect(retry).toBeDisabled()
@@ -177,9 +226,7 @@ describe('manager installation queue', () => {
     await waitFor(() => expect(retry).toBeEnabled(), { timeout: 3_000 })
     fireEvent.click(retry)
 
-    expect(
-      await screen.findByRole('button', { name: 'Снять отметку' }, { timeout: 3_000 }),
-    ).toBeEnabled()
+    expect(await screen.findByRole('button', { name: 'Вернуть' }, { timeout: 3_000 })).toBeEnabled()
     expect(commands).toHaveLength(2)
     expect(commands[0]).toMatchObject({
       key: expect.stringMatching(
@@ -217,7 +264,7 @@ describe('manager installation queue', () => {
       return installationPage(row)
     })
     openManager('')
-    const review = await screen.findByRole('button', { name: 'Отметить проверенной' })
+    const review = await screen.findByRole('button', { name: 'Проверен' })
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
     try {
       await act(async () => {
@@ -290,10 +337,10 @@ describe('manager installation queue', () => {
       return installationPage(headers.length ? { ...row, version: 2 } : row)
     })
     openManager('')
-    fireEvent.click(await screen.findByRole('button', { name: 'Отметить проверенной' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Проверен' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Отметка уже изменилась.')
     expect(headers).toHaveLength(1)
-    fireEvent.click(await screen.findByRole('button', { name: 'Отметить проверенной' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Проверен' }))
     expect(await screen.findByText('Отметка проверки сохранена.')).toBeVisible()
     expect(headers[0]?.get('If-Match')).toBe('"1"')
     expect(headers[1]?.get('If-Match')).toBe('"2"')
@@ -315,7 +362,7 @@ describe('manager installation queue', () => {
     openManager('?section=installations')
     fireEvent.click(await screen.findByRole('button', { name: 'Подробнее' }))
     expect(screen.getByRole('heading', { name: 'Аккаунт amoCRM ' + accountId })).toBeVisible()
-    fireEvent.click(screen.getByRole('button', { name: 'Отметить проверенной' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Проверен' }))
 
     expect(await screen.findByText('Нет доступа к установкам.')).toBeVisible()
     expect(screen.queryByRole('link', { name: accountId })).not.toBeInTheDocument()
@@ -335,12 +382,12 @@ describe('manager installation queue', () => {
     })
     openManager('?section=installations')
     expect(await screen.findByRole('link', { name: accountId })).toBeVisible()
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Аккаунт или продукт' }), {
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Поиск по установкам' }), {
       target: { value: accountId },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Применить' }))
 
-    await screen.findByText('Email', { selector: 'label' })
+    fireEvent.submit(screen.getByRole('form', { name: 'Фильтры установок' }))
+    await screen.findByText('Email', { selector: 'label' }, { timeout: 3_000 })
     expect(screen.getByRole('button', { name: 'Войти' })).toBeVisible()
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
     expect(new URLSearchParams(window.location.search).get('q')).toBe(accountId)

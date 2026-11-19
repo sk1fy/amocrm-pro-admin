@@ -40,6 +40,10 @@ export type StateDomain =
   | 'installation_authorization'
   | 'installation_activation'
   | 'installation_review'
+  | 'installation_contact'
+  | 'installation_deal'
+  | 'product_line'
+  | 'account_classification'
   | 'product_access'
   | 'product_access_source'
   | 'product_availability'
@@ -269,7 +273,7 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
   installation_kind: {
     observed: { tone: 'unknown', label: 'Импорт из Core' },
     install: { tone: 'ok', label: 'Первая установка' },
-    reinstall: { tone: 'ok', label: 'Повторная установка' },
+    reinstall: { tone: 'ok', label: 'Переустановка' },
   },
   installation_lifecycle: {
     current: { tone: 'ok', label: 'Текущая' },
@@ -292,6 +296,25 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     activated: { tone: 'ok', label: 'Активирована' },
     pending: { tone: 'attention', label: 'Ожидает активации' },
     unavailable: { tone: 'unknown', label: 'Нет сведений об активации' },
+  },
+  installation_contact: {
+    unavailable: { tone: 'unknown', label: 'Нет данных' },
+  },
+  installation_deal: {
+    unavailable: { tone: 'unknown', label: 'Нет данных' },
+    pending: { tone: 'attention', label: 'Ожидает создания' },
+    reconciling: { tone: 'attention', label: 'Уточняем наличие сделки' },
+    failed: { tone: 'error', label: 'Ошибка создания сделки' },
+    skipped: { tone: 'off', label: 'Без сделки' },
+  },
+  product_line: {
+    FREE: { tone: 'ok', label: 'FREE' },
+    TOP: { tone: 'attention', label: 'TOP' },
+    PRO: { tone: 'action', label: 'PRO' },
+  },
+  account_classification: {
+    'Без партнёра': { tone: 'ok', label: 'Без партнёра' },
+    'Запрет работы': { tone: 'off', label: 'Запрет работы' },
   },
   installation_review: {
     reviewed: { tone: 'ok', label: 'Проверена' },

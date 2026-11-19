@@ -20,13 +20,14 @@ import (
 
 	"github.com/sk1fy/amocrm-pro-admin/internal/apicontract"
 	"github.com/sk1fy/amocrm-pro-admin/internal/auth"
+	"github.com/sk1fy/amocrm-pro-admin/internal/employees"
 	"github.com/sk1fy/amocrm-pro-admin/internal/managerplatform"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/httpx"
 	"github.com/sk1fy/amocrm-pro-admin/internal/platform/jsonbody"
 	wire "github.com/sk1fy/amocrm-pro-admin/internal/platformwire"
 )
 
-func managerInstallations(service *managerplatform.Service) http.HandlerFunc {
+func managerInstallations(service *managerplatform.Service, staff *employees.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !requireManagerGrant(w, r, auth.GrantClientsRead) {
 			return
@@ -45,7 +46,68 @@ func managerInstallations(service *managerplatform.Service) http.HandlerFunc {
 			writeManagerInstallationError(w, r, err)
 			return
 		}
-		httpx.WriteJSON(w, http.StatusOK, toManagerInstallationListDTO(page))
+		result := toManagerInstallationListDTO(page)
+		if staff != nil {
+			addInstallationReviewerNames(r.Context(), staff, result.Items)
+		}
+		httpx.WriteJSON(w, http.StatusOK, result)
+	}
+}
+
+func addInstallationReviewerNames(ctx context.Context, staff *employees.Store, items []managerInstallationDTO) {
+	ids := make([]uuid.UUID, 0, len(items))
+	for _, item := range items {
+		if by := item.Review.ReviewedBy; by != nil {
+			ids = append(ids, *by)
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	names, err := staff.DisplayNames(ctx, ids)
+	if err != nil {
+		return
+	}
+	for i := range items {
+		if by := items[i].Review.ReviewedBy; by != nil {
+			items[i].Review.ReviewedByName = names[*by]
+		}
+	}
+}
+
+func managerInstallationDealRetry(service *managerplatform.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !requireManagerGrant(w, r, auth.GrantClientsWrite) {
+			return
+		}
+		id, idOK := managerUUID(chi.URLParam(r, "id"))
+		key, keyOK := managerUUID(singleHeader(r.Header, "Idempotency-Key"))
+		version, matchOK := managerReviewVersion(singleHeader(r.Header, "If-Match"))
+		media, _, mediaErr := mime.ParseMediaType(singleHeader(r.Header, "Content-Type"))
+		var body wire.RetryInstallationDealJSONRequestBody
+		if !idOK || !keyOK || !matchOK || version > 2147483647 || r.URL.RawQuery != "" ||
+			mediaErr != nil || media != "application/json" || jsonbody.DecodeObject(r.Body, 4096, &body) != nil {
+			httpx.WriteError(w, r, httpx.InvalidArgument("invalid installation deal retry"))
+			return
+		}
+		if service == nil {
+			httpx.WriteError(w, r, httpx.BackendUnavailable("Platform unavailable"))
+			return
+		}
+		result, err := service.RetryInstallationDeal(r.Context(), managerplatform.CommandMeta{
+			TargetID: id, IdempotencyKey: key, ExpectedVersion: version,
+		}, body)
+		if err != nil {
+			writeManagerInstallationError(w, r, err)
+			return
+		}
+		w.Header().Set("Location", strings.Replace(apicontract.ManagerOperation.Path, "{id}", result.ID.String(), 1))
+		setManagerRetryAfter(w, result.RetryAfter)
+		if result.Operation != nil {
+			httpx.WriteJSON(w, http.StatusAccepted, result.Operation)
+		} else {
+			httpx.WriteJSON(w, http.StatusAccepted, managerOperationResponse{ID: result.ID, State: result.State})
+		}
 	}
 }
 

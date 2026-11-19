@@ -114,6 +114,26 @@ func (s *Store) GetRecord(ctx context.Context, id uuid.UUID) (Employee, error) {
 	return emp, nil
 }
 
+func (s *Store) DisplayNames(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, s.timeout)
+	defer cancel()
+	rows, err := s.pool.Query(ctx, `SELECT id, name FROM employees WHERE id = ANY($1)`, ids)
+	if err != nil {
+		return nil, fmt.Errorf("get employee display names: %w", err)
+	}
+	defer rows.Close()
+	names := make(map[uuid.UUID]string, len(ids))
+	for rows.Next() {
+		var id uuid.UUID
+		var name string
+		if err := rows.Scan(&id, &name); err != nil {
+			return nil, fmt.Errorf("scan employee display name: %w", err)
+		}
+		names[id] = name
+	}
+	return names, rows.Err()
+}
+
 func (s *Store) GetByEmail(ctx context.Context, email string) (Employee, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.timeout)
 	defer cancel()
