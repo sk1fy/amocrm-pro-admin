@@ -151,7 +151,7 @@ it('opens shared settings from installations with catalog.manage, clears stage o
     within(screen.getByRole('navigation', { name: 'Кабинет менеджеров' }))
       .getAllByRole('link')
       .map((link) => link.getAttribute('aria-label')),
-  ).toEqual(['Установки', 'Клиенты', 'Виджеты', 'Лента событий', 'Сотрудники'])
+  ).toEqual(['Установки', 'Клиенты', 'Компании', 'Виджеты', 'Лента событий', 'Сотрудники'])
 })
 it('preserves the draft on metadata assertion conflict and explicitly creates a new command', async () => {
   let changed = false
@@ -210,37 +210,121 @@ it('does not request or display deal settings in individual widget cards', async
   expect(screen.queryByLabelText('Воронка')).toBeNull()
   expect(api).not.toHaveBeenCalled()
 })
-it('shows an unmapped company with M:N and dangling links without inventing runtime accounts', async () => {
-  open('section=clients&clients_tab=companies&company=' + product, ['clients.read'], () =>
-    Response.json({
-      id: product,
-      crm_company_id: '91',
-      name: 'Компания без аккаунта',
-      customer_account_ids: ['71', '72'],
-      source_resolution: 'multiple',
-      runtime_resolution: 'ambiguous',
-      runtime_accounts: [],
-      source,
-      contacts: [
-        {
-          id: '81',
-          name: 'Общий контакт',
-          companies: [
-            { crm_company_id: '91', company_id: product },
-            { crm_company_id: '92', company_id: null },
-          ],
-        },
-      ],
-      unresolved_relations: [{ crm_company_id: '92', company_id: null }],
-      sources: [],
-      observation: {},
-    }),
+it.each(['section=clients&clients_tab=companies', 'section=clients', 'section=companies'])(
+  'opens an unmapped company with M:N and dangling links from %s',
+  async (search) => {
+    open(search + '&company=' + product, ['clients.read'], () =>
+      Response.json({
+        id: product,
+        crm_company_id: '91',
+        name: 'Компания без аккаунта',
+        customer_account_ids: ['71', '72'],
+        source_resolution: 'multiple',
+        runtime_resolution: 'ambiguous',
+        runtime_accounts: [],
+        source,
+        contacts: [
+          {
+            id: '81',
+            name: 'Общий контакт',
+            companies: [
+              { crm_company_id: '91', company_id: product },
+              { crm_company_id: '92', company_id: null },
+            ],
+          },
+        ],
+        unresolved_relations: [{ crm_company_id: '92', company_id: null }],
+        sources: [],
+        observation: {},
+      }),
+    )
+    expect(await screen.findByText('Компания без аккаунта')).toBeVisible()
+    const nav = within(screen.getByRole('navigation', { name: 'Кабинет менеджеров' }))
+    expect(nav.getByRole('link', { name: 'Компании' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.queryByRole('navigation', { name: 'Вид клиентов' })).toBeNull()
+    expect(screen.getByRole('link', { name: 'Все компании' })).toHaveAttribute(
+      'href',
+      '?section=companies',
+    )
+    expect(screen.getByText('Общий контакт')).toBeVisible()
+    expect(screen.getByText('Подтверждённых доступных аккаунтов для перехода нет.')).toBeVisible()
+    expect(screen.getByText('Неоднозначные аккаунты')).toBeVisible()
+    expect(
+      screen.getAllByRole('link').every((link) => !link.getAttribute('href')?.includes('account=')),
+    ).toBe(true)
+  },
+)
+
+it('keeps search and related account links in the Companies section', async () => {
+  const account = '661cf98b-8df1-42cc-beb4-443745c9a1c5'
+  const company = {
+    id: product,
+    crm_company_id: '91',
+    name: 'Компания из каталога',
+    customer_account_ids: ['71'],
+    source_resolution: 'single',
+    runtime_resolution: 'confirmed',
+    runtime_accounts: [{ account_id: account, customer_account_id: '71' }],
+  }
+  const requests: URL[] = []
+  open(
+    'section=clients&clients_tab=companies&companies_q=previous&clients_q=pilot',
+    ['clients.read'],
+    (url) => {
+      requests.push(url)
+      if (url.pathname.endsWith('/companies'))
+        return Response.json({
+          items: [company],
+          next_cursor: null,
+          source,
+          sources: [],
+          observation: {},
+        })
+      if (url.pathname.endsWith('/companies/' + product))
+        return Response.json({
+          ...company,
+          source,
+          sources: [],
+          observation: {},
+          contacts: [],
+          unresolved_relations: [],
+        })
+      return Response.json({}, { status: 404 })
+    },
   )
-  expect(await screen.findByText('Компания без аккаунта')).toBeVisible()
-  expect(screen.getByText('Общий контакт')).toBeVisible()
-  expect(screen.getByText('Подтверждённых доступных аккаунтов для перехода нет.')).toBeVisible()
-  expect(screen.getByText('Неоднозначные аккаунты')).toBeVisible()
-  expect(
-    screen.getAllByRole('link').every((link) => !link.getAttribute('href')?.includes('account=')),
-  ).toBe(true)
+
+  const field = await screen.findByRole('searchbox', { name: 'Поиск компаний' })
+  expect(field).toHaveValue('previous')
+  fireEvent.change(field, { target: { value: 'Компания' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Найти компанию' }))
+  await waitFor(() =>
+    expect(requests.some((url) => url.searchParams.get('q') === 'Компания')).toBe(true),
+  )
+  expect(new URLSearchParams(window.location.search).get('section')).toBe('companies')
+
+  fireEvent.click(await screen.findByRole('link', { name: company.name }))
+  expect(await screen.findByRole('heading', { name: company.name })).toBeVisible()
+  fireEvent.click(screen.getByRole('link', { name: 'Аккаунт 71' }))
+  const breadcrumb = within(screen.getByRole('navigation', { name: 'Путь к карточке аккаунта' }))
+  await waitFor(() =>
+    expect(requests.some((url) => url.pathname.endsWith('/accounts/' + account))).toBe(true),
+  )
+  fireEvent.click(breadcrumb.getByRole('link', { name: 'Компании' }))
+  expect(await screen.findByRole('heading', { name: company.name })).toBeVisible()
+
+  const nav = within(screen.getByRole('navigation', { name: 'Кабинет менеджеров' }))
+  fireEvent.click(nav.getByRole('link', { name: 'Клиенты' }))
+  expect(await screen.findByRole('heading', { name: 'Клиенты' })).toBeVisible()
+  const params = new URLSearchParams(window.location.search)
+  expect(params.get('clients_q')).toBe('pilot')
+  expect(params.get('companies_q')).toBe('Компания')
+  expect(params.has('company')).toBe(false)
+})
+
+it('requires clients.read when opening the Companies section directly', async () => {
+  const api = vi.fn(() => Response.json({}, { status: 404 }))
+  open('section=companies&company=' + product, ['catalog.manage'], api)
+  expect(await screen.findByRole('heading', { name: 'Компании' })).toBeVisible()
+  expect(screen.getByRole('alert')).toHaveTextContent('Нет доступа к компаниям.')
+  expect(api).not.toHaveBeenCalled()
 })

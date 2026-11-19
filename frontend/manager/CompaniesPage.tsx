@@ -1,12 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { accountSearch, ManagerLink } from './accountsLocation'
-import {
-  AccountsPage,
-  ReadFailure,
-  useAccountAccessError,
-  type AccountAccess,
-} from './AccountsPage'
+import { ReadFailure, useAccountAccessError, type AccountAccess } from './AccountsPage'
 import { getCompany, isCompanyProjectionId, listCompanies, type CompanySummary } from './companyApi'
 import { CompanySource } from './CompanySource'
 import styles from './Accounts.module.css'
@@ -17,37 +12,12 @@ function companySearch(search: string, updates: Record<string, string | null>) {
     if (value === null) params.delete(key)
     else params.set(key, value)
   }
-  params.set('section', 'clients')
-  params.set('clients_tab', 'companies')
+  params.set('section', 'companies')
+  params.delete('clients_tab')
   params.delete('account')
   return params.toString()
 }
-export function ClientsPage(
-  props: AccountAccess & { search: string; navigate: (search: string) => void },
-) {
-  const params = new URLSearchParams(props.search),
-    companies = params.get('clients_tab') === 'companies' || params.has('company')
-  const accounts = new URLSearchParams(props.search)
-  accounts.set('clients_tab', 'accounts')
-  accounts.delete('company')
-  return (
-    <>
-      <nav className={styles.tabs} aria-label="Вид клиентов">
-        <ManagerLink search={accounts.toString()} navigate={props.navigate} current={!companies}>
-          Аккаунты
-        </ManagerLink>
-        <ManagerLink
-          search={companySearch(props.search, { company: null })}
-          navigate={props.navigate}
-          current={companies}
-        >
-          Компании
-        </ManagerLink>
-      </nav>
-      {companies ? <CompaniesPage {...props} /> : <AccountsPage {...props} />}
-    </>
-  )
-}
+
 function CompanyIdentity({
   company,
   search,
@@ -72,7 +42,10 @@ function CompanyIdentity({
         <ul>
           {company.runtime_accounts.map((link) => (
             <li key={link.account_id}>
-              <ManagerLink search={accountSearch(search, link.account_id)} navigate={navigate}>
+              <ManagerLink
+                search={accountSearch(companySearch(search, {}), link.account_id)}
+                navigate={navigate}
+              >
                 Аккаунт {link.customer_account_id}
               </ManagerLink>
             </li>
@@ -84,7 +57,7 @@ function CompanyIdentity({
     </>
   )
 }
-function CompaniesPage({
+export function CompaniesPage({
   search,
   navigate,
   ...access

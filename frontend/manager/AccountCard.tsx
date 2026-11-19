@@ -23,8 +23,15 @@ import {
 import { AccountAudit, AccountPortrait } from './AccountPortrait'
 import { accountsKey, ReadFailure, useAccountAccessError, type AccountAccess } from './AccountsPage'
 import { installationsKey } from './InstallationsPage'
+import { workspaceSection } from './Workspace'
 import styles from './Accounts.module.css'
 import card from './AccountCard.module.css'
+
+const accountListLabels: Partial<Record<ReturnType<typeof workspaceSection>, string>> = {
+  clients: 'Клиенты',
+  companies: 'Компании',
+  feed: 'Лента событий',
+}
 
 type AccountLocation = NonNullable<ReturnType<typeof getAccountLocation>>
 type Props = AccountAccess & {
@@ -498,12 +505,12 @@ export function ManagerAccountCard({
       (capability) => capability.action === 'account.portrait' && capability.allowed,
     ) ??
       false)
-  const parent = new URLSearchParams(search).get('section')
+  const parent = workspaceSection(search)
   return (
     <article className={styles.workspace}>
       <nav aria-label="Путь к карточке аккаунта" className={card.breadcrumb}>
         <ManagerLink search={listSearch(search)} navigate={navigate}>
-          {parent === 'clients' ? 'Клиенты' : parent === 'feed' ? 'Лента событий' : 'Установки'}
+          {accountListLabels[parent] ?? 'Установки'}
         </ManagerLink>
         {account ? (
           <>

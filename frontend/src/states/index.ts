@@ -44,6 +44,9 @@ export type StateDomain =
   | 'installation_deal'
   | 'product_line'
   | 'account_classification'
+  | 'client_classification'
+  | 'client_data'
+  | 'client_renewal'
   | 'product_access'
   | 'product_access_source'
   | 'product_availability'
@@ -311,10 +314,28 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     FREE: { tone: 'ok', label: 'FREE' },
     TOP: { tone: 'attention', label: 'TOP' },
     PRO: { tone: 'action', label: 'PRO' },
+    trial: { tone: 'off', label: 'Trial' },
   },
   account_classification: {
     'Без партнёра': { tone: 'ok', label: 'Без партнёра' },
     'Запрет работы': { tone: 'off', label: 'Запрет работы' },
+  },
+  client_classification: {
+    'Без партнёра': { tone: 'off', label: 'Свободный клиент' },
+    'Клиент партнёра': { tone: 'attention', label: 'Клиент партнёра' },
+    'Наш клиент': { tone: 'ok', label: 'Наш клиент' },
+    'Запрет работы': { tone: 'off', label: 'Запрет работы' },
+    unknown: { tone: 'unknown', label: 'Не указано' },
+  },
+  client_data: {
+    receiving: { tone: 'ok', label: 'Получаем данные' },
+    no_data: { tone: 'error', label: 'Нет актуальных данных' },
+    blocked: { tone: 'off', label: 'Запрет работы' },
+    unknown: { tone: 'unknown', label: 'Нет данных' },
+  },
+  client_renewal: {
+    direct: { tone: 'attention', label: 'Продлевает напрямую' },
+    partner: { tone: 'ok', label: 'Продлевает через партнёра' },
   },
   installation_review: {
     reviewed: { tone: 'ok', label: 'Проверена' },

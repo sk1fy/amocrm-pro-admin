@@ -411,6 +411,13 @@ Origin кабинета, `X-Requested-With: admin-ui`, UUID в `Idempotency-Key`
 `portrait_filter` в теле `POST /accounts/search`. Поиск требует Origin
 кабинета и `X-Requested-With: admin-ui` и сохраняет семантику чтения.
 
+`data_group`, `tariff` и `renewal_channel` можно комбинировать с
+`classification` и остальными параметрами на обоих маршрутах списка.
+`summary.total` учитывает фильтры, `summary.overview` описывает полную
+доступную выборку. Оба значения сохраняются в курсорном снимке.
+Для ручной отметки «Клиент партнёра» в PATCH профиля требуется
+`partner_name`. Изменение использует прежние версию, права и аудит.
+
 Мутации дополнительно требуют UUID `Idempotency-Key`. Для обновления
 ресурса нужен сильный `If-Match` соответствующей версии. Для продления
 это `access.entitlement_version` выбранного виджета. Создание ниши и

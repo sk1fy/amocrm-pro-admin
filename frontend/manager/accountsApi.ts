@@ -80,6 +80,15 @@ function parseLicense(raw: unknown) {
   }
 }
 
+const dataGroups = ['receiving', 'no_data', 'blocked'] as const
+export const widgetTariffs = ['FREE', 'TOP', 'PRO', 'trial'] as const
+
+function listedValue<T extends string>(value: unknown, allowed: readonly T[]): T {
+  const known = allowed.find((item) => item === value)
+  if (!known) invalid()
+  return known
+}
+
 function parseAccountSummary(raw: unknown) {
   const item = record(raw)
   if (!isAccountId(item.account_id) || !isAmoAccountId(item.amo_account_id)) invalid()
@@ -89,13 +98,47 @@ function parseAccountSummary(raw: unknown) {
     current_domain: nullable(item.current_domain, text),
     domain_aliases: nullable(item.domain_aliases, (value) => array(value, text)),
     display_name: nullable(item.display_name, text),
+    time_zone: optional(item.time_zone, (value) => nullable(value, text)),
     classification: nullable(item.classification, text),
+    partner_name: optional(item.partner_name, (value) => nullable(value, text)),
+    widget_tariffs: optional(item.widget_tariffs, (value) =>
+      array(value, (tariff) => listedValue(tariff, widgetTariffs)),
+    ),
+    data_group: optional(item.data_group, (value) => listedValue(value, dataGroups)),
+    renewal_channel: optional(item.renewal_channel, (value) =>
+      listedValue(value, ['direct', 'partner'] as const),
+    ),
     active_products_count: integer(item.active_products_count, 0),
     license: parseObservation(item.license, parseLicense),
     active_users: parseObservation(item.active_users, (value) => integer(value, 0)),
     version: integer(item.version, 1),
   }
 }
+export type AccountSummary = ReturnType<typeof parseAccountSummary>
+
+function parseOverviewGroup(raw: unknown) {
+  const group = record(raw)
+  return {
+    total: integer(group.total, 0),
+    by_classification: Object.fromEntries(
+      Object.entries(record(group.by_classification)).map(([name, value]) => [
+        name,
+        integer(value, 0),
+      ]),
+    ),
+  }
+}
+
+function parseOverview(raw: unknown) {
+  const overview = record(raw)
+  return {
+    all: parseOverviewGroup(overview.all),
+    receiving: parseOverviewGroup(overview.receiving),
+    no_data: parseOverviewGroup(overview.no_data),
+    blocked: parseOverviewGroup(overview.blocked),
+  }
+}
+export type AccountOverviewCounts = ReturnType<typeof parseOverview>
 
 function parseAccount(raw: unknown) {
   const item = record(raw)
@@ -137,9 +180,11 @@ export async function listAccounts(search: string, filter: string | null, signal
   if (!Array.isArray(page.sources) || page.sources.length !== 1) invalid()
   const source = record(page.sources[0])
   if (source.backend !== 'platform' || source.status !== 'available') invalid()
+  const summary = record(page.summary)
   return {
     ...parsePage(page, parseAccountSummary),
-    total: integer(record(page.summary).total, 0),
+    total: integer(summary.total, 0),
+    overview: optional(summary.overview, parseOverview),
     source: { backend: source.backend, observed_at: date(source.observed_at) },
   }
 }

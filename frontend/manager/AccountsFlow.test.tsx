@@ -113,6 +113,57 @@ it('keeps list and card navigation state separate and forwards the same portrait
   expect(listSearch(accountSearch(query, account, 'portrait'))).toBe(query)
 })
 
+it('applies the group and classification from a card row, then clears only the classification from the card heading', async () => {
+  const snapshot = '2026-11-18T19:30:00Z'
+  const calls: URLSearchParams[] = []
+  window.history.replaceState(null, '', '/managers?section=clients&clients_q=fixture')
+  vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
+    const url = new URL(String(input), window.location.origin)
+    if (url.pathname === '/api/v1/managers/me') return Response.json(manager)
+    if (url.pathname !== '/api/v1/managers/accounts') throw new Error('unexpected request')
+    calls.push(url.searchParams)
+    return Response.json({
+      items: [],
+      next_cursor: null,
+      snapshot_at: snapshot,
+      query_hash: 'fixture',
+      summary: {
+        total: 0,
+        overview: {
+          all: { total: 2, by_classification: { 'Клиент партнёра': 1 } },
+          receiving: { total: 1, by_classification: { 'Клиент партнёра': 1 } },
+          no_data: { total: 1, by_classification: {} },
+          blocked: { total: 0, by_classification: {} },
+        },
+      },
+      sources: [{ backend: 'platform', status: 'available', observed_at: snapshot }],
+    })
+  })
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(
+    <QueryClientProvider client={client}>
+      <ManagerApp />
+    </QueryClientProvider>,
+  )
+
+  await screen.findByText('Найдено 0 из 2', {}, { timeout: 5000 })
+  const row = screen.getByRole('button', { name: 'получаем данные · Клиенты партнёров · 1' })
+  fireEvent.click(row)
+  await waitFor(() => {
+    expect(calls.at(-1)?.get('data_group')).toBe('receiving')
+    expect(calls.at(-1)?.get('classification')).toBe('Клиент партнёра')
+  })
+  expect(row).toHaveAttribute('aria-pressed', 'true')
+
+  const heading = screen.getByRole('button', { name: '1 получаем данные' })
+  fireEvent.click(heading)
+  await waitFor(() => expect(calls.at(-1)?.has('classification')).toBe(false))
+  expect(calls.at(-1)?.get('data_group')).toBe('receiving')
+  expect(calls.at(-1)?.get('q')).toBe('fixture')
+  expect(heading).toHaveAttribute('aria-pressed', 'true')
+  expect(row).toHaveAttribute('aria-pressed', 'false')
+})
+
 it('retains a stale note draft and uses the current version only after explicit rebase', async () => {
   let current = { version: 1, note: 'Исходная заметка' }
   const calls: { key: string | null; version: string | null; body: RequestInit['body'] }[] = []

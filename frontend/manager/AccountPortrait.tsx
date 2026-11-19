@@ -14,24 +14,9 @@ import {
 import { AccountForm } from './AccountForms'
 import type { AccountActions } from './AccountOverview'
 import { accountsKey, ReadFailure, useAccountAccessError } from './AccountsPage'
+import { maturitySignals } from './portraitSignals'
 import accountStyles from './Accounts.module.css'
 import styles from './AccountPortrait.module.css'
-
-const maturitySignals = [
-  ['09ccc1b9-741c-50a5-91b1-05a3e1ac8beb', 'Воронка под их продажи'],
-  ['240477de-a0d7-52b5-b499-b585787c677b', 'Заявки подтягиваются'],
-  ['3613548f-a233-5652-a6c8-223307ed4f19', 'Мессенджеры'],
-  ['5e1a0f72-3a2f-50fb-a8e9-ce3591bd29a5', 'Телефония'],
-  ['af221b8d-7b2d-5f59-827e-cd9c7e8eda49', 'Работают с задачами'],
-  ['4b63617c-2fe3-580f-8cb4-ce57cece2601', 'Нет сделок без задач'],
-  ['76f07ac7-48ac-5e3e-af3d-adb38f2846f2', 'Salesbot и автоматизации'],
-  ['403a78b9-251f-5972-9c84-e044f4b6c679', 'Отчёты руководителю'],
-  ['d75f3d1a-bd74-5093-a973-75b25e45b7ac', 'Контроль качества'],
-  ['f9676d8d-c705-56c9-a855-ea7eebadcbf2', 'Контроль дублей'],
-  ['b8162015-de41-5b2b-a371-98f822be4cca', 'Регламенты и обучение'],
-  ['559af0b6-9ec4-5f81-8c08-b2e9751837b6', 'Счета из amoCRM'],
-  ['00a1eca7-7727-5317-86f7-21b73ca5f3b6', 'Эквайринг'],
-] as const
 
 function lines(value: string) {
   return value

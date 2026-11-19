@@ -513,6 +513,18 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: data_group
+        in: query
+        required: false
+        schema: {type: string, enum: [receiving, no_data, blocked]}
+      - name: tariff
+        in: query
+        required: false
+        schema: {type: string, enum: [FREE, TOP, PRO, trial]}
+      - name: renewal_channel
+        in: query
+        required: false
+        schema: {type: string, enum: [direct, partner]}
       - name: license_before
         in: query
         required: false
@@ -610,6 +622,18 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: data_group
+        in: query
+        required: false
+        schema: {type: string, enum: [receiving, no_data, blocked]}
+      - name: tariff
+        in: query
+        required: false
+        schema: {type: string, enum: [FREE, TOP, PRO, trial]}
+      - name: renewal_channel
+        in: query
+        required: false
+        schema: {type: string, enum: [direct, partner]}
       - name: license_before
         in: query
         required: false
@@ -757,6 +781,7 @@ paths:
                   type:
                   - string
                   - 'null'
+                partner_name: {type: [string, 'null'], maxLength: 200}
                 reason:
                   type: string
                   minLength: 1
@@ -4608,6 +4633,11 @@ components:
           type:
           - string
           - 'null'
+        partner_name: {type: [string, 'null']}
+        time_zone: {type: string}
+        data_group: {type: string, enum: [receiving, no_data, blocked]}
+        widget_tariffs: {type: array, items: {type: string, enum: [FREE, TOP, PRO, trial]}, uniqueItems: true}
+        renewal_channel: {type: string, enum: [direct, partner]}
         active_products_count:
           type: integer
           minimum: 0
@@ -4713,8 +4743,20 @@ components:
         total:
           type: integer
           minimum: 0
+        overview:
+          type: object
+          additionalProperties: {$ref: '#/components/schemas/ManagerAccountOverviewGroup'}
       required:
       - total
+    ManagerAccountOverviewGroup:
+      type: object
+      additionalProperties: false
+      properties:
+        total: {type: integer, minimum: 0}
+        by_classification:
+          type: object
+          additionalProperties: {type: integer, minimum: 0}
+      required: [total, by_classification]
     ManagerPortraitFilter:
       type: object
       additionalProperties: false
@@ -4789,6 +4831,7 @@ components:
           type:
           - string
           - 'null'
+        partner_name: {type: [string, 'null']}
         active_products_count:
           type: integer
           minimum: 0

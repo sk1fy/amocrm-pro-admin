@@ -103,6 +103,9 @@ export function ManagerLink({
 const accountFilters = [
   'q',
   'classification',
+  'data_group',
+  'tariff',
+  'renewal_channel',
   'product_id',
   'active_users_min',
   'active_users_max',
@@ -115,6 +118,7 @@ type Filter = (typeof accountFilters)[number]
 type Updates = Partial<Record<Filter, string | string[] | null>>
 
 export const ratingField = '99a241de-d761-526b-bd53-184170aa88f2'
+export const nicheField = '31f2f50b-f168-5fa5-ae3a-edfa6aed7f49'
 
 function validFilter(value: unknown, depth: number, budget: { leaves: number }): boolean {
   if (depth > 3) return false
@@ -168,6 +172,14 @@ export function updateAccountSearch(search: string, updates: Updates) {
     if (Array.isArray(value)) {
       for (const item of value) if (item) params.append(name, item)
     } else if (value) params.set(name, value)
+  }
+  return params.toString()
+}
+
+export function resetAccountSearch(search: string) {
+  const params = new URLSearchParams(search)
+  for (const key of accountFilters) {
+    if (key !== 'limit') params.delete('clients_' + key)
   }
   return params.toString()
 }

@@ -46,6 +46,69 @@ func (e AccessStateSource) Valid() bool {
 	}
 }
 
+// Defines values for AccountSummaryDataGroup.
+const (
+	AccountSummaryDataGroupBlocked   AccountSummaryDataGroup = "blocked"
+	AccountSummaryDataGroupNoData    AccountSummaryDataGroup = "no_data"
+	AccountSummaryDataGroupReceiving AccountSummaryDataGroup = "receiving"
+)
+
+// Valid indicates whether the value is a known member of the AccountSummaryDataGroup enum.
+func (e AccountSummaryDataGroup) Valid() bool {
+	switch e {
+	case AccountSummaryDataGroupBlocked:
+		return true
+	case AccountSummaryDataGroupNoData:
+		return true
+	case AccountSummaryDataGroupReceiving:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AccountSummaryRenewalChannel.
+const (
+	AccountSummaryRenewalChannelDirect  AccountSummaryRenewalChannel = "direct"
+	AccountSummaryRenewalChannelPartner AccountSummaryRenewalChannel = "partner"
+)
+
+// Valid indicates whether the value is a known member of the AccountSummaryRenewalChannel enum.
+func (e AccountSummaryRenewalChannel) Valid() bool {
+	switch e {
+	case AccountSummaryRenewalChannelDirect:
+		return true
+	case AccountSummaryRenewalChannelPartner:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AccountSummaryWidgetTariffs.
+const (
+	AccountSummaryWidgetTariffsFREE  AccountSummaryWidgetTariffs = "FREE"
+	AccountSummaryWidgetTariffsPRO   AccountSummaryWidgetTariffs = "PRO"
+	AccountSummaryWidgetTariffsTOP   AccountSummaryWidgetTariffs = "TOP"
+	AccountSummaryWidgetTariffsTrial AccountSummaryWidgetTariffs = "trial"
+)
+
+// Valid indicates whether the value is a known member of the AccountSummaryWidgetTariffs enum.
+func (e AccountSummaryWidgetTariffs) Valid() bool {
+	switch e {
+	case AccountSummaryWidgetTariffsFREE:
+		return true
+	case AccountSummaryWidgetTariffsPRO:
+		return true
+	case AccountSummaryWidgetTariffsTOP:
+		return true
+	case AccountSummaryWidgetTariffsTrial:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ActivationStatus.
 const (
 	ActivationStatusActivated ActivationStatus = "activated"
@@ -889,6 +952,69 @@ func (e TrialPolicyKind) Valid() bool {
 	}
 }
 
+// Defines values for ListAccountsParamsDataGroup.
+const (
+	ListAccountsParamsDataGroupBlocked   ListAccountsParamsDataGroup = "blocked"
+	ListAccountsParamsDataGroupNoData    ListAccountsParamsDataGroup = "no_data"
+	ListAccountsParamsDataGroupReceiving ListAccountsParamsDataGroup = "receiving"
+)
+
+// Valid indicates whether the value is a known member of the ListAccountsParamsDataGroup enum.
+func (e ListAccountsParamsDataGroup) Valid() bool {
+	switch e {
+	case ListAccountsParamsDataGroupBlocked:
+		return true
+	case ListAccountsParamsDataGroupNoData:
+		return true
+	case ListAccountsParamsDataGroupReceiving:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListAccountsParamsTariff.
+const (
+	ListAccountsParamsTariffFREE  ListAccountsParamsTariff = "FREE"
+	ListAccountsParamsTariffPRO   ListAccountsParamsTariff = "PRO"
+	ListAccountsParamsTariffTOP   ListAccountsParamsTariff = "TOP"
+	ListAccountsParamsTariffTrial ListAccountsParamsTariff = "trial"
+)
+
+// Valid indicates whether the value is a known member of the ListAccountsParamsTariff enum.
+func (e ListAccountsParamsTariff) Valid() bool {
+	switch e {
+	case ListAccountsParamsTariffFREE:
+		return true
+	case ListAccountsParamsTariffPRO:
+		return true
+	case ListAccountsParamsTariffTOP:
+		return true
+	case ListAccountsParamsTariffTrial:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListAccountsParamsRenewalChannel.
+const (
+	ListAccountsParamsRenewalChannelDirect  ListAccountsParamsRenewalChannel = "direct"
+	ListAccountsParamsRenewalChannelPartner ListAccountsParamsRenewalChannel = "partner"
+)
+
+// Valid indicates whether the value is a known member of the ListAccountsParamsRenewalChannel enum.
+func (e ListAccountsParamsRenewalChannel) Valid() bool {
+	switch e {
+	case ListAccountsParamsRenewalChannelDirect:
+		return true
+	case ListAccountsParamsRenewalChannelPartner:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListAccountsParamsSort.
 const (
 	ListAccountsParamsSortAmoAccountId      ListAccountsParamsSort = "amo_account_id"
@@ -910,6 +1036,69 @@ func (e ListAccountsParamsSort) Valid() bool {
 	case ListAccountsParamsSortLicenseUntil:
 		return true
 	case ListAccountsParamsSortMinusLicenseUntil:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SearchAccountsParamsDataGroup.
+const (
+	SearchAccountsParamsDataGroupBlocked   SearchAccountsParamsDataGroup = "blocked"
+	SearchAccountsParamsDataGroupNoData    SearchAccountsParamsDataGroup = "no_data"
+	SearchAccountsParamsDataGroupReceiving SearchAccountsParamsDataGroup = "receiving"
+)
+
+// Valid indicates whether the value is a known member of the SearchAccountsParamsDataGroup enum.
+func (e SearchAccountsParamsDataGroup) Valid() bool {
+	switch e {
+	case SearchAccountsParamsDataGroupBlocked:
+		return true
+	case SearchAccountsParamsDataGroupNoData:
+		return true
+	case SearchAccountsParamsDataGroupReceiving:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SearchAccountsParamsTariff.
+const (
+	SearchAccountsParamsTariffFREE  SearchAccountsParamsTariff = "FREE"
+	SearchAccountsParamsTariffPRO   SearchAccountsParamsTariff = "PRO"
+	SearchAccountsParamsTariffTOP   SearchAccountsParamsTariff = "TOP"
+	SearchAccountsParamsTariffTrial SearchAccountsParamsTariff = "trial"
+)
+
+// Valid indicates whether the value is a known member of the SearchAccountsParamsTariff enum.
+func (e SearchAccountsParamsTariff) Valid() bool {
+	switch e {
+	case SearchAccountsParamsTariffFREE:
+		return true
+	case SearchAccountsParamsTariffPRO:
+		return true
+	case SearchAccountsParamsTariffTOP:
+		return true
+	case SearchAccountsParamsTariffTrial:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SearchAccountsParamsRenewalChannel.
+const (
+	SearchAccountsParamsRenewalChannelDirect  SearchAccountsParamsRenewalChannel = "direct"
+	SearchAccountsParamsRenewalChannelPartner SearchAccountsParamsRenewalChannel = "partner"
+)
+
+// Valid indicates whether the value is a known member of the SearchAccountsParamsRenewalChannel enum.
+func (e SearchAccountsParamsRenewalChannel) Valid() bool {
+	switch e {
+	case SearchAccountsParamsRenewalChannelDirect:
+		return true
+	case SearchAccountsParamsRenewalChannelPartner:
 		return true
 	default:
 		return false
@@ -1321,6 +1510,7 @@ type AccountDetail struct {
 	DomainAliases       nullable.Nullable[[]string] `json:"domain_aliases"`
 	License             ObservationLicense          `json:"license"`
 	Note                nullable.Nullable[string]   `json:"note"`
+	PartnerName         nullable.Nullable[string]   `json:"partner_name,omitempty"`
 	Region              nullable.Nullable[string]   `json:"region"`
 	TimeZone            nullable.Nullable[string]   `json:"time_zone"`
 	Version             int                         `json:"version"`
@@ -1337,22 +1527,43 @@ type AccountList struct {
 
 // AccountListSummary defines model for AccountListSummary.
 type AccountListSummary struct {
-	Total int `json:"total"`
+	Overview *map[string]AccountOverviewGroup `json:"overview,omitempty"`
+	Total    int                              `json:"total"`
+}
+
+// AccountOverviewGroup defines model for AccountOverviewGroup.
+type AccountOverviewGroup struct {
+	ByClassification map[string]int `json:"by_classification"`
+	Total            int            `json:"total"`
 }
 
 // AccountSummary defines model for AccountSummary.
 type AccountSummary struct {
-	AccountId           openapi_types.UUID          `json:"account_id"`
-	ActiveProductsCount int                         `json:"active_products_count"`
-	ActiveUsers         ObservationCount            `json:"active_users"`
-	AmoAccountId        AmoID                       `json:"amo_account_id"`
-	Classification      nullable.Nullable[string]   `json:"classification"`
-	CurrentDomain       nullable.Nullable[string]   `json:"current_domain"`
-	DisplayName         nullable.Nullable[string]   `json:"display_name"`
-	DomainAliases       nullable.Nullable[[]string] `json:"domain_aliases"`
-	License             ObservationLicense          `json:"license"`
-	Version             int                         `json:"version"`
+	AccountId           openapi_types.UUID             `json:"account_id"`
+	ActiveProductsCount int                            `json:"active_products_count"`
+	ActiveUsers         ObservationCount               `json:"active_users"`
+	AmoAccountId        AmoID                          `json:"amo_account_id"`
+	Classification      nullable.Nullable[string]      `json:"classification"`
+	CurrentDomain       nullable.Nullable[string]      `json:"current_domain"`
+	DataGroup           *AccountSummaryDataGroup       `json:"data_group,omitempty"`
+	DisplayName         nullable.Nullable[string]      `json:"display_name"`
+	DomainAliases       nullable.Nullable[[]string]    `json:"domain_aliases"`
+	License             ObservationLicense             `json:"license"`
+	PartnerName         nullable.Nullable[string]      `json:"partner_name,omitempty"`
+	RenewalChannel      *AccountSummaryRenewalChannel  `json:"renewal_channel,omitempty"`
+	TimeZone            *string                        `json:"time_zone,omitempty"`
+	Version             int                            `json:"version"`
+	WidgetTariffs       *[]AccountSummaryWidgetTariffs `json:"widget_tariffs,omitempty"`
 }
+
+// AccountSummaryDataGroup defines model for AccountSummary.DataGroup.
+type AccountSummaryDataGroup string
+
+// AccountSummaryRenewalChannel defines model for AccountSummary.RenewalChannel.
+type AccountSummaryRenewalChannel string
+
+// AccountSummaryWidgetTariffs defines model for AccountSummary.WidgetTariffs.
+type AccountSummaryWidgetTariffs string
 
 // Activation defines model for Activation.
 type Activation struct {
@@ -2109,17 +2320,29 @@ type Error503 = Error
 
 // ListAccountsParams defines parameters for ListAccounts.
 type ListAccountsParams struct {
-	Limit          *int                    `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor         *string                 `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Q              *string                 `form:"q,omitempty" json:"q,omitempty"`
-	Classification *[]string               `form:"classification,omitempty" json:"classification,omitempty"`
-	ProductId      *openapi_types.UUID     `form:"product_id,omitempty" json:"product_id,omitempty"`
-	LicenseBefore  *time.Time              `form:"license_before,omitempty" json:"license_before,omitempty"`
-	ActiveUsersMin *int                    `form:"active_users_min,omitempty" json:"active_users_min,omitempty"`
-	ActiveUsersMax *int                    `form:"active_users_max,omitempty" json:"active_users_max,omitempty"`
-	Sort           *ListAccountsParamsSort `form:"sort,omitempty" json:"sort,omitempty"`
-	XPlatformActor Actor                   `json:"X-Platform-Actor"`
+	Limit          *int                              `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *string                           `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Q              *string                           `form:"q,omitempty" json:"q,omitempty"`
+	Classification *[]string                         `form:"classification,omitempty" json:"classification,omitempty"`
+	ProductId      *openapi_types.UUID               `form:"product_id,omitempty" json:"product_id,omitempty"`
+	LicenseBefore  *time.Time                        `form:"license_before,omitempty" json:"license_before,omitempty"`
+	DataGroup      *ListAccountsParamsDataGroup      `form:"data_group,omitempty" json:"data_group,omitempty"`
+	Tariff         *ListAccountsParamsTariff         `form:"tariff,omitempty" json:"tariff,omitempty"`
+	RenewalChannel *ListAccountsParamsRenewalChannel `form:"renewal_channel,omitempty" json:"renewal_channel,omitempty"`
+	ActiveUsersMin *int                              `form:"active_users_min,omitempty" json:"active_users_min,omitempty"`
+	ActiveUsersMax *int                              `form:"active_users_max,omitempty" json:"active_users_max,omitempty"`
+	Sort           *ListAccountsParamsSort           `form:"sort,omitempty" json:"sort,omitempty"`
+	XPlatformActor Actor                             `json:"X-Platform-Actor"`
 }
+
+// ListAccountsParamsDataGroup defines parameters for ListAccounts.
+type ListAccountsParamsDataGroup string
+
+// ListAccountsParamsTariff defines parameters for ListAccounts.
+type ListAccountsParamsTariff string
+
+// ListAccountsParamsRenewalChannel defines parameters for ListAccounts.
+type ListAccountsParamsRenewalChannel string
 
 // ListAccountsParamsSort defines parameters for ListAccounts.
 type ListAccountsParamsSort string
@@ -2131,17 +2354,29 @@ type SearchAccountsJSONBody struct {
 
 // SearchAccountsParams defines parameters for SearchAccounts.
 type SearchAccountsParams struct {
-	Limit          *int                      `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor         *string                   `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Q              *string                   `form:"q,omitempty" json:"q,omitempty"`
-	Classification *[]string                 `form:"classification,omitempty" json:"classification,omitempty"`
-	ProductId      *openapi_types.UUID       `form:"product_id,omitempty" json:"product_id,omitempty"`
-	LicenseBefore  *time.Time                `form:"license_before,omitempty" json:"license_before,omitempty"`
-	ActiveUsersMin *int                      `form:"active_users_min,omitempty" json:"active_users_min,omitempty"`
-	ActiveUsersMax *int                      `form:"active_users_max,omitempty" json:"active_users_max,omitempty"`
-	Sort           *SearchAccountsParamsSort `form:"sort,omitempty" json:"sort,omitempty"`
-	XPlatformActor Actor                     `json:"X-Platform-Actor"`
+	Limit          *int                                `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor         *string                             `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Q              *string                             `form:"q,omitempty" json:"q,omitempty"`
+	Classification *[]string                           `form:"classification,omitempty" json:"classification,omitempty"`
+	ProductId      *openapi_types.UUID                 `form:"product_id,omitempty" json:"product_id,omitempty"`
+	LicenseBefore  *time.Time                          `form:"license_before,omitempty" json:"license_before,omitempty"`
+	DataGroup      *SearchAccountsParamsDataGroup      `form:"data_group,omitempty" json:"data_group,omitempty"`
+	Tariff         *SearchAccountsParamsTariff         `form:"tariff,omitempty" json:"tariff,omitempty"`
+	RenewalChannel *SearchAccountsParamsRenewalChannel `form:"renewal_channel,omitempty" json:"renewal_channel,omitempty"`
+	ActiveUsersMin *int                                `form:"active_users_min,omitempty" json:"active_users_min,omitempty"`
+	ActiveUsersMax *int                                `form:"active_users_max,omitempty" json:"active_users_max,omitempty"`
+	Sort           *SearchAccountsParamsSort           `form:"sort,omitempty" json:"sort,omitempty"`
+	XPlatformActor Actor                               `json:"X-Platform-Actor"`
 }
+
+// SearchAccountsParamsDataGroup defines parameters for SearchAccounts.
+type SearchAccountsParamsDataGroup string
+
+// SearchAccountsParamsTariff defines parameters for SearchAccounts.
+type SearchAccountsParamsTariff string
+
+// SearchAccountsParamsRenewalChannel defines parameters for SearchAccounts.
+type SearchAccountsParamsRenewalChannel string
 
 // SearchAccountsParamsSort defines parameters for SearchAccounts.
 type SearchAccountsParamsSort string
@@ -2224,6 +2459,7 @@ type UpdateAccountProfileJSONBody struct {
 	Classification nullable.Nullable[string] `json:"classification,omitempty"`
 	DisplayName    nullable.Nullable[string] `json:"display_name,omitempty"`
 	Note           nullable.Nullable[string] `json:"note,omitempty"`
+	PartnerName    nullable.Nullable[string] `json:"partner_name,omitempty"`
 	Reason         string                    `json:"reason"`
 }
 
@@ -3895,6 +4131,42 @@ func NewListAccountsRequest(server string, params *ListAccountsParams) (*http.Re
 
 		}
 
+		if params.DataGroup != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "data_group", *params.DataGroup, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Tariff != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tariff", *params.Tariff, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RenewalChannel != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "renewal_channel", *params.RenewalChannel, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.ActiveUsersMin != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "active_users_min", *params.ActiveUsersMin, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
@@ -4060,6 +4332,42 @@ func NewSearchAccountsRequestWithBody(server string, params *SearchAccountsParam
 		if params.LicenseBefore != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "license_before", *params.LicenseBefore, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DataGroup != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "data_group", *params.DataGroup, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Tariff != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tariff", *params.Tariff, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RenewalChannel != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "renewal_channel", *params.RenewalChannel, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
