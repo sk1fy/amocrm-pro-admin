@@ -9,7 +9,7 @@ import { ClientsPage } from './CompaniesPage'
 import { getAccountLocation } from './accountsLocation'
 import { Timeline } from './Timeline'
 import { WidgetsPage } from './WidgetsPage'
-import { InstallationsPage } from './InstallationsPage'
+import { InstallationsHeading, InstallationsPage } from './InstallationsPage'
 import { useManagerLocation } from './installationsLocation'
 import { fetchManager, loginManager, logoutManager } from './session'
 import styles from './ManagerApp.module.css'
@@ -81,6 +81,7 @@ function AuthenticatedManagerApp() {
     const feed = section === 'feed'
     const selected = getAccountLocation(location.search)
     const canRead = manager.grants.includes('clients.read')
+    const canConfigureDeals = manager.grants.includes('catalog.manage')
     return (
       <Workspace
         {...location}
@@ -121,7 +122,16 @@ function AuthenticatedManagerApp() {
             />
           ) : !canRead ? (
             <>
-              <h1>{clients ? 'Клиенты' : 'Установки'}</h1>
+              {section === 'installations' && !selected ? (
+                <InstallationsHeading
+                  canConfigureDeals={canConfigureDeals}
+                  scope={scope}
+                  onExpired={expire}
+                  onForbidden={checkGrants}
+                />
+              ) : (
+                <h1>{clients ? 'Клиенты' : 'Установки'}</h1>
+              )}
               <p role="alert">
                 {clients || selected ? 'Нет доступа к клиентам.' : 'Нет доступа к установкам.'}
               </p>
@@ -143,6 +153,7 @@ function AuthenticatedManagerApp() {
               {...location}
               scope={scope}
               canWrite={manager.grants.includes('clients.write')}
+              canConfigureDeals={canConfigureDeals}
               onExpired={expire}
               onForbidden={checkGrants}
             />

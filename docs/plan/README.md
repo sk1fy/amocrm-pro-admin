@@ -32,6 +32,7 @@
 
 ## Текущая часть
 
+- [Общая настройка сделок по установкам](installation-deal-settings.md).
 - [Контакт активации и сделки по установкам](installation-activation-company-deals.md).
 
 - [Очередь установок по макету](manager-installation-queue-layout.md).

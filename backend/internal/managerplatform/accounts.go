@@ -60,6 +60,8 @@ func AccountEndpoints() []AccountEndpoint {
 		{apicontract.ManagerCompanies, "listCompanies", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.CompanyList]},
 		{apicontract.ManagerCompany, "getCompany", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.CompanyDetail]},
 		{apicontract.ManagerCompanyWorkflowMetadata, "getCompanyWorkflowMetadata", "", auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.CompanyWorkflowMetadata]},
+		{apicontract.ManagerInstallationDealSettings, "getInstallationDealSettings", "", auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.InstallationDealSettings]},
+		{apicontract.ManagerInstallationDealSettingsSet, "setInstallationDealSettings", kindInstallationDealSettings, auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.InstallationDealSettings]},
 		{apicontract.ManagerProductCompanyWorkflow, "getProductCompanyWorkflow", "", auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.ProductCompanyWorkflow]},
 		{apicontract.ManagerProductCompanyWorkflowSet, "setProductCompanyWorkflow", kindCompanyWorkflow, auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.ProductCompanyWorkflow]},
 		{apicontract.ManagerProducts, "listProducts", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.ProductList]},
@@ -370,6 +372,8 @@ func (c *Client) clientAccountRequest(ctx context.Context, principal auth.Princi
 
 func accountResponseVersion(value any) int {
 	switch model := value.(type) {
+	case *wire.InstallationDealSettings:
+		return model.Version
 	case *wire.ProductCompanyWorkflow:
 		return model.Version
 	case *wire.Product:
@@ -398,6 +402,9 @@ func validManagerAccountDTO(
 		return validCompanyDetail(model, target)
 	case *wire.CompanyWorkflowMetadata:
 		return validCompanyMetadata(model)
+	case *wire.InstallationDealSettings:
+		return (item.Kind == "" || int64(model.Version) == item.Version+1) &&
+			validWorkflowConfiguration(model.Version, model.Configuration, item)
 	case *wire.ProductCompanyWorkflow:
 		return validCompanyWorkflow(model, target, item)
 

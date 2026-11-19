@@ -20,38 +20,40 @@ var (
 	ManagerInvitationAccept    = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/invitations/accept"}
 	ManagerSecurityAudit       = Route{Method: http.MethodGet, Path: ManagerPrefix + "/security/audit"}
 
-	ManagerLogin                     = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/login"}
-	ManagerLogout                    = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/logout"}
-	ManagerOperation                 = Route{Method: http.MethodGet, Path: ManagerPrefix + "/operations/{id}"}
-	ManagerDealRetry                 = Route{Method: http.MethodPost, Path: ManagerPrefix + "/installations/{id}/crm-deal/retry"}
-	ManagerInstallations             = Route{Method: http.MethodGet, Path: ManagerPrefix + "/installations"}
-	ManagerReview                    = Route{Method: http.MethodPut, Path: ManagerPrefix + "/installations/{id}/review"}
-	ManagerFeed                      = Route{Method: http.MethodGet, Path: ManagerPrefix + "/feed"}
-	ManagerAccountHistory            = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/history"}
-	ManagerAccounts                  = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts"}
-	ManagerAccountSearch             = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/search"}
-	ManagerAccount                   = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}"}
-	ManagerAccountProfile            = Route{Method: http.MethodPatch, Path: ManagerPrefix + "/accounts/{id}/profile"}
-	ManagerAccountRefresh            = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/{id}/refresh"}
-	ManagerAccountLicenseHistory     = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/license-history"}
-	ManagerAccountWidgets            = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/widgets"}
-	ManagerAccountCRMUsers           = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/crm-users"}
-	ManagerAccountRenewal            = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/{id}/renewals"}
-	ManagerAccountPortrait           = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/portrait"}
-	ManagerAccountPortraitUpdate     = Route{Method: http.MethodPatch, Path: ManagerPrefix + "/accounts/{id}/portrait"}
-	ManagerPortraitAuditDate         = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/{id}/portrait/audit-dates"}
-	ManagerPortraitTemplate          = Route{Method: http.MethodGet, Path: ManagerPrefix + "/portrait-template"}
-	ManagerPortraitTemplateUpdate    = Route{Method: http.MethodPut, Path: ManagerPrefix + "/portrait-template"}
-	ManagerPortraitNiches            = Route{Method: http.MethodGet, Path: ManagerPrefix + "/portrait-niches"}
-	ManagerPortraitNicheCreate       = Route{Method: http.MethodPost, Path: ManagerPrefix + "/portrait-niches"}
-	ManagerPortraitNicheUpdate       = Route{Method: http.MethodPatch, Path: ManagerPrefix + "/portrait-niches/{id}"}
-	ManagerPortraitNicheDelete       = Route{Method: http.MethodDelete, Path: ManagerPrefix + "/portrait-niches/{id}"}
-	ManagerPortraitNicheMerge        = Route{Method: http.MethodPost, Path: ManagerPrefix + "/portrait-niches/{id}/merge"}
-	ManagerCompanies                 = Route{Method: http.MethodGet, Path: ManagerPrefix + "/companies"}
-	ManagerCompany                   = Route{Method: http.MethodGet, Path: ManagerPrefix + "/companies/{id}"}
-	ManagerCompanyWorkflowMetadata   = Route{Method: http.MethodGet, Path: ManagerPrefix + "/company-workflow-metadata"}
-	ManagerProductCompanyWorkflow    = Route{Method: http.MethodGet, Path: ManagerPrefix + "/products/{id}/company-workflow"}
-	ManagerProductCompanyWorkflowSet = Route{Method: http.MethodPut, Path: ManagerPrefix + "/products/{id}/company-workflow"}
+	ManagerLogin                       = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/login"}
+	ManagerLogout                      = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/logout"}
+	ManagerOperation                   = Route{Method: http.MethodGet, Path: ManagerPrefix + "/operations/{id}"}
+	ManagerDealRetry                   = Route{Method: http.MethodPost, Path: ManagerPrefix + "/installations/{id}/crm-deal/retry"}
+	ManagerInstallations               = Route{Method: http.MethodGet, Path: ManagerPrefix + "/installations"}
+	ManagerReview                      = Route{Method: http.MethodPut, Path: ManagerPrefix + "/installations/{id}/review"}
+	ManagerFeed                        = Route{Method: http.MethodGet, Path: ManagerPrefix + "/feed"}
+	ManagerAccountHistory              = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/history"}
+	ManagerAccounts                    = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts"}
+	ManagerAccountSearch               = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/search"}
+	ManagerAccount                     = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}"}
+	ManagerAccountProfile              = Route{Method: http.MethodPatch, Path: ManagerPrefix + "/accounts/{id}/profile"}
+	ManagerAccountRefresh              = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/{id}/refresh"}
+	ManagerAccountLicenseHistory       = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/license-history"}
+	ManagerAccountWidgets              = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/widgets"}
+	ManagerAccountCRMUsers             = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/crm-users"}
+	ManagerAccountRenewal              = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/{id}/renewals"}
+	ManagerAccountPortrait             = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/portrait"}
+	ManagerAccountPortraitUpdate       = Route{Method: http.MethodPatch, Path: ManagerPrefix + "/accounts/{id}/portrait"}
+	ManagerPortraitAuditDate           = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/{id}/portrait/audit-dates"}
+	ManagerPortraitTemplate            = Route{Method: http.MethodGet, Path: ManagerPrefix + "/portrait-template"}
+	ManagerPortraitTemplateUpdate      = Route{Method: http.MethodPut, Path: ManagerPrefix + "/portrait-template"}
+	ManagerPortraitNiches              = Route{Method: http.MethodGet, Path: ManagerPrefix + "/portrait-niches"}
+	ManagerPortraitNicheCreate         = Route{Method: http.MethodPost, Path: ManagerPrefix + "/portrait-niches"}
+	ManagerPortraitNicheUpdate         = Route{Method: http.MethodPatch, Path: ManagerPrefix + "/portrait-niches/{id}"}
+	ManagerPortraitNicheDelete         = Route{Method: http.MethodDelete, Path: ManagerPrefix + "/portrait-niches/{id}"}
+	ManagerPortraitNicheMerge          = Route{Method: http.MethodPost, Path: ManagerPrefix + "/portrait-niches/{id}/merge"}
+	ManagerCompanies                   = Route{Method: http.MethodGet, Path: ManagerPrefix + "/companies"}
+	ManagerCompany                     = Route{Method: http.MethodGet, Path: ManagerPrefix + "/companies/{id}"}
+	ManagerCompanyWorkflowMetadata     = Route{Method: http.MethodGet, Path: ManagerPrefix + "/company-workflow-metadata"}
+	ManagerInstallationDealSettings    = Route{Method: http.MethodGet, Path: ManagerPrefix + "/installation-deal-settings"}
+	ManagerInstallationDealSettingsSet = Route{Method: http.MethodPut, Path: ManagerPrefix + "/installation-deal-settings"}
+	ManagerProductCompanyWorkflow      = Route{Method: http.MethodGet, Path: ManagerPrefix + "/products/{id}/company-workflow"}
+	ManagerProductCompanyWorkflowSet   = Route{Method: http.MethodPut, Path: ManagerPrefix + "/products/{id}/company-workflow"}
 
 	ManagerProducts          = Route{Method: http.MethodGet, Path: ManagerPrefix + "/products"}
 	ManagerProductCreate     = Route{Method: http.MethodPost, Path: ManagerPrefix + "/products"}
@@ -130,7 +132,7 @@ var (
 		ManagerPortraitNicheUpdate,
 		ManagerPortraitNicheDelete,
 		ManagerPortraitNicheMerge,
-		ManagerCompanies, ManagerCompany, ManagerCompanyWorkflowMetadata, ManagerProductCompanyWorkflow, ManagerProductCompanyWorkflowSet,
+		ManagerCompanies, ManagerCompany, ManagerCompanyWorkflowMetadata, ManagerProductCompanyWorkflow, ManagerProductCompanyWorkflowSet, ManagerInstallationDealSettings, ManagerInstallationDealSettingsSet,
 		ManagerProducts, ManagerProductCreate, ManagerProduct, ManagerProductUpdate, ManagerProductMetrics,
 		Distribution, DistributionTrace,
 		ConnectionCommand, IntegrationCreateCommand, IntegrationCommand, JobRetry, DeliveryRetry, AdminOperations, AdminOperation,

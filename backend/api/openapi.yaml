@@ -4206,6 +4206,136 @@ paths:
       x-manager-grant: catalog.manage
       tags:
       - Managers
+  /api/v1/managers/installation-deal-settings:
+    get:
+      operationId: getInstallationDealSettingsForManagers
+      security:
+      - managerSession: []
+      parameters:
+      responses:
+        '200':
+          description: Успех
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerInstallationDealSettings'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[1-9][0-9]*"$
+        '400':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      x-manager-grant: catalog.manage
+      tags:
+      - Managers
+    put:
+      operationId: setInstallationDealSettingsForManagers
+      security:
+      - managerSession: []
+      parameters:
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      responses:
+        '200':
+          description: Успех
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerInstallationDealSettings'
+          headers:
+            ETag:
+              schema:
+                type: string
+                pattern: ^"[1-9][0-9]*"$
+        '400':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Безопасная ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '202':
+          description: Исход команды пока неизвестен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManagerSetProductCompanyWorkflow'
+      description: Единая воронка и начальный этап для новых сделок по установкам.
+      x-manager-grant: catalog.manage
+      tags:
+      - Managers
 components:
   securitySchemes:
     adminSession:
@@ -6673,6 +6803,19 @@ components:
       - version
       - configuration
       - write_ready
+    ManagerInstallationDealSettings:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          $ref: '#/components/schemas/ManagerVersion'
+        configuration:
+          anyOf:
+          - $ref: '#/components/schemas/ManagerCompanyWorkflowConfiguration'
+          - type: 'null'
+      required:
+      - version
+      - configuration
     ManagerSetProductCompanyWorkflow:
       type: object
       additionalProperties: false

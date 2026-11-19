@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { resetApiSession } from '../src/api/client'
 import { ManagerApp } from './ManagerApp'
 import { parseCompanyList, parseWorkflowMetadata } from './companyApi'
@@ -31,7 +31,17 @@ const metadata = {
   sources: [],
   observation: {},
 }
-const absent = { product_id: product, version: 1, configuration: null, write_ready: false }
+const absent = { version: 1, configuration: null }
+
+beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true
+  }
+  HTMLDialogElement.prototype.close = function () {
+    this.open = false
+    this.dispatchEvent(new Event('close'))
+  }
+})
 function open(
   search: string,
   grants: string[],
@@ -81,16 +91,28 @@ it('separates absent snapshots from complete empty data and rejects numeric CRM 
     parseWorkflowMetadata({ ...metadata, source: { ...source, source_account_id: 71 } }),
   ).toThrow()
 })
-it('uses catalog-only workflow, clears stage on pipeline change, and retains exact unknown command', async () => {
+it('opens shared settings from installations with catalog.manage, clears stage on pipeline change, and retains exact unknown command', async () => {
   const requests: { body: RequestInit['body']; key: string | null; version: string | null }[] = []
   let committed = false
-  open('section=widgets&product=' + product, ['catalog.manage'], (url, init) => {
+  const saved = {
+    version: 2,
+    configuration: {
+      revision: 1,
+      source_account_id: '71',
+      binding_revision: 'fixture-v1',
+      metadata_generation_id: generation,
+      pipeline_id: '21',
+      initial_stage_id: '22',
+      validated_at: time,
+    },
+  }
+  open('section=installations', ['catalog.manage'], (url, init) => {
     if (url.pathname.endsWith('/company-workflow-metadata')) return Response.json(metadata)
     if (url.pathname.includes('/operations/')) {
       committed = true
       return Response.json({ id: receipt, state: 'completed' })
     }
-    expect(url.pathname).toBe('/api/v1/managers/products/' + product + '/company-workflow')
+    expect(url.pathname).toBe('/api/v1/managers/installation-deal-settings')
     if (init?.method === 'PUT') {
       requests.push({
         body: init.body,
@@ -99,26 +121,13 @@ it('uses catalog-only workflow, clears stage on pipeline change, and retains exa
       })
       if (!committed)
         return Response.json({ id: receipt, state: 'unknown_outcome' }, { status: 202 })
-      return Response.json(
-        {
-          product_id: product,
-          version: 2,
-          configuration: {
-            revision: 1,
-            source_account_id: '71',
-            binding_revision: 'fixture-v1',
-            metadata_generation_id: generation,
-            pipeline_id: '21',
-            initial_stage_id: '22',
-            validated_at: time,
-          },
-          write_ready: false,
-        },
-        { headers: { ETag: '"2"' } },
-      )
+      return Response.json(saved, { headers: { ETag: '"2"' } })
     }
-    return Response.json(absent, { headers: { ETag: '"1"' } })
+    return committed
+      ? Response.json(saved, { headers: { ETag: '"2"' } })
+      : Response.json(absent, { headers: { ETag: '"1"' } })
   })
+  fireEvent.click(await screen.findByRole('button', { name: 'Настройка сделок' }))
   const pipeline = await screen.findByLabelText('Воронка'),
     stage = screen.getByLabelText('Начальный этап')
   await waitFor(() => expect(pipeline).toBeEnabled())
@@ -127,12 +136,17 @@ it('uses catalog-only workflow, clears stage on pipeline change, and retains exa
   fireEvent.change(pipeline, { target: { value: '21' } })
   expect(stage).toHaveValue('')
   fireEvent.change(stage, { target: { value: '22' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Сохранить настройку CRM' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Сохранить настройку' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Проверить результат' }))
   await screen.findByText('Сохранено.')
   expect(requests).toHaveLength(2)
   expect(requests[1]).toEqual(requests[0])
   expect(requests[0].version).toBe('"1"')
+  fireEvent.click(screen.getByRole('button', { name: 'Закрыть' }))
+  expect(screen.queryByRole('dialog')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Настройка сделок' }))
+  expect(await screen.findByLabelText('Воронка')).toHaveValue('21')
+  expect(screen.getByLabelText('Начальный этап')).toHaveValue('22')
   expect(
     within(screen.getByRole('navigation', { name: 'Кабинет менеджеров' }))
       .getAllByRole('link')
@@ -142,7 +156,7 @@ it('uses catalog-only workflow, clears stage on pipeline change, and retains exa
 it('preserves the draft on metadata assertion conflict and explicitly creates a new command', async () => {
   let changed = false
   const keys: (string | null)[] = []
-  open('section=widgets&product=' + product, ['catalog.manage'], (url, init) => {
+  open('section=installations', ['catalog.manage'], (url, init) => {
     if (url.pathname.endsWith('/company-workflow-metadata'))
       return Response.json({ ...metadata, generation_id: changed ? receipt : generation })
     if (init?.method === 'PUT') {
@@ -156,7 +170,6 @@ it('preserves the draft on metadata assertion conflict and explicitly creates a 
       }
       return Response.json(
         {
-          product_id: product,
           version: 2,
           configuration: {
             revision: 1,
@@ -167,27 +180,35 @@ it('preserves the draft on metadata assertion conflict and explicitly creates a 
             initial_stage_id: '12',
             validated_at: time,
           },
-          write_ready: false,
         },
         { headers: { ETag: '"2"' } },
       )
     }
     return Response.json(absent, { headers: { ETag: '"1"' } })
   })
+  fireEvent.click(await screen.findByRole('button', { name: 'Настройка сделок' }))
   const pipeline = await screen.findByLabelText('Воронка')
   await waitFor(() => expect(pipeline).toBeEnabled())
   fireEvent.change(pipeline, { target: { value: '11' } })
   fireEvent.change(screen.getByLabelText('Начальный этап'), { target: { value: '12' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Сохранить настройку CRM' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Сохранить настройку' }))
   const rebase = await screen.findByRole('button', { name: 'Применить черновик к текущей версии' })
   await waitFor(() => expect(rebase).toBeEnabled())
   expect(pipeline).toHaveValue('11')
   expect(screen.getByLabelText('Начальный этап')).toHaveValue('12')
   fireEvent.click(rebase)
-  fireEvent.click(screen.getByRole('button', { name: 'Сохранить настройку CRM' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Сохранить настройку' }))
   await screen.findByText('Сохранено.')
   expect(keys).toHaveLength(2)
   expect(keys[1]).not.toBe(keys[0])
+})
+it('does not request or display deal settings in individual widget cards', async () => {
+  const api = vi.fn(() => Response.json({}, { status: 404 }))
+  open('section=widgets&product=' + product, ['catalog.manage'], api)
+  await screen.findByText('Нет доступа к карточке каталога.')
+  expect(screen.queryByRole('button', { name: 'Настройка сделок' })).toBeNull()
+  expect(screen.queryByLabelText('Воронка')).toBeNull()
+  expect(api).not.toHaveBeenCalled()
 })
 it('shows an unmapped company with M:N and dangling links without inventing runtime accounts', async () => {
   open('section=clients&clients_tab=companies&company=' + product, ['clients.read'], () =>

@@ -1712,6 +1712,12 @@ type InstallationDeal struct {
 // InstallationDealState defines model for InstallationDeal.State.
 type InstallationDealState string
 
+// InstallationDealSettings defines model for InstallationDealSettings.
+type InstallationDealSettings struct {
+	Configuration nullable.Nullable[CompanyWorkflowConfiguration] `json:"configuration"`
+	Version       Version                                         `json:"version"`
+}
+
 // InstallationList defines model for InstallationList.
 type InstallationList struct {
 	Items      []Installation            `json:"items"`
@@ -2307,6 +2313,18 @@ type ListFeedParams struct {
 // ListFeedParamsKind defines parameters for ListFeed.
 type ListFeedParamsKind string
 
+// GetInstallationDealSettingsParams defines parameters for GetInstallationDealSettings.
+type GetInstallationDealSettingsParams struct {
+	XPlatformActor Actor `json:"X-Platform-Actor"`
+}
+
+// SetInstallationDealSettingsParams defines parameters for SetInstallationDealSettings.
+type SetInstallationDealSettingsParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
 // ListInstallationsParams defines parameters for ListInstallations.
 type ListInstallationsParams struct {
 	Limit              *int                                `form:"limit,omitempty" json:"limit,omitempty"`
@@ -2553,6 +2571,9 @@ type RequestAccountRefreshJSONRequestBody RequestAccountRefreshJSONBody
 
 // CreateAccountRenewalJSONRequestBody defines body for CreateAccountRenewal for application/json ContentType.
 type CreateAccountRenewalJSONRequestBody CreateAccountRenewalJSONBody
+
+// SetInstallationDealSettingsJSONRequestBody defines body for SetInstallationDealSettings for application/json ContentType.
+type SetInstallationDealSettingsJSONRequestBody = SetProductCompanyWorkflow
 
 // RetryInstallationDealJSONRequestBody defines body for RetryInstallationDeal for application/json ContentType.
 type RetryInstallationDealJSONRequestBody RetryInstallationDealJSONBody
@@ -2898,6 +2919,21 @@ type ClientInterface interface {
 
 	// ListFeed performs a GET /internal/platform/v1/managers/feed (the `ListFeed` operationId) request.
 	ListFeed(ctx context.Context, params *ListFeedParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetInstallationDealSettings performs a GET /internal/platform/v1/managers/installation-deal-settings (the `GetInstallationDealSettings` operationId) request.
+	GetInstallationDealSettings(ctx context.Context, params *GetInstallationDealSettingsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetInstallationDealSettingsWithBody performs a PUT /internal/platform/v1/managers/installation-deal-settings (the `SetInstallationDealSettings` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Единая воронка и начальный этап для новых сделок по установкам.
+	SetInstallationDealSettingsWithBody(ctx context.Context, params *SetInstallationDealSettingsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetInstallationDealSettings performs a PUT /internal/platform/v1/managers/installation-deal-settings (the `SetInstallationDealSettings` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Единая воронка и начальный этап для новых сделок по установкам.
+	SetInstallationDealSettings(ctx context.Context, params *SetInstallationDealSettingsParams, body SetInstallationDealSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListInstallations performs a GET /internal/platform/v1/managers/installations (the `ListInstallations` operationId) request.
 	ListInstallations(ctx context.Context, params *ListInstallationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3329,6 +3365,51 @@ func (c *Client) GetCompanyWorkflowMetadata(ctx context.Context, params *GetComp
 // ListFeed performs a GET /internal/platform/v1/managers/feed (the `ListFeed` operationId) request.
 func (c *Client) ListFeed(ctx context.Context, params *ListFeedParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListFeedRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetInstallationDealSettings performs a GET /internal/platform/v1/managers/installation-deal-settings (the `GetInstallationDealSettings` operationId) request.
+func (c *Client) GetInstallationDealSettings(ctx context.Context, params *GetInstallationDealSettingsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetInstallationDealSettingsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetInstallationDealSettingsWithBody performs a PUT /internal/platform/v1/managers/installation-deal-settings (the `SetInstallationDealSettings` operationId) request,
+// with any type of body and a specified content type.
+//
+// Единая воронка и начальный этап для новых сделок по установкам.
+func (c *Client) SetInstallationDealSettingsWithBody(ctx context.Context, params *SetInstallationDealSettingsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetInstallationDealSettingsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetInstallationDealSettings performs a PUT /internal/platform/v1/managers/installation-deal-settings (the `SetInstallationDealSettings` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Единая воронка и начальный этап для новых сделок по установкам.
+func (c *Client) SetInstallationDealSettings(ctx context.Context, params *SetInstallationDealSettingsParams, body SetInstallationDealSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetInstallationDealSettingsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5332,6 +5413,117 @@ func NewListFeedRequest(server string, params *ListFeedParams) (*http.Request, e
 	return req, nil
 }
 
+// NewGetInstallationDealSettingsRequest constructs an http.Request for the GetInstallationDealSettings method
+func NewGetInstallationDealSettingsRequest(server string, params *GetInstallationDealSettingsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/installation-deal-settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewSetInstallationDealSettingsRequest calls the generic SetInstallationDealSettings builder with application/json body
+func NewSetInstallationDealSettingsRequest(server string, params *SetInstallationDealSettingsParams, body SetInstallationDealSettingsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetInstallationDealSettingsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewSetInstallationDealSettingsRequestWithBody constructs an http.Request for the SetInstallationDealSettings method, with any body, and a specified content type
+func NewSetInstallationDealSettingsRequestWithBody(server string, params *SetInstallationDealSettingsParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/installation-deal-settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
 // NewListInstallationsRequest constructs an http.Request for the ListInstallations method
 func NewListInstallationsRequest(server string, params *ListInstallationsParams) (*http.Request, error) {
 	var err error
@@ -6917,6 +7109,25 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	ListFeedWithResponse(ctx context.Context, params *ListFeedParams, reqEditors ...RequestEditorFn) (*ListFeedResponse, error)
+
+	// GetInstallationDealSettingsWithResponse performs a GET /internal/platform/v1/managers/installation-deal-settings (the `GetInstallationDealSettings` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetInstallationDealSettingsWithResponse(ctx context.Context, params *GetInstallationDealSettingsParams, reqEditors ...RequestEditorFn) (*GetInstallationDealSettingsResponse, error)
+
+	// SetInstallationDealSettingsWithBodyWithResponse performs a PUT /internal/platform/v1/managers/installation-deal-settings (the `SetInstallationDealSettings` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Единая воронка и начальный этап для новых сделок по установкам.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	SetInstallationDealSettingsWithBodyWithResponse(ctx context.Context, params *SetInstallationDealSettingsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstallationDealSettingsResponse, error)
+
+	// SetInstallationDealSettingsWithResponse performs a PUT /internal/platform/v1/managers/installation-deal-settings (the `SetInstallationDealSettings` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Единая воронка и начальный этап для новых сделок по установкам.
+	SetInstallationDealSettingsWithResponse(ctx context.Context, params *SetInstallationDealSettingsParams, body SetInstallationDealSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstallationDealSettingsResponse, error)
 
 	// ListInstallationsWithResponse performs a GET /internal/platform/v1/managers/installations (the `ListInstallations` operationId) request.
 	//
@@ -8877,6 +9088,200 @@ func (r ListFeedResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListFeedResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetInstallationDealSettingsResponse200Headers the declared response headers of an HTTP 200 response for GetInstallationDealSettings
+type GetInstallationDealSettingsResponse200Headers struct {
+	ETag *string
+}
+
+// GetInstallationDealSettingsResponse503Headers the declared response headers of an HTTP 503 response for GetInstallationDealSettings
+type GetInstallationDealSettingsResponse503Headers struct {
+	RetryAfter *string
+}
+
+type GetInstallationDealSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *InstallationDealSettings
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetInstallationDealSettingsResponse200Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetInstallationDealSettingsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetInstallationDealSettingsResponse) GetJSON200() *InstallationDealSettings {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetInstallationDealSettingsResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetInstallationDealSettingsResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetInstallationDealSettingsResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetInstallationDealSettingsResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetInstallationDealSettingsResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetInstallationDealSettingsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetInstallationDealSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetInstallationDealSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetInstallationDealSettingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// SetInstallationDealSettingsResponse200Headers the declared response headers of an HTTP 200 response for SetInstallationDealSettings
+type SetInstallationDealSettingsResponse200Headers struct {
+	ETag *string
+}
+
+// SetInstallationDealSettingsResponse503Headers the declared response headers of an HTTP 503 response for SetInstallationDealSettings
+type SetInstallationDealSettingsResponse503Headers struct {
+	RetryAfter *string
+}
+
+type SetInstallationDealSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *InstallationDealSettings
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *SetInstallationDealSettingsResponse200Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *SetInstallationDealSettingsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetInstallationDealSettingsResponse) GetJSON200() *InstallationDealSettings {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r SetInstallationDealSettingsResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r SetInstallationDealSettingsResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r SetInstallationDealSettingsResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r SetInstallationDealSettingsResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r SetInstallationDealSettingsResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r SetInstallationDealSettingsResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r SetInstallationDealSettingsResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r SetInstallationDealSettingsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetInstallationDealSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetInstallationDealSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetInstallationDealSettingsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -11092,6 +11497,43 @@ func (c *ClientWithResponses) ListFeedWithResponse(ctx context.Context, params *
 	return ParseListFeedResponse(rsp)
 }
 
+// GetInstallationDealSettingsWithResponse performs a GET /internal/platform/v1/managers/installation-deal-settings (the `GetInstallationDealSettings` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetInstallationDealSettingsWithResponse(ctx context.Context, params *GetInstallationDealSettingsParams, reqEditors ...RequestEditorFn) (*GetInstallationDealSettingsResponse, error) {
+	rsp, err := c.GetInstallationDealSettings(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetInstallationDealSettingsResponse(rsp)
+}
+
+// SetInstallationDealSettingsWithBodyWithResponse performs a PUT /internal/platform/v1/managers/installation-deal-settings (the `SetInstallationDealSettings` operationId) request,
+// with any type of body and a specified content type.
+//
+// Единая воронка и начальный этап для новых сделок по установкам.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) SetInstallationDealSettingsWithBodyWithResponse(ctx context.Context, params *SetInstallationDealSettingsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstallationDealSettingsResponse, error) {
+	rsp, err := c.SetInstallationDealSettingsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetInstallationDealSettingsResponse(rsp)
+}
+
+// SetInstallationDealSettingsWithResponse performs a PUT /internal/platform/v1/managers/installation-deal-settings (the `SetInstallationDealSettings` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Единая воронка и начальный этап для новых сделок по установкам.
+func (c *ClientWithResponses) SetInstallationDealSettingsWithResponse(ctx context.Context, params *SetInstallationDealSettingsParams, body SetInstallationDealSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstallationDealSettingsResponse, error) {
+	rsp, err := c.SetInstallationDealSettings(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetInstallationDealSettingsResponse(rsp)
+}
+
 // ListInstallationsWithResponse performs a GET /internal/platform/v1/managers/installations (the `ListInstallations` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -13109,6 +13551,188 @@ func ParseListFeedResponse(rsp *http.Response) (*ListFeedResponse, error) {
 		response.Headers429 = &headers
 	case rsp.StatusCode == 503:
 		var headers ListFeedResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetInstallationDealSettingsResponse parses an HTTP response from a GetInstallationDealSettingsWithResponse call
+func ParseGetInstallationDealSettingsResponse(rsp *http.Response) (*GetInstallationDealSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetInstallationDealSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstallationDealSettings
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetInstallationDealSettingsResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetInstallationDealSettingsResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseSetInstallationDealSettingsResponse parses an HTTP response from a SetInstallationDealSettingsWithResponse call
+func ParseSetInstallationDealSettingsResponse(rsp *http.Response) (*SetInstallationDealSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetInstallationDealSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstallationDealSettings
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers SetInstallationDealSettingsResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 503:
+		var headers SetInstallationDealSettingsResponse503Headers
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {

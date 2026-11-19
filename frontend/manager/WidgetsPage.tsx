@@ -1,4 +1,3 @@
-import { CompanyWorkflowPanel } from './CompanyWorkflowPanel'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { StatusBadge } from '../src/components/StatusBadge'
@@ -176,9 +175,6 @@ export function WidgetsPage({
                 <p>Каталог доступен только для чтения.</p>
               )}
             </>
-          ) : null}
-          {canWrite ? (
-            <CompanyWorkflowPanel key={'workflow:' + id} productId={id} {...access} />
           ) : null}
           {canStats ? (
             <ProductMetrics key={id} id={id} search={search} navigate={navigate} {...access} />

@@ -1,7 +1,6 @@
 import { apiFetchResponse } from '../src/api/client'
 import { date, integer, isAmoAccountId, isUUID, record } from './installationsApi'
 import { isAccountId } from './accountsApi'
-import { isProductId, productsPath, type ProductId } from './productsApi'
 import { managerApi } from './session'
 
 export type CompanyProjectionId = string & { readonly __brand: 'CompanyProjectionId' }
@@ -167,8 +166,7 @@ export function parseWorkflowMetadata(raw: unknown) {
   return { generation_id, source, pipelines }
 }
 export function parseCompanyWorkflow(raw: unknown) {
-  const item = object(raw, ['product_id', 'version', 'configuration', 'write_ready'])
-  if (!isProductId(item.product_id) || item.write_ready !== false) invalid()
+  const item = object(raw, ['version', 'configuration'])
   const version = integer(item.version, 1)
   const configuration = nullable(item.configuration, (value) => {
     const c = object(value, [
@@ -193,12 +191,11 @@ export function parseCompanyWorkflow(raw: unknown) {
     }
   })
   if ((configuration === null) !== (version === 1)) invalid()
-  return { product_id: item.product_id, version, configuration }
+  return { version, configuration }
 }
 export type CompanyWorkflow = ReturnType<typeof parseCompanyWorkflow>
 export type WorkflowCommand = Readonly<{
   kind: 'company-workflow'
-  product: ProductId
   key: string
   version: number
   body: string
@@ -222,17 +219,16 @@ export async function getWorkflowMetadata(signal: AbortSignal) {
   })
   return parseWorkflowMetadata(response.data)
 }
-function workflowPath(id: ProductId) {
-  return productsPath + '/' + id + '/company-workflow'
-}
-export async function getCompanyWorkflow(id: ProductId, signal: AbortSignal) {
-  const response = await apiFetchResponse<unknown>(workflowPath(id), { signal }),
+const workflowPath = managerApi + '/installation-deal-settings'
+
+export async function getCompanyWorkflow(signal: AbortSignal) {
+  const response = await apiFetchResponse<unknown>(workflowPath, { signal }),
     workflow = parseCompanyWorkflow(response.data)
-  if (workflow.product_id !== id || response.etag !== '"' + workflow.version + '"') invalid()
+  if (response.etag !== '"' + workflow.version + '"') invalid()
   return workflow
 }
 export async function sendWorkflowCommand(command: WorkflowCommand, signal: AbortSignal) {
-  const response = await apiFetchResponse<unknown>(workflowPath(command.product), {
+  const response = await apiFetchResponse<unknown>(workflowPath, {
     signal,
     method: 'PUT',
     headers: { 'Idempotency-Key': command.key, 'If-Match': '"' + command.version + '"' },
@@ -242,7 +238,6 @@ export async function sendWorkflowCommand(command: WorkflowCommand, signal: Abor
   const workflow = parseCompanyWorkflow(response.data)
   if (
     response.status !== 200 ||
-    workflow.product_id !== command.product ||
     workflow.version !== command.version + 1 ||
     response.etag !== '"' + workflow.version + '"'
   )
