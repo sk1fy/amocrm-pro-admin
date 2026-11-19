@@ -1,17 +1,27 @@
-import { useQuery } from '@tanstack/react-query'
-import { useEffect, type FormEvent } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useEffect, useState, type FormEvent } from 'react'
 import { isApiError } from '../src/api/client'
+import { EmptyState } from '../src/components/EmptyState'
 import { StatusBadge } from '../src/components/StatusBadge'
-import { formatTime } from '../src/lib/format'
-import { listAccounts } from './accountsApi'
+import { EMPTY, formatExpiry, formatRelativeTime, formatTime } from '../src/lib/format'
+import { lookupState } from '../src/states'
+import {
+  listAccounts,
+  widgetTariffs,
+  type AccountOverviewCounts,
+  type AccountSummary,
+} from './accountsApi'
 import {
   accountSearch,
   getAccountSearch,
   ManagerLink,
-  ratingField,
+  resetAccountSearch,
   updateAccountSearch,
 } from './accountsLocation'
-import styles from './Accounts.module.css'
+import { moscowOffset } from './accountTimeZone'
+import { ClientPortraitFilter } from './ClientPortraitFilter'
+import sharedStyles from './Accounts.module.css'
+import styles from './ClientsDirectory.module.css'
 
 export const accountsKey = ['managers', 'accounts']
 
@@ -36,7 +46,7 @@ export function useAccountAccessError(
 export function ReadFailure({ error, retry }: { error: unknown; retry: () => void }) {
   const status = isApiError(error) ? error.status : 0
   return (
-    <div className={styles.actions} role="alert">
+    <div className={sharedStyles.actions} role="alert">
       <span>
         {status === 403
           ? 'Нет доступа'
@@ -55,6 +65,291 @@ export function ReadFailure({ error, retry }: { error: unknown; retry: () => voi
   )
 }
 
+const classifications = [
+  { value: 'Наш клиент', title: 'Наши клиенты' },
+  { value: 'Без партнёра', title: 'Свободные' },
+  { value: 'Клиент партнёра', title: 'Клиенты партнёров' },
+  { value: 'Запрет работы', title: 'Запрет работы' },
+] as const
+
+const renewalOptions = [
+  { value: 'direct', title: 'Напрямую' },
+  { value: 'partner', title: 'Через партнёра' },
+] as const
+
+const groups = [
+  { key: 'all', title: 'все аккаунты' },
+  { key: 'receiving', title: 'получаем данные' },
+  { key: 'no_data', title: 'нет данных' },
+  { key: 'inactive', title: 'не пользуются amoCRM' },
+  { key: 'blocked', title: 'запрет работы' },
+  { key: 'trial', title: 'пробный период amoCRM' },
+] as const
+
+const missingLicense = 'Источник срока лицензии amoCRM не подключён'
+const licenseDate = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+})
+
+function ClientGroups({
+  overview,
+  group,
+  classification,
+  select,
+}: {
+  overview?: AccountOverviewCounts
+  group: string
+  classification: string
+  select: (group: string | null, classification: string | null) => void
+}) {
+  return (
+    <div className={styles.groups} role="group" aria-label="Сводка по аккаунтам">
+      {groups.map(({ key, title }) => {
+        const licensedGroup = key === 'inactive' || key === 'trial'
+        const counts = licensedGroup ? undefined : overview?.[key]
+        const filter = key === 'all' ? null : key
+        const active = group === key
+        return (
+          <div
+            className={styles.group}
+            data-selected={active && (key !== 'all' || classification !== '')}
+            key={key}
+          >
+            <button
+              type="button"
+              className={styles.groupButton}
+              aria-pressed={active && classification === ''}
+              disabled={!counts}
+              title={licensedGroup ? missingLicense : undefined}
+              onClick={() => select(active && !classification ? null : filter, null)}
+            >
+              <span className={styles.groupDot} data-group={key} aria-hidden="true" />
+              <span>
+                <strong>{counts?.total ?? EMPTY}</strong>
+                <small>{title}</small>
+              </span>
+            </button>
+            {key === 'blocked' || licensedGroup ? (
+              <p className={styles.groupNote}>
+                {key === 'blocked'
+                  ? 'Аккаунты с отметкой «Запрет работы»'
+                  : 'Нет данных о лицензии'}
+              </p>
+            ) : (
+              <div className={styles.breakdown}>
+                {classifications.map(({ value, title: label }) => {
+                  const pressed = active && classification === value
+                  const count = counts ? (counts.by_classification[value] ?? 0) : undefined
+                  if (key !== 'all' && value === 'Запрет работы' && count === 0) return null
+                  return (
+                    <button
+                      type="button"
+                      key={value}
+                      title={title + ' · ' + label}
+                      aria-label={
+                        title + ' · ' + label + (count === undefined ? '' : ' · ' + count)
+                      }
+                      aria-pressed={pressed}
+                      disabled={!counts}
+                      data-zero={count === 0}
+                      onClick={() => select(pressed ? null : filter, pressed ? null : value)}
+                    >
+                      {label}
+                      <b>{count ?? EMPTY}</b>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function ClientTable({
+  items,
+  snapshot,
+  search,
+  navigate,
+}: {
+  items: AccountSummary[]
+  snapshot: string
+  search: string
+  navigate: (search: string) => void
+}) {
+  const time = new Date(snapshot)
+  return (
+    <div
+      className={styles.tableScroll}
+      role="region"
+      aria-label="Таблица клиентов"
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Enable horizontal keyboard scrolling.
+      tabIndex={0}
+    >
+      <table className={styles.table}>
+        <colgroup>
+          <col className={styles.idColumn} />
+          <col className={styles.nameColumn} />
+          <col className={styles.licenseColumn} />
+          <col className={styles.tariffColumn} />
+          <col className={styles.usersColumn} />
+          <col className={styles.ownerColumn} />
+          <col className={styles.updatedColumn} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">ID amoCRM</th>
+            <th scope="col">Название</th>
+            <th scope="col" title={missingLicense}>
+              amoCRM до
+            </th>
+            <th scope="col">Тариф</th>
+            <th scope="col">Активные пользователи</th>
+            <th scope="col">Чей клиент</th>
+            <th scope="col">Данные обновлены</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((account) => {
+            const link = accountSearch(search, account.account_id)
+            const subdomain = account.current_domain?.split('.')[0]
+            const name = account.display_name
+            const zone = moscowOffset(account.time_zone, snapshot)
+            const secondaryName =
+              subdomain && name !== subdomain && name !== account.current_domain ? name : null
+            const expiry = account.license.value?.license_until
+            const refreshed = account.active_users.observed_at
+            return (
+              <tr key={account.account_id}>
+                <td>
+                  <div className={styles.identity}>
+                    <StatusBadge
+                      domain="client_data"
+                      state={account.data_group ?? 'unknown'}
+                      variant="dot"
+                    />
+                    <ManagerLink search={link} navigate={navigate}>
+                      {account.amo_account_id}
+                    </ManagerLink>
+                  </div>
+                </td>
+                <td>
+                  {subdomain || name ? (
+                    <ManagerLink
+                      search={link}
+                      navigate={navigate}
+                      label={secondaryName ? subdomain + ' · ' + secondaryName : undefined}
+                    >
+                      {subdomain ?? name}
+                    </ManagerLink>
+                  ) : (
+                    EMPTY
+                  )}
+                  {secondaryName ? (
+                    <small>
+                      {secondaryName}
+                      {zone ? (
+                        <span className={styles.zone} title={account.time_zone ?? undefined}>
+                          {zone}
+                        </span>
+                      ) : null}
+                    </small>
+                  ) : zone ? (
+                    <span className={styles.zone} title={account.time_zone ?? undefined}>
+                      {zone}
+                    </span>
+                  ) : null}
+                </td>
+                <td>
+                  {expiry ? (
+                    <>
+                      <time dateTime={expiry}>{licenseDate.format(new Date(expiry))}</time>
+                      <small
+                        className={
+                          Date.parse(expiry) <= time.getTime() ? styles.expired : undefined
+                        }
+                      >
+                        {formatExpiry(expiry, time)}
+                      </small>
+                    </>
+                  ) : (
+                    <span title={missingLicense}>{EMPTY}</span>
+                  )}
+                  {account.license.state === 'stale' ? (
+                    <StatusBadge domain="freshness" state={account.license.state} calm />
+                  ) : null}
+                  {account.renewal_channel ? (
+                    <div className={styles.renewal} data-channel={account.renewal_channel}>
+                      <StatusBadge
+                        domain="client_renewal"
+                        state={account.renewal_channel}
+                        variant="text"
+                      />
+                    </div>
+                  ) : null}
+                </td>
+                <td>
+                  {account.widget_tariffs?.length ? (
+                    <div className={styles.tariffs}>
+                      {account.widget_tariffs.map((tariff) => (
+                        <StatusBadge
+                          domain="product_line"
+                          state={tariff}
+                          key={tariff}
+                          title={tariff === 'trial' ? 'Пробный период' : undefined}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    EMPTY
+                  )}
+                </td>
+                <td>
+                  {account.active_users.value ?? EMPTY}
+                  {account.active_users.state !== 'fresh' ? (
+                    <div>
+                      <StatusBadge domain="freshness" state={account.active_users.state} calm />
+                    </div>
+                  ) : null}
+                </td>
+                <td>
+                  <div className={styles.owner} data-classification={account.classification}>
+                    <StatusBadge
+                      domain="client_classification"
+                      state={account.classification ?? 'unknown'}
+                      variant="text"
+                    />
+                  </div>
+                  {account.partner_name ? <small>{account.partner_name}</small> : null}
+                </td>
+                <td>
+                  {refreshed ? (
+                    <>
+                      <time
+                        dateTime={refreshed}
+                        title="Активные пользователи · последнее наблюдение"
+                      >
+                        {formatTime(refreshed)}
+                      </time>
+                      <small>{formatRelativeTime(refreshed, time)}</small>
+                    </>
+                  ) : (
+                    <small>Нет наблюдений</small>
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export function AccountsPage({
   search,
   navigate,
@@ -66,224 +361,259 @@ export function AccountsPage({
   navigate: (search: string) => void
 }) {
   const { query: params, filter, invalid } = getAccountSearch(search)
+  const [portraitOpen, setPortraitOpen] = useState(false)
   const queryString = params.toString()
   const page = useQuery({
     queryKey: [...accountsKey, scope, queryString, filter],
     queryFn: ({ signal }) => listAccounts(queryString, filter, signal),
     enabled: !invalid,
+    placeholderData: keepPreviousData,
     retry: false,
   })
   useAccountAccessError(page.error, onExpired, onForbidden)
   const invalidCursor =
     Boolean(params.get('cursor')) && isApiError(page.error) && page.error.status === 400
-  const filterKey = new URLSearchParams(params)
-  filterKey.delete('cursor')
+  const classificationsSelected = params.getAll('classification')
+  const classification =
+    classificationsSelected.length > 1 ? 'multiple' : (classificationsSelected[0] ?? '')
+  const group = params.get('data_group') ?? 'all'
+  const query = params.get('q') ?? ''
+  const [searchDraft, setSearchDraft] = useState({ query, value: query })
+  if (searchDraft.query !== query) setSearchDraft({ query, value: query })
+  const trimmedQuery = searchDraft.value.trim()
+  useEffect(() => {
+    if (trimmedQuery === query) return
+    const timer = window.setTimeout(() => {
+      navigate(updateAccountSearch(search, { q: trimmedQuery, cursor: null }))
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [navigate, query, search, trimmedQuery])
+  const limit = params.get('limit') ?? '25'
+  const ready = page.isSuccess && !page.isPlaceholderData && !invalid ? page.data : undefined
+  const overview = page.data?.overview
+  const resetSearch = resetAccountSearch(search)
+  const activeFilters = resetSearch !== new URLSearchParams(search).toString()
 
-  function apply(event: FormEvent<HTMLFormElement>) {
+  function change(updated: Parameters<typeof updateAccountSearch>[1]) {
+    navigate(updateAccountSearch(search, { q: trimmedQuery, ...updated, cursor: null }))
+  }
+
+  function searchClients(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const form = new FormData(event.currentTarget)
-    const value = (name: string) => String(form.get(name) ?? '')
-    const rating = value('rating')
-    const portfolio =
-      rating === ''
-        ? filter
-        : rating === 'clear'
-          ? null
-          : JSON.stringify({
-              condition: { field_id: ratingField, op: 'gte', value: Number(rating) },
-            })
-    navigate(
-      updateAccountSearch(search, {
-        q: value('q').trim(),
-        classification: form.getAll('classification').map(String),
-        sort: value('sort'),
-        product_id: value('product_id').trim(),
-        active_users_min: value('active_users_min'),
-        active_users_max: value('active_users_max'),
-        limit: value('limit'),
-        portrait: portfolio,
-        cursor: null,
-      }),
-    )
+    change({})
   }
 
   return (
-    <section className={styles.workspace}>
-      <h1>Клиенты</h1>
-      <form className={styles.form} key={filterKey.toString() + (filter ?? '')} onSubmit={apply}>
-        <div className={styles.filters}>
+    <section className={styles.page}>
+      <header className={styles.heading}>
+        <h1>Клиенты</h1>
+        <p>
+          Аккаунты amoCRM, где стоят или стояли наши виджеты. Нажмите на название или ID, чтобы
+          открыть карточку.
+        </p>
+      </header>
+      <ClientGroups
+        overview={overview}
+        group={group}
+        classification={classification}
+        select={(data_group, owner) => change({ data_group, classification: owner })}
+      />
+      <div className={styles.filters}>
+        <form className={styles.search} onSubmit={searchClients}>
+          <input
+            name="q"
+            type="search"
+            aria-label="Поиск"
+            maxLength={200}
+            value={searchDraft.value}
+            onChange={(event) => setSearchDraft({ query, value: event.target.value })}
+            placeholder="ID, название аккаунта или партнёр"
+          />
+          <button type="submit" aria-label="Найти клиентов" title="Найти клиентов">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <circle cx="7" cy="7" r="4.5" />
+              <path d="m10.5 10.5 3.5 3.5" />
+            </svg>
+          </button>
+        </form>
+        <div className={styles.dates} title={missingLicense}>
           <label>
-            Поиск
-            <input
-              name="q"
-              type="search"
-              defaultValue={params.get('q') ?? ''}
-              placeholder="Название, домен или ID"
-            />
+            amoCRM до: с
+            <input aria-label="Срок amoCRM с" type="date" disabled />
           </label>
           <label>
-            Классификация
-            <select name="classification" multiple defaultValue={params.getAll('classification')}>
-              <option>Без партнёра</option>
-              <option>Запрет работы</option>
-            </select>
-          </label>
-          <label>
-            Сортировка
-            <select name="sort" defaultValue={params.get('sort') ?? ''}>
-              <option value="">По умолчанию</option>
-              <option value="amo_account_id">ID amoCRM</option>
-              <option value="current_domain">Домен</option>
-              <option value="display_name">Название</option>
-            </select>
-          </label>
-          <label>
-            ID продукта
-            <input
-              name="product_id"
-              defaultValue={params.get('product_id') ?? ''}
-              pattern="[0-9a-fA-F-]{36}"
-            />
-          </label>
-          <label>
-            Активных пользователей от
-            <input
-              name="active_users_min"
-              type="number"
-              min="0"
-              defaultValue={params.get('active_users_min') ?? ''}
-            />
-          </label>
-          <label>
-            Активных пользователей до
-            <input
-              name="active_users_max"
-              type="number"
-              min="0"
-              defaultValue={params.get('active_users_max') ?? ''}
-            />
-          </label>
-          <label>
-            Фильтр портрета
-            <select name="rating">
-              <option value="">{filter ? 'Сохранить текущий фильтр' : 'Все рейтинги'}</option>
-              {filter ? <option value="clear">Сбросить фильтр портрета</option> : null}
-              {[0, 1, 2, 3, 4, 5].map((rating) => (
-                <option value={rating} key={rating}>
-                  Рейтинг от {rating}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Строк на странице
-            <input
-              name="limit"
-              type="number"
-              min="1"
-              max="100"
-              defaultValue={params.get('limit') ?? '25'}
-            />
+            по
+            <input aria-label="Срок amoCRM по" type="date" disabled />
           </label>
         </div>
-        <div className={styles.actions}>
-          <button type="submit">Применить фильтры</button>
-        </div>
-      </form>
-      {invalid ? (
-        <div role="alert">
-          Некорректный фильтр портрета.{' '}
+        <label>
+          Тариф
+          <select
+            aria-label="Тариф"
+            value={params.get('tariff') ?? ''}
+            onChange={(event) => change({ tariff: event.target.value })}
+            disabled={!overview}
+          >
+            <option value="">все</option>
+            {widgetTariffs.map((tariff) => (
+              <option key={tariff} value={tariff}>
+                {lookupState('product_line', tariff).label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Чей клиент
+          <select
+            aria-label="Чей клиент"
+            value={classification}
+            onChange={(event) => change({ classification: event.target.value })}
+          >
+            <option value="">все</option>
+            {classification === 'multiple' ? (
+              <option value="multiple" disabled>
+                Несколько категорий
+              </option>
+            ) : null}
+            {classifications.map(({ value }) => (
+              <option key={value} value={value}>
+                {lookupState('client_classification', value).label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Продлевает
+          <select
+            aria-label="Продлевает"
+            value={params.get('renewal_channel') ?? ''}
+            onChange={(event) => change({ renewal_channel: event.target.value })}
+            disabled={!overview}
+          >
+            <option value="">все</option>
+            {renewalOptions.map(({ value, title }) => (
+              <option key={value} value={value}>
+                {title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          aria-pressed={!!filter}
+          onClick={() => setPortraitOpen(true)}
+        >
+          Портрет
+        </button>
+        {activeFilters ? (
           <button
             type="button"
-            onClick={() => navigate(updateAccountSearch(search, { portrait: null, cursor: null }))}
+            className={styles.reset}
+            onClick={() => {
+              setSearchDraft({ query, value: '' })
+              navigate(resetSearch)
+            }}
           >
+            Сбросить
+          </button>
+        ) : null}
+        {ready ? (
+          <p className={styles.found} role="status">
+            Найдено {ready.total}
+            {ready.overview ? ' из ' + ready.overview.all.total : ''}
+          </p>
+        ) : null}
+      </div>
+      {invalid ? (
+        <div className={sharedStyles.actions} role="alert">
+          Некорректный фильтр портрета.
+          <button type="button" onClick={() => change({ portrait: null })}>
             Сбросить фильтр
           </button>
         </div>
-      ) : page.isPending ? (
-        <p role="status">Загружаем клиентов…</p>
       ) : page.isError ? (
         invalidCursor ? (
-          <div role="alert">
-            Курсор недействителен.{' '}
-            <button
-              type="button"
-              onClick={() => navigate(updateAccountSearch(search, { cursor: null }))}
-            >
+          <div className={sharedStyles.actions} role="alert">
+            Курсор недействителен.
+            <button type="button" onClick={() => change({})}>
               Первая страница
             </button>
           </div>
         ) : (
           <ReadFailure error={page.error} retry={() => void page.refetch()} />
         )
-      ) : (
+      ) : ready ? (
         <div className={styles.results}>
-          <p>
-            Найдено <strong>{page.data.total}</strong>
-          </p>
-          <p className={styles.meta}>Platform · снимок на {formatTime(page.data.snapshot_at)}</p>
-          {page.data.items.length === 0 ? (
-            <p>Клиенты не найдены</p>
+          {ready.items.length ? (
+            <ClientTable
+              items={ready.items}
+              snapshot={ready.snapshot_at}
+              search={search}
+              navigate={navigate}
+            />
           ) : (
-            <div className={styles.tableScroll}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th scope="col">Клиент</th>
-                    <th scope="col">Домен</th>
-                    <th scope="col">Классификация</th>
-                    <th scope="col">Наши продукты</th>
-                    <th scope="col">Активные пользователи</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {page.data.items.map((account) => (
-                    <tr key={account.account_id}>
-                      <td>
-                        <ManagerLink
-                          search={accountSearch(search, account.account_id)}
-                          navigate={navigate}
-                        >
-                          {account.display_name ?? account.amo_account_id}
-                        </ManagerLink>
-                      </td>
-                      <td>{account.current_domain ?? '—'}</td>
-                      <td>{account.classification ?? '—'}</td>
-                      <td>{account.active_products_count}</td>
-                      <td>
-                        {account.active_users.value ?? '—'}{' '}
-                        {account.active_users.state !== 'fresh' ? (
-                          <StatusBadge domain="freshness" state={account.active_users.state} calm />
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <EmptyState
+              title="Клиенты не найдены"
+              description={activeFilters ? 'Измените или сбросьте фильтры.' : undefined}
+            />
           )}
-          <div className={styles.actions}>
+          <div className={styles.pager}>
+            <span className={styles.meta}>
+              Platform · снимок на {formatTime(ready.snapshot_at)}
+            </span>
+            <label>
+              На странице
+              <select value={limit} onChange={(event) => change({ limit: event.target.value })}>
+                {(['25', '50', '100'].includes(limit)
+                  ? ['25', '50', '100']
+                  : [limit, '25', '50', '100']
+                ).map((size) => (
+                  <option value={size} key={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </label>
             {params.has('cursor') ? (
-              <button
-                type="button"
-                onClick={() => navigate(updateAccountSearch(search, { cursor: null }))}
-              >
+              <button type="button" onClick={() => change({})}>
                 Первая страница
               </button>
             ) : null}
-            {page.data.next_cursor ? (
+            {ready.next_cursor ? (
               <button
                 type="button"
-                onClick={() =>
-                  navigate(updateAccountSearch(search, { cursor: page.data.next_cursor }))
-                }
+                onClick={() => navigate(updateAccountSearch(search, { cursor: ready.next_cursor }))}
               >
                 Следующая страница
               </button>
             ) : null}
           </div>
         </div>
+      ) : (
+        <p className={styles.meta} role="status">
+          Загружаем клиентов…
+        </p>
       )}
+      {portraitOpen ? (
+        <ClientPortraitFilter
+          scope={scope}
+          onExpired={onExpired}
+          onForbidden={onForbidden}
+          filter={filter}
+          close={() => setPortraitOpen(false)}
+          apply={(portrait) => {
+            change({ portrait })
+            setPortraitOpen(false)
+          }}
+        />
+      ) : null}
     </section>
   )
 }

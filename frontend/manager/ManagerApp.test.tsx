@@ -107,6 +107,7 @@ it('keeps future sections out of the workspace and uses the real review filter',
   expect(nav.getAllByRole('link').map((link) => link.getAttribute('aria-label'))).toEqual([
     'Установки',
     'Клиенты',
+    'Компании',
     'Виджеты',
     'Лента событий',
     'Сотрудники',

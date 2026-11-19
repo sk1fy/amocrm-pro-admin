@@ -150,7 +150,12 @@ export function AccountOverview({
           </div>
           <dl className={card.classification}>
             <dt>Статус клиента</dt>
-            <dd>{formatNull(account.classification)}</dd>
+            <dd>
+              {account.classification === 'Без партнёра'
+                ? 'Свободный клиент'
+                : formatNull(account.classification)}
+            </dd>
+            {account.partner_name ? <dd className={styles.meta}>{account.partner_name}</dd> : null}
           </dl>
         </div>
         <dl className={card.metrics}>
@@ -215,6 +220,7 @@ export function AccountOverview({
                 name: account.display_name ?? '',
                 note: account.note ?? '',
                 classification: account.classification ?? '',
+                partnerName: account.partner_name ?? '',
                 reason: '',
               }}
               current={<p>Текущая заметка: {account.note ?? '—'}</p>}
@@ -231,6 +237,11 @@ export function AccountOverview({
                     fields.classification === original.classification
                       ? undefined
                       : fields.classification || null,
+                  partner_name:
+                    fields.classification === 'Клиент партнёра' &&
+                    (fields.partnerName ?? '').trim() !== (original.partnerName ?? '')
+                      ? (fields.partnerName ?? '').trim()
+                      : undefined,
                   reason: fields.reason.trim(),
                 }),
               })}
@@ -273,13 +284,27 @@ export function AccountOverview({
                       >
                         <option value="">Не указана</option>
                         {account.classification &&
-                        !['Без партнёра', 'Запрет работы'].includes(account.classification) ? (
+                        !['Без партнёра', 'Запрет работы', 'Клиент партнёра'].includes(
+                          account.classification,
+                        ) ? (
                           <option>{account.classification}</option>
                         ) : null}
-                        <option>Без партнёра</option>
+                        <option value="Без партнёра">Свободный клиент</option>
+                        <option>Клиент партнёра</option>
                         <option>Запрет работы</option>
                       </select>
                     </label>
+                    {fields.classification === 'Клиент партнёра' ? (
+                      <label>
+                        Название партнёра
+                        <input
+                          value={fields.partnerName ?? ''}
+                          required
+                          maxLength={200}
+                          onChange={(event) => edit('partnerName', event.target.value)}
+                        />
+                      </label>
+                    ) : null}
                   </details>
                 </>
               )}

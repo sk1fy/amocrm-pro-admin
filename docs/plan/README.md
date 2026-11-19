@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Клиенты по макету и отдельный раздел «Компании»](manager-clients-layout.md).
+
 - [Общая настройка сделок по установкам](installation-deal-settings.md).
 - [Контакт активации и сделки по установкам](installation-activation-company-deals.md).
 

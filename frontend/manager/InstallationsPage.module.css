@@ -150,11 +150,11 @@
   padding-inline: 12px;
 }
 
-.table td {
+.table tbody td {
   height: 58px;
   padding-block: 8px;
   overflow-wrap: anywhere;
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .table th {
