@@ -23,6 +23,7 @@ var (
 	ManagerLogin                     = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/login"}
 	ManagerLogout                    = Route{Method: http.MethodPost, Path: ManagerPrefix + "/auth/logout"}
 	ManagerOperation                 = Route{Method: http.MethodGet, Path: ManagerPrefix + "/operations/{id}"}
+	ManagerDealRetry                 = Route{Method: http.MethodPost, Path: ManagerPrefix + "/installations/{id}/crm-deal/retry"}
 	ManagerInstallations             = Route{Method: http.MethodGet, Path: ManagerPrefix + "/installations"}
 	ManagerReview                    = Route{Method: http.MethodPut, Path: ManagerPrefix + "/installations/{id}/review"}
 	ManagerFeed                      = Route{Method: http.MethodGet, Path: ManagerPrefix + "/feed"}
@@ -108,7 +109,7 @@ var (
 	DistributionTrace = Route{Method: http.MethodGet, Path: "/api/v1/connections/{backend}/{connection_id}/distribution/trace"}
 	Routes            = []Route{
 		ManagerStaff, ManagerStaffCreate, ManagerStaffGrants, ManagerStaffMember, ManagerStaffUpdate, ManagerInvitationReissue, ManagerStaffSessionsRevoke, ManagerInvitationAccept, ManagerSecurityAudit,
-		ManagerLogin, ManagerLogout, ManagerMe, ManagerOperation, ManagerInstallations, ManagerReview,
+		ManagerLogin, ManagerLogout, ManagerMe, ManagerOperation, ManagerInstallations, ManagerReview, ManagerDealRetry,
 		ManagerFeed, ManagerAccountHistory,
 		ManagerAccounts,
 		ManagerAccountSearch,

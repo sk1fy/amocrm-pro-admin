@@ -1,45 +1,14 @@
-import type { FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import type { InstallationPage } from './installationsApi'
 import { installationFilters } from './installationsLocation'
 import styles from './InstallationsPage.module.css'
 import workspace from '../src/components/ManagerWorkspace.module.css'
 
-type Filter = (typeof installationFilters)[number]
-type Changes = Partial<Record<Filter, string | null>>
-type Option = readonly [value: string, label: string]
-
-function FilterSelect({
-  name,
-  label,
-  options,
-  filters,
-  emptyLabel = 'Все',
-}: {
-  name: Filter
-  label: string
-  options: readonly Option[]
-  filters: URLSearchParams
-  emptyLabel?: string
-}) {
-  return (
-    <label>
-      {label}
-      <select name={name} defaultValue={filters.get(name) ?? ''}>
-        <option value="">{emptyLabel}</option>
-        {options.map(([value, text]) => (
-          <option key={value} value={value}>
-            {text}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
-}
+type Changes = Partial<Record<(typeof installationFilters)[number], string | null>>
 
 const reviewGroups = [
-  ['unreviewed', 'Непроверенные', 'unreviewed'],
-  ['reviewed', 'Проверенные', 'reviewed'],
-  ['', 'Все установки', 'total'],
+  ['unreviewed', 'Непроверенные'],
+  ['reviewed', 'Проверенные'],
 ] as const
 
 export function InstallationFilters({
@@ -49,163 +18,109 @@ export function InstallationFilters({
 }: {
   filters: URLSearchParams
   apply: (changes: Changes) => void
-  summary: InstallationPage['summary'] | undefined
+  summary: Partial<InstallationPage['summary']> | undefined
 }) {
-  const review = filters.get('review') ?? ''
-
-  function applyForm(form: HTMLFormElement, nextReview: string) {
-    const data = new FormData(form)
-    const changes: Changes = { cursor: null, review: nextReview }
-    for (const key of installationFilters) {
-      const field = data.get(key)
-      if (typeof field === 'string') changes[key] = field.trim()
-    }
-    apply(changes)
+  const review = filters.get('review') === 'reviewed' ? 'reviewed' : 'unreviewed'
+  const current = filters.get('q') ?? ''
+  const location = filters.toString()
+  const [draft, setDraft] = useState({ location, value: current })
+  if (draft.location !== location) {
+    setDraft({ location, value: current })
   }
+
+  useEffect(() => {
+    const q = draft.value.trim()
+    if (q === current) return
+    const timer = window.setTimeout(() => apply({ q, cursor: null }), 300)
+    return () => window.clearTimeout(timer)
+  }, [apply, current, draft.value, location])
+
+  const from = filters.get('from') ?? ''
+  const to = filters.get('to') ?? ''
+  const extra = installationFilters.filter(
+    (key) => filters.has(key) && !['q', 'review', 'from', 'to', 'cursor', 'sort'].includes(key),
+  )
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    applyForm(event.currentTarget, review)
+    apply({ q: draft.value.trim(), cursor: null })
   }
-
-  function clear() {
-    const changes: Changes = {}
-    for (const key of installationFilters) changes[key] = null
-    apply(changes)
-  }
-
-  const advancedActive = [
-    'kind',
-    'last_lifecycle_event',
-    'product_id',
-    'line',
-    'activation',
-    'access_state',
-    'limit',
-  ].some((key) => filters.has(key))
 
   return (
-    <form className={styles.filters} aria-label="Фильтры установок" onSubmit={submit}>
-      <div className={styles.toolbar}>
-        <div className={workspace.tabs} aria-label="Проверка установок" role="group">
-          {reviewGroups.map(([value, label, countKey]) => {
-            const count = review === '' || review === value ? summary?.[countKey] : undefined
-            return (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={review === value}
-                onClick={(event) => {
-                  const form = event.currentTarget.form
-                  if (form && form.reportValidity()) applyForm(form, value)
-                }}
-              >
-                {label}
-                {count === undefined ? null : <span className={styles.count}>{count}</span>}
-              </button>
-            )
-          })}
-        </div>
-        <div className={styles.primaryFields}>
-          <label>
-            Дата установки с
-            <input name="from" type="date" defaultValue={filters.get('from') ?? ''} />
-          </label>
-          <label>
-            по
-            <input
-              name="to"
-              type="date"
-              aria-label="Дата установки по"
-              defaultValue={filters.get('to') ?? ''}
-            />
-          </label>
-          <input
-            aria-label="Аккаунт или продукт"
-            className={styles.search}
-            name="q"
-            type="search"
-            placeholder="ID amoCRM или виджет"
-            defaultValue={filters.get('q') ?? ''}
-            maxLength={200}
-          />
-          <button type="submit">Применить</button>
-        </div>
+    <form className={styles.toolbar} aria-label="Фильтры установок" onSubmit={submit}>
+      <div className={workspace.tabs} aria-label="Проверка установок" role="group">
+        {reviewGroups.map(([value, label]) => {
+          const count = summary?.[value]
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={review === value}
+              onClick={() => apply({ review: value, q: draft.value.trim(), cursor: null })}
+            >
+              {label}
+              {count === undefined ? null : <span className={styles.count}>{count}</span>}
+            </button>
+          )
+        })}
       </div>
-      <details className={styles.advanced} open={advancedActive || undefined}>
-        <summary>Дополнительные фильтры</summary>
-        <div className={styles.fields}>
-          <FilterSelect
-            name="kind"
-            label="Тип установки"
-            filters={filters}
-            options={[
-              ['install', 'Первая установка'],
-              ['reinstall', 'Повторная установка'],
-            ]}
+      <div className={styles.primaryFields}>
+        <label>
+          Установлен с
+          <input
+            name="from"
+            type="date"
+            aria-label="Дата установки с"
+            value={from}
+            max={to || undefined}
+            onChange={(event) => {
+              if (event.target.validity.valid)
+                apply({ from: event.target.value, q: draft.value.trim(), cursor: null })
+            }}
           />
-          <FilterSelect
-            name="last_lifecycle_event"
-            label="Последнее событие"
-            filters={filters}
-            options={[
-              ['installed', 'Установка'],
-              ['reinstalled', 'Повторная установка'],
-              ['reauthorized', 'Повторная авторизация'],
-              ['uninstalled', 'Удаление'],
-            ]}
+        </label>
+        <label>
+          по
+          <input
+            name="to"
+            type="date"
+            aria-label="Дата установки по"
+            value={to}
+            min={from || undefined}
+            onChange={(event) => {
+              if (event.target.validity.valid)
+                apply({ to: event.target.value, q: draft.value.trim(), cursor: null })
+            }}
           />
-          <label>
-            ID продукта
-            <input name="product_id" defaultValue={filters.get('product_id') ?? ''} />
-          </label>
-          <FilterSelect
-            name="line"
-            label="Линейка"
-            filters={filters}
-            options={[
-              ['FREE', 'FREE'],
-              ['TOP', 'TOP'],
-              ['PRO', 'PRO'],
-            ]}
-          />
-          <FilterSelect
-            name="activation"
-            label="Активация"
-            filters={filters}
-            options={[
-              ['pending', 'Ожидает'],
-              ['activated', 'Активирована'],
-              ['unavailable', 'Нет данных'],
-            ]}
-          />
-          <FilterSelect
-            name="access_state"
-            label="Доступ к продукту"
-            filters={filters}
-            options={[
-              ['active', 'Действует'],
-              ['inactive', 'Не действует'],
-            ]}
-          />
-          <label>
-            Строк на странице
-            <input
-              name="limit"
-              type="number"
-              min={1}
-              max={100}
-              placeholder="25"
-              defaultValue={filters.get('limit') ?? ''}
-            />
-          </label>
-        </div>
-      </details>
-      {filters.size > 0 ? (
-        <button className={styles.reset} type="button" onClick={clear}>
-          Сбросить фильтры
-        </button>
-      ) : null}
+        </label>
+        {from || to || extra.length ? (
+          <button
+            className={styles.reset}
+            type="button"
+            onClick={() =>
+              apply({
+                ...Object.fromEntries(extra.map((key) => [key, null])),
+                from: null,
+                to: null,
+                q: draft.value.trim(),
+                cursor: null,
+              })
+            }
+          >
+            {extra.length ? 'Сбросить фильтры' : 'Сбросить даты'}
+          </button>
+        ) : null}
+        <input
+          aria-label="Поиск по установкам"
+          className={styles.search}
+          name="q"
+          type="search"
+          placeholder="Телефон, ID, поддомен, имя, виджет"
+          value={draft.value}
+          onChange={(event) => setDraft({ location, value: event.target.value })}
+          maxLength={200}
+        />
+      </div>
     </form>
   )
 }

@@ -32,7 +32,7 @@ function installationRow(page: Page) {
   return page
     .getByRole('row')
     .filter({ has: page.getByRole('link', { name: accountId, exact: true }) })
-    .filter({ hasText: productCode })
+    .filter({ has: page.getByTitle(productCode, { exact: true }) })
 }
 
 async function openAccount(page: Page) {
@@ -105,14 +105,12 @@ test('the live OAuth installation can be reviewed and grants protect direct requ
   expect((await page.request.get(listUrl)).status()).toBe(401)
   await signIn(page, email, queueUrl('unreviewed'))
   const row = installationRow(page)
-  await expect(row.getByText(productCode, { exact: true }).first()).toBeVisible()
-  await expect(row.getByText('Не проверена', { exact: true })).toBeVisible()
+  await expect(row.getByRole('button', { name: 'Проверен' })).toBeVisible()
   await openAccount(page)
 
   await page
-    .getByRole('searchbox', { name: 'Аккаунт или продукт' })
+    .getByRole('searchbox', { name: 'Поиск по установкам' })
     .fill('a03-no-matching-installation')
-  await page.getByRole('button', { name: 'Применить' }).click()
   await expect(page.getByText('Установки не найдены')).toBeVisible()
   expect(new URL(page.url()).searchParams.get('q')).toBe('a03-no-matching-installation')
   await page.goBack()
@@ -122,22 +120,20 @@ test('the live OAuth installation can be reviewed and grants protect direct requ
   const put = page.waitForResponse(
     (response) => response.request().method() === 'PUT' && response.url().endsWith('/review'),
   )
-  await row.getByRole('button', { name: 'Отметить проверенной' }).click()
+  await row.getByRole('button', { name: 'Проверен' }).click()
   const result = await put
   expect(result.status()).toBe(200)
   expect(result.headers().etag).toMatch(/^"\d+"$/)
   await expect(page.getByText('Установки не найдены')).toBeVisible()
 
   await page.getByRole('button', { name: /^Проверенные/ }).click()
-  await expect(row.getByText('Проверена', { exact: true })).toBeVisible()
+  await expect(row.getByRole('button', { name: 'Вернуть' })).toBeVisible()
   const reader = await browser.newPage()
   const limited = await browser.newPage()
   try {
     await signIn(reader, readerEmail, queueUrl('reviewed'))
-    await expect(installationRow(reader).getByText('Проверена', { exact: true })).toBeVisible()
-    await expect(
-      installationRow(reader).getByRole('button', { name: 'Снять отметку' }),
-    ).toHaveCount(0)
+    await expect(installationRow(reader)).toBeVisible()
+    await expect(installationRow(reader).getByRole('button', { name: 'Вернуть' })).toHaveCount(0)
     const readerList = await reader.request.get(listUrl)
     expect(readerList.status()).toBe(200)
     const { id, version } = installationIdentity(await readerList.json())
@@ -159,7 +155,7 @@ test('the live OAuth installation can be reviewed and grants protect direct requ
     await expect(limited.getByText('Нет доступа к установкам.')).toBeVisible()
     await expect(installationRow(limited)).toHaveCount(0)
     expect((await limited.request.get(listUrl)).status()).toBe(403)
-    await expect(installationRow(page).getByText('Проверена', { exact: true })).toBeVisible()
+    await expect(installationRow(page).getByRole('button', { name: 'Вернуть' })).toBeVisible()
   } finally {
     await Promise.all([reader.close(), limited.close()])
   }
@@ -173,8 +169,7 @@ test('the review and account details survive Admin and Platform restart', async 
 
   await signIn(page, email, queueUrl('reviewed'))
   const row = installationRow(page)
-  await expect(row.getByText(productCode, { exact: true }).first()).toBeVisible()
-  await expect(row.getByText('Проверена', { exact: true })).toBeVisible()
+  await expect(row.getByRole('button', { name: 'Вернуть' })).toBeVisible()
   const card = await openAccount(page)
   await expect(
     card.getByText('ID проверившего', { exact: true }).locator('xpath=following-sibling::dd[1]'),
@@ -186,11 +181,11 @@ test('the review and account details survive Admin and Platform restart', async 
   const put = page.waitForResponse(
     (response) => response.request().method() === 'PUT' && response.url().endsWith('/review'),
   )
-  await row.getByRole('button', { name: 'Снять отметку' }).click()
+  await row.getByRole('button', { name: 'Вернуть' }).click()
   expect((await put).status()).toBe(200)
   await expect(page.getByText('Установки не найдены')).toBeVisible()
   await page.getByRole('button', { name: /^Непроверенные/ }).click()
-  await expect(row.getByText('Не проверена', { exact: true })).toBeVisible()
+  await expect(row.getByRole('button', { name: 'Проверен' })).toBeVisible()
   await page.reload()
-  await expect(row.getByText('Не проверена', { exact: true })).toBeVisible()
+  await expect(row.getByRole('button', { name: 'Проверен' })).toBeVisible()
 })

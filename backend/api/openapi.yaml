@@ -341,6 +341,50 @@ paths:
         '429': {$ref: '#/components/responses/ManagerPlatformRateLimited'}
         '500': {$ref: '#/components/responses/InternalError'}
         '503': {$ref: '#/components/responses/ManagerPlatformUnavailable'}
+  /api/v1/managers/installations/{id}/crm-deal/retry:
+    post:
+      operationId: retryManagerInstallationDeal
+      tags: [Managers]
+      security: [{managerSession: []}]
+      description: Requires clients.write and the manager Origin. If-Match carries the deal retry version.
+      parameters:
+        - $ref: '#/components/parameters/RequestID'
+        - $ref: '#/components/parameters/RequestedWith'
+        - $ref: '#/components/parameters/ID'
+        - name: Origin
+          in: header
+          required: true
+          schema: {type: string, format: uri}
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string, format: uuid}
+        - name: If-Match
+          in: header
+          required: true
+          schema: {type: string, pattern: '^"[1-9][0-9]{0,9}"$'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reason]
+              properties:
+                reason: {type: string, minLength: 1, maxLength: 1000}
+      responses:
+        '202':
+          description: Retry scheduled or acceptance is still being verified.
+          content:
+            application/json:
+              schema: {type: object}
+        '400': {$ref: '#/components/responses/InvalidArgument'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/ManagerPlatformUnavailable'}
   /api/v1/managers/installations/{id}/review:
     put:
       operationId: setManagerInstallationReview
@@ -5087,6 +5131,28 @@ components:
         own_until: {type: [string, 'null'], format: date-time}
         entitlement_version: {type: integer, minimum: 1, maximum: 9007199254740991}
         computed_at: {type: string, format: date-time}
+    InstallationActivationContact:
+      type: object
+      additionalProperties: false
+      required: [amo_user_id, name, phone]
+      properties:
+        amo_user_id: {type: string, pattern: '^[1-9][0-9]{0,18}$'}
+        name: {type: string, maxLength: 512}
+        phone: {type: string, pattern: '^\+[1-9][0-9]{7,14}$'}
+        email: {type: string, maxLength: 320}
+        role: {type: string, maxLength: 256}
+    InstallationDeal:
+      type: object
+      additionalProperties: false
+      required: [state, retry_version, can_retry]
+      properties:
+        state: {type: string, enum: [pending, reconciling, failed, skipped, succeeded]}
+        url: {type: string, format: uri}
+        id: {type: string, pattern: '^[1-9][0-9]{0,18}$'}
+        reason: {type: string}
+        next_run_at: {type: string, format: date-time}
+        retry_version: {type: integer, minimum: 1, maximum: 2147483647}
+        can_retry: {type: boolean}
     ManagerInstallation:
       type: object
       additionalProperties: false
@@ -5120,12 +5186,17 @@ components:
         product_id: {type: string, format: uuid}
         product_code: {type: string, maxLength: 63, pattern: '^[a-z0-9]+(?:[-_][a-z0-9]+)*$'}
         product_name: {type: string}
+        product_line: {type: string, enum: [FREE, TOP, PRO]}
+        account_domain: {type: string}
+        account_name: {type: string}
+        account_classification: {type: string}
+        account_time_zone: {type: string}
         core_installation_id: {type: string, format: uuid}
-        generation: {type: integer, minimum: 1, maximum: 9007199254740991}
-        kind: {type: string, enum: [install, reinstall]}
+        generation: {type: integer, minimum: 0, maximum: 9007199254740991}
+        kind: {type: string, enum: [install, reinstall, observed]}
         installed_at: {type: string, format: date-time}
         removed_at: {type: [string, 'null'], format: date-time}
-        last_lifecycle_event: {$ref: '#/components/schemas/ManagerInstallationLifecycleEvent'}
+        last_lifecycle_event: {type: string, enum: [installed, reinstalled, reauthorized, uninstalled, unknown]}
         lifecycle: {type: string, enum: [current, removed]}
         authorization: {type: string, enum: [authorized, reauth_required, disabled, unknown]}
         activation_status: {type: string, enum: [pending, activated, unavailable]}
@@ -5137,6 +5208,9 @@ components:
             reviewed: {type: boolean}
             reviewed_by: {type: string, format: uuid}
             reviewed_at: {type: string, format: date-time}
+            reviewed_by_name: {type: string}
+        contact: {$ref: '#/components/schemas/InstallationActivationContact'}
+        deal: {$ref: '#/components/schemas/InstallationDeal'}
         crm_workflow: {type: string, enum: [unsupported, pending, succeeded, failed, needs_review]}
         access: {$ref: '#/components/schemas/ManagerInstallationAccess'}
         version: {type: integer, minimum: 1, maximum: 9007199254740991}
@@ -5159,6 +5233,9 @@ components:
             total: {type: integer, minimum: 0}
             reviewed: {type: integer, minimum: 0}
             unreviewed: {type: integer, minimum: 0}
+        queue_counts:
+          description: Counts before applying the review filter, from the same snapshot.
+          $ref: '#/components/schemas/ManagerInstallationSummary'
         sources:
           type: array
           items: {$ref: '#/components/schemas/SourceStatus'}

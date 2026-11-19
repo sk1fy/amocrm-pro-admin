@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"mime"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
@@ -67,8 +69,9 @@ func (c *Client) listInstallations(ctx context.Context, principal auth.Principal
 
 func validInstallationList(response *http.Response, raw []byte, page *wire.InstallationList, requestedLimit *int) bool {
 	var members struct {
-		Items   []json.RawMessage
-		Summary json.RawMessage
+		Items       []json.RawMessage
+		Summary     json.RawMessage
+		QueueCounts json.RawMessage `json:"queue_counts"`
 	}
 	summary := page.Summary
 	hash, err := hex.DecodeString(page.QueryHash)
@@ -82,6 +85,12 @@ func validInstallationList(response *http.Response, raw []byte, page *wire.Insta
 		summary.Unreviewed != summary.Total-summary.Reviewed || err != nil || len(hash) != 32 ||
 		json.Unmarshal(raw, &members) != nil || len(page.Items) != len(members.Items) ||
 		!hasJSONMembers(members.Summary, "total", "reviewed", "unreviewed") {
+		return false
+	}
+	if counts := page.QueueCounts; counts != nil &&
+		(!hasJSONMembers(members.QueueCounts, "total", "reviewed", "unreviewed") ||
+			counts.Reviewed < summary.Reviewed || counts.Unreviewed < summary.Unreviewed ||
+			counts.Reviewed > counts.Total || counts.Unreviewed != counts.Total-counts.Reviewed) {
 		return false
 	}
 	if cursor, err := page.NextCursor.Get(); err == nil && (cursor == "" || utf8.RuneCountInString(cursor) > 200) {
@@ -98,19 +107,65 @@ func validInstallationList(response *http.Response, raw []byte, page *wire.Insta
 	return true
 }
 
+var activationPhonePattern = regexp.MustCompile(`^\+[1-9][0-9]{7,14}$`)
+
+func validInstallationDeal(deal *wire.InstallationDeal) bool {
+	if deal == nil {
+		return true
+	}
+	if !deal.State.Valid() || deal.RetryVersion <= 0 || deal.RetryVersion > 2147483647 ||
+		(deal.NextRunAt != nil && deal.NextRunAt.IsZero()) {
+		return false
+	}
+	if deal.State != wire.InstallationDealStateSucceeded {
+		return deal.Id == nil && deal.Url == nil
+	}
+	if deal.Id == nil || deal.Url == nil || deal.CanRetry {
+		return false
+	}
+	id, err := strconv.ParseInt(*deal.Id, 10, 64)
+	target, urlErr := url.Parse(*deal.Url)
+	return err == nil && id > 0 && strconv.FormatInt(id, 10) == *deal.Id &&
+		urlErr == nil && target.Scheme == "https" && target.User == nil && target.Port() == "" &&
+		!target.ForceQuery && target.RawQuery == "" && target.Fragment == "" &&
+		(strings.HasSuffix(target.Hostname(), ".amocrm.ru") || strings.HasSuffix(target.Hostname(), ".amocrm.com") ||
+			strings.HasSuffix(target.Hostname(), ".kommo.com")) &&
+		target.EscapedPath() == "/leads/detail/"+*deal.Id
+}
+
+func validInstallationContact(contact *wire.InstallationActivationContact) bool {
+	if contact == nil {
+		return true
+	}
+	id, err := strconv.ParseInt(contact.AmoUserId, 10, 64)
+	return err == nil && id > 0 && strconv.FormatInt(id, 10) == contact.AmoUserId &&
+		strings.TrimSpace(contact.Name) != "" && len(contact.Name) <= 512 &&
+		activationPhonePattern.MatchString(contact.Phone) &&
+		(contact.Email == nil || len(*contact.Email) <= 320) && (contact.Role == nil || len(*contact.Role) <= 256)
+}
+
 var productCodePattern = regexp.MustCompile(`^[a-z0-9]+(?:[-_][a-z0-9]+)*$`)
 
 func validInstallation(raw []byte, item *wire.Installation) bool {
 	amoID, err := strconv.ParseInt(string(item.AmoAccountId), 10, 64)
 	access := item.Access
 	review := item.Review
+	observed := item.Kind == wire.InstallationKindObserved
+	validGeneration := validVersion(item.Generation)
+	if observed {
+		validGeneration = item.Generation == 0 && item.LastLifecycleEvent == wire.InstallationLastLifecycleEventUnknown && !review.Reviewed
+	}
 	if item.Id == uuid.Nil || item.AccountId == uuid.Nil || item.ProductId == uuid.Nil ||
 		item.CoreInstallationId == uuid.Nil || err != nil || amoID < 1 ||
 		strconv.FormatInt(amoID, 10) != string(item.AmoAccountId) ||
 		len(item.ProductCode) > 63 || !productCodePattern.MatchString(string(item.ProductCode)) ||
-		!validVersion(item.Version) || !validVersion(item.Generation) ||
+		!validVersion(item.Version) || !validGeneration ||
+		!validInstallationContact(item.Contact) || !validInstallationDeal(item.Deal) ||
+		(observed && (item.Contact != nil || item.Deal != nil)) ||
 		item.InstalledAt.IsZero() || !item.RemovedAt.IsSpecified() ||
 		!item.Kind.Valid() || !item.Lifecycle.Valid() || !item.LastLifecycleEvent.Valid() ||
+		(!observed && item.LastLifecycleEvent == wire.InstallationLastLifecycleEventUnknown) ||
+		(item.ProductLine != nil && !item.ProductLine.Valid()) ||
 		!item.Authorization.Valid() || !item.ActivationStatus.Valid() || !item.CrmWorkflow.Valid() ||
 		access.AccountId != item.AccountId || access.ProductId != item.ProductId ||
 		!access.Source.Valid() || !access.ValidUntil.IsSpecified() || !access.OwnUntil.IsSpecified() ||
