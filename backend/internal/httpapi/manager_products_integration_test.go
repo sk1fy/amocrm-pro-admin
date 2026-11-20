@@ -33,7 +33,7 @@ func TestManagerProductsGrantAndReplayBoundary(t *testing.T) {
 	core := auth.NewService(pool, 8*time.Second, time.Hour, time.Hour, true)
 	cookies := map[string]string{}
 	ids := map[string]uuid.UUID{}
-	for _, grant := range []string{"catalog.manage", "stats.read", "clients.read"} {
+	for _, grant := range []string{"catalog.manage", "catalog.read", "stats.read", "clients.read"} {
 		employee := createEmployee(t, ctx, store, strings.ReplaceAll(grant, ".", "-")+"@example.invalid", grant, rbac.RoleViewer)
 		ids[grant] = employee.ID
 		if _, err := pool.Exec(ctx, "INSERT INTO manager_grants(employee_id,grant_code) VALUES($1,$2)", employee.ID, grant); err != nil {
@@ -109,6 +109,9 @@ func TestManagerProductsGrantAndReplayBoundary(t *testing.T) {
 			httpx.WriteJSON(w, 200, response())
 			return
 		}
+		if len(actor.Actor.Grants) != 1 || actor.Actor.Grants[0] != wire.CatalogRead {
+			t.Errorf("catalog read actor carried unexpected grants: %v", actor.Actor.Grants)
+		}
 		w.Header().Set("ETag", `"7"`)
 		httpx.WriteJSON(w, 200, response())
 	}))
@@ -146,7 +149,9 @@ func TestManagerProductsGrantAndReplayBoundary(t *testing.T) {
 	call("GET", path, "catalog.manage", "", uuid.Nil, "", 403)
 	call("GET", path+"/metrics", "stats.read", "", uuid.Nil, "", 200)
 	call("GET", path+"/metrics", "clients.read", "", uuid.Nil, "", 403)
-	call("GET", path, "clients.read", "", uuid.Nil, "", 200)
+	call("GET", path, "clients.read", "", uuid.Nil, "", 403)
+	call("GET", path, "catalog.read", "", uuid.Nil, "", 200)
+	call("GET", "/accounts", "catalog.read", "", uuid.Nil, "", 403)
 	call("POST", "/products", "clients.read", body, key, "", 403)
 	call("POST", "/products", "catalog.manage", body, key, "", 202)
 	poll := "/operations/" + command.String()

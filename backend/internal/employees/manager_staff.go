@@ -38,18 +38,20 @@ type Staff struct {
 	Version   int64               `json:"version"`
 	ChangedAt time.Time           `json:"changed_at"`
 	ChangedBy *uuid.UUID          `json:"changed_by"`
+	suspended bool
 }
 
 type StaffCommand struct {
-	SessionID uuid.UUID
-	CommandID uuid.UUID
-	TargetID  uuid.UUID
-	Kind      string
-	Version   int64
-	Email     string
-	Name      string
-	Grants    []auth.ManagerGrant
-	Event     audit.Event
+	SessionID     uuid.UUID
+	CommandID     uuid.UUID
+	TargetID      uuid.UUID
+	Kind          string
+	Version       int64
+	Email         string
+	Name          string
+	Grants        []auth.ManagerGrant
+	AccessEnabled *bool
+	Event         audit.Event
 }
 
 type StaffResult struct {
@@ -62,12 +64,13 @@ const staffSelect = `SELECT e.id, e.email, e.name,
  CASE WHEN e.status <> 'active' THEN 'disabled'
  WHEN NOT EXISTS(SELECT 1 FROM manager_grants WHERE employee_id=e.id) THEN 'revoked'
  WHEN NULLIF(e.password_hash,'') IS NULL THEN 'invited' ELSE 'active' END,
- ARRAY(SELECT grant_code FROM manager_grants WHERE employee_id=e.id ORDER BY grant_code),
- e.manager_grants_version, e.manager_changed_at, e.manager_changed_by FROM employees e`
+ COALESCE(e.manager_suspended_grants,ARRAY(SELECT grant_code FROM manager_grants WHERE employee_id=e.id ORDER BY grant_code)),
+ e.manager_grants_version, e.manager_changed_at, e.manager_changed_by,
+ e.manager_suspended_grants IS NOT NULL FROM employees e`
 
 func scanStaff(row pgx.Row) (Staff, error) {
 	var v Staff
-	err := row.Scan(&v.ID, &v.Email, &v.Name, &v.Status, &v.Grants, &v.Version, &v.ChangedAt, &v.ChangedBy)
+	err := row.Scan(&v.ID, &v.Email, &v.Name, &v.Status, &v.Grants, &v.Version, &v.ChangedAt, &v.ChangedBy, &v.suspended)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return v, ErrNotFound
 	}
@@ -109,6 +112,15 @@ func validStaffGrants(grants []auth.ManagerGrant) bool {
 	}
 	return true
 }
+
+func replaceManagerGrants(ctx context.Context, tx pgx.Tx, employee uuid.UUID, grants []auth.ManagerGrant) error {
+	if _, err := tx.Exec(ctx, `DELETE FROM manager_grants WHERE employee_id=$1`, employee); err != nil {
+		return err
+	}
+	_, err := tx.Exec(ctx, `INSERT INTO manager_grants(employee_id,grant_code)
+		SELECT $1,unnest($2::text[])`, employee, grants)
+	return err
+}
 func (s *Access) staffActor(ctx context.Context, db interface {
 	QueryRow(context.Context, string, ...any) pgx.Row
 }, sessionID uuid.UUID, grant auth.ManagerGrant) (auth.Principal, []byte, error) {
@@ -128,6 +140,9 @@ func (s *Access) ManagerStaffCommand(ctx context.Context, c StaffCommand) (Staff
 	if c.CommandID == uuid.Nil || (c.Kind != "invite" && c.TargetID == uuid.Nil) {
 		return result, "", ErrStaffInvalid
 	}
+	if c.Kind == "access" && c.AccessEnabled == nil {
+		return result, "", ErrStaffInvalid
+	}
 	if c.Kind == "invite" || c.Kind == "grants" {
 		if !validStaffGrants(c.Grants) {
 			return result, "", ErrStaffInvalid
@@ -143,16 +158,17 @@ func (s *Access) ManagerStaffCommand(ctx context.Context, c StaffCommand) (Staff
 			return result, "", ErrStaffInvalid
 		}
 	}
-	if (c.Kind == "grants" || c.Kind == "reissue") && c.Version < 1 {
+	if (c.Kind == "grants" || c.Kind == "access" || c.Kind == "reissue") && c.Version < 1 {
 		return result, "", ErrStaffInvalid
 	}
 	normalized, _ := json.Marshal(struct {
-		Kind        string
-		Target      uuid.UUID
-		Version     int64
-		Email, Name string
-		Grants      []auth.ManagerGrant
-	}{c.Kind, c.TargetID, c.Version, c.Email, c.Name, c.Grants})
+		Kind          string
+		Target        uuid.UUID
+		Version       int64
+		Email, Name   string
+		Grants        []auth.ManagerGrant
+		AccessEnabled *bool `json:",omitempty"`
+	}{c.Kind, c.TargetID, c.Version, c.Email, c.Name, c.Grants, c.AccessEnabled})
 	fingerprint := sha256.Sum256(normalized)
 	err := s.transact(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		if err := lockManagerAccess(ctx, tx); err != nil {
@@ -162,7 +178,7 @@ func (s *Access) ManagerStaffCommand(ctx context.Context, c StaffCommand) (Staff
 		if err != nil {
 			return err
 		}
-		if c.Kind != "grants" && !slices.Contains(actor.Account.ManagerGrants, auth.GrantIdentityManage) {
+		if c.Kind != "grants" && c.Kind != "access" && !slices.Contains(actor.Account.ManagerGrants, auth.GrantIdentityManage) {
 			return ErrStaffForbidden
 		}
 		var previousHash, raw []byte
@@ -180,6 +196,7 @@ func (s *Access) ManagerStaffCommand(ctx context.Context, c StaffCommand) (Staff
 			return fmt.Errorf("lookup staff receipt: %w", err)
 		}
 		target := c.TargetID
+		var current Staff
 		if c.Kind == "invite" {
 			err = tx.QueryRow(ctx, `INSERT INTO employees(email,name,role,status,technical_access,manager_changed_by) VALUES($1,$2,'viewer','active',false,$3) RETURNING id`, c.Email, c.Name, actor.EmployeeID).Scan(&target)
 			if isUniqueViolation(err) {
@@ -192,12 +209,18 @@ func (s *Access) ManagerStaffCommand(ctx context.Context, c StaffCommand) (Staff
 			if _, err := s.store.lockRecord(ctx, tx, target); err != nil {
 				return err
 			}
-			current, err := scanStaff(tx.QueryRow(ctx, staffSelect+` WHERE e.id=$1`, target))
+			current, err = scanStaff(tx.QueryRow(ctx, staffSelect+` WHERE e.id=$1`, target))
 			if err != nil {
 				return err
 			}
-			if (c.Kind == "grants" || c.Kind == "reissue") && current.Version != c.Version {
+			if (c.Kind == "grants" || c.Kind == "access" || c.Kind == "reissue") && current.Version != c.Version {
 				return ErrStaffVersion
+			}
+			if c.Kind == "access" && target == actor.EmployeeID {
+				return ErrStaffForbidden
+			}
+			if c.Kind == "access" && (len(current.Grants) == 0 || (current.Status != "active" && current.Status != "revoked")) {
+				return ErrStaffInvalid
 			}
 			if c.Kind == "grants" && target == actor.EmployeeID {
 				for _, g := range c.Grants {
@@ -218,13 +241,33 @@ func (s *Access) ManagerStaffCommand(ctx context.Context, c StaffCommand) (Staff
 		}
 		switch c.Kind {
 		case "invite", "grants":
-			if _, err := tx.Exec(ctx, `DELETE FROM manager_grants WHERE employee_id=$1`, target); err != nil {
-				return err
+			if current.suspended {
+				_, err = tx.Exec(ctx, `UPDATE employees SET manager_suspended_grants=
+					NULLIF($2::text[],ARRAY[]::text[]) WHERE id=$1`, target, c.Grants)
+			} else {
+				err = replaceManagerGrants(ctx, tx, target, c.Grants)
 			}
-			if _, err := tx.Exec(ctx, `INSERT INTO manager_grants(employee_id,grant_code) SELECT $1,unnest($2::text[])`, target, c.Grants); err != nil {
+			if err != nil {
 				return err
 			}
 			if c.Kind == "grants" {
+				if err := s.sessions.ManagerRevokeAudienceTx(ctx, tx, target); err != nil {
+					return err
+				}
+			}
+		case "access":
+			grants, suspended := current.Grants, []auth.ManagerGrant(nil)
+			if !*c.AccessEnabled {
+				grants, suspended = suspended, grants
+			}
+			if _, err := tx.Exec(ctx, `UPDATE employees SET manager_suspended_grants=$2
+				WHERE id=$1`, target, suspended); err != nil {
+				return err
+			}
+			if err := replaceManagerGrants(ctx, tx, target, grants); err != nil {
+				return err
+			}
+			if current.suspended || !*c.AccessEnabled {
 				if err := s.sessions.ManagerRevokeAudienceTx(ctx, tx, target); err != nil {
 					return err
 				}
@@ -269,6 +312,9 @@ func (s *Access) ManagerStaffCommand(ctx context.Context, c StaffCommand) (Staff
 		event.ObjectType = "employee"
 		event.ObjectRef = "employee:" + target.String()
 		event.Metadata = map[string]any{"audience": auth.Managers, "grants": result.Staff.Grants, "version": result.Staff.Version}
+		if c.AccessEnabled != nil {
+			event.Metadata["access_enabled"] = *c.AccessEnabled
+		}
 		if err := s.audit.RecordTx(ctx, tx, event); err != nil {
 			return err
 		}

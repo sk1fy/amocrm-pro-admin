@@ -3,10 +3,12 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -95,6 +97,67 @@ func TestManagerStaffHTTPContractAndPublicAcceptanceControls(t *testing.T) {
 	rec = call("POST", "/auth/invitations/accept", string(acceptBody), false, true, key, "")
 	if rec.Code != 200 {
 		t.Fatalf("exact acceptance replay %d", rec.Code)
+	}
+	target := createEmployee(t, ctx, store, "staff-switch@example.invalid", "Switch", rbac.RoleAdmin)
+	member := "/staff/" + target.ID.String()
+	version := call("GET", member, "", true, false, "", "").Header().Get("ETag")
+	patch := func(body, version, key string) *httptest.ResponseRecorder {
+		t.Helper()
+		return call("PATCH", member, body, true, true, key, version)
+	}
+	for _, body := range []string{`{}`, `{"access_enabled":null}`, `{"grants":null,"access_enabled":false}`} {
+		if rec := patch(body, version, uuid.NewString()); rec.Code != 400 {
+			t.Fatalf("ambiguous patch %d %s", rec.Code, rec.Body.String())
+		}
+	}
+	assigned := patch(`{"grants":["clients.read"]}`, version, uuid.NewString())
+	if assigned.Code != 200 {
+		t.Fatalf("assign grants %d %s", assigned.Code, assigned.Body.String())
+	}
+	version = assigned.Header().Get("ETag")
+	oldManager, _, err := sessions.Login(ctx, target.Email, testPassword, "127.0.0.1", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	technical := auth.NewService(pool, 5*time.Second, 12*time.Hour, 2*time.Hour, false)
+	core, _, err := technical.Login(ctx, target.Email, testPassword, "127.0.0.1", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	switchKey := uuid.NewString()
+	off := patch(`{"access_enabled":false}`, version, switchKey)
+	if off.Code != 200 || !strings.Contains(off.Body.String(), `"status":"revoked","grants":["clients.read"]`) {
+		t.Fatalf("suspend managers access %d %s", off.Code, off.Body.String())
+	}
+	if replay := patch(`{"access_enabled":false}`, version, switchKey); replay.Code != 200 || replay.Header().Get("ETag") != off.Header().Get("ETag") {
+		t.Fatalf("access command replay %d %s", replay.Code, replay.Body.String())
+	}
+	if rec := patch(`{"access_enabled":true}`, version, uuid.NewString()); rec.Code != 409 {
+		t.Fatalf("stale version restored access %d", rec.Code)
+	}
+	if _, err := sessions.Lookup(ctx, oldManager); !errors.Is(err, auth.ErrUnauthenticated) {
+		t.Fatalf("suspended manager session: %v", err)
+	}
+	if _, _, err := sessions.Login(ctx, target.Email, testPassword, "127.0.0.1", ""); !errors.Is(err, auth.ErrInvalidCredentials) {
+		t.Fatalf("suspended manager login: %v", err)
+	}
+	if _, err := technical.Lookup(ctx, core); err != nil {
+		t.Fatalf("technical session revoked: %v", err)
+	}
+	updated := patch(`{"grants":["feed.read"]}`, off.Header().Get("ETag"), uuid.NewString())
+	if updated.Code != 200 || !strings.Contains(updated.Body.String(), `"status":"revoked","grants":["feed.read"]`) {
+		t.Fatalf("suspended grants edited %d %s", updated.Code, updated.Body.String())
+	}
+	on := patch(`{"access_enabled":true}`, updated.Header().Get("ETag"), uuid.NewString())
+	if on.Code != 200 || !strings.Contains(on.Body.String(), `"status":"active","grants":["feed.read"]`) {
+		t.Fatalf("restore managers access %d %s", on.Code, on.Body.String())
+	}
+	if _, err := sessions.Lookup(ctx, oldManager); !errors.Is(err, auth.ErrUnauthenticated) {
+		t.Fatalf("revoked session revived: %v", err)
+	}
+	if _, account, err := sessions.Login(ctx, target.Email, testPassword, "127.0.0.1", ""); err != nil ||
+		!slices.Equal(account.ManagerGrants, []auth.ManagerGrant{auth.GrantFeedRead}) {
+		t.Fatalf("restored manager grants %v: %v", account.ManagerGrants, err)
 	}
 	for range 4 {
 		rec = call("POST", "/auth/invitations/accept", string(acceptBody), false, true, uuid.NewString(), "")

@@ -45,7 +45,8 @@ func TestManagerEventsGrantAndRevocationBoundary(t *testing.T) {
 		}
 		cookies[grant] = token
 	}
-	account, event := uuid.New(), uuid.New()
+	account, product, event := uuid.New(), uuid.New(), uuid.New()
+	const subdomain, widgetName = "fixture-17", "Reviewed product"
 	requests := 0
 	revoke := false
 	changeVersion := false
@@ -79,7 +80,19 @@ func TestManagerEventsGrantAndRevocationBoundary(t *testing.T) {
 		if actor.Actor.SubjectId != ids["feed.read"] && actor.Actor.SubjectId != ids["clients.read"] {
 			t.Error("wrong actor")
 		}
-		httpx.WriteJSON(w, 200, map[string]any{"items": []any{map[string]any{"id": event, "kind": "installed", "account_id": account, "occurred_at": time.Now().UTC(), "recorded_at": time.Now().UTC(), "summary": "Виджет установлен", "related_refs": []any{}}}, "next_cursor": nil, "snapshot_at": time.Now().UTC(), "query_hash": strings.Repeat("a", 64)})
+		entry := map[string]any{
+			"id": event, "kind": "installed", "account_id": account, "product_id": product,
+			"occurred_at": time.Now().UTC(), "recorded_at": time.Now().UTC(), "summary": "Виджет установлен",
+			"related_refs": []any{},
+		}
+		if actor.Actor.SubjectId == ids["clients.read"] {
+			entry["account_subdomain"], entry["product_display_name"] = subdomain, widgetName
+			entry["related_refs"] = []any{
+				map[string]any{"kind": "account", "id": account},
+				map[string]any{"kind": "product", "id": product},
+			}
+		}
+		httpx.WriteJSON(w, 200, map[string]any{"items": []any{entry}, "next_cursor": nil, "snapshot_at": time.Now().UTC(), "query_hash": strings.Repeat("a", 64)})
 	}))
 	client, err := managerplatform.NewClient(cfg)
 	if err != nil {
@@ -112,6 +125,14 @@ func TestManagerEventsGrantAndRevocationBoundary(t *testing.T) {
 		var page wire.EventList
 		if json.Unmarshal(response.Body.Bytes(), &page) != nil || len(page.Items) != 1 || page.Items[0].Id != event {
 			t.Fatal("feed/history changed event identity")
+		}
+		item := page.Items[0]
+		if response == feed && (item.AccountSubdomain != nil || item.ProductDisplayName != nil) {
+			t.Fatal("feed-only response included client labels")
+		}
+		if response == historyResponse && (item.AccountSubdomain == nil || *item.AccountSubdomain != subdomain ||
+			item.ProductDisplayName == nil || *item.ProductDisplayName != widgetName) {
+			t.Fatal("history response dropped authorized event labels")
 		}
 	}
 	peerStatus = 400

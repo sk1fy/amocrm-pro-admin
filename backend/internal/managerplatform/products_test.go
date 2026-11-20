@@ -10,7 +10,7 @@ import (
 )
 
 func TestProductPoliciesAndVersionIdentity(t *testing.T) {
-	grants := map[apicontract.Route]auth.ManagerGrant{apicontract.ManagerProducts: auth.GrantClientsRead, apicontract.ManagerProduct: auth.GrantClientsRead, apicontract.ManagerProductCreate: auth.GrantCatalogManage, apicontract.ManagerProductUpdate: auth.GrantCatalogManage, apicontract.ManagerProductMetrics: auth.GrantStatsRead}
+	grants := map[apicontract.Route]auth.ManagerGrant{apicontract.ManagerProducts: auth.GrantCatalogRead, apicontract.ManagerProduct: auth.GrantCatalogRead, apicontract.ManagerProductCreate: auth.GrantCatalogManage, apicontract.ManagerProductUpdate: auth.GrantCatalogManage, apicontract.ManagerProductMetrics: auth.GrantStatsRead}
 	for _, endpoint := range AccountEndpoints() {
 		if want, ok := grants[endpoint.Route]; ok {
 			if endpoint.Grant() != want {

@@ -2016,13 +2016,13 @@ paths:
           - pilot
           - active
           - archived
-      - {name: overview, in: query, schema: {type: boolean}, description: Includes statistics and requires stats.read.}
+      - {name: overview, in: query, schema: {type: boolean}, description: Includes statistics and requires stats.read and clients.read.}
       - {name: attention, in: query, schema: {type: boolean}, description: Filters the list by attention; requires overview.}
       - {name: sort, in: query, schema: {type: string, enum: [installations, name, code]}, description: Defaults to installations for overview and code otherwise.}
       tags:
       - Managers
       summary: List catalog products.
-      x-manager-grant: clients.read
+      x-manager-grant: catalog.read
       description: Requires clients.read on the manager host.
     post:
       operationId: createProductForManagers
@@ -2194,7 +2194,7 @@ paths:
       tags:
       - Managers
       summary: Read a catalog product.
-      x-manager-grant: clients.read
+      x-manager-grant: catalog.read
       description: Requires clients.read on the manager host.
     patch:
       operationId: updateProductForManagers
@@ -4425,9 +4425,14 @@ components:
     ManagerStaffUpdateRequest:
       type: object
       additionalProperties: false
-      required: [grants]
+      oneOf:
+        - required: [grants]
+        - required: [access_enabled]
       properties:
         grants: {type: array, uniqueItems: true, items: {type: string}}
+        access_enabled:
+          type: boolean
+          description: Suspend or restore manager access with its saved grants.
     ManagerStaffCommandResult:
       type: object
       required: [staff, link_unavailable]
@@ -4815,6 +4820,7 @@ components:
       type: string
       enum:
       - catalog.manage
+      - catalog.read
       - clients.read
       - clients.renew
       - clients.write
@@ -5639,7 +5645,7 @@ components:
           uniqueItems: true
           items:
             type: string
-            enum: [catalog.manage, clients.read, clients.renew, clients.write, configuration.manage, feed.read, identity.manage, security.audit.read, staff.manage, stats.read]
+            enum: [catalog.manage, catalog.read, clients.read, clients.renew, clients.write, configuration.manage, feed.read, identity.manage, security.audit.read, staff.manage, stats.read]
     Me:
       type: object
       additionalProperties: false
@@ -6382,6 +6388,15 @@ components:
         product_id:
           type: string
           format: uuid
+        account_subdomain:
+          type: string
+          pattern: '^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$'
+          description: Актуальный поддомен аккаунта при наличии права clients.read.
+        product_display_name:
+          type: string
+          minLength: 1
+          maxLength: 512
+          description: Актуальное название виджета из каталога при наличии права clients.read.
         actor_display:
           type: string
         summary:

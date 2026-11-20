@@ -126,12 +126,24 @@ func (s *Service) Login(ctx context.Context, email, password, ip, userAgent stri
 		return "", Account{}, err
 	}
 	expiresAt := time.Now().UTC().Add(s.absoluteTTL)
-	if _, err := s.pool.Exec(ctx, `
+	statement := `
 		INSERT INTO sessions (employee_id, token_hash, expires_at, ip, user_agent, audience)
-		VALUES ($1, $2, $3, $4, $5, $6)`,
-		account.ID, tokenHash, expiresAt, inetArg(ip), truncateUA(userAgent), s.audience,
-	); err != nil {
+		VALUES ($1, $2, $3, $4, $5, $6)`
+	args := []any{account.ID, tokenHash, expiresAt, inetArg(ip), truncateUA(userAgent), s.audience}
+	if s.audience == Managers {
+		statement = `
+			INSERT INTO sessions (employee_id, token_hash, expires_at, ip, user_agent, audience)
+			SELECT e.id, $2, $3, $4, $5, $6 FROM employees e
+			WHERE e.id=$1 AND e.manager_grants_version=$7 AND e.status='active'
+			FOR SHARE`
+		args = append(args, account.ManagerGrantsVersion)
+	}
+	inserted, err := s.pool.Exec(ctx, statement, args...)
+	if err != nil {
 		return "", Account{}, fmt.Errorf("create session: %w", err)
+	}
+	if inserted.RowsAffected() == 0 {
+		return "", Account{}, ErrInvalidCredentials
 	}
 	return plain, account, nil
 }

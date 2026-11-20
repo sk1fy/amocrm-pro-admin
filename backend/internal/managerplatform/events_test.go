@@ -68,6 +68,7 @@ func eventPageJSON(account, product uuid.UUID) string {
 func TestManagerEventResponseConsistency(t *testing.T) {
 	account, product := uuid.New(), uuid.New()
 	valid := eventPageJSON(account, product)
+	subdomain, displayName := "fixture-17", "Reviewed product"
 	for _, test := range []struct {
 		name   string
 		edit   func(*wire.EventList)
@@ -88,6 +89,14 @@ func TestManagerEventResponseConsistency(t *testing.T) {
 		{"repeated cursor", func(p *wire.EventList) { p.NextCursor.Set("same") }, url.Values{"cursor": {"same"}}, account, false},
 		{"wrong account reference", func(p *wire.EventList) { p.Items[0].RelatedRefs[0].Id = uuid.New() }, nil, account, false},
 		{"wrong product reference", func(p *wire.EventList) { p.Items[0].RelatedRefs[1].Id = uuid.New() }, nil, account, false},
+		{"account label without destination", func(p *wire.EventList) {
+			p.Items[0].AccountSubdomain = &subdomain
+			p.Items[0].RelatedRefs = p.Items[0].RelatedRefs[1:]
+		}, nil, account, false},
+		{"product label without destination", func(p *wire.EventList) {
+			p.Items[0].ProductDisplayName = &displayName
+			p.Items[0].RelatedRefs = p.Items[0].RelatedRefs[:1]
+		}, nil, account, false},
 		{"missing items", func(p *wire.EventList) { p.Items = nil }, nil, account, false},
 		{"confirmed empty", func(p *wire.EventList) { p.Items = []wire.Event{} }, nil, account, true},
 		{"page over requested limit", func(p *wire.EventList) { other := p.Items[0]; other.Id = uuid.New(); p.Items = append(p.Items, other) }, url.Values{"limit": {"1"}}, account, false},
@@ -152,9 +161,25 @@ func TestManagerEventsNamedTransport(t *testing.T) {
 		}
 	}
 	endpoint := eventEndpoint(t, apicontract.ManagerFeed)
+	body = strings.Replace(body, `"summary":`, `"account_subdomain":"fixture-17","product_display_name":"Reviewed product","summary":`, 1)
+	result, err := client.clientAccountRequest(context.Background(), principal, client.accountContract(endpoint), endpoint, uuid.Nil, nil, nil, intent{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	event := result.Data.(*wire.EventList).Items[0]
+	if event.AccountSubdomain == nil || *event.AccountSubdomain != "fixture-17" ||
+		event.ProductDisplayName == nil || *event.ProductDisplayName != "Reviewed product" {
+		t.Fatal("event response dropped authorized labels")
+	}
+	feedOnly := principal
+	feedOnly.Account.ManagerGrants = []auth.ManagerGrant{auth.GrantFeedRead}
+	if _, err = client.clientAccountRequest(context.Background(), feedOnly, client.accountContract(endpoint), endpoint, uuid.Nil, nil, nil, intent{}); err != ErrUnavailable {
+		t.Fatalf("event labels accepted without client access: %v", err)
+	}
 	for _, invalid := range []string{
 		`{"items":[],"next_cursor":null,"snapshot_at":"2026-11-17T11:00:00Z","query_hash":"` + strings.Repeat("a", 64) + `","secret":"unsafe"}`,
 		strings.ReplaceAll(body, `"kind":"installed"`, `"kind":"unexpected"`),
+		strings.ReplaceAll(body, `"account_subdomain":"fixture-17"`, `"account_subdomain":"fixture-17.amocrm.test"`),
 		strings.ReplaceAll(body, account.String(), uuid.Nil.String()),
 		`{"items":[],"next_cursor":null,"snapshot_at":"2026-11-17T11:00:00Z","query_hash":"bad"}`,
 	} {

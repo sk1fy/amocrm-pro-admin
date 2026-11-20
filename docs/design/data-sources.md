@@ -409,6 +409,7 @@ Admin API, Core и платёжные системы не вызываются (
 | История событий аккаунта | Platform `/accounts/{id}/history`, право `clients.read` |
 | Глобальная лента | Platform `/feed`, право `feed.read` |
 | UUID, вид, время действия и записи, описание, исполнитель | `Event` владельца; `actor_display` опционален |
+| Поддомен и название виджета в ленте | Опциональные `account_subdomain` и `product_display_name` из текущих записей Platform при `clients.read` |
 | Переходы события | `Event.related_refs`, разрешённые владельцем UUID аккаунта, продукта и эпизода |
 | Снимок событий | `EventList.snapshot_at`, `query_hash`, `next_cursor` владельца |
 
@@ -425,7 +426,9 @@ Admin API, Core и платёжные системы не вызываются (
 | --- | --- |
 | ID, email, имя сотрудника | Admin `employees` |
 | Производный статус | Активность identity, пароль и manager grants |
-| Права и версия | Admin `manager_grants`, `manager_grants_version` |
+| Права и версия | Admin `manager_grants`, сохранённые права `employees.manager_suspended_grants`, `manager_grants_version` |
+| Переключатели прав | `Staff.grants`, каталог прав и версия `Staff.version` |
+| «Это вы» | Сравнение `Staff.id` с `ManagerMe.id` |
 | Дата и автор изменения | `manager_changed_at`, nullable `manager_changed_by` |
 | Каталог прав | Канонический `auth.ManagerAdminGrants()` |
 | Однократная ссылка | Первый ответ Admin; токен только в URL-фрагменте |

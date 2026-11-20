@@ -54,11 +54,12 @@ export function WidgetsPage({
     selected = params.get('product')
   const id = isProductId(selected) ? selected : null
   const creating = params.get('product_new') === '1'
-  const canRead = grants.includes('clients.read'),
+  const canRead = grants.includes('catalog.read'),
     canWrite = grants.includes('catalog.manage'),
     canStats = grants.includes('stats.read')
+  const canOverview = canStats && grants.includes('clients.read')
   const query = productQuery(search)
-  if (canStats) {
+  if (canOverview) {
     query.set('overview', 'true')
   } else {
     query.delete('sort')
@@ -227,7 +228,7 @@ export function WidgetsPage({
           {list.data?.overview ? <WidgetSummary summary={list.data.overview.summary} /> : null}
           <WidgetFilters
             query={query}
-            canStats={canStats}
+            canStats={canOverview}
             summary={list.data?.overview?.summary}
             apply={apply}
           />

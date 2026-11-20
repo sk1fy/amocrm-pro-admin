@@ -160,7 +160,7 @@ func (s *Access) ManagerSecurityAudit(ctx context.Context, session uuid.UUID, cu
 		}
 		rows, err := tx.Query(ctx, `SELECT id,employee_id,action,COALESCE(object_ref,''),outcome,created_at FROM admin_audit_log
     WHERE (action=ANY($1::text[]) OR (action IN ('auth.login','auth.login_failed','auth.logout') AND metadata->>'audience'='managers')) AND ($2::timestamptz IS NULL OR (created_at,id)<($2,$3))
-    ORDER BY created_at DESC,id DESC LIMIT $4`, []string{"manager.bootstrap", "manager.staff.invite", "manager.staff.grants", "manager.staff.reissue", "manager.staff.revoke_sessions", "manager.invitation.accept"}, at, c.AuditID, limit+1)
+    ORDER BY created_at DESC,id DESC LIMIT $4`, []string{"manager.bootstrap", "manager.staff.invite", "manager.staff.grants", "manager.staff.access", "manager.staff.reissue", "manager.staff.revoke_sessions", "manager.invitation.accept"}, at, c.AuditID, limit+1)
 		if err != nil {
 			return fmt.Errorf("list manager security audit: %w", err)
 		}

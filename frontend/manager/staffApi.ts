@@ -99,26 +99,6 @@ export async function acceptInvitation(command: InvitationAcceptance) {
   })
   if (record(data).accepted !== true) throw new Error('invalid invitation acceptance')
 }
-export async function listStaffAudit(search: string, signal: AbortSignal) {
-  const { data } = await apiFetchResponse<unknown>(managerApi + '/security/audit?' + search, {
-    signal,
-  })
-  const page = record(data)
-  if (!Array.isArray(page.items)) throw new Error('invalid audit page')
-  return {
-    items: page.items.map((value: unknown) => {
-      const item = record(value)
-      return {
-        id: integer(item.id, 1),
-        action: text(item.action),
-        actor_id: item.actor_id === null ? null : uuid(item.actor_id),
-        object_ref: text(item.object_ref),
-        created_at: date(item.created_at),
-      }
-    }),
-    next_cursor: page.next_cursor === null ? null : text(page.next_cursor),
-  }
-}
 export function invitationResult(value: unknown) {
   const item = record(value)
   return {
