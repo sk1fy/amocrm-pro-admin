@@ -490,6 +490,7 @@ func (e Freshness) Valid() bool {
 // Defines values for Grant.
 const (
 	CatalogManage       Grant = "catalog.manage"
+	CatalogRead         Grant = "catalog.read"
 	ClientsRead         Grant = "clients.read"
 	ClientsRenew        Grant = "clients.renew"
 	ClientsWrite        Grant = "clients.write"
@@ -505,6 +506,8 @@ const (
 func (e Grant) Valid() bool {
 	switch e {
 	case CatalogManage:
+		return true
+	case CatalogRead:
 		return true
 	case ClientsRead:
 		return true
@@ -1857,14 +1860,20 @@ type Error struct {
 
 // Event defines model for Event.
 type Event struct {
-	AccountId    *openapi_types.UUID `json:"account_id,omitempty"`
-	ActorDisplay *string             `json:"actor_display,omitempty"`
-	Id           openapi_types.UUID  `json:"id"`
-	Kind         EventKind           `json:"kind"`
-	OccurredAt   time.Time           `json:"occurred_at"`
-	ProductId    *openapi_types.UUID `json:"product_id,omitempty"`
-	RecordedAt   time.Time           `json:"recorded_at"`
-	RelatedRefs  []struct {
+	AccountId *openapi_types.UUID `json:"account_id,omitempty"`
+
+	// AccountSubdomain Current observed account subdomain, available with clients.read.
+	AccountSubdomain *string            `json:"account_subdomain,omitempty"`
+	ActorDisplay     *string            `json:"actor_display,omitempty"`
+	Id               openapi_types.UUID `json:"id"`
+	Kind             EventKind          `json:"kind"`
+	OccurredAt       time.Time          `json:"occurred_at"`
+
+	// ProductDisplayName Current catalog product name, available with clients.read.
+	ProductDisplayName *string             `json:"product_display_name,omitempty"`
+	ProductId          *openapi_types.UUID `json:"product_id,omitempty"`
+	RecordedAt         time.Time           `json:"recorded_at"`
+	RelatedRefs        []struct {
 		Id   openapi_types.UUID   `json:"id"`
 		Kind EventRelatedRefsKind `json:"kind"`
 	} `json:"related_refs"`
@@ -2793,7 +2802,7 @@ type ListProductsParams struct {
 	Line         *ListProductsParamsLine         `form:"line,omitempty" json:"line,omitempty"`
 	Availability *ListProductsParamsAvailability `form:"availability,omitempty" json:"availability,omitempty"`
 
-	// Overview Includes statistics and requires stats.read.
+	// Overview Includes statistics and requires stats.read and clients.read.
 	Overview *bool `form:"overview,omitempty" json:"overview,omitempty"`
 
 	// Attention Filters the list by attention; requires overview.

@@ -124,7 +124,7 @@ it('retains an editor draft on conflict and rebases only through an explicit act
   let current = product
   const versions: (string | null)[] = []
   const keys: (string | null)[] = []
-  open(['clients.read', 'catalog.manage'], 'section=widgets&product=' + id, (_url, init) => {
+  open(['catalog.read', 'catalog.manage'], 'section=widgets&product=' + id, (_url, init) => {
     if (init?.method === 'PATCH') {
       versions.push(new Headers(init.headers).get('If-Match'))
       keys.push(new Headers(init.headers).get('Idempotency-Key'))
@@ -161,7 +161,7 @@ it('uses refreshed same-version mappings for the next edit and preserves a pendi
   let current = { ...product, integration_refs: [originalRef] }
   const commands: { body: RequestInit['body']; key: string | null; version: string | null }[] = []
   const client = open(
-    ['clients.read', 'catalog.manage'],
+    ['catalog.read', 'catalog.manage'],
     'section=widgets&product=' + id,
     (_url, init) => {
       if (init?.method === 'PATCH') {
@@ -260,7 +260,7 @@ it('renders monthly widget installations and keeps the overview while filtering'
     links: [{ label: 'Документация', url: 'https://fixture.example.invalid/docs' }],
   }
   let filtered = false
-  open(['clients.read', 'stats.read'], 'section=widgets', (url) => {
+  open(['catalog.read', 'clients.read', 'stats.read'], 'section=widgets', (url) => {
     expect(url.searchParams.get('overview')).toBe('true')
     filtered = url.searchParams.get('attention') === 'true'
     return Response.json({

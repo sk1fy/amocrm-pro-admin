@@ -1,13 +1,349 @@
-.grants {
-  display: grid;
-  gap: var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: var(--space-3);
+.workspace {
+  font-size: 15px;
 }
 
-.grants .choice {
+.workspace :is(button, input, select) {
+  font-size: 14px;
+}
+
+.workspace p {
+  font-size: 14px;
+}
+
+.heading,
+.staffActions,
+.search,
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.heading {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.heading h1,
+.heading h2,
+.heading p,
+.surface h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.heading h1 + p,
+.heading h2 + p {
+  margin-top: 4px;
+}
+
+.search input {
+  width: min(100%, 280px);
+}
+
+.directory,
+.surface {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.tableScroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--color-border-soft);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table th[scope='col'] {
+  background: var(--color-surface-2);
+  color: var(--color-subtle);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.table th[scope='row'] {
+  min-width: 180px;
+  max-width: 280px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.table tr:last-child > * {
+  border-bottom: 0;
+}
+
+.employeeContact {
+  display: block;
+  color: var(--color-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.rowGrants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 13px;
+}
+
+.rowGrant {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.accessValue {
+  white-space: nowrap;
+}
+
+.accessValue > span {
+  margin-inline-start: 4px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.accessValue > span[data-enabled='true'] {
+  color: var(--tone-ok);
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.rowActions p {
+  margin: 0;
+}
+
+.workspace .rowGrant .switch {
+  width: 29px;
+  height: 17px;
+}
+
+.rowGrant .switch::before {
+  width: 11px;
+}
+
+.rowGrant .switch:checked::before {
+  transform: translateX(12px);
+}
+
+.surface {
+  padding: 12px 14px;
+}
+
+.surface > * + *,
+.commandForm > * + * {
+  margin-top: 10px;
+}
+
+.surface p,
+.commandResult p {
+  margin-bottom: 0;
+}
+
+.inviteFields,
+.grants {
+  display: grid;
+  gap: 8px 18px;
+}
+
+.inviteFields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inviteFields label,
+.commandResult label {
+  display: grid;
+  gap: 4px;
+}
+
+.inviteFields input {
+  width: 100%;
+  min-width: 0;
+}
+
+.grants {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr));
+  min-width: 0;
+  padding: 8px 10px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.grantGroup {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.invite {
+  padding: 18px 20px 16px;
+}
+
+.invite h2 {
+  font-size: 1.125rem;
+}
+
+.invite header p {
+  margin-top: 3px;
+  color: var(--color-muted);
+}
+
+.inviteFields {
+  max-width: 58rem;
+  gap: 12px 16px;
+}
+
+.invite .grants {
+  gap: 10px;
+  padding: 10px 0 0;
+  border: 0;
+}
+
+.invite .grants legend {
+  padding: 0;
+  font-weight: 700;
+}
+
+.invite .grantGroup {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface-2);
+}
+
+.invite .choice {
+  min-height: 31px;
+}
+
+.inviteActions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.access {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: max-content;
+}
+
+.access > span {
+  font-size: 13px;
+}
+
+.workspace .switch {
+  position: relative;
+  appearance: none;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 21px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--color-muted);
+  cursor: pointer;
+}
+
+.switch::before {
+  position: absolute;
+  inset: 2px auto 2px 2px;
+  width: 15px;
+  border-radius: 50%;
+  background: #fff;
+  content: '';
+}
+
+.workspace .switch:checked {
+  background: var(--color-primary);
+}
+
+.switch:checked::before {
+  transform: translateX(15px);
+}
+
+.switch:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.switch:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.grants .choice,
+.pager label {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.grants .choice {
+  justify-content: space-between;
+}
+
+.commandResult {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.commandResult label {
+  width: min(100%, 38rem);
+}
+
+.commandResult input {
+  min-width: 0;
+}
+
+.pager {
+  padding: 8px 14px;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.pager label {
+  margin-inline-end: auto;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.panelMessage {
+  margin: 0;
+  padding: 8px 14px;
+}
+
+@media (max-width: 480px) {
+  .inviteFields {
+    grid-template-columns: 1fr;
+  }
+
+  .search input {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
 }

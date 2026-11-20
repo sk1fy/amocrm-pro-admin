@@ -170,13 +170,26 @@ func (h managerStaffHandler) command(kind string) http.Handler {
 			c.Email, c.Name, c.Grants = body.Email, body.Name, body.Grants
 		case "grants":
 			var body struct {
-				Grants []auth.ManagerGrant `json:"grants"`
+				Grants        json.RawMessage `json:"grants"`
+				AccessEnabled json.RawMessage `json:"access_enabled"`
 			}
 			if err := decodeManagerStaffJSON(r, &body); err != nil {
 				writeManagerStaffError(w, r, employees.ErrStaffInvalid)
 				return
 			}
-			c.Grants = body.Grants
+			switch {
+			case len(body.Grants) != 0 && len(body.AccessEnabled) == 0:
+				err = json.Unmarshal(body.Grants, &c.Grants)
+			case len(body.AccessEnabled) != 0 && len(body.Grants) == 0:
+				c.Kind = "access"
+				err = json.Unmarshal(body.AccessEnabled, &c.AccessEnabled)
+			default:
+				err = employees.ErrStaffInvalid
+			}
+			if err != nil {
+				writeManagerStaffError(w, r, employees.ErrStaffInvalid)
+				return
+			}
 		default:
 			if r.ContentLength != 0 {
 				var body struct{}

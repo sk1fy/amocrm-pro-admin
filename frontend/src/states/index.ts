@@ -81,7 +81,7 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
   manager_staff: {
     active: { tone: 'ok', label: 'Доступ открыт' },
     invited: { tone: 'attention', label: 'Ожидает приглашения' },
-    revoked: { tone: 'off', label: 'Доступ отозван' },
+    revoked: { tone: 'off', label: 'Доступ выключен' },
     disabled: { tone: 'off', label: 'Учётная запись отключена' },
   },
   distribution: {

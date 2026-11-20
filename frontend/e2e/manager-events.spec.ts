@@ -23,6 +23,13 @@ async function signIn(page: Page, email: string, query: string) {
   await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible()
 }
 
+async function showEventDetails(page: Page, id: string) {
+  const details = page.locator('details').filter({ has: page.getByText(id, { exact: true }) })
+  if ((await details.getAttribute('open')) === null) {
+    await details.getByText('Подробнее', { exact: true }).click()
+  }
+}
+
 test('durable events retain identity, filtered snapshots and exact closed episode links', async ({
   page,
 }) => {
@@ -32,16 +39,19 @@ test('durable events retain identity, filtered snapshots and exact closed episod
   expect((await page.request.get(endpoint)).status()).toBe(401)
   const filter = 'feed_account_id=' + account + '&feed_kind=installation_reviewed&feed_limit=1'
   await signIn(page, writer, 'section=feed&' + filter)
-  await expect(page.getByText('ID события ' + review, { exact: false })).toBeVisible()
+  await showEventDetails(page, review)
+  await expect(page.getByText(review, { exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Установка ' + episode, exact: true }).click()
   await expect(page).toHaveURL(new RegExp('episode=' + episode))
   await expect(page.getByText('ID установки ' + episode, { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Продлить доступ' })).toHaveCount(0)
   await page.goBack()
-  await expect(page.getByText('ID события ' + review, { exact: false })).toBeVisible()
+  await showEventDetails(page, review)
+  await expect(page.getByText(review, { exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Продукт', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Pilot Widget', exact: true })).toBeVisible()
   await page.goBack()
+  await showEventDetails(page, review)
   await page.getByRole('link', { name: 'Аккаунт', exact: true }).click()
   await expect(page).toHaveURL(new RegExp('account=' + account))
   await page.goto(
@@ -53,7 +63,8 @@ test('durable events retain identity, filtered snapshots and exact closed episod
   )
   await expect(page.getByText('ID события ' + profile, { exact: false })).toBeVisible()
   await page.goto(url('section=feed&feed_account_id=' + account + '&feed_kind=access_renewed'))
-  await expect(page.getByText('ID события ' + renewal, { exact: false })).toBeVisible()
+  await showEventDetails(page, renewal)
+  await expect(page.getByText(renewal, { exact: true })).toBeVisible()
   await page.goto(url('section=feed&feed_account_id=' + account + '&feed_limit=1'))
   await page.getByLabel('С (Москва)', { exact: true }).fill('2020-01-01')
   await page.getByLabel('По (Москва)', { exact: true }).fill('2099-12-31')
@@ -73,7 +84,8 @@ test('durable events retain identity, filtered snapshots and exact closed episod
   await page.getByRole('button', { name: 'Обновить события' }).click()
   expect((await refreshed).status()).toBe(200)
   await expect(page).not.toHaveURL(/feed_cursor=/)
-  await page.getByLabel('Виды событий').selectOption('activated')
+  await page.getByText('Все виды событий', { exact: true }).click()
+  await page.getByRole('checkbox', { name: 'Активация', exact: true }).check()
   await page.getByRole('button', { name: 'Применить', exact: true }).click()
   await expect(page.getByText('Событий по выбранным условиям нет.')).toBeVisible()
 })

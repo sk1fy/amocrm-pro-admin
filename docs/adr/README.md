@@ -39,3 +39,9 @@
 - [0029. Единственный TLS ingress и точные образы выпуска](0029-release-ingress-and-identities.md).
 
 - [0031. Общая настройка сделок в разделе «Установки»](0031-shared-installation-deal-settings.md).
+
+- [0032. Подписи аккаунта и виджета в ленте](0032-manager-feed-presentation.md).
+
+- [0033. Выключение менеджерского доступа из списка сотрудников](0033-manager-access-switch.md).
+
+- [0034. Право на чтение каталога виджетов](0034-manager-catalog-read.md).

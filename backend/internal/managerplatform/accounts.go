@@ -62,8 +62,8 @@ func AccountEndpoints() []AccountEndpoint {
 		{apicontract.ManagerInstallationDealSettingsSet, "setInstallationDealSettings", kindInstallationDealSettings, auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.InstallationDealSettings]},
 		{apicontract.ManagerProductCompanyWorkflow, "getProductCompanyWorkflow", "", auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.ProductCompanyWorkflow]},
 		{apicontract.ManagerProductCompanyWorkflowSet, "setProductCompanyWorkflow", kindCompanyWorkflow, auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.ProductCompanyWorkflow]},
-		{apicontract.ManagerProducts, "listProducts", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.ProductList]},
-		{apicontract.ManagerProduct, "getProduct", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.Product]},
+		{apicontract.ManagerProducts, "listProducts", "", auth.GrantCatalogRead, http.StatusOK, newManagerModel[wire.ProductList]},
+		{apicontract.ManagerProduct, "getProduct", "", auth.GrantCatalogRead, http.StatusOK, newManagerModel[wire.Product]},
 		{apicontract.ManagerProductMetrics, "getProductMetrics", "", auth.GrantStatsRead, http.StatusOK, newManagerModel[wire.ProductMetrics]},
 		{apicontract.ManagerProductCreate, "createProduct", kindCreateProduct, auth.GrantCatalogManage, http.StatusCreated, newManagerModel[wire.Product]},
 		{apicontract.ManagerProductUpdate, "updateProduct", kindUpdateProduct, auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.Product]},
@@ -254,7 +254,8 @@ func (s *Service) ReadAccount(ctx context.Context, endpoint AccountEndpoint, tar
 	if err != nil {
 		return AccountResponse{}, err
 	}
-	if endpoint.action == "listProducts" && query.Get("overview") == "true" && !hasGrant(actor, auth.GrantStatsRead) {
+	if endpoint.action == "listProducts" && query.Get("overview") == "true" &&
+		(!hasGrant(actor, auth.GrantStatsRead) || !hasGrant(actor, auth.GrantClientsRead)) {
 		return AccountResponse{}, ErrForbidden
 	}
 	body, err := accountBody(operation, raw)
@@ -352,6 +353,13 @@ func (c *Client) clientAccountRequest(ctx context.Context, principal auth.Princi
 	dto := endpoint.model()
 	if json.Unmarshal(raw, dto) != nil || !validManagerAccountDTO(dto, target, query, raw, response, item) {
 		return AccountResponse{}, ErrUnavailable
+	}
+	if page, ok := dto.(*wire.EventList); ok && !hasGrant(principal, auth.GrantClientsRead) {
+		for _, event := range page.Items {
+			if event.AccountSubdomain != nil || event.ProductDisplayName != nil {
+				return AccountResponse{}, ErrUnavailable
+			}
+		}
 	}
 	if endpoint.kind == kindCreateProduct {
 		var submitted struct {

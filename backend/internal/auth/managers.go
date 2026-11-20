@@ -24,6 +24,7 @@ type ManagerGrant string
 
 const (
 	GrantCatalogManage       ManagerGrant = "catalog.manage"
+	GrantCatalogRead         ManagerGrant = "catalog.read"
 	GrantClientsRead         ManagerGrant = "clients.read"
 	GrantClientsRenew        ManagerGrant = "clients.renew"
 	GrantClientsWrite        ManagerGrant = "clients.write"
@@ -37,7 +38,7 @@ const (
 
 func ManagerAdminGrants() []ManagerGrant {
 	return []ManagerGrant{
-		GrantCatalogManage, GrantClientsRead, GrantClientsRenew, GrantClientsWrite,
+		GrantCatalogManage, GrantCatalogRead, GrantClientsRead, GrantClientsRenew, GrantClientsWrite,
 		GrantConfigurationManage, GrantFeedRead, GrantIdentityManage,
 		GrantSecurityAuditRead, GrantStaffManage, GrantStatsRead,
 	}

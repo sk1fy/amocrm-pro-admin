@@ -74,7 +74,8 @@ test('staff invite, identity isolation, grants and session revocation persist wi
     expect(staff.changed_by).toBeTruthy()
     return
   }
-  const form = page.getByRole('heading', { name: 'Пригласить сотрудника' }).locator('..')
+  await page.getByRole('button', { name: 'Пригласить сотрудника', exact: true }).click()
+  const form = page.locator('#staff-invitation')
   await form.getByLabel('Email', { exact: true }).fill(invitedEmail)
   await form.getByLabel('Имя', { exact: true }).fill(invitedName)
   await form.getByLabel('Просмотр клиентов', { exact: true }).check()
@@ -105,7 +106,7 @@ test('staff invite, identity isolation, grants and session revocation persist wi
     expect(core.status()).toBe(401)
     await page.goto(url('section=staff&staff_id=' + id))
     await expect(page.getByRole('heading', { name: invitedName, exact: true })).toBeVisible()
-    await page.getByLabel('Лента событий', { exact: true }).uncheck()
+    await page.getByRole('switch', { name: 'Лента событий', exact: true }).uncheck()
     const updated = page.waitForResponse(
       (response) =>
         response.url() === endpoint('/staff/' + id) && response.request().method() === 'PATCH',
@@ -143,7 +144,7 @@ test('staff, identity and audit grants are independent and manager revoke preser
     expect((await limited.request.get(endpoint('/staff'))).status()).toBe(403)
     expect((await limited.request.get(endpoint('/security/audit'))).status()).toBe(403)
     await signIn(audit, auditor)
-    await expect(audit.getByRole('heading', { name: 'Аудит безопасности' })).toBeVisible()
+    await expect(audit.getByRole('heading', { name: 'Аудит безопасности' })).toHaveCount(0)
     expect((await audit.request.get(endpoint('/staff'))).status()).toBe(403)
     const auditResponse = await audit.request.get(endpoint('/security/audit?limit=1'))
     expect(auditResponse.status()).toBe(200)

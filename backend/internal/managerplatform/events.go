@@ -52,6 +52,10 @@ func validManagerEvents(page *wire.EventList, target uuid.UUID, query url.Values
 			}
 			refs[ref.Kind][ref.Id] = true
 		}
+		if (event.AccountSubdomain != nil && (event.AccountId == nil || !refs[wire.EventRelatedRefsKindAccount][*event.AccountId])) ||
+			(event.ProductDisplayName != nil && (event.ProductId == nil || !refs[wire.EventRelatedRefsKindProduct][*event.ProductId])) {
+			return false
+		}
 	}
 	return true
 }

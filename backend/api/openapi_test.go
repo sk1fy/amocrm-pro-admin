@@ -167,9 +167,9 @@ func TestManagerProductsContract(t *testing.T) {
 	routes := []struct {
 		method, path, grant, success string
 	}{
-		{http.MethodGet, "/products", "clients.read", "200"},
+		{http.MethodGet, "/products", "catalog.read", "200"},
 		{http.MethodPost, "/products", "catalog.manage", "201"},
-		{http.MethodGet, "/products/{id}", "clients.read", "200"},
+		{http.MethodGet, "/products/{id}", "catalog.read", "200"},
 		{http.MethodPatch, "/products/{id}", "catalog.manage", "200"},
 		{http.MethodGet, "/products/{id}/metrics", "stats.read", "200"},
 	}
