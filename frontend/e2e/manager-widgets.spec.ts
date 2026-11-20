@@ -70,7 +70,7 @@ test('widget catalog saves across managers, preserves stale drafts, and keeps na
   await metric(page, 'Подтверждённые установки за период', installations)
   await metric(page, 'Текущие активные доступы', active)
   await metric(page, 'Записанные активации', '0')
-  await expect(page.getByText(/Источник активаций G03 пока не подключён/)).toBeVisible()
+  await expect(page.getByText(/Активации считаются по записям формы/)).toBeVisible()
   const other = await browser.newPage()
   try {
     await signIn(other, colleague, card())

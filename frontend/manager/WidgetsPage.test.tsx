@@ -84,7 +84,7 @@ it('loads metrics for stats-only grants without a list or detail read', async ()
   })
   expect(
     await screen.findByText(
-      'Источник активаций G03 пока не подключён. Ноль означает отсутствие записанных событий, а не подтверждённое отсутствие активаций.',
+      'Активации считаются по записям формы для установок выбранного периода.',
     ),
   ).toBeVisible()
   expect(screen.queryByRole('textbox', { name: 'Название' })).not.toBeInTheDocument()
@@ -245,4 +245,75 @@ it('rejects a create response with an unexpected code and allows an adopted non-
     product: { id },
   })
   expect(isProductId('00000000-0000-0000-0000-000000000000')).toBe(false)
+})
+
+it('renders monthly widget installations and keeps the overview while filtering', async () => {
+  const monthly = Array.from({ length: 12 }, (_, index) => ({
+    month: '2026-' + String(index + 1).padStart(2, '0'),
+    count: index === 10 ? 5 : 0,
+  }))
+  const pilot = {
+    ...product,
+    display_name: 'Контроль активности',
+    line: 'PRO',
+    availability: 'pilot',
+    links: [{ label: 'Документация', url: 'https://fixture.example.invalid/docs' }],
+  }
+  let filtered = false
+  open(['clients.read', 'stats.read'], 'section=widgets', (url) => {
+    expect(url.searchParams.get('overview')).toBe('true')
+    filtered = url.searchParams.get('attention') === 'true'
+    return Response.json({
+      items: filtered ? [] : [pilot],
+      snapshot_at: time,
+      query_hash: 'a'.repeat(64),
+      next_cursor: null,
+      overview: {
+        summary: {
+          total: 1,
+          by_line: { FREE: 0, TOP: 0, PRO: 1 },
+          installations: 5,
+          current: 3,
+          recent: 5,
+          activation_eligible: 0,
+          activated: 0,
+          attention: 0,
+          connection_count: 0,
+        },
+        statistics: filtered
+          ? {}
+          : {
+              [id]: {
+                months: monthly,
+                installations: 5,
+                current: 3,
+                retained: 3,
+                recent: 5,
+                activation_eligible: 0,
+                activated: 0,
+                connection_count: 0,
+                missing_install_link: false,
+                missing_instruction: false,
+              },
+            },
+        connections: [],
+      },
+    })
+  })
+
+  const table = await screen.findByRole('table')
+  expect(within(table).getByRole('link', { name: 'Контроль активности' })).toBeVisible()
+  expect(within(table).getByText('Пилот')).toBeVisible()
+  expect(within(table).getByText('Нет ссылки на установку')).toBeVisible()
+  expect(within(table).getByRole('link', { name: 'Инструкция' })).toHaveAttribute(
+    'href',
+    'https://fixture.example.invalid/docs',
+  )
+  expect(within(table).queryByRole('columnheader', { name: 'Доступность' })).toBeNull()
+  expect(within(table).getByRole('img', { name: /ноябрь 2026 г\. — 5/ }).children).toHaveLength(12)
+  expect(within(table).getByText('+5 за 30 дн.')).toBeVisible()
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Только требующие внимания' }))
+  await screen.findByText('Виджеты не найдены')
+  expect(filtered).toBe(true)
+  expect(screen.getByRole('group', { name: 'Сводка каталога' })).toBeVisible()
 })

@@ -18,12 +18,6 @@ const sections = [
     icon: 'M16 20v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m16 0v-2a4 4 0 0 0-3-4M14 4a4 4 0 0 1 0 8M14 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z',
   },
   {
-    key: 'companies',
-    title: 'Компании',
-    hint: 'Компании и контакты в rakurscrm',
-    icon: 'M3 21h18M5 21V4h10v17m0-11h4v11M9 8h2M9 12h2M9 16h2',
-  },
-  {
     key: 'widgets',
     title: 'Виджеты',
     hint: 'Каталог, установки и настройки',
@@ -44,18 +38,12 @@ const sections = [
 ] as const
 
 export function workspaceSection(search: string) {
-  const params = new URLSearchParams(search)
-  const value = params.get('section')
-  if (value === 'clients' && (params.get('clients_tab') === 'companies' || params.has('company')))
-    return 'companies'
+  const value = new URLSearchParams(search).get('section')
   return sections.find(({ key }) => key === value)?.key ?? 'installations'
 }
 
 function sectionSearch(search: string, section: (typeof sections)[number]['key']) {
-  const params = new URLSearchParams(listSearch(search, section))
-  params.delete('clients_tab')
-  params.delete('company')
-  return params.toString()
+  return listSearch(search, section)
 }
 
 export function Workspace({

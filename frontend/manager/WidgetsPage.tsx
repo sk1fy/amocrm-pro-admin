@@ -1,11 +1,17 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useState } from 'react'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { isApiError } from '../src/api/client'
 import { formatTime } from '../src/lib/format'
 import { ManagerLink } from './accountsLocation'
 import { ReadFailure, useAccountAccessError, type AccountAccess } from './AccountsPage'
 import { ProductEditor } from './ProductEditor'
+import {
+  WidgetConnectionProblems,
+  WidgetFilters,
+  WidgetSummary,
+  WidgetTable,
+} from './WidgetsCatalog'
 import {
   getProduct,
   getProductMetrics,
@@ -15,6 +21,7 @@ import {
   type ProductId,
 } from './productsApi'
 import styles from './Accounts.module.css'
+import catalogStyles from './WidgetsCatalog.module.css'
 
 export const productsKey = ['managers', 'products']
 export function productSearch(search: string, updates: Record<string, string | null>) {
@@ -30,7 +37,7 @@ export function productSearch(search: string, updates: Record<string, string | n
 export function productQuery(search: string) {
   const params = new URLSearchParams(search),
     query = new URLSearchParams()
-  for (const key of ['q', 'line', 'availability', 'limit', 'cursor']) {
+  for (const key of ['q', 'line', 'availability', 'limit', 'cursor', 'sort', 'attention']) {
     const value = params.get('products_' + key)
     if (value) query.set(key, value)
   }
@@ -50,14 +57,21 @@ export function WidgetsPage({
   const canRead = grants.includes('clients.read'),
     canWrite = grants.includes('catalog.manage'),
     canStats = grants.includes('stats.read')
-  const query = productQuery(search),
-    queryString = query.toString()
+  const query = productQuery(search)
+  if (canStats) {
+    query.set('overview', 'true')
+  } else {
+    query.delete('sort')
+    query.delete('attention')
+  }
+  const queryString = query.toString()
   const client = useQueryClient()
   const [saved, setSaved] = useState<Product | null>(null)
   const list = useQuery({
     queryKey: [...productsKey, access.scope, queryString],
     queryFn: ({ signal }) => listProducts(queryString, signal),
     enabled: canRead && !selected && !creating,
+    placeholderData: keepPreviousData,
     retry: false,
   })
   const detail = useQuery({
@@ -84,19 +98,31 @@ export function WidgetsPage({
     }
     void client.invalidateQueries({ queryKey: productsKey })
   }
-  function apply(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const form = new FormData(event.currentTarget)
-    const updates: Record<string, string | null> = { products_cursor: null }
-    for (const key of ['q', 'line', 'availability', 'limit'])
-      updates['products_' + key] = String(form.get(key) ?? '')
-    navigate(productSearch(search, updates))
-  }
+  const apply = useCallback(
+    (updates: Record<string, string | null>) => {
+      const filters: Record<string, string | null> = { products_cursor: null }
+      for (const [key, value] of Object.entries(updates)) filters['products_' + key] = value
+      const next = productSearch(search, filters)
+      if (next !== new URLSearchParams(search).toString()) navigate(next)
+    },
+    [search, navigate],
+  )
+  const catalog = !selected && !creating
+  const productLocation = (product: ProductId) => productSearch(search, { product })
   return (
-    <section className={styles.workspace}>
-      <div className={styles.heading}>
-        <h1>{product?.display_name ?? 'Виджеты'}</h1>
-        <div className={styles.actions}>
+    <section
+      className={catalog ? styles.workspace + ' ' + catalogStyles.directory : styles.workspace}
+    >
+      <div className={catalog ? catalogStyles.heading : styles.heading}>
+        <div>
+          <h1>{product?.display_name ?? 'Виджеты'}</h1>
+          {catalog && canRead ? (
+            <p className={styles.meta}>
+              Нажмите на виджет, чтобы открыть его карточку и настройки.
+            </p>
+          ) : null}
+        </div>
+        <div className={catalog ? catalogStyles.headingActions : styles.actions}>
           {(id || creating) && canRead ? (
             <ManagerLink
               search={productSearch(search, { product: null, product_new: null })}
@@ -109,9 +135,16 @@ export function WidgetsPage({
             <ManagerLink
               search={productSearch(search, { product: null, product_new: '1' })}
               navigate={navigate}
+              className={catalog ? catalogStyles.create : undefined}
             >
               Новый виджет
             </ManagerLink>
+          ) : null}
+          {catalog && list.data && !list.isPlaceholderData ? (
+            <p className={styles.meta}>
+              Platform ·{' '}
+              <time dateTime={list.data.snapshot_at}>{formatTime(list.data.snapshot_at)}</time>
+            </p>
           ) : null}
         </div>
       </div>
@@ -191,45 +224,14 @@ export function WidgetsPage({
         </p>
       ) : (
         <>
-          <form className={styles.form} key={queryString} onSubmit={apply}>
-            <div className={styles.filters}>
-              <label>
-                Поиск виджетов
-                <input name="q" type="search" defaultValue={query.get('q') ?? ''} />
-              </label>
-              <label>
-                Линейка
-                <select name="line" defaultValue={query.get('line') ?? ''}>
-                  <option value="">Все</option>
-                  {['FREE', 'TOP', 'PRO'].map((l) => (
-                    <option key={l}>{l}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Доступность
-                <select name="availability" defaultValue={query.get('availability') ?? ''}>
-                  <option value="">Все</option>
-                  <option value="draft">Черновик</option>
-                  <option value="pilot">Пилот</option>
-                  <option value="active">Доступен</option>
-                  <option value="archived">Архив</option>
-                </select>
-              </label>
-              <label>
-                Строк на странице
-                <input
-                  name="limit"
-                  type="number"
-                  min="1"
-                  max="100"
-                  defaultValue={query.get('limit') ?? '25'}
-                />
-              </label>
-            </div>
-            <button>Применить фильтры</button>
-          </form>
-          {list.isPending ? (
+          {list.data?.overview ? <WidgetSummary summary={list.data.overview.summary} /> : null}
+          <WidgetFilters
+            query={query}
+            canStats={canStats}
+            summary={list.data?.overview?.summary}
+            apply={apply}
+          />
+          {list.isPending || list.isPlaceholderData ? (
             <p role="status">Загружаем виджеты…</p>
           ) : list.isError ? (
             query.has('cursor') && isApiError(list.error) && list.error.status === 400 ? (
@@ -243,48 +245,17 @@ export function WidgetsPage({
               <ReadFailure error={list.error} retry={() => void list.refetch()} />
             )
           ) : (
-            <div className={styles.results}>
-              <p className={styles.meta}>
-                Platform · снимок на {formatTime(list.data.snapshot_at)}
-              </p>
+            <div className={styles.results + ' ' + catalogStyles.results}>
               {list.data.items.length === 0 ? (
                 <p>Виджеты не найдены</p>
               ) : (
-                <div className={styles.tableScroll}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th scope="col">Виджет</th>
-                        <th scope="col">Код</th>
-                        <th scope="col">Линейка</th>
-                        <th scope="col">Доступность</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {list.data.items.map((row) => (
-                        <tr key={row.id}>
-                          <td>
-                            <ManagerLink
-                              search={productSearch(search, { product: row.id })}
-                              navigate={navigate}
-                            >
-                              {row.display_name}
-                            </ManagerLink>
-                          </td>
-                          <td>{row.code}</td>
-                          <td>{row.line}</td>
-                          <td>
-                            <StatusBadge
-                              domain="product_availability"
-                              state={row.availability}
-                              calm
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <WidgetTable
+                  products={list.data.items}
+                  statistics={list.data.overview?.statistics}
+                  showStats={Boolean(list.data.overview)}
+                  navigate={navigate}
+                  productLocation={productLocation}
+                />
               )}
               <div className={styles.actions}>
                 {query.has('cursor') ? (
@@ -303,7 +274,29 @@ export function WidgetsPage({
                     Следующая страница
                   </button>
                 ) : null}
+                <label>
+                  Строк на странице{' '}
+                  <select
+                    value={query.get('limit') ?? '25'}
+                    onChange={(event) => apply({ limit: event.target.value })}
+                  >
+                    {[...new Set([10, 25, 50, 100, Number(query.get('limit') ?? '25')])]
+                      .sort((a, b) => a - b)
+                      .filter((limit) => Number.isInteger(limit) && limit >= 1 && limit <= 100)
+                      .map((limit) => (
+                        <option key={limit}>{limit}</option>
+                      ))}
+                  </select>
+                </label>
               </div>
+              {list.data.overview ? (
+                <WidgetConnectionProblems
+                  overview={list.data.overview}
+                  search={search}
+                  productLocation={productLocation}
+                  navigate={navigate}
+                />
+              ) : null}
             </div>
           )}
         </>
@@ -378,8 +371,7 @@ function ProductMetrics({
             включён. Активные доступы показаны на текущий снимок и не зависят от периода.
           </p>
           <p className={styles.meta}>
-            Источник активаций G03 пока не подключён. Ноль означает отсутствие записанных событий, а
-            не подтверждённое отсутствие активаций.
+            Активации считаются по записям формы для установок выбранного периода.
           </p>
           <p className={styles.meta}>Platform · снимок на {formatTime(metrics.data.snapshot_at)}</p>
         </>

@@ -1,7 +1,6 @@
 package managerplatform
 
 import (
-	"net/url"
 	"strconv"
 	"time"
 
@@ -11,8 +10,6 @@ import (
 )
 
 // These identifiers belong to different identity spaces, even when encoded as UUIDs.
-type CompanyProjectionID uuid.UUID
-type RuntimeAccountID uuid.UUID
 type ProductID uuid.UUID
 
 func validCRMID(value string) bool {
@@ -44,95 +41,6 @@ func validCompanySource(source *wire.CompanySource) bool {
 		}
 		if !fresh.After(time.Now()) {
 			source.State = wire.CompanySourceStateStale
-		}
-	}
-	return true
-}
-
-func validCompanySummary(item wire.CompanySummary) bool {
-	if item.Id == uuid.Nil || !validCRMID(item.CrmCompanyId) || item.CustomerAccountIds == nil || item.RuntimeAccounts == nil ||
-		!item.SourceResolution.Valid() || !item.RuntimeResolution.Valid() {
-		return false
-	}
-	claims := make(map[string]bool)
-	for _, id := range item.CustomerAccountIds {
-		if !validCRMID(id) || claims[id] {
-			return false
-		}
-		claims[id] = true
-	}
-	links := make(map[RuntimeAccountID]bool)
-	for _, link := range item.RuntimeAccounts {
-		id := RuntimeAccountID(link.AccountId)
-		if link.AccountId == uuid.Nil || !claims[link.CustomerAccountId] || links[id] {
-			return false
-		}
-		links[id] = true
-	}
-	return true
-}
-
-func validCompanyList(page *wire.CompanyList, query url.Values) bool {
-	if !validCompanySource(&page.Source) || !page.Items.IsSpecified() || !page.NextCursor.IsSpecified() {
-		return false
-	}
-	items, err := page.Items.Get()
-	if err != nil {
-		return !page.Source.Complete && page.NextCursor.IsNull()
-	}
-	if !page.Source.Complete || items == nil {
-		return false
-	}
-	limit := 25
-	if value := query.Get("limit"); value != "" {
-		limit, _ = strconv.Atoi(value)
-	}
-	if len(items) > limit {
-		return false
-	}
-	seen := make(map[CompanyProjectionID]bool)
-	for _, item := range items {
-		id := CompanyProjectionID(item.Id)
-		if seen[id] || !validCompanySummary(item) {
-			return false
-		}
-		seen[id] = true
-	}
-	if cursor, err := page.NextCursor.Get(); err == nil && (cursor == "" || len(cursor) > 4096) {
-		return false
-	}
-	return true
-}
-
-func validCompanyDetail(item *wire.CompanyDetail, target uuid.UUID) bool {
-	summary := wire.CompanySummary{Id: item.Id, CrmCompanyId: item.CrmCompanyId, Name: item.Name,
-		CustomerAccountIds: item.CustomerAccountIds, RuntimeAccounts: item.RuntimeAccounts,
-		SourceResolution: wire.CompanySummarySourceResolution(item.SourceResolution), RuntimeResolution: wire.CompanySummaryRuntimeResolution(item.RuntimeResolution)}
-	if item.Id != target || !validCompanySummary(summary) || !validCompanySource(&item.Source) || !item.Source.Complete || item.Contacts == nil || item.UnresolvedRelations == nil {
-		return false
-	}
-	validLink := func(link wire.CompanyContactLink) bool {
-		if !validCRMID(link.CrmCompanyId) || !link.CompanyId.IsSpecified() {
-			return false
-		}
-		id, err := link.CompanyId.Get()
-		return err != nil || id != uuid.Nil
-	}
-	contacts := make(map[string]bool)
-	for _, contact := range item.Contacts {
-		if !validCRMID(contact.Id) || contacts[contact.Id] || contact.Companies == nil {
-			return false
-		}
-		contacts[contact.Id] = true
-		for _, link := range contact.Companies {
-			if !validLink(link) {
-				return false
-			}
-		}
-	}
-	for _, link := range item.UnresolvedRelations {
-		if !validLink(link) || !link.CompanyId.IsNull() {
-			return false
 		}
 	}
 	return true

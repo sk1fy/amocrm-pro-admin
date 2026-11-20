@@ -2016,6 +2016,9 @@ paths:
           - pilot
           - active
           - archived
+      - {name: overview, in: query, schema: {type: boolean}, description: Includes statistics and requires stats.read.}
+      - {name: attention, in: query, schema: {type: boolean}, description: Filters the list by attention; requires overview.}
+      - {name: sort, in: query, schema: {type: string, enum: [installations, name, code]}, description: Defaults to installations for overview and code otherwise.}
       tags:
       - Managers
       summary: List catalog products.
@@ -2369,8 +2372,7 @@ paths:
       x-manager-grant: stats.read
       description: Requires stats.read on the manager host. No clients.read grant is required. confirmed_installations
         uses the optional calendar-day range in the owner time zone, with to inclusive. active_accesses is current
-        and ignores that range. activations is zero while the G03 source is absent, not evidence of measured zero
-        activity.
+        and ignores that range. activations counts recorded activation forms for confirmed installations in the range.
   /api/v1/managers/feed:
     get:
       operationId: listFeedForManagers
@@ -3925,120 +3927,6 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthenticated'
 
-  /api/v1/managers/companies:
-    get:
-      operationId: listCompaniesForManagers
-      security:
-      - managerSession: []
-      parameters:
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-          default: 25
-      - name: cursor
-        in: query
-        schema:
-          type: string
-      - name: q
-        in: query
-        schema:
-          type: string
-          maxLength: 200
-      responses:
-        '200':
-          description: Успех
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ManagerCompanyList'
-        '400':
-          description: Безопасная ошибка
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-        '401':
-          description: Безопасная ошибка
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-        '403':
-          description: Безопасная ошибка
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-        '404':
-          description: Безопасная ошибка
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-        '503':
-          description: Безопасная ошибка
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-      x-manager-grant: clients.read
-      tags:
-      - Managers
-  /api/v1/managers/companies/{id}:
-    get:
-      operationId: getCompanyForManagers
-      security:
-      - managerSession: []
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: Успех
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ManagerCompanyDetail'
-        '400':
-          description: Безопасная ошибка
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-        '401':
-          description: Безопасная ошибка
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-        '403':
-          description: Безопасная ошибка
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-        '404':
-          description: Безопасная ошибка
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-        '503':
-          description: Безопасная ошибка
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-      x-manager-grant: clients.read
-      tags:
-      - Managers
   /api/v1/managers/company-workflow-metadata:
     get:
       operationId: getCompanyWorkflowMetadataForManagers
@@ -5501,11 +5389,86 @@ components:
           format: date-time
         query_hash:
           type: string
+        overview: {$ref: '#/components/schemas/ProductOverview'}
       required:
       - items
       - next_cursor
       - snapshot_at
       - query_hash
+    ProductOverview:
+      type: object
+      additionalProperties: false
+      required: [summary, statistics, connections]
+      properties:
+        summary: {$ref: '#/components/schemas/ProductOverviewSummary'}
+        statistics:
+          type: object
+          additionalProperties: {$ref: '#/components/schemas/ProductOverviewStats'}
+          description: Statistics for the returned page, keyed by product UUID.
+        connections:
+          type: array
+          maxItems: 100
+          items: {$ref: '#/components/schemas/ProductConnectionProblem'}
+    ProductOverviewSummary:
+      type: object
+      additionalProperties: false
+      required: [total, by_line, installations, current, recent, activation_eligible, activated, attention, connection_count]
+      properties:
+        total: {type: integer, minimum: 0}
+        by_line:
+          type: object
+          required: [FREE, TOP, PRO]
+          additionalProperties: false
+          properties:
+            FREE: {type: integer, minimum: 0}
+            TOP: {type: integer, minimum: 0}
+            PRO: {type: integer, minimum: 0}
+        installations: {type: integer, minimum: 0}
+        current: {type: integer, minimum: 0}
+        recent: {type: integer, minimum: 0}
+        activation_eligible: {type: integer, minimum: 0}
+        activated: {type: integer, minimum: 0}
+        attention: {type: integer, minimum: 0}
+        connection_count: {type: integer, minimum: 0}
+    ProductOverviewStats:
+      type: object
+      additionalProperties: false
+      required: [months, installations, current, retained, recent, activation_eligible, activated, connection_count, missing_install_link, missing_instruction]
+      properties:
+        months:
+          type: array
+          minItems: 12
+          maxItems: 12
+          items:
+            type: object
+            additionalProperties: false
+            required: [month, count]
+            properties:
+              month: {type: string, pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'}
+              count: {type: integer, minimum: 0}
+        installations: {type: integer, minimum: 0}
+        current: {type: integer, minimum: 0}
+        retained: {type: integer, minimum: 0}
+        recent: {type: integer, minimum: 0}
+        activation_eligible: {type: integer, minimum: 0}
+        activated: {type: integer, minimum: 0}
+        connection_count: {type: integer, minimum: 0}
+        missing_install_link: {type: boolean}
+        missing_instruction: {type: boolean}
+    ProductConnectionProblem:
+      type: object
+      additionalProperties: false
+      required: [installation_id, product_id, name, line, account_id, amo_account_id, account_name, account_domain, since]
+      properties:
+        installation_id: {type: string, format: uuid}
+        product_id: {type: string, format: uuid}
+        name: {type: string}
+        line: {type: string, enum: [FREE, TOP, PRO]}
+        account_id: {type: string, format: uuid}
+        amo_account_id: {$ref: '#/components/schemas/ManagerAmoID'}
+        account_name: {type: [string, 'null']}
+        account_domain: {type: [string, 'null']}
+        since: {type: [string, 'null'], format: date-time}
     ManagerTrialPolicy:
       type: object
       additionalProperties: false
@@ -6475,10 +6438,6 @@ components:
       type: integer
       minimum: 1
       maximum: 9007199254740991
-    ManagerCompanyProjectionId:
-      type: string
-      format: uuid
-      description: UUID проекции CRM-компании. Не является runtime account_id.
     ManagerCompanySource:
       type: object
       additionalProperties: false
@@ -6531,196 +6490,6 @@ components:
       description: Времена относятся к полному поколению данных. Ошибка последней попытки не заменяет
         данные; локальное истечение переводит fresh в stale. Смена активной привязки очищает текущий
         снимок.
-    ManagerCompanyRuntimeAccount:
-      type: object
-      additionalProperties: false
-      properties:
-        account_id:
-          type: string
-          format: uuid
-        customer_account_id:
-          $ref: '#/components/schemas/ManagerAmoID'
-      required:
-      - account_id
-      - customer_account_id
-    ManagerCompanySummary:
-      type: object
-      additionalProperties: false
-      properties:
-        id:
-          $ref: '#/components/schemas/ManagerCompanyProjectionId'
-        crm_company_id:
-          $ref: '#/components/schemas/ManagerAmoID'
-        name:
-          type: string
-        customer_account_ids:
-          type: array
-          items:
-            $ref: '#/components/schemas/ManagerAmoID'
-        source_resolution:
-          type: string
-          enum:
-          - unknown
-          - zero
-          - one
-          - multiple
-        runtime_resolution:
-          type: string
-          enum:
-          - unresolved
-          - resolved
-          - partial
-          - ambiguous
-        runtime_accounts:
-          type: array
-          items:
-            $ref: '#/components/schemas/ManagerCompanyRuntimeAccount'
-      required:
-      - id
-      - crm_company_id
-      - name
-      - customer_account_ids
-      - source_resolution
-      - runtime_resolution
-      - runtime_accounts
-    ManagerCompanyList:
-      type: object
-      additionalProperties: false
-      properties:
-        sources:
-          type: array
-          items:
-            $ref: '#/components/schemas/SourceStatus'
-        observation:
-          type: object
-          required: [source, observed_at, freshness, data]
-          properties:
-            source: {type: string}
-            observed_at: {type: [string, 'null'], format: date-time}
-            freshness: {type: string}
-            data: {$ref: '#/components/schemas/ManagerCompanySource'}
-            error:
-              type: object
-              properties:
-                code: {type: string}
-                message: {type: string}
-        items:
-          anyOf:
-          - type: array
-            items:
-              $ref: '#/components/schemas/ManagerCompanySummary'
-          - type: 'null'
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-        source:
-          $ref: '#/components/schemas/ManagerCompanySource'
-      required:
-      - items
-      - next_cursor
-      - source
-      description: items=null до первого полного наблюдения; items=[] означает полный пустой каталог.
-        Курсор фиксирует поколение, активацию, сотрудника, версию прав и фильтры на 15 минут.
-    ManagerCompanyContactLink:
-      type: object
-      additionalProperties: false
-      properties:
-        crm_company_id:
-          $ref: '#/components/schemas/ManagerAmoID'
-        company_id:
-          anyOf:
-          - $ref: '#/components/schemas/ManagerCompanyProjectionId'
-          - type: 'null'
-      required:
-      - crm_company_id
-      - company_id
-    ManagerCompanyContact:
-      type: object
-      additionalProperties: false
-      properties:
-        id:
-          $ref: '#/components/schemas/ManagerAmoID'
-        name:
-          type: string
-        companies:
-          type: array
-          items:
-            $ref: '#/components/schemas/ManagerCompanyContactLink'
-      required:
-      - id
-      - name
-      - companies
-    ManagerCompanyDetail:
-      type: object
-      additionalProperties: false
-      properties:
-        sources:
-          type: array
-          items:
-            $ref: '#/components/schemas/SourceStatus'
-        observation:
-          type: object
-          required: [source, observed_at, freshness, data]
-          properties:
-            source: {type: string}
-            observed_at: {type: [string, 'null'], format: date-time}
-            freshness: {type: string}
-            data: {$ref: '#/components/schemas/ManagerCompanySource'}
-            error:
-              type: object
-              properties:
-                code: {type: string}
-                message: {type: string}
-        id:
-          $ref: '#/components/schemas/ManagerCompanyProjectionId'
-        crm_company_id:
-          $ref: '#/components/schemas/ManagerAmoID'
-        name:
-          type: string
-        customer_account_ids:
-          type: array
-          items:
-            $ref: '#/components/schemas/ManagerAmoID'
-        source_resolution:
-          type: string
-          enum:
-          - unknown
-          - zero
-          - one
-          - multiple
-        runtime_resolution:
-          type: string
-          enum:
-          - unresolved
-          - resolved
-          - partial
-          - ambiguous
-        runtime_accounts:
-          type: array
-          items:
-            $ref: '#/components/schemas/ManagerCompanyRuntimeAccount'
-        source:
-          $ref: '#/components/schemas/ManagerCompanySource'
-        contacts:
-          type: array
-          items:
-            $ref: '#/components/schemas/ManagerCompanyContact'
-        unresolved_relations:
-          type: array
-          items:
-            $ref: '#/components/schemas/ManagerCompanyContactLink'
-      required:
-      - id
-      - crm_company_id
-      - name
-      - customer_account_ids
-      - source_resolution
-      - runtime_resolution
-      - runtime_accounts
-      - source
-      - contacts
-      - unresolved_relations
     ManagerCompanyWorkflowStage:
       type: object
       additionalProperties: false

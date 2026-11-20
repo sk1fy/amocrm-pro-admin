@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Каталог «Виджеты» по макету](manager-widgets-layout.md).
+
 - [Клиенты по макету и отдельный раздел «Компании»](manager-clients-layout.md).
 
 - [Общая настройка сделок по установкам](installation-deal-settings.md).

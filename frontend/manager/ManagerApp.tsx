@@ -6,7 +6,6 @@ import { loginErrorMessage } from '../src/states/login'
 import { ManagerAccountCard } from './AccountCard'
 import { AccountCommands } from './accountCommands'
 import { AccountsPage } from './AccountsPage'
-import { CompaniesPage } from './CompaniesPage'
 import { getAccountLocation } from './accountsLocation'
 import { Timeline } from './Timeline'
 import { WidgetsPage } from './WidgetsPage'
@@ -78,7 +77,6 @@ function AuthenticatedManagerApp() {
     const scope = JSON.stringify([manager.id, manager.grants.slice().sort()])
     const section = workspaceSection(location.search)
     const clients = section === 'clients'
-    const companies = section === 'companies'
     const widgets = section === 'widgets'
     const feed = section === 'feed'
     const selected = getAccountLocation(location.search)
@@ -132,14 +130,10 @@ function AuthenticatedManagerApp() {
                   onForbidden={checkGrants}
                 />
               ) : (
-                <h1>{companies ? 'Компании' : clients ? 'Клиенты' : 'Установки'}</h1>
+                <h1>{clients ? 'Клиенты' : 'Установки'}</h1>
               )}
               <p role="alert">
-                {companies && !selected
-                  ? 'Нет доступа к компаниям.'
-                  : clients || selected
-                    ? 'Нет доступа к клиентам.'
-                    : 'Нет доступа к установкам.'}
+                {clients || selected ? 'Нет доступа к клиентам.' : 'Нет доступа к установкам.'}
               </p>
             </>
           ) : selected ? (
@@ -154,13 +148,6 @@ function AuthenticatedManagerApp() {
             />
           ) : clients ? (
             <AccountsPage
-              {...location}
-              scope={scope}
-              onExpired={expire}
-              onForbidden={checkGrants}
-            />
-          ) : companies ? (
-            <CompaniesPage
               {...location}
               scope={scope}
               onExpired={expire}

@@ -1,12 +1,7 @@
 import { apiFetchResponse } from '../src/api/client'
 import { date, integer, isAmoAccountId, isUUID, record } from './installationsApi'
-import { isAccountId } from './accountsApi'
 import { managerApi } from './session'
 
-export type CompanyProjectionId = string & { readonly __brand: 'CompanyProjectionId' }
-export function isCompanyProjectionId(value: unknown): value is CompanyProjectionId {
-  return isUUID(value)
-}
 function invalid(): never {
   throw new Error('invalid company workflow response')
 }
@@ -65,75 +60,6 @@ export function parseCompanySource(raw: unknown) {
   )
     invalid()
   return source
-}
-function parseSummary(raw: unknown) {
-  const item = record(raw)
-  if (!isCompanyProjectionId(item.id)) invalid()
-  const claims = array(item.customer_account_ids, crmId)
-  const links = array(item.runtime_accounts, (rawLink) => {
-    const link = object(rawLink, ['account_id', 'customer_account_id'])
-    if (!isAccountId(link.account_id)) invalid()
-    const customer = crmId(link.customer_account_id)
-    if (!claims.includes(customer)) invalid()
-    return { account_id: link.account_id, customer_account_id: customer }
-  })
-  if (
-    new Set(claims).size !== claims.length ||
-    new Set(links.map((l) => l.account_id)).size !== links.length
-  )
-    invalid()
-  return {
-    id: item.id,
-    crm_company_id: crmId(item.crm_company_id),
-    name: text(item.name),
-    customer_account_ids: claims,
-    source_resolution: text(item.source_resolution),
-    runtime_resolution: text(item.runtime_resolution),
-    runtime_accounts: links,
-  }
-}
-export type CompanySummary = ReturnType<typeof parseSummary>
-function link(raw: unknown) {
-  const item = object(raw, ['crm_company_id', 'company_id'])
-  const id = item.company_id
-  if (id !== null && !isCompanyProjectionId(id)) invalid()
-  return { crm_company_id: crmId(item.crm_company_id), company_id: id }
-}
-export function parseCompanyList(raw: unknown) {
-  const page = object(raw, ['items', 'next_cursor', 'source', 'sources', 'observation'])
-  const source = parseCompanySource(page.source)
-  const items = nullable(page.items, (v) => array(v, parseSummary))
-  if ((items !== null) !== source.complete) invalid()
-  return { items, next_cursor: nullable(page.next_cursor, text), source }
-}
-export function parseCompanyDetail(raw: unknown) {
-  const item = object(raw, [
-    'id',
-    'crm_company_id',
-    'name',
-    'customer_account_ids',
-    'source_resolution',
-    'runtime_resolution',
-    'runtime_accounts',
-    'source',
-    'contacts',
-    'unresolved_relations',
-    'sources',
-    'observation',
-  ])
-  return {
-    ...parseSummary(item),
-    source: parseCompanySource(item.source),
-    contacts: array(item.contacts, (rawContact) => {
-      const contact = object(rawContact, ['id', 'name', 'companies'])
-      return {
-        id: crmId(contact.id),
-        name: text(contact.name),
-        companies: array(contact.companies, link),
-      }
-    }),
-    unresolved_relations: array(item.unresolved_relations, link),
-  }
 }
 export function parseWorkflowMetadata(raw: unknown) {
   const item = object(raw, [
@@ -200,19 +126,6 @@ export type WorkflowCommand = Readonly<{
   version: number
   body: string
 }>
-export async function listCompanies(query: string, signal: AbortSignal) {
-  const response = await apiFetchResponse<unknown>(
-    managerApi + '/companies' + (query ? '?' + query : ''),
-    { signal },
-  )
-  return parseCompanyList(response.data)
-}
-export async function getCompany(id: CompanyProjectionId, signal: AbortSignal) {
-  const response = await apiFetchResponse<unknown>(managerApi + '/companies/' + id, { signal })
-  const company = parseCompanyDetail(response.data)
-  if (company.id !== id) invalid()
-  return company
-}
 export async function getWorkflowMetadata(signal: AbortSignal) {
   const response = await apiFetchResponse<unknown>(managerApi + '/company-workflow-metadata', {
     signal,
