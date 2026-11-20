@@ -29,7 +29,6 @@ import card from './AccountCard.module.css'
 
 const accountListLabels: Partial<Record<ReturnType<typeof workspaceSection>, string>> = {
   clients: 'Клиенты',
-  companies: 'Компании',
   feed: 'Лента событий',
 }
 

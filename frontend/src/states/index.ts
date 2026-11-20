@@ -50,6 +50,7 @@ export type StateDomain =
   | 'product_access'
   | 'product_access_source'
   | 'product_availability'
+  | 'product_attention'
   | 'product_trial'
   | 'company_source'
   | 'company_runtime'
@@ -309,6 +310,13 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     reconciling: { tone: 'attention', label: 'Уточняем наличие сделки' },
     failed: { tone: 'error', label: 'Ошибка создания сделки' },
     skipped: { tone: 'off', label: 'Без сделки' },
+  },
+  product_attention: {
+    no_known_issues: { tone: 'ok', label: 'Нет известных проблем' },
+    connection: { tone: 'error', label: 'Нет связи' },
+    activation: { tone: 'attention', label: 'Мало записанных активаций' },
+    installation_link: { tone: 'action', label: 'Нет ссылки на установку' },
+    instruction_link: { tone: 'action', label: 'Нет инструкции' },
   },
   product_line: {
     FREE: { tone: 'ok', label: 'FREE' },

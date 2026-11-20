@@ -60,6 +60,85 @@ export function parseProduct(raw: unknown) {
   }
 }
 export type Product = ReturnType<typeof parseProduct>
+
+function parseProductOverview(raw: unknown) {
+  const value = record(raw)
+  const summary = record(value.summary)
+  const lines = record(summary.by_line)
+  return {
+    summary: {
+      total: integer(summary.total, 0),
+      by_line: {
+        FREE: integer(lines.FREE, 0),
+        TOP: integer(lines.TOP, 0),
+        PRO: integer(lines.PRO, 0),
+      },
+      installations: integer(summary.installations, 0),
+      current: integer(summary.current, 0),
+      recent: integer(summary.recent, 0),
+      activation_eligible: integer(summary.activation_eligible, 0),
+      activated: integer(summary.activated, 0),
+      attention: integer(summary.attention, 0),
+      connection_count: integer(summary.connection_count, 0),
+    },
+    statistics: Object.fromEntries(
+      Object.entries(record(value.statistics)).map(([id, rawStats]) => {
+        const stats = record(rawStats)
+        const months = array(stats.months, (rawMonth) => {
+          const month = record(rawMonth)
+          const key = text(month.month)
+          if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(key)) invalid()
+          return { month: key, count: integer(month.count, 0) }
+        })
+        if (
+          !isProductId(id) ||
+          months.length !== 12 ||
+          typeof stats.missing_install_link !== 'boolean' ||
+          typeof stats.missing_instruction !== 'boolean'
+        )
+          invalid()
+        return [
+          id,
+          {
+            months,
+            installations: integer(stats.installations, 0),
+            current: integer(stats.current, 0),
+            retained: integer(stats.retained, 0),
+            recent: integer(stats.recent, 0),
+            activation_eligible: integer(stats.activation_eligible, 0),
+            activated: integer(stats.activated, 0),
+            connection_count: integer(stats.connection_count, 0),
+            missing_install_link: stats.missing_install_link,
+            missing_instruction: stats.missing_instruction,
+          },
+        ] as const
+      }),
+    ),
+    connections: array(value.connections, (rawConnection) => {
+      const row = record(rawConnection)
+      const { installation_id, product_id, account_id, line } = row
+      if (
+        !isUUID(installation_id) ||
+        !isProductId(product_id) ||
+        !isUUID(account_id) ||
+        (line !== 'FREE' && line !== 'TOP' && line !== 'PRO')
+      )
+        invalid()
+      return {
+        installation_id,
+        product_id,
+        account_id,
+        line,
+        name: text(row.name),
+        amo_account_id: text(row.amo_account_id),
+        account_name: row.account_name === null ? null : text(row.account_name),
+        account_domain: row.account_domain === null ? null : text(row.account_domain),
+        since: row.since === null ? null : date(row.since),
+      }
+    }),
+  }
+}
+export type ProductOverview = ReturnType<typeof parseProductOverview>
 export type ProductCommand =
   | Readonly<{ kind: 'product-create'; code: string; key: string; body: string }>
   | Readonly<{
@@ -80,6 +159,7 @@ export async function listProducts(search: string, signal: AbortSignal) {
     next_cursor: page.next_cursor === null ? null : text(page.next_cursor),
     snapshot_at: date(page.snapshot_at),
     query_hash: text(page.query_hash),
+    overview: page.overview === undefined ? undefined : parseProductOverview(page.overview),
   }
 }
 export async function getProduct(id: ProductId, signal: AbortSignal) {

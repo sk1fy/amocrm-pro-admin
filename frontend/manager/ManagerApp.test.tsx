@@ -98,6 +98,24 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+it.each([
+  '?section=companies&companies_q=old&clients_q=retail',
+  '?section=clients&clients_tab=companies&company=fixture&clients_q=retail',
+])('redirects a retired company URL to clients (%s)', async (search) => {
+  const requests: string[] = []
+  replaceFetch((url) => {
+    requests.push(url.pathname)
+    return url.pathname.endsWith('/me') ? Response.json(manager) : error(503)
+  })
+  openManager(search)
+  expect(await screen.findByRole('heading', { name: 'Клиенты' }, { timeout: 4000 })).toBeVisible()
+  expect(window.location.search).toBe('?section=clients&clients_q=retail')
+  const nav = within(screen.getByRole('navigation', { name: 'Кабинет менеджеров' }))
+  expect(nav.getByRole('link', { name: 'Клиенты' })).toHaveAttribute('aria-current', 'page')
+  expect(nav.queryByRole('link', { name: 'Компании' })).toBeNull()
+  expect(requests.some((path) => path.includes('/companies'))).toBe(false)
+})
+
 it('keeps future sections out of the workspace and uses the real review filter', async () => {
   const fetch = replaceFetch((url) =>
     url.pathname.endsWith('/me') ? Response.json(manager) : installationPage(row),
@@ -107,7 +125,6 @@ it('keeps future sections out of the workspace and uses the real review filter',
   expect(nav.getAllByRole('link').map((link) => link.getAttribute('aria-label'))).toEqual([
     'Установки',
     'Клиенты',
-    'Компании',
     'Виджеты',
     'Лента событий',
     'Сотрудники',

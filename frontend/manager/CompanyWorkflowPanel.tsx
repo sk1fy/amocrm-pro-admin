@@ -108,7 +108,7 @@ function CompanyWorkflowPanel(access: AccountAccess) {
       ) : metadata.isError ? (
         <ReadFailure error={metadata.error} retry={refresh} />
       ) : (
-        <CompanySource source={metadata.data.source} compact />
+        <CompanySource source={metadata.data.source} />
       )}
       {meta?.pipelines === null ? (
         <p>Полного снимка воронок пока нет.</p>

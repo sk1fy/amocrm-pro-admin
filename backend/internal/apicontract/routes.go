@@ -47,8 +47,6 @@ var (
 	ManagerPortraitNicheUpdate         = Route{Method: http.MethodPatch, Path: ManagerPrefix + "/portrait-niches/{id}"}
 	ManagerPortraitNicheDelete         = Route{Method: http.MethodDelete, Path: ManagerPrefix + "/portrait-niches/{id}"}
 	ManagerPortraitNicheMerge          = Route{Method: http.MethodPost, Path: ManagerPrefix + "/portrait-niches/{id}/merge"}
-	ManagerCompanies                   = Route{Method: http.MethodGet, Path: ManagerPrefix + "/companies"}
-	ManagerCompany                     = Route{Method: http.MethodGet, Path: ManagerPrefix + "/companies/{id}"}
 	ManagerCompanyWorkflowMetadata     = Route{Method: http.MethodGet, Path: ManagerPrefix + "/company-workflow-metadata"}
 	ManagerInstallationDealSettings    = Route{Method: http.MethodGet, Path: ManagerPrefix + "/installation-deal-settings"}
 	ManagerInstallationDealSettingsSet = Route{Method: http.MethodPut, Path: ManagerPrefix + "/installation-deal-settings"}
@@ -132,7 +130,7 @@ var (
 		ManagerPortraitNicheUpdate,
 		ManagerPortraitNicheDelete,
 		ManagerPortraitNicheMerge,
-		ManagerCompanies, ManagerCompany, ManagerCompanyWorkflowMetadata, ManagerProductCompanyWorkflow, ManagerProductCompanyWorkflowSet, ManagerInstallationDealSettings, ManagerInstallationDealSettingsSet,
+		ManagerCompanyWorkflowMetadata, ManagerProductCompanyWorkflow, ManagerProductCompanyWorkflowSet, ManagerInstallationDealSettings, ManagerInstallationDealSettingsSet,
 		ManagerProducts, ManagerProductCreate, ManagerProduct, ManagerProductUpdate, ManagerProductMetrics,
 		Distribution, DistributionTrace,
 		ConnectionCommand, IntegrationCreateCommand, IntegrationCommand, JobRetry, DeliveryRetry, AdminOperations, AdminOperation,

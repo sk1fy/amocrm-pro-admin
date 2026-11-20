@@ -57,8 +57,6 @@ func AccountEndpoints() []AccountEndpoint {
 	return []AccountEndpoint{
 		{apicontract.ManagerFeed, "listFeed", "", auth.GrantFeedRead, http.StatusOK, newManagerModel[wire.EventList]},
 		{apicontract.ManagerAccountHistory, "listAccountHistory", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.EventList]},
-		{apicontract.ManagerCompanies, "listCompanies", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.CompanyList]},
-		{apicontract.ManagerCompany, "getCompany", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.CompanyDetail]},
 		{apicontract.ManagerCompanyWorkflowMetadata, "getCompanyWorkflowMetadata", "", auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.CompanyWorkflowMetadata]},
 		{apicontract.ManagerInstallationDealSettings, "getInstallationDealSettings", "", auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.InstallationDealSettings]},
 		{apicontract.ManagerInstallationDealSettingsSet, "setInstallationDealSettings", kindInstallationDealSettings, auth.GrantCatalogManage, http.StatusOK, newManagerModel[wire.InstallationDealSettings]},
@@ -256,6 +254,9 @@ func (s *Service) ReadAccount(ctx context.Context, endpoint AccountEndpoint, tar
 	if err != nil {
 		return AccountResponse{}, err
 	}
+	if endpoint.action == "listProducts" && query.Get("overview") == "true" && !hasGrant(actor, auth.GrantStatsRead) {
+		return AccountResponse{}, ErrForbidden
+	}
 	body, err := accountBody(operation, raw)
 	if err != nil {
 		return AccountResponse{}, err
@@ -396,10 +397,6 @@ func validManagerAccountDTO(
 	value any, target uuid.UUID, query url.Values, raw []byte, response *http.Response, item intent,
 ) bool {
 	switch model := value.(type) {
-	case *wire.CompanyList:
-		return validCompanyList(model, query)
-	case *wire.CompanyDetail:
-		return validCompanyDetail(model, target)
 	case *wire.CompanyWorkflowMetadata:
 		return validCompanyMetadata(model)
 	case *wire.InstallationDealSettings:
@@ -435,6 +432,38 @@ func validManagerAccountDTO(
 				return false
 			}
 			seen[product.Id] = true
+		}
+		if (model.Overview != nil) != (query.Get("overview") == "true") {
+			return false
+		}
+		if overview := model.Overview; overview != nil {
+			summary := overview.Summary
+			if len(overview.Statistics) != len(seen) || summary.Total < len(seen) ||
+				summary.Total != summary.ByLine.FREE+summary.ByLine.TOP+summary.ByLine.PRO ||
+				summary.Attention > summary.Total || summary.Activated > summary.ActivationEligible ||
+				summary.ActivationEligible > summary.Installations || summary.Recent > summary.Installations ||
+				len(overview.Connections) != min(100, summary.ConnectionCount) {
+				return false
+			}
+			for id := range seen {
+				stats, ok := overview.Statistics[id.String()]
+				if !ok || stats.Retained > stats.Installations || stats.Retained > stats.Current ||
+					stats.Recent > stats.Installations || stats.Activated > stats.ActivationEligible ||
+					stats.ActivationEligible > stats.Installations || stats.ConnectionCount > stats.Current {
+					return false
+				}
+				installations, previous := 0, ""
+				for _, item := range stats.Months {
+					if item.Month <= previous {
+						return false
+					}
+					installations += item.Count
+					previous = item.Month
+				}
+				if installations != stats.Installations {
+					return false
+				}
+			}
 		}
 	case *wire.AccountList:
 		limit := 25

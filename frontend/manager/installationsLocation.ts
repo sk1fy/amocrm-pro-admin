@@ -39,17 +39,48 @@ export function updateInstallationSearch(search: string, update: FilterUpdate): 
   return params.toString()
 }
 
+function managerSearch(search: string) {
+  const params = new URLSearchParams(search)
+  const section = params.get('section')
+  if (
+    section !== 'companies' &&
+    !(section === 'clients' && (params.get('clients_tab') === 'companies' || params.has('company')))
+  ) {
+    return search
+  }
+  params.set('section', 'clients')
+  for (const key of [
+    'company',
+    'clients_tab',
+    'companies_q',
+    'companies_cursor',
+    'companies_limit',
+  ]) {
+    params.delete(key)
+  }
+  return '?' + params.toString()
+}
+
 export function useManagerLocation() {
-  const [search, setSearch] = useState(() => window.location.search)
+  const [search, setSearch] = useState(() => managerSearch(window.location.search))
   useEffect(() => {
-    const onPopState = () => setSearch(window.location.search)
+    const onPopState = () => {
+      const url = new URL(window.location.href)
+      const next = managerSearch(url.search)
+      if (url.search !== next) {
+        url.search = next
+        window.history.replaceState(window.history.state, '', url)
+      }
+      setSearch(next)
+    }
+    onPopState()
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
 
   function navigate(search: string, replace = false) {
     const url = new URL(window.location.href)
-    url.search = search
+    url.search = managerSearch(search)
     if (url.href === window.location.href) return
     if (replace) window.history.replaceState(null, '', url)
     else window.history.pushState(null, '', url)

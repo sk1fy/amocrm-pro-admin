@@ -16,8 +16,12 @@ func TestManagerCompanyWorkflowContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	for _, path := range []string{"/api/v1/managers/companies", "/api/v1/managers/companies/{id}"} {
+		if browser.Paths.Find(path) != nil {
+			t.Fatalf("retired directory route is still exposed: %s", path)
+		}
+	}
 	for _, route := range []struct{ method, path, grant string }{
-		{"GET", "/companies", "clients.read"}, {"GET", "/companies/{id}", "clients.read"},
 		{"GET", "/installation-deal-settings", "catalog.manage"}, {"PUT", "/installation-deal-settings", "catalog.manage"},
 		{"GET", "/company-workflow-metadata", "catalog.manage"}, {"GET", "/products/{id}/company-workflow", "catalog.manage"}, {"PUT", "/products/{id}/company-workflow", "catalog.manage"},
 	} {

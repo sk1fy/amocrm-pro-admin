@@ -487,20 +487,18 @@ Staff содержит `id`, `email`, `name`, `status`, `grants`, `version`,
 с `self_escalation`. Отключение последнего менеджерского администратора
 в техническом API также возвращает 409 с `last_administrator`.
 
-## Компании и workflow менеджеров P12.2
+## Настройка сделок менеджеров
 
 Префикс `/api/v1/managers`. Источник — принятый manager API Platform.
 
 | Метод | Путь | Grant |
 | --- | --- | --- |
-| GET | `/companies` | clients.read |
-| GET | `/companies/{id}` | clients.read |
 | GET | `/company-workflow-metadata` | catalog.manage |
 | GET | `/installation-deal-settings` | catalog.manage |
 | PUT | `/installation-deal-settings` | catalog.manage |
 
 Источник, nullable снимки и строковые CRM ID сохраняют смысл владельца.
-Чтения компании и метаданных дополняются `observation` и `sources` BFF.
+Метаданные дополняются `observation` и `sources` BFF.
 GET workflow не создаёт строку: без настройки версия 1, конфигурация null.
 PUT использует собственный If-Match workflow, Idempotency-Key и CSRF.
 Первая запись возвращает версию 2 и ревизию настройки 1. Версия
@@ -524,3 +522,15 @@ PUT использует собственный If-Match workflow, Idempotency-K
 `POST /api/v1/managers/installations/{id}/crm-deal/retry` ставит повтор
 по версии сделки. Требуются `clients.write`, `Idempotency-Key` и
 `If-Match`. Ответ `202` с Location ведёт к операции менеджера.
+
+## Сводка каталога виджетов
+
+`GET /api/v1/managers/products?overview=true` требует
+`clients.read` и `stats.read`. Ответ добавляет `overview` со
+сводкой по каталогу, статистикой по UUID продуктов текущей
+страницы и первыми 100 установками в очереди «Нет связи».
+
+`sort` принимает `installations`, `name` или `code`.
+Расширенный список упорядочен по числу установок по умолчанию.
+`attention=true` фильтрует каталог до пагинации. Сводка и
+очередь остаются общими для всех страниц.
