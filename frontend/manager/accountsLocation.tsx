@@ -5,7 +5,6 @@ import { isAccountId } from './accountsApi'
 export const accountTabs = {
   widgets: 'Наши виджеты',
   portrait: 'Портрет клиента',
-  audit: 'Аудит',
   history: 'История',
   users: 'Пользователи',
 }

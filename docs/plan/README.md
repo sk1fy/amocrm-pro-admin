@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Скрыть аудит в карточке клиента](hide-manager-audit.md).
+
 - [Карточка клиента по макету](manager-client-card.md).
 
 - [Лента событий и сотрудники по макету](manager-feed-staff-layout.md).

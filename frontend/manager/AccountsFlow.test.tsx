@@ -4,6 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { resetApiSession } from '../src/api/client'
 import {
   accountSearch,
+  getAccountLocation,
   getAccountSearch,
   listSearch,
   ratingField,
@@ -111,6 +112,9 @@ it('keeps list and card navigation state separate and forwards the same portrait
   expect(request.query.get('cursor')).toBe('opaque+/=')
   expect(request.query.has('tab')).toBe(false)
   expect(listSearch(accountSearch(query, account, 'portrait'))).toBe(query)
+  const legacyAudit = 'section=clients&clients_q=pilot&account=' + account + '&tab=audit'
+  expect(getAccountLocation(legacyAudit)).toMatchObject({ id: account, tab: 'widgets' })
+  expect(listSearch(legacyAudit)).toBe('section=clients&clients_q=pilot')
 })
 
 it('applies the group and classification from a card row, then clears only the classification from the card heading', async () => {

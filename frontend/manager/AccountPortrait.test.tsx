@@ -16,7 +16,13 @@ const portrait = {
   company: { work_types: ['гибрид'], rating: 0 },
   maturity_signals: [],
   topics: [{ id: topic, note: 'Согласовали следующий шаг' }],
-  audit_dates: [],
+  audit_dates: [
+    {
+      id: 'dc35c307-c75a-4177-a388-3d3dc440653b',
+      date: '2026-11-19',
+      note: 'Заметка ручного аудита',
+    },
+  ],
 }
 
 afterEach(() => {
@@ -68,6 +74,8 @@ it('searches the full niche catalog and keeps existing work types when selecting
     </QueryClientProvider>,
   )
   const input = await screen.findByRole('searchbox', { name: 'Поиск по нишам' })
+  expect(screen.queryByText('Аудит', { exact: true })).not.toBeInTheDocument()
+  expect(screen.queryByText('Заметка ручного аудита', { exact: true })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: /^0$/ })).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByText('Заметки заполнены · 1 из 1')).toBeVisible()
   fireEvent.change(input, { target: { value: 'Производство' } })
