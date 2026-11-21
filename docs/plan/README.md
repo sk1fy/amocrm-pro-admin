@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Карточка клиента по макету](manager-client-card.md).
+
 - [Лента событий и сотрудники по макету](manager-feed-staff-layout.md).
 
 - [Каталог «Виджеты» по макету](manager-widgets-layout.md).

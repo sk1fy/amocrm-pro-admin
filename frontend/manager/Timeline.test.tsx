@@ -48,6 +48,7 @@ it('refreshes cached first-page data when explicitly refreshing from page two', 
     query_hash: 'old',
   }
   client.setQueryData(['managers', 'timeline', 'subject', context, ''], oldPage)
+  client.setQueryData(['managers', 'timeline', 'subject', context, 'cursor=next'], oldPage)
   let finishRefresh: (value: typeof oldPage) => void = () => undefined
   const refresh = new Promise<typeof oldPage>((resolve) => {
     finishRefresh = resolve
@@ -190,4 +191,41 @@ it('applies kinds and period while retaining linked filters and clearing the cur
   expect(applied.get('feed_from')).toBe('2026-11-17')
   expect(applied.get('feed_limit')).toBe('1')
   expect(applied.has('feed_cursor')).toBe(false)
+})
+
+it('shows the widget and applies history groups across the event stream', async () => {
+  const labeledEvent = parseEvent({ ...event, product_display_name: 'Тестовый виджет' })
+  vi.mocked(listEvents).mockResolvedValue({
+    items: [labeledEvent],
+    next_cursor: null,
+    snapshot_at: event.occurred_at,
+    query_hash: 'snapshot',
+  })
+  const navigate = vi.fn<(search: string) => void>()
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <Timeline
+        context={{ kind: 'history', account }}
+        search="section=installations&tab=history&history_from=2026-11-17&history_cursor=old"
+        navigate={navigate}
+        scope="subject"
+        grants={['clients.read']}
+        onExpired={vi.fn()}
+        onForbidden={vi.fn()}
+      />
+    </QueryClientProvider>,
+  )
+  expect(await screen.findByRole('cell', { name: 'Тестовый виджет' })).toBeVisible()
+  expect(screen.getByRole('button', { name: 'Всё' })).toHaveAttribute('aria-pressed', 'true')
+  fireEvent.click(screen.getByRole('button', { name: 'Правки' }))
+  const search = new URLSearchParams(navigate.mock.calls[0]?.[0])
+  expect(search.get('section')).toBe('installations')
+  expect(search.get('history_from')).toBe('2026-11-17')
+  expect(search.has('history_cursor')).toBe(false)
+  expect(search.getAll('history_kind')).toEqual([
+    'installation_reviewed',
+    'installation_unreviewed',
+    'account_profile_updated',
+    'portrait_updated',
+  ])
 })

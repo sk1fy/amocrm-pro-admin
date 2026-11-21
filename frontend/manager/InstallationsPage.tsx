@@ -45,7 +45,7 @@ function installationAge(installed: string, snapshot: string) {
     : relativeDays.format(-Math.sign(age) * days, 'day')
 }
 
-function ContactCell({ contact }: { contact: Installation['contact'] }) {
+export function ContactCell({ contact }: { contact: Installation['contact'] }) {
   if (!contact)
     return <StatusBadge domain="installation_contact" state="unavailable" variant="text" />
   return (
@@ -60,7 +60,7 @@ function ContactCell({ contact }: { contact: Installation['contact'] }) {
   )
 }
 
-function DealCell({
+export function DealCell({
   deal,
   retry,
   disabled,
@@ -93,7 +93,7 @@ function DealCell({
   )
 }
 
-function ReviewBadge({ row }: { row: Installation }) {
+export function ReviewBadge({ row }: { row: Installation }) {
   return (
     <StatusBadge
       domain="installation_review"
@@ -101,6 +101,40 @@ function ReviewBadge({ row }: { row: Installation }) {
       calm
     />
   )
+}
+
+export function InstallationReviewFeedback({
+  review,
+}: {
+  review: ReturnType<typeof useInstallationReview>
+}) {
+  const { state } = review
+  if (state.kind === 'checking') {
+    return (
+      <p className={styles.message} role="status">
+        Проверяем результат изменения отметки…
+      </p>
+    )
+  }
+  if (state.kind === 'uncertain') {
+    return (
+      <div className={styles.message} role="alert">
+        <StatusBadge domain="operation" state="unknown_outcome" />
+        <button type="button" onClick={review.retry} disabled={review.retryBlocked}>
+          Повторить запрос отметки
+        </button>
+        {review.retryBlocked ? <span>Повтор станет доступен после паузы сервера.</span> : null}
+      </div>
+    )
+  }
+  if (state.kind === 'notice') {
+    return (
+      <p className={styles.message} role={state.error ? 'alert' : 'status'}>
+        {state.message}
+      </p>
+    )
+  }
+  return null
 }
 
 function InstallationDetails({ row, snapshot }: { row: Installation; snapshot: string }) {
@@ -325,27 +359,7 @@ export function InstallationsPage({
               Не удалось подтвердить повтор. Проверьте состояние сделки.
             </p>
           ) : null}
-          {review.state.kind === 'checking' ? (
-            <p className={styles.message} role="status">
-              Проверяем результат изменения отметки…
-            </p>
-          ) : null}
-          {review.state.kind === 'uncertain' ? (
-            <div className={styles.message} role="alert">
-              <StatusBadge domain="operation" state="unknown_outcome" />
-              <button type="button" onClick={review.retry} disabled={review.retryBlocked}>
-                Повторить запрос отметки
-              </button>
-              {review.retryBlocked ? (
-                <span>Повтор станет доступен после паузы сервера.</span>
-              ) : null}
-            </div>
-          ) : null}
-          {review.state.kind === 'notice' ? (
-            <p className={styles.message} role={review.state.error ? 'alert' : 'status'}>
-              {review.state.message}
-            </p>
-          ) : null}
+          <InstallationReviewFeedback review={review} />
           {list.isFetching || (list.isPending && !list.isPaused) ? (
             <p className={styles.message} role="status">
               Загружаем установки…

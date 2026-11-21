@@ -21,6 +21,7 @@ export function AccountForm({
   submitLabel = 'Сохранить',
   onCancel,
   inline = false,
+  actionsOnEdit = false,
 }: EditorProps & {
   id: string
   title: string
@@ -29,8 +30,13 @@ export function AccountForm({
   submitLabel?: string
   onCancel?: () => void
   inline?: boolean
+  actionsOnEdit?: boolean
   command: (fields: Fields, original: Fields, version: number, key: string) => AccountCommand
-  children: (values: Fields, edit: (name: string, value: string) => void) => ReactNode
+  children: (
+    values: Fields,
+    edit: (name: string, value: string) => void,
+    hasDraft: boolean,
+  ) => ReactNode
   current?: ReactNode
 }) {
   const attempt = useAccountCommand(id, { onSaved, onExpired, onForbidden })
@@ -52,31 +58,35 @@ export function AccountForm({
           disabled={attempt.locked}
         >
           {inline ? null : <legend>{title}</legend>}
-          {children(draft?.values ?? initial, (name, value) =>
-            attempt.edit(name, value, initial, version),
+          {children(
+            draft?.values ?? initial,
+            (name, value) => attempt.edit(name, value, initial, version),
+            !!draft,
           )}
         </fieldset>
-        <div className={styles.actions}>
-          <button
-            type="submit"
-            data-variant={inline ? 'primary' : undefined}
-            disabled={!draft || attempt.locked || state.kind === 'conflict'}
-          >
-            {submitLabel}
-          </button>
-          {onCancel ? (
+        {!actionsOnEdit || draft ? (
+          <div className={styles.actions}>
             <button
-              type="button"
-              disabled={attempt.locked}
-              onClick={() => {
-                attempt.discardDraft()
-                onCancel()
-              }}
+              type="submit"
+              data-variant={inline ? 'primary' : undefined}
+              disabled={!draft || attempt.locked || state.kind === 'conflict'}
             >
-              Отмена
+              {submitLabel}
             </button>
-          ) : null}
-        </div>
+            {onCancel || actionsOnEdit ? (
+              <button
+                type="button"
+                disabled={attempt.locked}
+                onClick={() => {
+                  attempt.discardDraft()
+                  onCancel?.()
+                }}
+              >
+                Отмена
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </form>
       <VersionConflict command={attempt} version={version} latest={initial}>
         {current}

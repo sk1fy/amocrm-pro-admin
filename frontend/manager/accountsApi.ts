@@ -144,6 +144,7 @@ function parseAccount(raw: unknown) {
   const item = record(raw)
   return {
     ...parseAccountSummary(item),
+    identity_observed_at: optional(item.identity_observed_at, date),
     note: nullable(item.note, text),
     region: nullable(item.region, text),
     time_zone: nullable(item.time_zone, text),
@@ -255,6 +256,52 @@ export async function listUsers(account: AccountId, signal: AbortSignal) {
   )
 }
 
+const portraitPersonRoles = ['decision_maker', 'influencer', 'billing', 'setup', 'partner'] as const
+
+export type PortraitPerson = {
+  id: string
+  name: string
+  phone?: string
+  crm_url?: string
+  roles: (typeof portraitPersonRoles)[number][]
+}
+
+function parsePortraitPerson(raw: unknown): PortraitPerson {
+  const person = record(raw)
+  const crmUrl = optional(person.crm_url, text)
+  const phone = optional(person.phone, text)
+  if (
+    (crmUrl &&
+      !/^https:\/\/rakurscrm\.amocrm\.ru\/contacts\/detail\/[1-9][0-9]{0,18}\/?$/.test(crmUrl)) ||
+    (phone && !/^\+?[0-9(). -]*[0-9][0-9(). -]*$/.test(phone))
+  )
+    invalid()
+  return {
+    id: uuid(person.id),
+    name: text(person.name),
+    phone,
+    crm_url: crmUrl,
+    roles: array(person.roles, (role) => listedValue(role, portraitPersonRoles)),
+  }
+}
+
+function parseWidgetTier(raw: unknown) {
+  const tier = record(raw)
+  const working = integer(tier.working, 0)
+  const total = integer(tier.total, 0)
+  if (working > total) invalid()
+  return { working, total }
+}
+
+function parseWidgetTiers(raw: unknown) {
+  const tiers = record(raw)
+  return {
+    free_installed: integer(tiers.free_installed, 0),
+    top: parseWidgetTier(tiers.top),
+    pro: parseWidgetTier(tiers.pro),
+  }
+}
+
 function parsePortrait(raw: unknown) {
   const item = record(raw)
   const company = record(item.company)
@@ -262,6 +309,8 @@ function parsePortrait(raw: unknown) {
   return {
     account_id: item.account_id,
     template_version: integer(item.template_version, 1),
+    people: optional(item.people, (value) => array(value, parsePortraitPerson)) ?? [],
+    widget_tiers: optional(item.widget_tiers, parseWidgetTiers),
     version: integer(item.version, 1),
     company: {
       site: optional(company.site, (value) => nullable(value, text)),
@@ -303,13 +352,33 @@ export async function getPortrait(account: AccountId, signal: AbortSignal) {
   return portrait
 }
 
+export type PortraitTemplateTopic = {
+  id: string
+  title: string
+  prompts: string[]
+  leader?: string
+  market_categories?: string[]
+  answer_mode?: 'note' | 'yes_no'
+  warmth_steps?: string[]
+}
+
 export function parseTemplate(raw: unknown) {
   const item = record(raw)
   return {
     version: integer(item.version, 1),
-    topics: array(item.topics, (value) => {
+    topics: array(item.topics, (value): PortraitTemplateTopic => {
       const topic = record(value)
-      return { id: uuid(topic.id), title: text(topic.title), prompts: array(topic.prompts, text) }
+      return {
+        id: uuid(topic.id),
+        title: text(topic.title),
+        prompts: array(topic.prompts, text),
+        leader: optional(topic.leader, text),
+        market_categories: optional(topic.market_categories, (value) => array(value, text)),
+        answer_mode: optional(topic.answer_mode, (value) =>
+          listedValue(value, ['note', 'yes_no'] as const),
+        ),
+        warmth_steps: optional(topic.warmth_steps, (value) => array(value, text)),
+      }
     }),
   }
 }
@@ -323,9 +392,10 @@ export async function getTemplate(signal: AbortSignal) {
   return template
 }
 
-export async function listNiches(cursor: string, signal: AbortSignal) {
+export async function listNiches(cursor: string, signal: AbortSignal, search = '') {
   const query = new URLSearchParams({ limit: '100' })
   if (cursor) query.set('cursor', cursor)
+  if (search) query.set('q', search)
   const { data } = await apiFetchResponse<unknown>(managerApi + '/portrait-niches?' + query, {
     signal,
   })

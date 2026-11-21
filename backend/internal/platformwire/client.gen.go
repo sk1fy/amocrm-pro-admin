@@ -817,6 +817,33 @@ func (e OperationState) Valid() bool {
 	}
 }
 
+// Defines values for PortraitPersonRoles.
+const (
+	PortraitPersonRolesBilling       PortraitPersonRoles = "billing"
+	PortraitPersonRolesDecisionMaker PortraitPersonRoles = "decision_maker"
+	PortraitPersonRolesInfluencer    PortraitPersonRoles = "influencer"
+	PortraitPersonRolesPartner       PortraitPersonRoles = "partner"
+	PortraitPersonRolesSetup         PortraitPersonRoles = "setup"
+)
+
+// Valid indicates whether the value is a known member of the PortraitPersonRoles enum.
+func (e PortraitPersonRoles) Valid() bool {
+	switch e {
+	case PortraitPersonRolesBilling:
+		return true
+	case PortraitPersonRolesDecisionMaker:
+		return true
+	case PortraitPersonRolesInfluencer:
+		return true
+	case PortraitPersonRolesPartner:
+		return true
+	case PortraitPersonRolesSetup:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PortraitPredicateOp.
 const (
 	Eq     PortraitPredicateOp = "eq"
@@ -838,6 +865,24 @@ func (e PortraitPredicateOp) Valid() bool {
 	case In:
 		return true
 	case Lt:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PortraitTemplateTopicAnswerMode.
+const (
+	Note  PortraitTemplateTopicAnswerMode = "note"
+	YesNo PortraitTemplateTopicAnswerMode = "yes_no"
+)
+
+// Valid indicates whether the value is a known member of the PortraitTemplateTopicAnswerMode enum.
+func (e PortraitTemplateTopicAnswerMode) Valid() bool {
+	switch e {
+	case Note:
+		return true
+	case YesNo:
 		return true
 	default:
 		return false
@@ -1192,6 +1237,33 @@ func (e ListAccountHistoryParamsKind) Valid() bool {
 	case ListAccountHistoryParamsKindReinstalled:
 		return true
 	case ListAccountHistoryParamsKindUninstalled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateAccountProfileJSONBodyClassification.
+const (
+	LessThannil    UpdateAccountProfileJSONBodyClassification = "<nil>"
+	БезПартнёра    UpdateAccountProfileJSONBodyClassification = "Без партнёра"
+	ЗапретРаботы   UpdateAccountProfileJSONBodyClassification = "Запрет работы"
+	КлиентПартнёра UpdateAccountProfileJSONBodyClassification = "Клиент партнёра"
+	НашКлиент      UpdateAccountProfileJSONBodyClassification = "Наш клиент"
+)
+
+// Valid indicates whether the value is a known member of the UpdateAccountProfileJSONBodyClassification enum.
+func (e UpdateAccountProfileJSONBodyClassification) Valid() bool {
+	switch e {
+	case LessThannil:
+		return true
+	case БезПартнёра:
+		return true
+	case ЗапретРаботы:
+		return true
+	case КлиентПартнёра:
+		return true
+	case НашКлиент:
 		return true
 	default:
 		return false
@@ -1553,12 +1625,15 @@ type AccountDetail struct {
 	CurrentDomain       nullable.Nullable[string]   `json:"current_domain"`
 	DisplayName         nullable.Nullable[string]   `json:"display_name"`
 	DomainAliases       nullable.Nullable[[]string] `json:"domain_aliases"`
-	License             ObservationLicense          `json:"license"`
-	Note                nullable.Nullable[string]   `json:"note"`
-	PartnerName         nullable.Nullable[string]   `json:"partner_name,omitempty"`
-	Region              nullable.Nullable[string]   `json:"region"`
-	TimeZone            nullable.Nullable[string]   `json:"time_zone"`
-	Version             int                         `json:"version"`
+
+	// IdentityObservedAt Время последнего наблюдения домена, имени и часового пояса аккаунта в amoCRM.
+	IdentityObservedAt *time.Time                `json:"identity_observed_at,omitempty"`
+	License            ObservationLicense        `json:"license"`
+	Note               nullable.Nullable[string] `json:"note"`
+	PartnerName        nullable.Nullable[string] `json:"partner_name,omitempty"`
+	Region             nullable.Nullable[string] `json:"region"`
+	TimeZone           nullable.Nullable[string] `json:"time_zone"`
+	Version            int                       `json:"version"`
 }
 
 // AccountList defines model for AccountList.
@@ -2163,12 +2238,14 @@ type Portrait struct {
 		Observed *bool              `json:"observed,omitempty"`
 		Source   *string            `json:"source,omitempty"`
 	} `json:"maturity_signals"`
-	TemplateVersion int `json:"template_version"`
+	People          *[]PortraitPerson `json:"people,omitempty"`
+	TemplateVersion int               `json:"template_version"`
 	Topics          []struct {
 		Id   openapi_types.UUID `json:"id"`
 		Note string             `json:"note"`
 	} `json:"topics"`
-	Version int `json:"version"`
+	Version     int                  `json:"version"`
+	WidgetTiers *PortraitWidgetTiers `json:"widget_tiers,omitempty"`
 }
 
 // PortraitFilter defines model for PortraitFilter.
@@ -2188,6 +2265,18 @@ type PortraitFilter1 = interface{}
 // PortraitFilter2 defines model for PortraitFilter.2.
 type PortraitFilter2 = interface{}
 
+// PortraitPerson defines model for PortraitPerson.
+type PortraitPerson struct {
+	CrmUrl *string               `json:"crm_url,omitempty"`
+	Id     openapi_types.UUID    `json:"id"`
+	Name   string                `json:"name"`
+	Phone  *string               `json:"phone,omitempty"`
+	Roles  []PortraitPersonRoles `json:"roles"`
+}
+
+// PortraitPersonRoles defines model for PortraitPerson.Roles.
+type PortraitPersonRoles string
+
 // PortraitPredicate defines model for PortraitPredicate.
 type PortraitPredicate struct {
 	FieldId openapi_types.UUID  `json:"field_id"`
@@ -2200,12 +2289,35 @@ type PortraitPredicateOp string
 
 // PortraitTemplate defines model for PortraitTemplate.
 type PortraitTemplate struct {
-	Topics []struct {
-		Id      openapi_types.UUID `json:"id"`
-		Prompts []string           `json:"prompts"`
-		Title   string             `json:"title"`
-	} `json:"topics"`
-	Version int `json:"version"`
+	Topics  []PortraitTemplateTopic `json:"topics"`
+	Version int                     `json:"version"`
+}
+
+// PortraitTemplateTopic defines model for PortraitTemplateTopic.
+type PortraitTemplateTopic struct {
+	AnswerMode       *PortraitTemplateTopicAnswerMode `json:"answer_mode,omitempty"`
+	Id               openapi_types.UUID               `json:"id"`
+	Leader           *string                          `json:"leader,omitempty"`
+	MarketCategories *[]string                        `json:"market_categories,omitempty"`
+	Prompts          []string                         `json:"prompts"`
+	Title            string                           `json:"title"`
+	WarmthSteps      *[]string                        `json:"warmth_steps,omitempty"`
+}
+
+// PortraitTemplateTopicAnswerMode defines model for PortraitTemplateTopic.AnswerMode.
+type PortraitTemplateTopicAnswerMode string
+
+// PortraitWidgetTier defines model for PortraitWidgetTier.
+type PortraitWidgetTier struct {
+	Total   int `json:"total"`
+	Working int `json:"working"`
+}
+
+// PortraitWidgetTiers defines model for PortraitWidgetTiers.
+type PortraitWidgetTiers struct {
+	FreeInstalled int                `json:"free_installed"`
+	Pro           PortraitWidgetTier `json:"pro"`
+	Top           PortraitWidgetTier `json:"top"`
 }
 
 // Product defines model for Product.
@@ -2539,6 +2651,7 @@ type UpdateAccountPortraitJSONBody struct {
 		Id     openapi_types.UUID      `json:"id"`
 		Manual nullable.Nullable[bool] `json:"manual"`
 	} `json:"maturity_signals,omitempty"`
+	People *[]PortraitPerson `json:"people,omitempty"`
 	Topics *[]struct {
 		Id   openapi_types.UUID `json:"id"`
 		Note string             `json:"note"`
@@ -2567,11 +2680,11 @@ type CreatePortraitAuditDateParams struct {
 
 // UpdateAccountProfileJSONBody defines parameters for UpdateAccountProfile.
 type UpdateAccountProfileJSONBody struct {
-	Classification nullable.Nullable[string] `json:"classification,omitempty"`
-	DisplayName    nullable.Nullable[string] `json:"display_name,omitempty"`
-	Note           nullable.Nullable[string] `json:"note,omitempty"`
-	PartnerName    nullable.Nullable[string] `json:"partner_name,omitempty"`
-	Reason         string                    `json:"reason"`
+	Classification nullable.Nullable[UpdateAccountProfileJSONBodyClassification] `json:"classification,omitempty"`
+	DisplayName    nullable.Nullable[string]                                     `json:"display_name,omitempty"`
+	Note           nullable.Nullable[string]                                     `json:"note,omitempty"`
+	PartnerName    nullable.Nullable[string]                                     `json:"partner_name,omitempty"`
+	Reason         string                                                        `json:"reason"`
 }
 
 // UpdateAccountProfileParams defines parameters for UpdateAccountProfile.
@@ -2580,6 +2693,9 @@ type UpdateAccountProfileParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 	IfMatch        IfMatch        `json:"If-Match"`
 }
+
+// UpdateAccountProfileJSONBodyClassification defines parameters for UpdateAccountProfile.
+type UpdateAccountProfileJSONBodyClassification string
 
 // RequestAccountRefreshJSONBody defines parameters for RequestAccountRefresh.
 type RequestAccountRefreshJSONBody struct {
@@ -2780,11 +2896,7 @@ type GetPortraitTemplateParams struct {
 
 // SetPortraitTemplateJSONBody defines parameters for SetPortraitTemplate.
 type SetPortraitTemplateJSONBody struct {
-	Topics []struct {
-		Id      openapi_types.UUID `json:"id"`
-		Prompts []string           `json:"prompts"`
-		Title   string             `json:"title"`
-	} `json:"topics"`
+	Topics []PortraitTemplateTopic `json:"topics"`
 }
 
 // SetPortraitTemplateParams defines parameters for SetPortraitTemplate.

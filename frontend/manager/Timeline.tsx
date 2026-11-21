@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { FormEvent } from 'react'
 import { isApiError } from '../src/api/client'
-import { formatTime } from '../src/lib/format'
 import { accountSearch, ManagerLink } from './accountsLocation'
 import { ReadFailure, useAccountAccessError, type AccountAccess } from './AccountsPage'
 import { FeedEvent, FeedFilters, formatFeedTime } from './EventFeed'
@@ -11,6 +10,27 @@ import styles from './Accounts.module.css'
 import timeline from './Timeline.module.css'
 import card from './AccountCard.module.css'
 const filters = ['kind', 'product_id', 'from', 'to', 'limit', 'cursor', 'account_id']
+const historyGroups: { label: string; kinds: ManagerEvent['kind'][] }[] = [
+  { label: 'Всё', kinds: [] },
+  {
+    label: 'Установки',
+    kinds: ['installed', 'reinstalled', 'reauthorized', 'uninstalled', 'activated'],
+  },
+  { label: 'Продления', kinds: ['access_renewed'] },
+  {
+    label: 'Правки',
+    kinds: [
+      'installation_reviewed',
+      'installation_unreviewed',
+      'account_profile_updated',
+      'portrait_updated',
+    ],
+  },
+]
+const historyDate = new Intl.DateTimeFormat('ru-RU', {
+  dateStyle: 'short',
+  timeZone: 'Europe/Moscow',
+})
 export function eventQuery(search: string, context: TimelineScope) {
   const params = new URLSearchParams(search),
     query = new URLSearchParams()
@@ -103,6 +123,14 @@ export function Timeline({
     return <p role="alert">Нет доступа к {context.kind === 'feed' ? 'ленте' : 'истории'}.</p>
   const filterKey = new URLSearchParams(query)
   filterKey.delete('cursor')
+  const selectedKinds = new Set(query.getAll('kind'))
+  const selectedGroup = historyGroups.find(
+    ({ kinds }) =>
+      selectedKinds.size === kinds.length && kinds.every((kind) => selectedKinds.has(kind)),
+  )
+  const extraFilters =
+    ['product_id', 'from', 'to'].filter((key) => query.has(key)).length +
+    Number(selectedGroup === undefined)
   return (
     <section
       className={history ? card.surface : styles.workspace}
@@ -110,7 +138,10 @@ export function Timeline({
     >
       <header className={history ? card.sectionHeader : timeline.feedHeader}>
         {history ? (
-          <h2>История аккаунта</h2>
+          <div className={timeline.historyHeading}>
+            <h2>История аккаунта</h2>
+            <span>Установки, продления и изменения профиля</span>
+          </div>
         ) : (
           <div className={timeline.feedHeading}>
             <h1>Лента событий</h1>
@@ -122,34 +153,59 @@ export function Timeline({
         </button>
       </header>
       {history ? (
-        <form key={filterKey.toString()} className={timeline.historyFilters} onSubmit={apply}>
-          <label>
-            Виды событий
-            <select name="kind" multiple defaultValue={query.getAll('kind')}>
-              {Object.entries(eventKinds).map(([kind, label]) => (
-                <option key={kind} value={kind}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            ID продукта
-            <input name="product_id" defaultValue={query.get('product_id') ?? ''} />
-          </label>
-          <label>
-            С (Москва)
-            <input type="date" name="from" defaultValue={query.get('from') ?? ''} />
-          </label>
-          <label>
-            По (Москва)
-            <input type="date" name="to" defaultValue={query.get('to') ?? ''} />
-          </label>
-          <button type="submit">Применить</button>
-          <button type="button" onClick={() => change(new URLSearchParams())}>
-            Сбросить
-          </button>
-        </form>
+        <div className={timeline.historyToolbar}>
+          <div className={timeline.historyGroups} role="group" aria-label="Группы событий истории">
+            {historyGroups.map(({ label, kinds }) => (
+              <button
+                key={label}
+                type="button"
+                aria-pressed={selectedGroup?.label === label}
+                onClick={() => {
+                  const next = new URLSearchParams(filterKey)
+                  next.delete('kind')
+                  for (const kind of kinds) next.append('kind', kind)
+                  change(next)
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <details className={timeline.historyOptions}>
+            <summary>{extraFilters ? 'Фильтры · ' + extraFilters : 'Фильтры'}</summary>
+            <form key={filterKey.toString()} className={timeline.historyFilters} onSubmit={apply}>
+              <label>
+                Виды событий
+                <select name="kind" multiple defaultValue={query.getAll('kind')}>
+                  {Object.entries(eventKinds).map(([kind, label]) => (
+                    <option key={kind} value={kind}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                ID продукта
+                <input name="product_id" defaultValue={query.get('product_id') ?? ''} />
+              </label>
+              <label>
+                С (Москва)
+                <input type="date" name="from" defaultValue={query.get('from') ?? ''} />
+              </label>
+              <label>
+                По (Москва)
+                <input type="date" name="to" defaultValue={query.get('to') ?? ''} />
+              </label>
+              {query.has('limit') && (
+                <input type="hidden" name="limit" value={query.get('limit') ?? ''} />
+              )}
+              <button type="submit">Применить</button>
+              <button type="button" onClick={() => change(new URLSearchParams())}>
+                Сбросить
+              </button>
+            </form>
+          </details>
+        </div>
       ) : (
         <FeedFilters
           key={filterKey.toString()}
@@ -182,20 +238,18 @@ export function Timeline({
       ) : page.data ? (
         <>
           <p className={history ? timeline.historyMeta : timeline.feedMeta}>
-            Platform · снимок на{' '}
-            {history
-              ? formatTime(page.data.snapshot_at)
-              : formatFeedTime(page.data.snapshot_at) + ' МСК'}
+            Platform · снимок на {formatFeedTime(page.data.snapshot_at)} МСК
           </p>
           {page.data.items.length === 0 ? (
             <p className={history ? card.empty : undefined}>Событий по выбранным условиям нет.</p>
           ) : history ? (
             <div className={card.tableScroll}>
-              <table className={styles.table}>
+              <table className={`${styles.table} ${timeline.historyTable}`}>
                 <thead>
                   <tr>
                     <th scope="col">Дата</th>
                     <th scope="col">Событие</th>
+                    <th scope="col">Виджет</th>
                     <th scope="col">Подробности</th>
                     <th scope="col">Исполнитель</th>
                   </tr>
@@ -204,23 +258,42 @@ export function Timeline({
                   {page.data.items.map((event) => (
                     <tr key={event.id}>
                       <td>
-                        <time dateTime={event.occurred_at}>{formatTime(event.occurred_at)}</time>
+                        <time
+                          dateTime={event.occurred_at}
+                          title={formatFeedTime(event.occurred_at) + ' МСК'}
+                        >
+                          {historyDate.format(new Date(event.occurred_at))}
+                        </time>
                       </td>
                       <td>
                         <strong>{eventKinds[event.kind]}</strong>
                       </td>
+                      <td>{event.product_display_name ?? '—'}</td>
                       <td>
                         {event.summary}
-                        <span className={card.cellSecondary}>
-                          Записано {formatTime(event.recorded_at)} · ID {event.id}
-                        </span>
-                        <div className={styles.actions}>
-                          {eventLinks(event, grants, search).map((link) => (
-                            <ManagerLink key={link.search} search={link.search} navigate={navigate}>
-                              {link.label}
-                            </ManagerLink>
-                          ))}
-                        </div>
+                        <details className={timeline.historyDetails}>
+                          <summary>Подробнее</summary>
+                          <span className={card.cellSecondary}>
+                            Событие {formatFeedTime(event.occurred_at)} МСК
+                          </span>
+                          <span className={card.cellSecondary}>
+                            Записано {formatFeedTime(event.recorded_at)} МСК
+                          </span>
+                          <span className={card.cellSecondary}>
+                            ID события <span>{event.id}</span>
+                          </span>
+                          <div className={styles.actions}>
+                            {eventLinks(event, grants, search).map((link) => (
+                              <ManagerLink
+                                key={link.search}
+                                search={link.search}
+                                navigate={navigate}
+                              >
+                                {link.label}
+                              </ManagerLink>
+                            ))}
+                          </div>
+                        </details>
                       </td>
                       <td>{event.actor_display ?? '—'}</td>
                     </tr>
