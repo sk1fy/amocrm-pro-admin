@@ -326,6 +326,8 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
   },
   account_classification: {
     'Без партнёра': { tone: 'ok', label: 'Без партнёра' },
+    'Клиент партнёра': { tone: 'attention', label: 'Клиент партнёра' },
+    'Наш клиент': { tone: 'ok', label: 'Наш клиент' },
     'Запрет работы': { tone: 'off', label: 'Запрет работы' },
   },
   client_classification: {

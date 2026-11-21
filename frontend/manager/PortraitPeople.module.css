@@ -1,0 +1,121 @@
+.section {
+  padding: var(--space-4);
+}
+
+.heading,
+.personHeading,
+.roles,
+.link,
+.linkActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+}
+
+.heading {
+  margin-bottom: var(--space-2);
+}
+
+.heading h3,
+.person h4,
+.add h4,
+.meta,
+.error {
+  margin: 0;
+}
+
+.heading span,
+.meta,
+.link {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.heading .missing,
+.error {
+  color: #964300;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  align-items: start;
+  gap: var(--space-2);
+}
+
+.person,
+.add {
+  display: grid;
+  justify-items: start;
+  min-width: 0;
+  padding: var(--space-2);
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow-wrap: anywhere;
+}
+
+.add {
+  justify-items: stretch;
+  gap: var(--space-1);
+  background: var(--color-surface-2);
+  border-style: dashed;
+}
+
+.add label input {
+  width: 100%;
+  padding: 4px 8px;
+}
+
+.hiddenLabel {
+  composes: visuallyHidden from './AccountCard.module.css';
+}
+
+.add > button {
+  justify-self: start;
+}
+
+.add label,
+.linkEditor label {
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.personHeading {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.roles {
+  align-items: center;
+}
+
+.roles :is(button, span) {
+  padding: 3px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+}
+
+.roles button[aria-pressed='true'],
+.roles span {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-link);
+}
+
+.person :is(.linkButton, .remove) {
+  min-height: 28px;
+  padding: 0 var(--space-1);
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-link);
+}
+
+.linkEditor {
+  display: grid;
+  align-self: stretch;
+  width: 100%;
+  gap: var(--space-1);
+}

@@ -273,3 +273,66 @@
   color: var(--color-muted);
   font-size: 12px;
 }
+
+.historyHeading,
+.historyGroups,
+.historyToolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.historyHeading span {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+}
+
+.historyToolbar {
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.historyToolbar button[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-link);
+}
+
+.historyOptions[open] {
+  flex-basis: 100%;
+}
+
+.historyOptions summary,
+.historyDetails summary {
+  width: fit-content;
+  color: var(--color-link);
+  cursor: pointer;
+}
+
+.historyOptions summary {
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font-size: 0.8125rem;
+}
+
+.historyOptions .historyFilters {
+  padding: var(--space-3) 0 0;
+  border-bottom: 0;
+}
+
+.historyTable time {
+  white-space: nowrap;
+}
+
+.historyDetails {
+  margin-top: var(--space-1);
+  font-size: 0.8125rem;
+}
+
+.historyDetails > div {
+  margin-top: var(--space-1);
+}

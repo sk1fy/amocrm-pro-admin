@@ -28,6 +28,7 @@
   flex-wrap: wrap;
   gap: 14px;
   padding: 18px 20px;
+  min-height: 104px;
 }
 
 .avatar {
@@ -67,8 +68,7 @@
   font-size: 21px;
 }
 
-.id,
-.classification dd {
+.id {
   padding: 3px 10px;
   border: 1px solid var(--color-border-soft);
   border-radius: 100px;
@@ -81,10 +81,10 @@
 
 .classification {
   margin: 0;
-  min-width: 10rem;
+  width: min(100%, 16rem);
 }
 
-.classification dt,
+.fieldTitle,
 .metrics dt {
   color: var(--color-subtle);
   font-size: 12px;
@@ -92,21 +92,35 @@
   text-transform: uppercase;
 }
 
-.classification dd {
-  margin: 6px 0 0;
+.fieldTitle {
+  margin: 0 0 6px;
+}
+
+.classification select {
+  width: 100%;
   font-weight: 700;
+}
+
+.classification > section p:last-child {
+  margin-bottom: 0;
+}
+
+.overviewMetrics {
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--color-border-soft);
 }
 
 .metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  flex: 1 1 40rem;
   margin: 0;
 }
 
 .metrics > div {
   min-width: 0;
-  padding: 12px 20px;
-  border-top: 1px solid var(--color-border-soft);
+  padding: 13px 20px 15px;
   border-inline-end: 1px solid var(--color-border-soft);
 }
 
@@ -118,6 +132,13 @@
   margin: 4px 0;
   font-size: 16px;
   font-weight: 700;
+}
+
+.refreshArea {
+  display: grid;
+  align-content: center;
+  padding: 12px 20px;
+  border-inline-start: 1px solid var(--color-border-soft);
 }
 
 .observation {
@@ -132,6 +153,7 @@
 
 .summaryPanel {
   padding: 16px 20px;
+  min-height: 96px;
 }
 
 .summaryPanel h2,
@@ -181,10 +203,19 @@
 }
 
 .profileFields summary,
-.refresh summary,
 .widgetActions summary {
   cursor: pointer;
   color: var(--color-link);
+  font-weight: 700;
+}
+
+.refresh summary {
+  padding: 7px 14px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: white;
+  cursor: pointer;
   font-weight: 700;
 }
 
@@ -264,6 +295,43 @@
   position: static;
 }
 
+.tabs > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+}
+
+.tabCount {
+  min-width: 1.6em;
+  padding: 1px 7px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 100px;
+  background: var(--color-surface);
+  font-size: 12px;
+  text-align: center;
+}
+
+.tabs a[aria-current='page'] .tabCount {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: white;
+}
+
+.rowBadges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+
+.widgetDetails small {
+  display: block;
+  margin-block-start: 3px;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
 .inactiveUser td,
 .cellSecondary {
   color: var(--color-muted);
@@ -276,7 +344,12 @@
 }
 
 .widgetActions {
-  width: 1%;
+  min-width: 9.5rem;
+}
+
+.widgetActions > button,
+.widgetActions > details {
+  margin-top: 5px;
 }
 
 .widgetActions details[open] {
@@ -305,5 +378,16 @@
   .summaryPanel,
   .sectionHeader {
     padding-inline: 12px;
+  }
+
+  .classification {
+    flex-basis: 100%;
+  }
+
+  .refreshArea {
+    flex-basis: 100%;
+    padding-inline: 12px;
+    border-inline-start: 0;
+    border-top: 1px solid var(--color-border-soft);
   }
 }

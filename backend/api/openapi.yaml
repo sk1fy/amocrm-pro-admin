@@ -781,6 +781,7 @@ paths:
                   type:
                   - string
                   - 'null'
+                  enum: [Без партнёра, Клиент партнёра, Наш клиент, Запрет работы, null]
                 partner_name: {type: [string, 'null'], maxLength: 200}
                 reason:
                   type: string
@@ -1272,6 +1273,7 @@ paths:
               type: object
               additionalProperties: false
               properties:
+                people: {type: array, maxItems: 50, items: {$ref: '#/components/schemas/ManagerPortraitPerson'}}
                 company:
                   $ref: '#/components/schemas/ManagerCompanyPortrait'
                 maturity_signals:
@@ -1505,25 +1507,7 @@ paths:
               type: object
               additionalProperties: false
               properties:
-                topics:
-                  type: array
-                  items:
-                    type: object
-                    additionalProperties: false
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      title:
-                        type: string
-                      prompts:
-                        type: array
-                        items:
-                          type: string
-                    required:
-                    - id
-                    - title
-                    - prompts
+                topics: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/ManagerPortraitTemplateTopic'}}
               required:
               - topics
       responses:
@@ -4710,6 +4694,9 @@ components:
           type:
           - string
           - 'null'
+        identity_observed_at:
+          type: string
+          format: date-time
         domain_aliases:
           type:
           - array
@@ -5052,6 +5039,8 @@ components:
             required:
             - id
             - note
+        people: {type: array, maxItems: 50, items: {$ref: '#/components/schemas/ManagerPortraitPerson'}}
+        widget_tiers: {$ref: '#/components/schemas/ManagerPortraitWidgetTiers'}
         audit_dates:
           type: array
           items:
@@ -5112,29 +5101,48 @@ components:
       - id
       - date
       - note
+    ManagerPortraitPerson:
+      type: object
+      additionalProperties: false
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string, minLength: 1, maxLength: 160}
+        phone: {type: string, minLength: 1, maxLength: 32, pattern: '^\+?[0-9(). -]*[0-9][0-9(). -]*$'}
+        crm_url: {type: string, pattern: '^https://rakurscrm\.amocrm\.ru/contacts/detail/[1-9][0-9]{0,18}/?$'}
+        roles: {type: array, maxItems: 5, uniqueItems: true, items: {type: string, enum: [decision_maker, influencer, billing, setup, partner]}}
+      required: [id, name, roles]
+    ManagerPortraitWidgetTiers:
+      type: object
+      additionalProperties: false
+      properties:
+        free_installed: {type: integer, minimum: 0}
+        top: {$ref: '#/components/schemas/ManagerPortraitWidgetTier'}
+        pro: {$ref: '#/components/schemas/ManagerPortraitWidgetTier'}
+      required: [free_installed, top, pro]
+    ManagerPortraitWidgetTier:
+      type: object
+      additionalProperties: false
+      properties:
+        working: {type: integer, minimum: 0}
+        total: {type: integer, minimum: 0}
+      required: [working, total]
+    ManagerPortraitTemplateTopic:
+      type: object
+      additionalProperties: false
+      properties:
+        id: {type: string, format: uuid}
+        title: {type: string, minLength: 1, maxLength: 300}
+        prompts: {type: array, maxItems: 30, items: {type: string, minLength: 1, maxLength: 2000}}
+        leader: {type: string, minLength: 1, maxLength: 300}
+        market_categories: {type: array, maxItems: 12, items: {type: string, minLength: 1, maxLength: 120}}
+        answer_mode: {type: string, enum: [note, yes_no]}
+        warmth_steps: {type: array, maxItems: 4, items: {type: string, minLength: 1, maxLength: 80}}
+      required: [id, title, prompts]
     ManagerPortraitTemplate:
       type: object
       additionalProperties: false
       properties:
-        topics:
-          type: array
-          items:
-            type: object
-            additionalProperties: false
-            properties:
-              id:
-                type: string
-                format: uuid
-              title:
-                type: string
-              prompts:
-                type: array
-                items:
-                  type: string
-            required:
-            - id
-            - title
-            - prompts
+        topics: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/ManagerPortraitTemplateTopic'}}
         version:
           type: integer
           minimum: 1
