@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Панель настроек виджета](manager-widget-settings-panel.md).
+
 - [Скрыть аудит в карточке клиента](hide-manager-audit.md).
 
 - [Карточка клиента по макету](manager-client-card.md).

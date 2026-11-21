@@ -39,6 +39,13 @@ async function signIn(page: Page, email: string, address: string) {
   await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible()
 }
 async function metric(page: Page, label: string, value: string) {
+  const summary = page.locator('details > summary').filter({ hasText: 'Метрики виджета' })
+  if (
+    (await summary.count()) &&
+    (await summary.locator('xpath=..').getAttribute('open')) === null
+  ) {
+    await summary.click()
+  }
   const term = page.getByRole('term').filter({ hasText: label })
   await expect(term).toBeVisible()
   await expect(term.locator('xpath=following-sibling::dd[1]')).toHaveText(value)
@@ -87,7 +94,8 @@ test('widget catalog saves across managers, preserves stale drafts, and keeps na
     const response = await saved
     expect(response.status()).toBe(200)
     expect(response.headers().etag).toMatch(/^"\d+"$/)
-    await expect(page.getByRole('heading', { name: firstName, exact: true })).toBeVisible()
+    await expect(page.getByText('Сохранено.')).toBeVisible()
+    await expect(page.getByLabel('Название', { exact: true })).toHaveValue(firstName)
     const conflict = other.waitForResponse(
       (r) => r.request().method() === 'PATCH' && r.url().endsWith('/products/' + productId),
     )
@@ -101,17 +109,20 @@ test('widget catalog saves across managers, preserves stale drafts, and keeps na
     )
     await other.getByRole('button', { name: 'Сохранить виджет' }).click()
     expect((await rebased).status()).toBe(200)
-    await expect(other.getByRole('heading', { name: finalName, exact: true })).toBeVisible()
+    await expect(other.getByText('Сохранено.')).toBeVisible()
+    await expect(other.getByLabel('Название', { exact: true })).toHaveValue(finalName)
     await expect(other.getByLabel('Пробный период')).toHaveValue('none')
     await other.screenshot({ path: test.info().outputPath('widget-rebased.png'), fullPage: true })
     await expect(other.getByLabel('Подтверждённая версия тарифа')).toHaveValue('2')
+    await expect(page.getByRole('dialog', { name: 'Настройки виджета' })).toBeVisible()
+    await page.getByRole('button', { name: 'Закрыть настройки' }).click()
+    await expect(page).toHaveURL(list)
+    await expect(page.getByRole('searchbox', { name: 'Поиск виджетов' })).toHaveValue(
+      'Pilot Widget',
+    )
     await page.getByRole('link', { name: 'Клиенты', exact: true }).click()
     await expect(page).not.toHaveURL(/product=/)
     expect(new URL(page.url()).searchParams.get('clients_q')).toBe('pilot')
-    await page.goBack()
-    await expect(page).toHaveURL(new RegExp('product=' + productId))
-    await page.getByRole('link', { name: 'Все виджеты' }).click()
-    expect(new URL(page.url()).searchParams.get('products_q')).toBe('Pilot Widget')
   } finally {
     await other.close()
   }
@@ -217,9 +228,10 @@ test('independent catalog, reader, stats, and restricted grants work against rea
     expect((await lost).status()).toBe(502)
     await expect(editor.getByText('Результат команды пока неизвестен.')).toBeVisible()
     await editor.getByRole('button', { name: 'Повторить ту же команду' }).click()
-    await expect(
-      editor.getByRole('heading', { name: 'Точный повтор после потери ответа', exact: true }),
-    ).toBeVisible()
+    await expect(editor.getByText('Сохранено.')).toBeVisible()
+    await expect(editor.getByLabel('Название', { exact: true })).toHaveValue(
+      'Точный повтор после потери ответа',
+    )
     expect(attempts).toHaveLength(2)
     expect(attempts[1]).toEqual(attempts[0])
     expect(catalogReads).toEqual([])
@@ -236,7 +248,7 @@ test('saved widget metadata and trial rule survive Admin and Platform restart', 
 }) => {
   test.skip(!productId || phase !== 'after-restart', 'requires the restarted A05 Platform fixture')
   await signIn(page, colleague, card())
-  await expect(page.getByRole('heading', { name: finalName, exact: true })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Настройки виджета' })).toBeVisible()
   await expect(page.getByLabel('Название', { exact: true })).toHaveValue(finalName)
   await expect(page.getByLabel('Подтверждённая версия тарифа')).toHaveValue('2')
   await expect(page.getByLabel('Пробный период')).toHaveValue('none')

@@ -3,6 +3,7 @@ import { StatusBadge } from '../src/components/StatusBadge'
 import { formatTime } from '../src/lib/format'
 import { accountSearch, listSearch, ManagerLink } from './accountsLocation'
 import type { Product, ProductOverview } from './productsApi'
+import { separateProductLinks } from './productLinks'
 import styles from './WidgetsCatalog.module.css'
 
 const lines = ['FREE', 'TOP', 'PRO'] as const
@@ -255,51 +256,28 @@ function ProductLine({ line }: { line: Product['line'] }) {
   )
 }
 
-function linkKind(label: string) {
-  switch (label.trim().toLowerCase()) {
-    case 'установка':
-    case 'установить':
-    case 'ссылка на установку':
-      return 'installation'
-    case 'инструкция':
-    case 'документация':
-      return 'instruction'
-    default:
-      return 'other'
-  }
-}
-
 function WidgetLinks({ links }: Pick<Product, 'links'>) {
-  const groups: Record<ReturnType<typeof linkKind>, Product['links']> = {
-    installation: [],
-    instruction: [],
-    other: [],
-  }
-  for (const link of links) groups[linkKind(link.label)].push(link)
+  const { installation, instruction } = separateProductLinks(links)
   return (
     <ul className={styles.links}>
-      {(['installation', 'instruction', 'other'] as const).map((kind) => {
-        const group = groups[kind]
-        if (group.length === 0 && kind !== 'other') {
-          return (
-            <li key={kind} data-kind={kind} className={styles.linkMissing}>
-              {kind === 'installation' ? 'Нет ссылки на установку' : 'Нет инструкции'}
-            </li>
-          )
-        }
-        return group.map(({ label, url }) => (
-          <li key={label + url} data-kind={kind}>
-            <a href={url} target="_blank" rel="noreferrer">
-              {kind === 'installation' && group.length === 1
-                ? 'Установка'
-                : kind === 'instruction' && group.length === 1
-                  ? 'Инструкция'
-                  : label}
-              {kind !== 'installation' ? <span aria-hidden="true"> ↗</span> : null}
-            </a>
-          </li>
-        ))
-      })}
+      <li data-kind="installation" className={installation ? undefined : styles.linkMissing}>
+        {installation ? (
+          <a href={installation.url} target="_blank" rel="noreferrer">
+            Установка
+          </a>
+        ) : (
+          'Нет ссылки на установку'
+        )}
+      </li>
+      <li data-kind="instruction" className={instruction ? undefined : styles.linkMissing}>
+        {instruction ? (
+          <a href={instruction.url} target="_blank" rel="noreferrer">
+            Инструкция <span aria-hidden="true">↗</span>
+          </a>
+        ) : (
+          'Нет инструкции'
+        )}
+      </li>
     </ul>
   )
 }
@@ -337,6 +315,7 @@ export function WidgetTable({
                 <th scope="col">Требует внимания</th>
               </>
             ) : null}
+            <th scope="col">Тест · тариф</th>
             <th scope="col">Ссылки</th>
           </tr>
         </thead>
@@ -373,6 +352,14 @@ export function WidgetTable({
                     <td>{stats ? <Attention stats={stats} /> : '—'}</td>
                   </>
                 ) : null}
+                <td className={styles.trial}>
+                  {row.trial_policy.kind === 'once' && row.trial_policy.duration_days !== null ? (
+                    <span>{row.trial_policy.duration_days} дн.</span>
+                  ) : (
+                    <StatusBadge domain="product_trial" state={row.trial_policy.kind} calm />
+                  )}
+                  {row.tariff_version === null ? null : <small>Версия {row.tariff_version}</small>}
+                </td>
                 <td>
                   <WidgetLinks links={row.links} />
                 </td>

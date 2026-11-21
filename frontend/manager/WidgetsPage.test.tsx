@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { resetApiSession } from '../src/api/client'
 import { ManagerApp } from './ManagerApp'
 import { isProductId, sendProductCommand } from './productsApi'
@@ -51,6 +51,14 @@ function open(
   )
   return client
 }
+beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true
+  }
+  HTMLDialogElement.prototype.close = function () {
+    this.open = false
+  }
+})
 afterEach(() => {
   resetApiSession()
   vi.unstubAllGlobals()
@@ -186,12 +194,10 @@ it('uses refreshed same-version mappings for the next edit and preserves a pendi
 
   current = { ...current, integration_refs: [originalRef, refreshedRef] }
   await act(() => client.invalidateQueries({ queryKey: ['managers', 'products'] }))
+  fireEvent.click(screen.getByText('Технические данные'))
   await waitFor(() =>
-    expect(screen.getByLabelText('Подтверждённые интеграции')).toHaveValue(
-      originalRef + '\n' + refreshedRef,
-    ),
+    expect(screen.getByText([originalRef, refreshedRef].join(', '))).toBeVisible(),
   )
-  expect(screen.getByLabelText('Подтверждённые интеграции')).toHaveAttribute('readonly')
   fireEvent.change(screen.getByLabelText('Название'), { target: { value: 'Следующее название' } })
   fireEvent.click(screen.getByRole('button', { name: 'Сохранить виджет' }))
   await screen.findByText('Результат команды пока неизвестен.')
@@ -206,7 +212,7 @@ it('uses refreshed same-version mappings for the next edit and preserves a pendi
   await act(() => client.invalidateQueries({ queryKey: ['managers', 'products'] }))
   await waitFor(() =>
     expect(
-      within(screen.getByRole('region', { name: 'Карточка виджета' })).getByText(
+      within(screen.getByRole('form', { name: 'Карточка виджета' })).getByText(
         [originalRef, refreshedRef, laterRef].join(', '),
       ),
     ).toBeVisible(),
@@ -257,6 +263,8 @@ it('renders monthly widget installations and keeps the overview while filtering'
     display_name: 'Контроль активности',
     line: 'PRO',
     availability: 'pilot',
+    trial_policy: { kind: 'once', duration_days: 7 },
+    tariff_version: 2,
     links: [{ label: 'Документация', url: 'https://fixture.example.invalid/docs' }],
   }
   let filtered = false
@@ -310,6 +318,9 @@ it('renders monthly widget installations and keeps the overview while filtering'
     'https://fixture.example.invalid/docs',
   )
   expect(within(table).queryByRole('columnheader', { name: 'Доступность' })).toBeNull()
+  expect(within(table).getByRole('columnheader', { name: 'Тест · тариф' })).toBeVisible()
+  expect(within(table).getByText('7 дн.')).toBeVisible()
+  expect(within(table).getByText('Версия 2')).toBeVisible()
   expect(within(table).getByRole('img', { name: /ноябрь 2026 г\. — 5/ }).children).toHaveLength(12)
   expect(within(table).getByText('+5 за 30 дн.')).toBeVisible()
   fireEvent.click(screen.getByRole('checkbox', { name: 'Только требующие внимания' }))

@@ -1,11 +1,11 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useState } from 'react'
-import { StatusBadge } from '../src/components/StatusBadge'
+import { useCallback, useRef, useState } from 'react'
 import { isApiError } from '../src/api/client'
 import { formatTime } from '../src/lib/format'
 import { ManagerLink } from './accountsLocation'
 import { ReadFailure, useAccountAccessError, type AccountAccess } from './AccountsPage'
-import { ProductEditor } from './ProductEditor'
+import { NewProductEditor } from './ProductEditor'
+import { WidgetSettings } from './WidgetSettings'
 import {
   WidgetConnectionProblems,
   WidgetFilters,
@@ -22,6 +22,7 @@ import {
 } from './productsApi'
 import styles from './Accounts.module.css'
 import catalogStyles from './WidgetsCatalog.module.css'
+import settingsStyles from './WidgetSettings.module.css'
 
 export const productsKey = ['managers', 'products']
 export function productSearch(search: string, updates: Record<string, string | null>) {
@@ -49,7 +50,11 @@ export function WidgetsPage({
   navigate,
   grants,
   ...access
-}: AccountAccess & { search: string; navigate: (search: string) => void; grants: string[] }) {
+}: AccountAccess & {
+  search: string
+  navigate: (search: string, replace?: boolean) => void
+  grants: string[]
+}) {
   const params = new URLSearchParams(search),
     selected = params.get('product')
   const id = isProductId(selected) ? selected : null
@@ -68,10 +73,11 @@ export function WidgetsPage({
   const queryString = query.toString()
   const client = useQueryClient()
   const [saved, setSaved] = useState<Product | null>(null)
+  const openedFromCatalog = useRef<string | null>(null)
   const list = useQuery({
     queryKey: [...productsKey, access.scope, queryString],
     queryFn: ({ signal }) => listProducts(queryString, signal),
-    enabled: canRead && !selected && !creating,
+    enabled: canRead && !creating,
     placeholderData: keepPreviousData,
     retry: false,
   })
@@ -95,36 +101,47 @@ export function WidgetsPage({
     if (value) {
       setSaved(value)
       client.setQueryData([...productsKey, access.scope, 'detail', value.id], value)
-      navigate(productSearch(search, { product: value.id, product_new: null }))
+      if (creating) navigate(productSearch(search, { product: value.id, product_new: null }), true)
     }
     void client.invalidateQueries({ queryKey: productsKey })
   }
   const apply = useCallback(
     (updates: Record<string, string | null>) => {
+      if (selected) return
       const filters: Record<string, string | null> = { products_cursor: null }
       for (const [key, value] of Object.entries(updates)) filters['products_' + key] = value
       const next = productSearch(search, filters)
       if (next !== new URLSearchParams(search).toString()) navigate(next)
     },
-    [search, navigate],
+    [search, navigate, selected],
   )
-  const catalog = !selected && !creating
   const productLocation = (product: ProductId) => productSearch(search, { product })
+  function openProduct(next: string) {
+    openedFromCatalog.current = new URLSearchParams(next).get('product')
+    navigate(next)
+  }
+  function closeProduct() {
+    if (selected && openedFromCatalog.current === selected) {
+      window.history.back()
+    } else {
+      navigate(productSearch(search, { product: null, metrics_from: null, metrics_to: null }), true)
+    }
+  }
+  const cursorExpired = query.has('cursor') && isApiError(list.error) && list.error.status === 400
+  function firstPage() {
+    navigate(productSearch(search, { products_cursor: null }))
+  }
   return (
-    <section
-      className={catalog ? styles.workspace + ' ' + catalogStyles.directory : styles.workspace}
-    >
-      <div className={catalog ? catalogStyles.heading : styles.heading}>
+    <section className={styles.workspace + ' ' + catalogStyles.directory}>
+      <div className={catalogStyles.heading}>
         <div>
-          <h1>{product?.display_name ?? 'Виджеты'}</h1>
-          {catalog && canRead ? (
-            <p className={styles.meta}>
-              Нажмите на виджет, чтобы открыть его карточку и настройки.
-            </p>
+          <h1>{creating ? 'Новый виджет' : 'Виджеты'}</h1>
+          {!creating && canRead ? (
+            <p className={styles.meta}>Выберите виджет, чтобы открыть его настройки.</p>
           ) : null}
         </div>
-        <div className={catalog ? catalogStyles.headingActions : styles.actions}>
-          {(id || creating) && canRead ? (
+        <div className={catalogStyles.headingActions}>
+          {creating && canRead ? (
             <ManagerLink
               search={productSearch(search, { product: null, product_new: null })}
               navigate={navigate}
@@ -136,12 +153,12 @@ export function WidgetsPage({
             <ManagerLink
               search={productSearch(search, { product: null, product_new: '1' })}
               navigate={navigate}
-              className={catalog ? catalogStyles.create : undefined}
+              className={catalogStyles.create}
             >
               Новый виджет
             </ManagerLink>
           ) : null}
-          {catalog && list.data && !list.isPlaceholderData ? (
+          {!creating && list.data && !list.isPlaceholderData ? (
             <p className={styles.meta}>
               Platform ·{' '}
               <time dateTime={list.data.snapshot_at}>{formatTime(list.data.snapshot_at)}</time>
@@ -151,77 +168,14 @@ export function WidgetsPage({
       </div>
       {creating ? (
         canWrite ? (
-          <ProductEditor key="new" {...access} onSaved={save} />
+          <NewProductEditor {...access} onSaved={save} />
         ) : (
           <p role="alert">Нет права на изменение каталога.</p>
         )
-      ) : id ? (
-        <>
-          {canRead ? (
-            detail.isPending ? (
-              <p role="status">Загружаем виджет…</p>
-            ) : detail.isError ? (
-              <ReadFailure error={detail.error} retry={() => void detail.refetch()} />
-            ) : null
-          ) : !product ? (
-            <p>Нет доступа к карточке каталога.</p>
-          ) : null}
-          {product ? (
-            <>
-              <section className={styles.panel} aria-label="Карточка виджета">
-                <dl className={styles.facts}>
-                  <dt>Код</dt>
-                  <dd>{product.code}</dd>
-                  <dt>Линейка</dt>
-                  <dd>{product.line}</dd>
-                  <dt>Доступность</dt>
-                  <dd>
-                    <StatusBadge domain="product_availability" state={product.availability} calm />
-                  </dd>
-                  <dt>Пробный период</dt>
-                  <dd>
-                    <StatusBadge domain="product_trial" state={product.trial_policy.kind} calm />
-                    {product.trial_policy.duration_days === null
-                      ? null
-                      : ' · ' + product.trial_policy.duration_days + ' дней'}
-                  </dd>
-                  <dt>Версия карточки</dt>
-                  <dd>{product.version}</dd>
-                  <dt>Версия тарифа</dt>
-                  <dd>{product.tariff_version ?? '—'}</dd>
-                  <dt>Интеграции</dt>
-                  <dd>{product.integration_refs.join(', ') || '—'}</dd>
-                  <dt>Ссылки</dt>
-                  <dd>
-                    {product.links.map((l) => (
-                      <p key={l.url}>
-                        <a href={l.url} target="_blank" rel="noreferrer">
-                          {l.label}
-                        </a>
-                      </p>
-                    ))}
-                  </dd>
-                </dl>
-              </section>
-              {canWrite ? (
-                <ProductEditor key={id} {...access} product={product} onSaved={save} />
-              ) : (
-                <p>Каталог доступен только для чтения.</p>
-              )}
-            </>
-          ) : null}
-          {canStats ? (
-            <ProductMetrics key={id} id={id} search={search} navigate={navigate} {...access} />
-          ) : (
-            <p>Нет доступа к метрикам.</p>
-          )}
-        </>
-      ) : selected ? (
-        <p role="alert">Некорректный идентификатор виджета.</p>
       ) : !canRead ? (
         <p role="alert">
           Нет доступа к списку виджетов.
-          {canStats ? ' Откройте прямую ссылку на метрики виджета.' : ''}
+          {canStats && !selected ? ' Откройте прямую ссылку на метрики виджета.' : ''}
         </p>
       ) : (
         <>
@@ -234,13 +188,11 @@ export function WidgetsPage({
           />
           {list.isPending || list.isPlaceholderData ? (
             <p role="status">Загружаем виджеты…</p>
-          ) : list.isError ? (
-            query.has('cursor') && isApiError(list.error) && list.error.status === 400 ? (
+          ) : !list.data ? (
+            cursorExpired ? (
               <div role="alert">
                 Каталог изменился или курсор недействителен.{' '}
-                <button onClick={() => navigate(productSearch(search, { products_cursor: null }))}>
-                  Первая страница
-                </button>
+                <button onClick={firstPage}>Первая страница</button>
               </div>
             ) : (
               <ReadFailure error={list.error} retry={() => void list.refetch()} />
@@ -254,19 +206,13 @@ export function WidgetsPage({
                   products={list.data.items}
                   statistics={list.data.overview?.statistics}
                   showStats={Boolean(list.data.overview)}
-                  navigate={navigate}
+                  navigate={openProduct}
                   productLocation={productLocation}
                 />
               )}
               <div className={styles.actions}>
-                {query.has('cursor') ? (
-                  <button
-                    onClick={() => navigate(productSearch(search, { products_cursor: null }))}
-                  >
-                    Первая страница
-                  </button>
-                ) : null}
-                {list.data.next_cursor ? (
+                {query.has('cursor') ? <button onClick={firstPage}>Первая страница</button> : null}
+                {list.data.next_cursor && !cursorExpired ? (
                   <button
                     onClick={() =>
                       navigate(productSearch(search, { products_cursor: list.data.next_cursor }))
@@ -290,18 +236,74 @@ export function WidgetsPage({
                   </select>
                 </label>
               </div>
+              {list.isError ? (
+                <div role="alert">
+                  Показан предыдущий снимок каталога.{' '}
+                  {cursorExpired ? (
+                    'Каталог изменился. Перейдите на первую страницу, чтобы увидеть новые данные.'
+                  ) : (
+                    <button onClick={() => void list.refetch()}>Повторить загрузку</button>
+                  )}
+                </div>
+              ) : null}
               {list.data.overview ? (
                 <WidgetConnectionProblems
                   overview={list.data.overview}
                   search={search}
                   productLocation={productLocation}
-                  navigate={navigate}
+                  navigate={openProduct}
                 />
               ) : null}
             </div>
           )}
         </>
       )}
+      {!creating && selected ? (
+        <WidgetSettings
+          key={selected}
+          selection={selected}
+          product={product}
+          canWrite={canWrite}
+          {...access}
+          onSaved={save}
+          onClose={closeProduct}
+        >
+          {!id ? (
+            <p role="alert">Некорректный идентификатор виджета.</p>
+          ) : (
+            <>
+              {canRead ? (
+                detail.isPending && !product ? (
+                  <p role="status">Загружаем виджет…</p>
+                ) : detail.isError ? (
+                  <ReadFailure error={detail.error} retry={() => void detail.refetch()} />
+                ) : null
+              ) : !product ? (
+                <p>Нет доступа к карточке каталога.</p>
+              ) : null}
+              {canStats ? (
+                canRead || product ? (
+                  <details
+                    className={settingsStyles.details}
+                    open={params.has('metrics_from') || params.has('metrics_to')}
+                  >
+                    <summary>Метрики виджета</summary>
+                    <ProductMetrics
+                      id={id}
+                      search={search}
+                      navigate={navigate}
+                      {...access}
+                      embedded
+                    />
+                  </details>
+                ) : (
+                  <ProductMetrics id={id} search={search} navigate={navigate} {...access} />
+                )
+              ) : null}
+            </>
+          )}
+        </WidgetSettings>
+      ) : null}
     </section>
   )
 }
@@ -310,8 +312,14 @@ function ProductMetrics({
   id,
   search,
   navigate,
+  embedded,
   ...access
-}: AccountAccess & { id: ProductId; search: string; navigate: (search: string) => void }) {
+}: AccountAccess & {
+  id: ProductId
+  search: string
+  navigate: (search: string, replace?: boolean) => void
+  embedded?: boolean
+}) {
   const params = new URLSearchParams(search),
     query = new URLSearchParams()
   for (const key of ['from', 'to']) {
@@ -327,7 +335,7 @@ function ProductMetrics({
   useAccountAccessError(metrics.error, access.onExpired, access.onForbidden)
   return (
     <section className={styles.panel} aria-label="Метрики виджета">
-      <h2>Метрики виджета</h2>
+      {embedded ? null : <h2>Метрики виджета</h2>}
       <form
         className={styles.form}
         key={queryString}
@@ -339,6 +347,7 @@ function ProductMetrics({
               metrics_from: String(form.get('from') ?? ''),
               metrics_to: String(form.get('to') ?? ''),
             }),
+            true,
           )
         }}
       >
