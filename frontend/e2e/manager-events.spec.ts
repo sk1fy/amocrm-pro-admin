@@ -57,10 +57,12 @@ test('durable events retain identity, filtered snapshots and exact closed episod
   await page.goto(
     url('section=clients&account=' + account + '&tab=history&history_kind=installation_reviewed'),
   )
+  await showEventDetails(page, review)
   await expect(page.getByText('ID события ' + review, { exact: false })).toBeVisible()
   await page.goto(
     url('section=clients&account=' + account + '&tab=history&history_kind=account_profile_updated'),
   )
+  await showEventDetails(page, profile)
   await expect(page.getByText('ID события ' + profile, { exact: false })).toBeVisible()
   await page.goto(url('section=feed&feed_account_id=' + account + '&feed_kind=access_renewed'))
   await showEventDetails(page, renewal)

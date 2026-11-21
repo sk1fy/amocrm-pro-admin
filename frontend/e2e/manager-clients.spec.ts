@@ -63,8 +63,10 @@ test('two managers see a saved client profile and a stale draft survives conflic
   await expect(page.getByRole('link', { name: /Pilot 2/ })).toBeVisible()
   await page.goBack()
   await expect(page).toHaveURL(list)
-  await page.getByRole('link', { name: /Pilot 1/ }).click()
-  await expect(page.getByRole('heading', { name: 'Pilot 1', exact: true })).toBeVisible()
+  const firstClient = page.getByRole('link', { name: /Pilot 1/ })
+  const cardTitle = await firstClient.innerText()
+  await firstClient.click()
+  await expect(page.getByRole('heading', { name: cardTitle, exact: true })).toBeVisible()
   const id = new URL(page.url()).searchParams.get('account')
   expect(id).toMatch(/^[a-f0-9-]{36}$/)
   const cardPath = new URL(accountPath + '/' + id, origin).href
