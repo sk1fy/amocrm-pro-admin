@@ -21,7 +21,7 @@ import {
   accountTitle,
   type AccountActions,
 } from './AccountOverview'
-import { AccountAudit, AccountPortrait } from './AccountPortrait'
+import { AccountPortrait } from './AccountPortrait'
 import { accountsKey, ReadFailure, useAccountAccessError, type AccountAccess } from './AccountsPage'
 import {
   ContactCell,
@@ -598,12 +598,6 @@ export function ManagerAccountCard({
       (capability) => capability.action === 'account.portrait' && capability.allowed,
     ) ??
       false)
-  const canWriteAudit =
-    canWrite &&
-    (account?.capabilities.some(
-      (capability) => capability.action === 'account.portrait_audit_date' && capability.allowed,
-    ) ??
-      false)
   const parent = workspaceSection(search)
   return (
     <article className={styles.workspace}>
@@ -688,22 +682,6 @@ export function ManagerAccountCard({
               scope={scope}
               canWrite={canWritePortrait}
               canConfigure={grants.includes('configuration.manage')}
-              auditLink={
-                <ManagerLink
-                  search={accountSearch(search, selected.id, 'audit')}
-                  navigate={navigate}
-                >
-                  {canWriteAudit ? '+ Провели аудит' : 'Открыть аудит'}
-                </ManagerLink>
-              }
-              {...actions}
-            />
-          ) : null}
-          {selected.tab === 'audit' ? (
-            <AccountAudit
-              account={selected.id}
-              scope={scope}
-              canWrite={canWriteAudit}
               {...actions}
             />
           ) : null}

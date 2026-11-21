@@ -283,11 +283,9 @@ function CompanyProfile({
   niches,
   editor,
   loadNiches,
-  auditLink,
 }: Omit<PortraitRecordProps, 'template'> & {
   editor?: PortraitEditor
   loadNiches?: () => void
-  auditLink?: ReactNode
 }) {
   const { company, maturity_signals: signals } = portrait
   const nicheName = niches.find((item) => item.id === company.niche_id)?.name
@@ -341,17 +339,6 @@ function CompanyProfile({
           values={company.customer_types}
           editor={editor}
         />
-        <div className={styles.field}>
-          <span>Аудит</span>
-          <div className={styles.auditShortcut}>
-            {auditLink}
-            {portrait.audit_dates[0] ? (
-              <time dateTime={portrait.audit_dates[0].date}>{portrait.audit_dates[0].date}</time>
-            ) : (
-              <span>Аудит не проводили</span>
-            )}
-          </div>
-        </div>
       </div>
       <div className={styles.companyColumn}>
         <h3>amoCRM настроена · наш взгляд</h3>
@@ -529,13 +516,11 @@ function PortraitFields({
   niches,
   loadNiches,
   scope,
-  auditLink,
   ...actions
 }: AccountActions &
   Omit<PortraitRecordProps, 'template'> & {
     scope: string
     loadNiches?: () => void
-    auditLink?: ReactNode
   }) {
   const account = portrait.account_id
   const initial: Record<string, string> = {
@@ -605,7 +590,6 @@ function PortraitFields({
               onForbidden: actions.onForbidden,
             }}
             loadNiches={loadNiches}
-            auditLink={auditLink}
           />
         )}
       </AccountForm>
@@ -677,9 +661,8 @@ export function AccountPortrait({
   scope,
   canWrite,
   canConfigure,
-  auditLink,
   ...actions
-}: PortraitTabProps & { canConfigure: boolean; auditLink?: ReactNode }) {
+}: PortraitTabProps & { canConfigure: boolean }) {
   const portrait = usePortrait(account, scope)
   const template = useQuery({
     queryKey: [...accountsKey, scope, 'template'],
@@ -742,11 +725,10 @@ export function AccountPortrait({
                 portrait={current}
                 scope={scope}
                 niches={allNiches}
-                auditLink={auditLink}
                 loadNiches={niches.hasNextPage ? () => void niches.fetchNextPage() : undefined}
               />
             ) : (
-              <CompanyProfile portrait={current} niches={allNiches} auditLink={auditLink} />
+              <CompanyProfile portrait={current} niches={allNiches} />
             )}
             <PortraitPeople portrait={current} canWrite={canWrite} {...actions} />
             <PortraitWidgetTiers tiers={current.widget_tiers} />
@@ -759,90 +741,6 @@ export function AccountPortrait({
         ) : (
           <p className={styles.meta} role="status">
             Загружаем портрет…
-          </p>
-        )}
-      </div>
-    </section>
-  )
-}
-
-export function AccountAudit({ account, scope, canWrite, ...actions }: PortraitTabProps) {
-  const portrait = usePortrait(account, scope)
-  useAccountAccessError(portrait.error, actions.onExpired, actions.onForbidden)
-  const current = portrait.isError ? undefined : portrait.data
-
-  return (
-    <section className={styles.panel} aria-label="Аудит клиента">
-      <header className={styles.header}>
-        <h2>Аудит клиента</h2>
-      </header>
-      <div className={styles.body}>
-        {portrait.isError ? (
-          <ReadFailure error={portrait.error} retry={() => void portrait.refetch()} />
-        ) : current ? (
-          <div className={styles.auditLayout} data-editor={canWrite}>
-            <section className={styles.auditHistory}>
-              <h3>Даты аудита</h3>
-              {current.audit_dates.length ? (
-                <ul className={styles.auditDates}>
-                  {current.audit_dates.map((audit) => (
-                    <li key={audit.id}>
-                      <time dateTime={audit.date}>{audit.date}</time>
-                      <span className={styles.note}>{audit.note ?? '—'}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className={styles.empty}>Дат аудита пока нет</p>
-              )}
-            </section>
-            {canWrite ? (
-              <div className={styles.auditEditor}>
-                <h3>Добавить дату аудита</h3>
-                <AccountForm
-                  {...actions}
-                  inline
-                  id={account + ':audit'}
-                  title="Добавить дату аудита"
-                  version={current.version}
-                  initial={{ date: '', note: '' }}
-                  submitLabel="Добавить дату"
-                  command={(fields, _, version, key) => ({
-                    kind: 'audit',
-                    account,
-                    version,
-                    key,
-                    body: JSON.stringify({ date: fields.date, note: fields.note || null }),
-                  })}
-                >
-                  {(fields, edit) => (
-                    <>
-                      <label className={styles.field}>
-                        Дата
-                        <input
-                          type="date"
-                          required
-                          value={fields.date}
-                          onChange={(event) => edit('date', event.target.value)}
-                        />
-                      </label>
-                      <label className={styles.field}>
-                        Заметка аудита
-                        <textarea
-                          rows={3}
-                          value={fields.note}
-                          onChange={(event) => edit('note', event.target.value)}
-                        />
-                      </label>
-                    </>
-                  )}
-                </AccountForm>
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <p className={styles.meta} role="status">
-            Загружаем даты аудита…
           </p>
         )}
       </div>
