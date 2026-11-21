@@ -36,6 +36,12 @@ async function editNote(page: Page, note: string) {
     .fill('Проверка работы двух сотрудников')
 }
 
+function portraitRating(page: Page, value: string) {
+  return page
+    .getByRole('group', { name: 'Деньги', exact: true })
+    .getByRole('button', { name: value, exact: true })
+}
+
 test('two managers see a saved client profile and a stale draft survives conflict', async ({
   page,
   browser,
@@ -125,10 +131,10 @@ test('two managers see a saved client profile and a stale draft survives conflic
     await readonly.getByRole('link', { name: 'Пользователи' }).click()
     await expect(readonly.getByRole('cell', { name: 'Fixture user 1/0' })).toBeVisible()
     await readonly.getByRole('link', { name: 'История' }).click()
-    await expect(readonly.getByText('История событий пока недоступна.')).toBeVisible()
+    await expect(readonly.getByRole('heading', { name: 'История аккаунта' })).toBeVisible()
 
     await page.getByRole('link', { name: 'Портрет клиента' }).click()
-    await page.getByRole('spinbutton', { name: 'Рейтинг' }).fill('3')
+    await portraitRating(page, '3').click()
     const portrait = page.waitForResponse(
       (response) =>
         response.url() === cardPath + '/portrait' && response.request().method() === 'PATCH',
@@ -163,7 +169,7 @@ test('saved client changes survive the Admin and Platform restart', async ({ pag
   await page.getByRole('link', { name: /Pilot 1/ }).click()
   await expect(page.getByRole('definition').filter({ hasText: firstNote })).toBeVisible()
   await page.getByRole('link', { name: 'Портрет клиента' }).click()
-  await expect(page.getByRole('spinbutton', { name: 'Рейтинг' })).toHaveValue('3')
+  await expect(portraitRating(page, '3')).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('link', { name: 'Наши виджеты' }).click()
   await expect(page.getByText('Ручное назначение', { exact: true }).first()).toBeVisible()
   await expect(page.getByText(/2090/).first()).toBeVisible()
