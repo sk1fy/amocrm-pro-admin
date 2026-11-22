@@ -43,7 +43,6 @@ export type StateDomain =
   | 'installation_contact'
   | 'installation_deal'
   | 'product_line'
-  | 'account_classification'
   | 'client_classification'
   | 'client_data'
   | 'client_renewal'
@@ -322,13 +321,7 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     FREE: { tone: 'ok', label: 'FREE' },
     TOP: { tone: 'attention', label: 'TOP' },
     PRO: { tone: 'action', label: 'PRO' },
-    trial: { tone: 'off', label: 'Trial' },
-  },
-  account_classification: {
-    'Без партнёра': { tone: 'ok', label: 'Без партнёра' },
-    'Клиент партнёра': { tone: 'attention', label: 'Клиент партнёра' },
-    'Наш клиент': { tone: 'ok', label: 'Наш клиент' },
-    'Запрет работы': { tone: 'off', label: 'Запрет работы' },
+    uncategorized: { tone: 'off', label: 'Без категории' },
   },
   client_classification: {
     'Без партнёра': { tone: 'off', label: 'Свободный клиент' },
@@ -363,6 +356,7 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     once: { tone: 'attention', label: 'Однократный пробный период' },
   },
   product_access: {
+    trial: { tone: 'attention', label: 'Trial' },
     active: { tone: 'ok', label: 'Действует' },
     inactive: { tone: 'off', label: 'Не действует' },
   },

@@ -51,7 +51,10 @@ const reviewed = {
   version: 2,
 }
 
-function installationPage(item: typeof row, next: string | null = null) {
+function installationPage(
+  item: Omit<typeof row, 'product_line'> & { product_line?: string },
+  next: string | null = null,
+) {
   return Response.json({
     items: [item],
     next_cursor: next,
@@ -97,6 +100,51 @@ afterEach(() => {
   resetApiSession()
   vi.unstubAllGlobals()
 })
+
+it.each([
+  {
+    active: true,
+    category: 'PRO',
+    status: 'Trial',
+    classification: 'Без партнёра',
+    client: 'Свободный клиент',
+  },
+  {
+    active: false,
+    category: 'PRO',
+    status: 'Не действует',
+    classification: undefined,
+    client: 'Не указано',
+  },
+  {
+    active: true,
+    category: undefined,
+    status: 'Действует',
+    classification: 'Наш клиент',
+    client: 'Наш клиент',
+  },
+])(
+  'shows widget category, access and client status independently ($status)',
+  async ({ active, category, status, classification, client }) => {
+    const item = {
+      ...row,
+      product_line: category,
+      account_classification: classification,
+      access: { ...row.access, active, source: category ? 'own_trial' : 'manual' },
+    }
+    replaceFetch((url) =>
+      url.pathname.endsWith('/me') ? Response.json(manager) : installationPage(item),
+    )
+    openManager('?section=installations')
+    expect(await screen.findByText(client)).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Подробнее' }))
+    const details = screen.getByRole('region', { name: 'Аккаунт amoCRM ' + accountId })
+    expect(within(details).getByText('Категория').nextElementSibling).toHaveTextContent(
+      category ?? 'Без категории',
+    )
+    expect(within(details).getByText('Статус').nextElementSibling).toHaveTextContent(status)
+  },
+)
 
 it.each([
   '?section=companies&companies_q=old&clients_q=retail',

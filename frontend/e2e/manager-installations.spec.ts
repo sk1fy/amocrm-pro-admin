@@ -42,7 +42,7 @@ async function openAccount(page: Page) {
   await expect(card.getByText('Авторизована', { exact: true })).toBeVisible()
   await expect(card.getByText('Нет сведений об активации', { exact: true })).toBeVisible()
   await expect(card.getByText('Пробный период', { exact: true })).toBeVisible()
-  await expect(card.getByText('Действует', { exact: true })).toBeVisible()
+  await expect(card.getByText('Trial', { exact: true })).toBeVisible()
   await expect(
     card.getByText('Срок доступа', { exact: true }).locator('xpath=following-sibling::dd[1]/time'),
   ).toHaveAttribute('datetime', /T/)

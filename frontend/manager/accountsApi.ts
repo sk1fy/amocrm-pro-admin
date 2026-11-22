@@ -81,7 +81,8 @@ function parseLicense(raw: unknown) {
 }
 
 const dataGroups = ['receiving', 'no_data', 'blocked'] as const
-export const widgetTariffs = ['FREE', 'TOP', 'PRO', 'trial'] as const
+export const widgetCategories = ['FREE', 'TOP', 'PRO'] as const
+const widgetTariffs = [...widgetCategories, 'trial'] as const
 
 function listedValue<T extends string>(value: unknown, allowed: readonly T[]): T {
   const known = allowed.find((item) => item === value)
@@ -101,8 +102,11 @@ function parseAccountSummary(raw: unknown) {
     time_zone: optional(item.time_zone, (value) => nullable(value, text)),
     classification: nullable(item.classification, text),
     partner_name: optional(item.partner_name, (value) => nullable(value, text)),
-    widget_tariffs: optional(item.widget_tariffs, (value) =>
-      array(value, (tariff) => listedValue(tariff, widgetTariffs)),
+    widgetCategories: optional(item.widget_tariffs, (value) =>
+      array(value, (raw) => {
+        const category = listedValue(raw, widgetTariffs)
+        return category === 'trial' ? 'uncategorized' : category
+      }),
     ),
     data_group: optional(item.data_group, (value) => listedValue(value, dataGroups)),
     renewal_channel: optional(item.renewal_channel, (value) =>
