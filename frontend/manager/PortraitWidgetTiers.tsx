@@ -26,7 +26,7 @@ function TierProgress({
 export function PortraitWidgetTiers({ tiers }: { tiers: Portrait['widget_tiers'] }) {
   if (!tiers) return null
   return (
-    <section className={styles.summary} aria-label="Установки по линейкам виджетов">
+    <section className={styles.summary} aria-label="Установки по категориям виджетов">
       <div className={styles.tier} data-tier="FREE">
         <p className={styles.heading}>
           <span>FREE — стоят</span>

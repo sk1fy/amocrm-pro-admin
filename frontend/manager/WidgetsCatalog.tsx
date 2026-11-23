@@ -101,7 +101,7 @@ export function WidgetFilters({
   return (
     <form className={styles.toolbar} aria-label="Фильтры виджетов" onSubmit={submit}>
       <div className={styles.filterStart}>
-        <div className={styles.lines} aria-label="Линейка" role="group">
+        <div className={styles.lines} aria-label="Категория" role="group">
           {(['', ...lines] as const).map((line) => {
             const count = line === '' ? summary?.total : summary?.by_line[line]
             return (

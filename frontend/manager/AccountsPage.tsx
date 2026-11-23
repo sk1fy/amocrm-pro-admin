@@ -7,7 +7,7 @@ import { EMPTY, formatExpiry, formatRelativeTime, formatTime } from '../src/lib/
 import { lookupState } from '../src/states'
 import {
   listAccounts,
-  widgetTariffs,
+  widgetCategories,
   type AccountOverviewCounts,
   type AccountSummary,
 } from './accountsApi'
@@ -207,7 +207,7 @@ function ClientTable({
             <th scope="col" title={missingLicense}>
               amoCRM до
             </th>
-            <th scope="col">Тариф</th>
+            <th scope="col">Категории виджетов</th>
             <th scope="col">Активные пользователи</th>
             <th scope="col">Чей клиент</th>
             <th scope="col">Данные обновлены</th>
@@ -293,15 +293,10 @@ function ClientTable({
                   ) : null}
                 </td>
                 <td>
-                  {account.widget_tariffs?.length ? (
+                  {account.widgetCategories?.length ? (
                     <div className={styles.tariffs}>
-                      {account.widget_tariffs.map((tariff) => (
-                        <StatusBadge
-                          domain="product_line"
-                          state={tariff}
-                          key={tariff}
-                          title={tariff === 'trial' ? 'Пробный период' : undefined}
-                        />
+                      {account.widgetCategories.map((category) => (
+                        <StatusBadge domain="product_line" state={category} key={category} />
                       ))}
                     </div>
                   ) : (
@@ -453,15 +448,16 @@ export function AccountsPage({
           </label>
         </div>
         <label>
-          Тариф
+          Категории виджетов
           <select
-            aria-label="Тариф"
+            aria-label="Категории виджетов"
             value={params.get('tariff') ?? ''}
             onChange={(event) => change({ tariff: event.target.value })}
             disabled={!overview}
           >
             <option value="">все</option>
-            {widgetTariffs.map((tariff) => (
+            {params.get('tariff') === 'trial' ? <option value="trial">Без категории</option> : null}
+            {widgetCategories.map((tariff) => (
               <option key={tariff} value={tariff}>
                 {lookupState('product_line', tariff).label}
               </option>

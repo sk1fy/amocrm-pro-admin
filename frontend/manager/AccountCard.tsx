@@ -1,3 +1,4 @@
+import { WidgetAccessStatus } from './WidgetAccessStatus'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Timeline } from './Timeline'
 import { resolveEpisode } from './episodeResolver'
@@ -123,8 +124,10 @@ function Widgets({
           <table className={styles.table}>
             <thead>
               <tr>
-                <th scope="col">Статус · установлен</th>
+                <th scope="col">Установка</th>
                 <th scope="col">Виджет</th>
+                <th scope="col">Категория</th>
+                <th scope="col">Статус</th>
                 <th scope="col">Доступ до</th>
                 <th scope="col">Сделка</th>
                 <th scope="col">Контакт из формы активации</th>
@@ -222,9 +225,6 @@ function Widget({
       </td>
       <td>
         <div className={card.rowBadges}>
-          {row.product_line ? (
-            <StatusBadge domain="product_line" state={row.product_line} calm />
-          ) : null}
           <strong>{row.product_name || row.product_code}</strong>
         </div>
         <span className={card.cellSecondary}>
@@ -233,16 +233,15 @@ function Widget({
         </span>
       </td>
       <td>
+        <StatusBadge domain="product_line" state={row.product_line ?? 'uncategorized'} calm />
+      </td>
+      <td>
+        <WidgetAccessStatus access={row.access} />
+      </td>
+      <td>
         {formatTime(row.access.valid_until)}
         <div className={card.cellSecondary}>
           <StatusBadge domain="product_access_source" state={row.access.source} calm />
-        </div>
-        <div className={card.cellSecondary}>
-          <StatusBadge
-            domain="product_access"
-            state={row.access.active ? 'active' : 'inactive'}
-            calm
-          />
         </div>
         <span className={card.cellSecondary}>Расчёт {formatTime(row.access.computed_at)}</span>
       </td>
@@ -368,13 +367,13 @@ function WidgetFacts({ row }: { row: AccountWidget }) {
       <dd>
         <StatusBadge domain="installation_authorization" state={row.authorization} calm />
       </dd>
-      <dt>Доступ</dt>
+      <dt>Категория</dt>
       <dd>
-        <StatusBadge
-          domain="product_access"
-          state={row.access.active ? 'active' : 'inactive'}
-          calm
-        />
+        <StatusBadge domain="product_line" state={row.product_line ?? 'uncategorized'} calm />
+      </dd>
+      <dt>Статус</dt>
+      <dd>
+        <WidgetAccessStatus access={row.access} />
       </dd>
       <dt>Источник срока</dt>
       <dd>

@@ -1,3 +1,4 @@
+import { WidgetAccessStatus } from './WidgetAccessStatus'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Fragment, useEffect, useState } from 'react'
 import { isApiError, isForbidden, isUnauthorized } from '../src/api/client'
@@ -187,13 +188,13 @@ function InstallationDetails({ row, snapshot }: { row: Installation; snapshot: s
         <div>
           <h3>Доступ к продукту</h3>
           <dl>
-            <dt>Доступ</dt>
+            <dt>Категория</dt>
             <dd>
-              <StatusBadge
-                domain="product_access"
-                state={row.access.active ? 'active' : 'inactive'}
-                calm
-              />
+              <StatusBadge domain="product_line" state={row.product_line ?? 'uncategorized'} calm />
+            </dd>
+            <dt>Статус</dt>
+            <dd>
+              <WidgetAccessStatus access={row.access} />
             </dd>
             <dt>Источник срока</dt>
             <dd>
@@ -516,17 +517,13 @@ export function InstallationsPage({
                                   {account && row.account_name && account !== row.account_name ? (
                                     <small>{row.account_name}</small>
                                   ) : null}
-                                  {zone || row.account_classification ? (
-                                    <div className={styles.tags}>
-                                      {zone ? <span className={styles.zone}>{zone}</span> : null}
-                                      {row.account_classification ? (
-                                        <StatusBadge
-                                          domain="account_classification"
-                                          state={row.account_classification}
-                                        />
-                                      ) : null}
-                                    </div>
-                                  ) : null}
+                                  <div className={styles.tags}>
+                                    {zone ? <span className={styles.zone}>{zone}</span> : null}
+                                    <StatusBadge
+                                      domain="client_classification"
+                                      state={row.account_classification ?? 'unknown'}
+                                    />
+                                  </div>
                                 </td>
                                 <td>
                                   <ManagerLink

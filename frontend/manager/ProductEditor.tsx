@@ -178,7 +178,7 @@ export function ProductEditor({
       (trial === '90' && fields.line !== 'TOP') ||
       (['7', '14'].includes(trial) && fields.line !== 'PRO')
     ) {
-      setError('Пробный период не соответствует линейке.')
+      setError('Пробный период не соответствует категории.')
       return
     }
     setError('')
@@ -223,7 +223,7 @@ export function ProductEditor({
       <fieldset disabled={!editable || attempt.locked}>
         <EditorSection
           section="main"
-          description="Линейка определяет, входит ли виджет в подписку «Все TOP-виджеты»."
+          description="Категория определяет, входит ли виджет в подписку «Все TOP-виджеты»."
         >
           {!product ? (
             <label>
@@ -248,7 +248,7 @@ export function ProductEditor({
           </label>
           <div className={styles.fieldRow}>
             <label>
-              Линейка
+              Категория
               <select value={fields.line} onChange={(event) => edit('line', event.target.value)}>
                 <option>FREE</option>
                 <option>TOP</option>
