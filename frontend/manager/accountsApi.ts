@@ -90,6 +90,21 @@ function listedValue<T extends string>(value: unknown, allowed: readonly T[]): T
   return known
 }
 
+const checkComponents = ['installations', 'identity', 'users'] as const
+
+function parseAccountCheck(raw: unknown) {
+  const item = record(raw)
+  return {
+    component: listedValue(item.component, checkComponents),
+    attempted_at: optional(item.attempted_at, date),
+    succeeded_at: optional(item.succeeded_at, date),
+    next_check_at: date(item.next_check_at),
+    reason: optional(item.reason, text),
+  }
+}
+
+export type AccountCheck = ReturnType<typeof parseAccountCheck>
+
 function parseAccountSummary(raw: unknown) {
   const item = record(raw)
   if (!isAccountId(item.account_id) || !isAmoAccountId(item.amo_account_id)) invalid()
@@ -102,6 +117,7 @@ function parseAccountSummary(raw: unknown) {
     time_zone: optional(item.time_zone, (value) => nullable(value, text)),
     classification: nullable(item.classification, text),
     partner_name: optional(item.partner_name, (value) => nullable(value, text)),
+    checks: optional(item.checks, (value) => array(value, parseAccountCheck)),
     widgetCategories: optional(item.widget_tariffs, (value) =>
       array(value, (raw) => {
         const category = listedValue(raw, widgetTariffs)
