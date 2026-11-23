@@ -318,6 +318,63 @@
   color: white;
 }
 
+.tableScroll
+  .widgetsTable
+  :is(th, td, span, time, small, button, summary, input, label, [popover]) {
+  font-size: 16px;
+}
+
+.tableScroll .widgetsTable th {
+  white-space: normal;
+  letter-spacing: normal;
+}
+
+.authorizationInfo {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.authorizationInfo:hover,
+.authorizationInfo:focus-visible {
+  background: var(--color-surface-2);
+  color: var(--color-primary);
+}
+
+.authorizationHint {
+  max-width: calc(100vw - 24px);
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+@supports (position-area: bottom) {
+  .authorizationHint {
+    position-area: bottom span-right;
+    position-try-fallbacks: flip-block, flip-inline;
+    inset: auto;
+    margin: 4px 0;
+    justify-self: start;
+  }
+}
+
+@media (pointer: coarse) {
+  .authorizationInfo {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 .rowBadges {
   display: flex;
   flex-wrap: wrap;

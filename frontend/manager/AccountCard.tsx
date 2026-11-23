@@ -5,6 +5,7 @@ import { resolveEpisode } from './episodeResolver'
 import { useState, type FormEvent } from 'react'
 import { isUnauthorized } from '../src/api/client'
 import { StatusBadge } from '../src/components/StatusBadge'
+import { lookupState } from '../src/states'
 import { formatTime } from '../src/lib/format'
 import { getAccount, listUsers, listWidgets, type AccountWidget } from './accountsApi'
 import {
@@ -121,7 +122,7 @@ function Widgets({
           // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Enable horizontal keyboard scrolling.
           tabIndex={0}
         >
-          <table className={styles.table}>
+          <table className={`${styles.table} ${card.widgetsTable}`}>
             <thead>
               <tr>
                 <th scope="col">Установка</th>
@@ -206,18 +207,39 @@ function Widget({
   useAccountAccessError(current.error, actions.onExpired, actions.onForbidden)
   const latest = current.isError ? undefined : current.data?.items[0]
   const renewalRow = latest ?? row
+  const authorizationInfoId = `widget-authorization-${row.id}`
   const deal = row.deal
   return (
     <tr>
       <td>
         <div className={card.rowBadges}>
           <StatusBadge domain="installation_lifecycle" state={row.lifecycle} calm />
-          <StatusBadge
-            domain="installation_authorization"
-            state={row.authorization}
-            variant={row.authorization === 'unknown' ? 'dot' : undefined}
-            calm
-          />
+          {row.authorization === 'unknown' ? (
+            <>
+              <button
+                type="button"
+                className={card.authorizationInfo}
+                aria-label="Сведения об авторизации"
+                popoverTarget={authorizationInfoId}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6.3" stroke="currentColor" strokeWidth="1.3" />
+                  <circle cx="8" cy="5" r=".85" fill="currentColor" />
+                  <path
+                    d="M8 7.5v3.3"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+              <div id={authorizationInfoId} popover="auto" className={card.authorizationHint}>
+                {lookupState('installation_authorization', row.authorization).label}
+              </div>
+            </>
+          ) : (
+            <StatusBadge domain="installation_authorization" state={row.authorization} calm />
+          )}
         </div>
         <time className={card.cellSecondary} dateTime={row.installed_at}>
           {formatTime(row.installed_at)}
