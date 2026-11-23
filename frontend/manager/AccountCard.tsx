@@ -212,7 +212,12 @@ function Widget({
       <td>
         <div className={card.rowBadges}>
           <StatusBadge domain="installation_lifecycle" state={row.lifecycle} calm />
-          <StatusBadge domain="installation_authorization" state={row.authorization} calm />
+          <StatusBadge
+            domain="installation_authorization"
+            state={row.authorization}
+            variant={row.authorization === 'unknown' ? 'dot' : undefined}
+            calm
+          />
         </div>
         <time className={card.cellSecondary} dateTime={row.installed_at}>
           {formatTime(row.installed_at)}
