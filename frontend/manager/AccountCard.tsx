@@ -213,7 +213,24 @@ function Widget({
     <tr>
       <td>
         <div className={card.rowBadges}>
-          <StatusBadge domain="installation_lifecycle" state={row.lifecycle} calm />
+          {row.lifecycle === 'current' ? (
+            <span className={card.currentInstallation}>
+              <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="12" className={card.checkBackground} />
+                <path
+                  d="m7.8 12.1 2.9 3 5.6-6.2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {lookupState('installation_lifecycle', row.lifecycle).label}
+            </span>
+          ) : (
+            <StatusBadge domain="installation_lifecycle" state={row.lifecycle} calm />
+          )}
           {row.authorization === 'unknown' ? (
             <>
               <button

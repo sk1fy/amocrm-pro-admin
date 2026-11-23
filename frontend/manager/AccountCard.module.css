@@ -329,6 +329,22 @@
   letter-spacing: normal;
 }
 
+.currentInstallation {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+}
+
+.currentInstallation svg {
+  flex: none;
+  color: var(--tone-ok);
+}
+
+.checkBackground {
+  fill: var(--tone-ok-bg);
+}
+
 .authorizationInfo {
   display: inline-grid;
   place-items: center;
