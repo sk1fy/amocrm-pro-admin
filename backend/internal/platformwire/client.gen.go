@@ -46,6 +46,27 @@ func (e AccessStateSource) Valid() bool {
 	}
 }
 
+// Defines values for AccountCheckComponent.
+const (
+	AccountCheckComponentIdentity      AccountCheckComponent = "identity"
+	AccountCheckComponentInstallations AccountCheckComponent = "installations"
+	AccountCheckComponentUsers         AccountCheckComponent = "users"
+)
+
+// Valid indicates whether the value is a known member of the AccountCheckComponent enum.
+func (e AccountCheckComponent) Valid() bool {
+	switch e {
+	case AccountCheckComponentIdentity:
+		return true
+	case AccountCheckComponentInstallations:
+		return true
+	case AccountCheckComponentUsers:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AccountSummaryDataGroup.
 const (
 	AccountSummaryDataGroupBlocked   AccountSummaryDataGroup = "blocked"
@@ -1272,16 +1293,16 @@ func (e UpdateAccountProfileJSONBodyClassification) Valid() bool {
 
 // Defines values for RequestAccountRefreshJSONBodyComponents.
 const (
-	License RequestAccountRefreshJSONBodyComponents = "license"
-	Users   RequestAccountRefreshJSONBodyComponents = "users"
+	RequestAccountRefreshJSONBodyComponentsLicense RequestAccountRefreshJSONBodyComponents = "license"
+	RequestAccountRefreshJSONBodyComponentsUsers   RequestAccountRefreshJSONBodyComponents = "users"
 )
 
 // Valid indicates whether the value is a known member of the RequestAccountRefreshJSONBodyComponents enum.
 func (e RequestAccountRefreshJSONBodyComponents) Valid() bool {
 	switch e {
-	case License:
+	case RequestAccountRefreshJSONBodyComponentsLicense:
 		return true
-	case Users:
+	case RequestAccountRefreshJSONBodyComponentsUsers:
 		return true
 	default:
 		return false
@@ -1488,19 +1509,19 @@ func (e ListProductsParamsAvailability) Valid() bool {
 
 // Defines values for ListProductsParamsSort.
 const (
-	Code          ListProductsParamsSort = "code"
-	Installations ListProductsParamsSort = "installations"
-	Name          ListProductsParamsSort = "name"
+	ListProductsParamsSortCode          ListProductsParamsSort = "code"
+	ListProductsParamsSortInstallations ListProductsParamsSort = "installations"
+	ListProductsParamsSortName          ListProductsParamsSort = "name"
 )
 
 // Valid indicates whether the value is a known member of the ListProductsParamsSort enum.
 func (e ListProductsParamsSort) Valid() bool {
 	switch e {
-	case Code:
+	case ListProductsParamsSortCode:
 		return true
-	case Installations:
+	case ListProductsParamsSortInstallations:
 		return true
-	case Name:
+	case ListProductsParamsSortName:
 		return true
 	default:
 		return false
@@ -1613,6 +1634,18 @@ type AccessState struct {
 // AccessStateSource defines model for AccessState.Source.
 type AccessStateSource string
 
+// AccountCheck defines model for AccountCheck.
+type AccountCheck struct {
+	AttemptedAt *time.Time            `json:"attempted_at,omitempty"`
+	Component   AccountCheckComponent `json:"component"`
+	NextCheckAt time.Time             `json:"next_check_at"`
+	Reason      *string               `json:"reason,omitempty"`
+	SucceededAt *time.Time            `json:"succeeded_at,omitempty"`
+}
+
+// AccountCheckComponent defines model for AccountCheck.Component.
+type AccountCheckComponent string
+
 // AccountDetail defines model for AccountDetail.
 type AccountDetail struct {
 	AccountId           openapi_types.UUID          `json:"account_id"`
@@ -1621,6 +1654,7 @@ type AccountDetail struct {
 	AmoAccountId        AmoID                       `json:"amo_account_id"`
 	Amostart            ObservationDate             `json:"amostart"`
 	Capabilities        []Capability                `json:"capabilities"`
+	Checks              *[]AccountCheck             `json:"checks,omitempty"`
 	Classification      nullable.Nullable[string]   `json:"classification"`
 	CurrentDomain       nullable.Nullable[string]   `json:"current_domain"`
 	DisplayName         nullable.Nullable[string]   `json:"display_name"`
@@ -1663,6 +1697,7 @@ type AccountSummary struct {
 	ActiveProductsCount int                            `json:"active_products_count"`
 	ActiveUsers         ObservationCount               `json:"active_users"`
 	AmoAccountId        AmoID                          `json:"amo_account_id"`
+	Checks              *[]AccountCheck                `json:"checks,omitempty"`
 	Classification      nullable.Nullable[string]      `json:"classification"`
 	CurrentDomain       nullable.Nullable[string]      `json:"current_domain"`
 	DataGroup           *AccountSummaryDataGroup       `json:"data_group,omitempty"`

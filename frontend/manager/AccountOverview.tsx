@@ -5,6 +5,7 @@ import { formatNull, formatTime } from '../src/lib/format'
 import { lookupState } from '../src/states'
 import type { AccountDetail, AccountObservation } from './accountsApi'
 import { CommandFeedback, useAccountCommand } from './accountCommands'
+import { AccountChecks } from './AccountChecks'
 import { AccountForm } from './AccountForms'
 import styles from './Accounts.module.css'
 import card from './AccountCard.module.css'
@@ -391,6 +392,7 @@ export function AccountOverview({
           ) : null}
         </div>
       </section>
+      <AccountChecks checks={account.checks} />
       <div className={card.summaryGrid}>
         <section className={card.summaryPanel} aria-label="Продукты аккаунта">
           <h2>Продукты аккаунта</h2>

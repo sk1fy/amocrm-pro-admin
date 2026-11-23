@@ -1,3 +1,4 @@
+import { accountCheckLabel } from './AccountChecks'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useState, type FormEvent } from 'react'
 import { isApiError } from '../src/api/client'
@@ -222,7 +223,8 @@ function ClientTable({
             const secondaryName =
               subdomain && name !== subdomain && name !== account.current_domain ? name : null
             const expiry = account.license.value?.license_until
-            const refreshed = account.active_users.observed_at
+            const usersCheck = account.checks?.find((check) => check.component === 'users')
+            const refreshed = usersCheck?.succeeded_at ?? account.active_users.observed_at
             return (
               <tr key={account.account_id}>
                 <td>
@@ -335,6 +337,7 @@ function ClientTable({
                   ) : (
                     <small>Нет наблюдений</small>
                   )}
+                  {usersCheck ? <small>{accountCheckLabel(usersCheck, time)}</small> : null}
                 </td>
               </tr>
             )
