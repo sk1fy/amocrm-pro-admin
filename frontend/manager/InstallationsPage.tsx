@@ -502,11 +502,32 @@ export function InstallationsPage({
                                     ) : null}
                                     <span title={row.product_code}>{row.product_name}</span>
                                   </div>
-                                  {row.kind === 'reinstall' ? (
+                                  {(row.kind === 'reinstall' ||
+                                    row.last_lifecycle_event === 'reauthorized' ||
+                                    row.last_lifecycle_event === 'uninstalled') && (
                                     <span className={styles.tags}>
-                                      <StatusBadge domain="installation_kind" state={row.kind} />
+                                      {row.kind === 'reinstall' && (
+                                        <span
+                                          className={styles.zone}
+                                          title="Повторная установка после подтверждённого удаления"
+                                        >
+                                          после удаления
+                                        </span>
+                                      )}
+                                      {row.last_lifecycle_event === 'reauthorized' && (
+                                        <StatusBadge
+                                          domain="installation_event"
+                                          state="reauthorized"
+                                        />
+                                      )}
+                                      {row.last_lifecycle_event === 'uninstalled' && (
+                                        <StatusBadge
+                                          domain="installation_lifecycle"
+                                          state="removed"
+                                        />
+                                      )}
                                     </span>
-                                  ) : null}
+                                  )}
                                 </td>
                                 <td>
                                   {account || row.account_name ? (

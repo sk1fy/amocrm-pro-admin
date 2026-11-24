@@ -102,6 +102,28 @@ afterEach(() => {
 })
 
 it.each([
+  ['install', 'installed', false],
+  ['install', 'reauthorized', false],
+  ['reinstall', 'reinstalled', true],
+  ['reinstall', 'reauthorized', true],
+] as const)('labels installation %s with event %s', async (kind, event, afterRemoval) => {
+  replaceFetch((url) =>
+    url.pathname.endsWith('/me')
+      ? Response.json(manager)
+      : installationPage({
+          ...row,
+          kind,
+          generation: afterRemoval ? 2 : 1,
+          last_lifecycle_event: event,
+        }),
+  )
+  openManager('?section=installations')
+  const cell = (await screen.findByText(row.product_name)).closest('td')!
+  expect(Boolean(within(cell).queryByText('после удаления'))).toBe(afterRemoval)
+  expect(Boolean(within(cell).queryByText('Повторная авторизация'))).toBe(event === 'reauthorized')
+})
+
+it.each([
   {
     active: true,
     category: 'PRO',
