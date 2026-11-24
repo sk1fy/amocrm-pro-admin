@@ -24,7 +24,7 @@ function valuesOf(product: Product | undefined, links: ReturnType<typeof separat
     installation_url: links.installation?.url ?? '',
     instruction_url: links.instruction?.url ?? '',
     other_links: listLinks(links.other),
-    integration_refs: product?.integration_refs.join('\n') ?? '',
+    integration_refs: '',
   }
 }
 
@@ -156,7 +156,12 @@ export function ProductEditor({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!editable || attempt.locked || state.kind === 'conflict' || (product && !draft)) return
-    const refs = product?.integration_refs ?? fields.integration_refs.split(/\s+/).filter(Boolean)
+    const refs = [
+      ...new Set([
+        ...(product?.integration_refs ?? []),
+        ...fields.integration_refs.split(/\s+/).filter(Boolean),
+      ]),
+    ]
     const links = applyLinks(fields, originalLinks, parts)
     if (
       refs.length > 100 ||
@@ -356,15 +361,16 @@ export function ProductEditor({
               <dd>{product.integration_refs.join(', ') || '—'}</dd>
             </dl>
           </details>
-        ) : (
+        ) : null}
+        {editable ? (
           <label className={styles.details}>
-            Подтверждённые интеграции
+            {product ? 'Добавить UUID интеграции Core' : 'Подтверждённые интеграции'}
             <textarea
               value={fields.integration_refs}
               onChange={(event) => edit('integration_refs', event.target.value)}
             />
           </label>
-        )}
+        ) : null}
       </fieldset>
       {editable ? (
         <>
