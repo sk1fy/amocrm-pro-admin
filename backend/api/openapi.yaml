@@ -316,6 +316,7 @@ paths:
         - {name: q, in: query, schema: {type: string, maxLength: 200}}
         - {name: review, in: query, schema: {type: string, enum: [reviewed, unreviewed]}}
         - {name: kind, in: query, schema: {type: string, enum: [install, reinstall]}}
+        - {name: state, in: query, schema: {type: string, enum: [current, removed]}}
         - {name: last_lifecycle_event, in: query, schema: {$ref: '#/components/schemas/ManagerInstallationLifecycleEvent'}}
         - {name: product_id, in: query, schema: {type: string, format: uuid}}
         - {name: line, in: query, schema: {type: string, enum: [FREE, TOP, PRO]}}

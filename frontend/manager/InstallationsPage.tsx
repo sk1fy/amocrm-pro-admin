@@ -273,6 +273,7 @@ export function InstallationsPage({
 }: Props) {
   const client = useQueryClient()
   const filters = getInstallationSearch(search)
+  filters.set('state', 'current')
   if (!filters.has('review')) filters.set('review', 'unreviewed')
   const activeQueue = filters.get('review') === 'reviewed' ? 'reviewed' : 'unreviewed'
   const searchKey = filters.toString()
@@ -502,28 +503,13 @@ export function InstallationsPage({
                                     ) : null}
                                     <span title={row.product_code}>{row.product_name}</span>
                                   </div>
-                                  {(row.kind === 'reinstall' ||
-                                    row.last_lifecycle_event === 'reauthorized' ||
-                                    row.last_lifecycle_event === 'uninstalled') && (
+                                  {row.kind !== 'observed' && (
                                     <span className={styles.tags}>
-                                      {row.kind === 'reinstall' && (
-                                        <span
-                                          className={styles.zone}
-                                          title="Повторная установка после подтверждённого удаления"
-                                        >
-                                          после удаления
-                                        </span>
-                                      )}
+                                      <span className={styles.zone}>Установка</span>
                                       {row.last_lifecycle_event === 'reauthorized' && (
                                         <StatusBadge
                                           domain="installation_event"
                                           state="reauthorized"
-                                        />
-                                      )}
-                                      {row.last_lifecycle_event === 'uninstalled' && (
-                                        <StatusBadge
-                                          domain="installation_lifecycle"
-                                          state="removed"
                                         />
                                       )}
                                     </span>

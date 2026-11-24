@@ -193,6 +193,12 @@ func managerInstallationFilters(raw string) (wire.ListInstallationsParams, error
 				return params, bad
 			}
 			params.Kind = &choice
+		case "state":
+			choice := wire.ListInstallationsParamsState(value)
+			if !choice.Valid() {
+				return params, bad
+			}
+			params.State = &choice
 		case "last_lifecycle_event":
 			choice := wire.LifecycleKind(value)
 			if !choice.Valid() {
