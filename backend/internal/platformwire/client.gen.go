@@ -1938,6 +1938,7 @@ type CoreLifecycleEvent struct {
 		Source CoreLifecycleEventEvidenceSource `json:"source"`
 	} `json:"evidence"`
 	Generation    int                             `json:"generation"`
+	InstalledBy   *string                         `json:"installed_by,omitempty"`
 	IntegrationId openapi_types.UUID              `json:"integration_id"`
 	Kind          LifecycleKind                   `json:"kind"`
 	OccurredAt    time.Time                       `json:"occurred_at"`
@@ -2028,6 +2029,7 @@ type Installation struct {
 	Generation            int                            `json:"generation"`
 	Id                    openapi_types.UUID             `json:"id"`
 	InstalledAt           time.Time                      `json:"installed_at"`
+	InstalledBy           *string                        `json:"installed_by,omitempty"`
 	Kind                  InstallationKind               `json:"kind"`
 	LastLifecycleEvent    InstallationLastLifecycleEvent `json:"last_lifecycle_event"`
 	Lifecycle             InstallationLifecycle          `json:"lifecycle"`
@@ -2541,6 +2543,15 @@ type WidgetActivationStatus struct {
 		Name  string  `json:"name"`
 		Role  *string `json:"role,omitempty"`
 	} `json:"profile,omitempty"`
+}
+
+// WidgetCatalogPolicy defines model for WidgetCatalogPolicy.
+type WidgetCatalogPolicy struct {
+	Confirmed *[]struct {
+		Generation int                `json:"generation"`
+		Id         openapi_types.UUID `json:"id"`
+	} `json:"confirmed,omitempty"`
+	ProductCode string `json:"product_code"`
 }
 
 // Actor defines model for Actor.

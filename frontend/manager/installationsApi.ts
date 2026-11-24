@@ -36,6 +36,7 @@ export type Installation = {
   account_time_zone?: string
   generation: number
   kind: string
+  installed_by?: string
   installed_at: string
   removed_at: string | null
   last_lifecycle_event: string
@@ -220,6 +221,7 @@ export function parseInstallation(value: unknown): Installation {
     account_time_zone: optionalString(item.account_time_zone),
     generation: integer(item.generation, item.kind === 'observed' ? 0 : 1),
     kind: string(item.kind),
+    installed_by: optionalString(item.installed_by),
     installed_at: date(item.installed_at),
     removed_at: nullableDate(item.removed_at),
     last_lifecycle_event: string(item.last_lifecycle_event),

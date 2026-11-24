@@ -163,6 +163,12 @@ function InstallationDetails({ row, snapshot }: { row: Installation; snapshot: s
             <dd>
               <ObservedTime value={row.installed_at} />
             </dd>
+            {row.installed_by && (
+              <>
+                <dt>Установил в amoCRM</dt>
+                <dd>ID пользователя {row.installed_by}</dd>
+              </>
+            )}
             <dt>Удалена</dt>
             <dd>
               <ObservedTime value={row.removed_at} />
@@ -345,7 +351,7 @@ export function InstallationsPage({
         <>
           <p className={styles.intro}>
             Новые установки идут сверху. Нажмите на аккаунт или ID amoCRM, чтобы открыть карточку
-            клиента. Если клиент разобрался с виджетом и ему не нужна помощь, нажмите «Проверен».
+            клиента. Когда клиент подтвердит, что виджет работает, нажмите «Проверен».
           </p>
           <InstallationFilters
             filters={filters}

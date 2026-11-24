@@ -156,11 +156,13 @@ export function useAccountCommand(
           setState({
             kind: 'error',
             message:
-              error.detailCode === 'target_not_extended'
-                ? 'Новый срок должен быть позже текущего.'
-                : error.status === 403
-                  ? 'Нет права на изменение.'
-                  : 'Не удалось сохранить изменение. Черновик сохранён.',
+              error.detailCode === 'integration_mapping_mismatch'
+                ? 'Проверьте UUID в технической админке. Интеграция должна быть активна и свободна для привязки. Если её только что создали, повторите через несколько секунд.'
+                : error.detailCode === 'target_not_extended'
+                  ? 'Новый срок должен быть позже текущего.'
+                  : error.status === 403
+                    ? 'Нет права на изменение.'
+                    : 'Не удалось сохранить изменение. Черновик сохранён.',
           })
           return
         }

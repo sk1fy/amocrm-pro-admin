@@ -11,6 +11,7 @@ import (
 )
 
 type managerInstallationDTO struct {
+	InstalledBy        *string                             `json:"installed_by,omitempty"`
 	ID                 uuid.UUID                           `json:"id"`
 	AccountID          uuid.UUID                           `json:"account_id"`
 	AmoAccountID       string                              `json:"amo_account_id"`
@@ -104,7 +105,7 @@ func toManagerInstallationDTO(row *wire.Installation) managerInstallationDTO {
 		AccountDomain: row.AccountDomain, AccountName: row.AccountName,
 		AccountClass: row.AccountClassification, AccountZone: row.AccountTimeZone,
 		CoreInstallationID: row.CoreInstallationId, Generation: row.Generation, Kind: string(row.Kind),
-		InstalledAt: row.InstalledAt.UTC(), RemovedAt: utcPointer(nullablePointer(row.RemovedAt)),
+		InstalledBy: row.InstalledBy, InstalledAt: row.InstalledAt.UTC(), RemovedAt: utcPointer(nullablePointer(row.RemovedAt)),
 		LastLifecycleEvent: string(row.LastLifecycleEvent), Lifecycle: string(row.Lifecycle),
 		Authorization: string(row.Authorization), ActivationStatus: string(row.ActivationStatus),
 		Review:      managerInstallationReviewDTO{Reviewed: review.Reviewed, ReviewedBy: review.ReviewedBy, ReviewedAt: utcPointer(review.ReviewedAt)},
