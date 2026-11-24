@@ -139,9 +139,11 @@ export function AccountProfile({
               value={status}
               onChange={(event) => setStatus(event.target.value)}
             >
-              {['Без партнёра', 'Наш клиент', 'Клиент партнёра', 'Запрет работы'].map((value) => (
-                <option key={value}>{value}</option>
-              ))}
+              {['Свободный клиент', 'Наш клиент', 'Клиент партнёра', 'Запрет работы'].map(
+                (value) => (
+                  <option key={value}>{value}</option>
+                ),
+              )}
             </select>
             <small>До обновления страницы · демо</small>
           </label>

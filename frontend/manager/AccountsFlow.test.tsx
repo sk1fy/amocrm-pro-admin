@@ -101,13 +101,13 @@ it('keeps list and card navigation state separate and forwards the same portrait
   const filter = JSON.stringify({ condition: { field_id: ratingField, op: 'gte', value: 3 } })
   const query = updateAccountSearch('q=installation&tab=7', {
     q: 'pilot',
-    classification: ['Без партнёра', 'Запрет работы'],
+    classification: ['Свободный клиент', 'Запрет работы'],
     cursor: 'opaque+/=',
     portrait: filter,
   })
   const request = getAccountSearch(query)
   expect(request.query.get('q')).toBe('pilot')
-  expect(request.query.getAll('classification')).toEqual(['Без партнёра', 'Запрет работы'])
+  expect(request.query.getAll('classification')).toEqual(['Свободный клиент', 'Запрет работы'])
   expect(request.filter).toBe(filter)
   expect(request.query.get('cursor')).toBe('opaque+/=')
   expect(request.query.has('tab')).toBe(false)

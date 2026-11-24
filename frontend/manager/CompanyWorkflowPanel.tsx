@@ -4,7 +4,13 @@ import { createRequestKey } from '../src/features/operations/intents'
 import { formatTime } from '../src/lib/format'
 import { CommandFeedback, useAccountCommand, VersionConflict } from './accountCommands'
 import { ReadFailure, useAccountAccessError, type AccountAccess } from './AccountsPage'
-import { getCompanyWorkflow, getWorkflowMetadata, type CompanyWorkflow } from './companyApi'
+import {
+  dealOwnerKeys,
+  dealOwnerLabels,
+  getCompanyWorkflow,
+  getWorkflowMetadata,
+  type CompanyWorkflow,
+} from './companyApi'
 import { CompanySource } from './CompanySource'
 import styles from './Accounts.module.css'
 import dialogStyles from './InstallationsPage.module.css'
@@ -68,7 +74,11 @@ function CompanyWorkflowPanel(access: AccountAccess) {
     onWorkflowSaved: saved,
   })
   const config = workflow.data?.configuration
-  const initial = { pipeline: config?.pipeline_id ?? '', stage: config?.initial_stage_id ?? '' }
+  const initial: Record<string, string> = {
+    ...workflow.data?.owners,
+    pipeline: config?.pipeline_id ?? '',
+    stage: config?.initial_stage_id ?? '',
+  }
   const { draft, state } = attempt.entry,
     fields = draft?.values ?? initial
   const meta = metadata.data
@@ -87,6 +97,14 @@ function CompanyWorkflowPanel(access: AccountAccess) {
     meta.generation_id !== null &&
     meta.pipelines !== null
   const invalidSelection = Boolean((fields.pipeline && !pipeline) || (fields.stage && !stage))
+  const ownerDraftUnavailable =
+    !meta?.employees && dealOwnerKeys.some((key) => (fields[key] ?? '') !== (initial[key] ?? ''))
+  const unavailableOwner = Boolean(
+    meta?.employees &&
+      dealOwnerKeys.some(
+        (key) => fields[key] && !meta.employees?.some((employee) => employee.id === fields[key]),
+      ),
+  )
   return (
     <div>
       <p>Настройка применяется ко всем новым сделкам по установкам наших виджетов в rakurscrm.</p>
@@ -131,6 +149,8 @@ function CompanyWorkflowPanel(access: AccountAccess) {
             !workflow.data ||
             !meta ||
             !ready ||
+            ownerDraftUnavailable ||
+            unavailableOwner ||
             !stage ||
             !meta.source.source_account_id ||
             !meta.source.binding_revision
@@ -146,6 +166,11 @@ function CompanyWorkflowPanel(access: AccountAccess) {
               metadata_generation_id: meta.generation_id,
               pipeline_id: fields.pipeline,
               initial_stage_id: fields.stage,
+              ...(meta.employees && {
+                owners: Object.fromEntries(
+                  dealOwnerKeys.filter((key) => fields[key]).map((key) => [key, fields[key]]),
+                ),
+              }),
             }),
           })
         }}
@@ -196,6 +221,44 @@ function CompanyWorkflowPanel(access: AccountAccess) {
             </select>
           </label>
         </fieldset>
+        <fieldset
+          className={styles.fields}
+          disabled={attempt.locked || !workflow.data || !ready || !meta?.employees}
+        >
+          <legend>Ответственный по типу аккаунта</legend>
+          {meta && !meta.employees && (
+            <p>Свежий список сотрудников корпоративного аккаунта недоступен.</p>
+          )}
+          {meta?.employees?.length === 0 && (
+            <p>В корпоративном аккаунте нет активных сотрудников.</p>
+          )}
+          {dealOwnerKeys.map((key) => (
+            <label key={key}>
+              {dealOwnerLabels[key]}
+              <select
+                value={fields[key] ?? ''}
+                onChange={(e) =>
+                  attempt.edit(key, e.target.value, initial, workflow.data?.version ?? 1)
+                }
+              >
+                <option value="">По умолчанию в amoCRM</option>
+                {fields[key] && !meta?.employees?.some((user) => user.id === fields[key]) && (
+                  <option value={fields[key]}>Сотрудник {fields[key]} · недоступен</option>
+                )}
+                {meta?.employees?.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} · {user.id}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          {unavailableOwner && (
+            <p role="alert">
+              Замените недоступного сотрудника или выберите назначение по умолчанию.
+            </p>
+          )}
+        </fieldset>
         <div className={dialogStyles.dialogActions}>
           <button type="button" onClick={refresh}>
             Обновить данные
@@ -206,6 +269,8 @@ function CompanyWorkflowPanel(access: AccountAccess) {
               attempt.locked ||
               state.kind === 'conflict' ||
               !ready ||
+              ownerDraftUnavailable ||
+              unavailableOwner ||
               !stage ||
               !workflow.data ||
               !draft

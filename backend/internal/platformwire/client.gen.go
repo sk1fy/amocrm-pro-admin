@@ -1290,11 +1290,11 @@ func (e ListAccountHistoryParamsKind) Valid() bool {
 
 // Defines values for UpdateAccountProfileJSONBodyClassification.
 const (
-	LessThannil    UpdateAccountProfileJSONBodyClassification = "<nil>"
-	БезПартнёра    UpdateAccountProfileJSONBodyClassification = "Без партнёра"
-	ЗапретРаботы   UpdateAccountProfileJSONBodyClassification = "Запрет работы"
-	КлиентПартнёра UpdateAccountProfileJSONBodyClassification = "Клиент партнёра"
-	НашКлиент      UpdateAccountProfileJSONBodyClassification = "Наш клиент"
+	LessThannil     UpdateAccountProfileJSONBodyClassification = "<nil>"
+	ЗапретРаботы    UpdateAccountProfileJSONBodyClassification = "Запрет работы"
+	КлиентПартнёра  UpdateAccountProfileJSONBodyClassification = "Клиент партнёра"
+	НашКлиент       UpdateAccountProfileJSONBodyClassification = "Наш клиент"
+	СвободныйКлиент UpdateAccountProfileJSONBodyClassification = "Свободный клиент"
 )
 
 // Valid indicates whether the value is a known member of the UpdateAccountProfileJSONBodyClassification enum.
@@ -1302,13 +1302,13 @@ func (e UpdateAccountProfileJSONBodyClassification) Valid() bool {
 	switch e {
 	case LessThannil:
 		return true
-	case БезПартнёра:
-		return true
 	case ЗапретРаботы:
 		return true
 	case КлиентПартнёра:
 		return true
 	case НашКлиент:
+		return true
+	case СвободныйКлиент:
 		return true
 	default:
 		return false
@@ -1894,6 +1894,7 @@ type CompanyWorkflowConfiguration struct {
 
 // CompanyWorkflowMetadata defines model for CompanyWorkflowMetadata.
 type CompanyWorkflowMetadata struct {
+	Employees           *[]CompanyWorkflowStage                      `json:"employees,omitempty"`
 	GenerationId        nullable.Nullable[openapi_types.UUID]        `json:"generation_id"`
 	Pipelines           nullable.Nullable[[]CompanyWorkflowPipeline] `json:"pipelines"`
 	RequiredFieldsState CompanyWorkflowMetadataRequiredFieldsState   `json:"required_fields_state"`
@@ -2110,9 +2111,18 @@ type InstallationDeal struct {
 // InstallationDealState defines model for InstallationDeal.State.
 type InstallationDealState string
 
+// InstallationDealOwners defines model for InstallationDealOwners.
+type InstallationDealOwners struct {
+	Direct       *AmoID `json:"direct,omitempty"`
+	Own          *AmoID `json:"own,omitempty"`
+	Partner      *AmoID `json:"partner,omitempty"`
+	Unclassified *AmoID `json:"unclassified,omitempty"`
+}
+
 // InstallationDealSettings defines model for InstallationDealSettings.
 type InstallationDealSettings struct {
 	Configuration nullable.Nullable[CompanyWorkflowConfiguration] `json:"configuration"`
+	Owners        *InstallationDealOwners                         `json:"owners,omitempty"`
 	Version       Version                                         `json:"version"`
 }
 
@@ -2536,6 +2546,16 @@ type Review struct {
 	Reviewed   bool                `json:"reviewed"`
 	ReviewedAt *time.Time          `json:"reviewed_at,omitempty"`
 	ReviewedBy *openapi_types.UUID `json:"reviewed_by,omitempty"`
+}
+
+// SetInstallationDealSettings defines model for SetInstallationDealSettings.
+type SetInstallationDealSettings struct {
+	BindingRevision      string                  `json:"binding_revision"`
+	InitialStageId       AmoID                   `json:"initial_stage_id"`
+	MetadataGenerationId openapi_types.UUID      `json:"metadata_generation_id"`
+	Owners               *InstallationDealOwners `json:"owners,omitempty"`
+	PipelineId           AmoID                   `json:"pipeline_id"`
+	SourceAccountId      AmoID                   `json:"source_account_id"`
 }
 
 // SetProductCompanyWorkflow defines model for SetProductCompanyWorkflow.
@@ -3105,7 +3125,7 @@ type RequestAccountRefreshJSONRequestBody RequestAccountRefreshJSONBody
 type CreateAccountRenewalJSONRequestBody CreateAccountRenewalJSONBody
 
 // SetInstallationDealSettingsJSONRequestBody defines body for SetInstallationDealSettings for application/json ContentType.
-type SetInstallationDealSettingsJSONRequestBody = SetProductCompanyWorkflow
+type SetInstallationDealSettingsJSONRequestBody = SetInstallationDealSettings
 
 // RetryInstallationDealJSONRequestBody defines body for RetryInstallationDeal for application/json ContentType.
 type RetryInstallationDealJSONRequestBody RetryInstallationDealJSONBody

@@ -22,6 +22,10 @@ const source = {
 const metadata = {
   generation_id: generation,
   source,
+  employees: [
+    { id: '42', name: 'Менеджер партнёров' },
+    { id: '43', name: 'Менеджер свободных клиентов' },
+  ],
   pipelines: [
     { id: '11', name: 'Продажи', stages: [{ id: '12', name: 'Новый' }] },
     { id: '21', name: 'Повтор', stages: [{ id: '22', name: 'Повторный' }] },
@@ -78,6 +82,7 @@ it('opens shared settings from installations with catalog.manage, clears stage o
   const requests: { body: RequestInit['body']; key: string | null; version: string | null }[] = []
   let committed = false
   const saved = {
+    owners: { partner: '42', direct: '43' },
     version: 2,
     configuration: {
       revision: 1,
@@ -119,9 +124,12 @@ it('opens shared settings from installations with catalog.manage, clears stage o
   fireEvent.change(pipeline, { target: { value: '21' } })
   expect(stage).toHaveValue('')
   fireEvent.change(stage, { target: { value: '22' } })
+  fireEvent.change(screen.getByLabelText('Свободный клиент'), { target: { value: '43' } })
+  fireEvent.change(screen.getByLabelText('Клиент партнёра'), { target: { value: '42' } })
   fireEvent.click(screen.getByRole('button', { name: 'Сохранить настройку' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Проверить результат' }))
   await screen.findByText('Сохранено.')
+  expect(JSON.parse(String(requests[0].body)).owners).toEqual({ partner: '42', direct: '43' })
   expect(requests).toHaveLength(2)
   expect(requests[1]).toEqual(requests[0])
   expect(requests[0].version).toBe('"1"')
@@ -130,6 +138,8 @@ it('opens shared settings from installations with catalog.manage, clears stage o
   fireEvent.click(screen.getByRole('button', { name: 'Настройка сделок' }))
   expect(await screen.findByLabelText('Воронка')).toHaveValue('21')
   expect(screen.getByLabelText('Начальный этап')).toHaveValue('22')
+  expect(screen.getByLabelText('Клиент партнёра')).toHaveValue('42')
+  expect(screen.getByLabelText('Свободный клиент')).toHaveValue('43')
   expect(
     within(screen.getByRole('navigation', { name: 'Кабинет менеджеров' }))
       .getAllByRole('link')

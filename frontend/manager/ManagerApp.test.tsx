@@ -106,7 +106,7 @@ it.each([
     active: true,
     category: 'PRO',
     status: 'Trial',
-    classification: 'Без партнёра',
+    classification: 'Свободный клиент',
     client: 'Свободный клиент',
   },
   {

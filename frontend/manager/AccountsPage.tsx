@@ -68,7 +68,7 @@ export function ReadFailure({ error, retry }: { error: unknown; retry: () => voi
 
 const classifications = [
   { value: 'Наш клиент', title: 'Наши клиенты' },
-  { value: 'Без партнёра', title: 'Свободные' },
+  { value: 'Свободный клиент', title: 'Свободные' },
   { value: 'Клиент партнёра', title: 'Клиенты партнёров' },
   { value: 'Запрет работы', title: 'Запрет работы' },
 ] as const
