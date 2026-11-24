@@ -781,7 +781,7 @@ paths:
                   type:
                   - string
                   - 'null'
-                  enum: [Без партнёра, Клиент партнёра, Наш клиент, Запрет работы, null]
+                  enum: [Свободный клиент, Клиент партнёра, Наш клиент, Запрет работы, null]
                 partner_name: {type: [string, 'null'], maxLength: 200}
                 reason:
                   type: string
@@ -4228,7 +4228,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ManagerSetProductCompanyWorkflow'
+              $ref: '#/components/schemas/ManagerSetInstallationDealSettings'
       description: Единая воронка и начальный этап для новых сделок по установкам.
       x-manager-grant: catalog.manage
       tags:
@@ -6563,6 +6563,10 @@ components:
       type: object
       additionalProperties: false
       properties:
+        employees:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerCompanyWorkflowStage'
         sources:
           type: array
           items:
@@ -6661,6 +6665,8 @@ components:
       type: object
       additionalProperties: false
       properties:
+        owners:
+          $ref: '#/components/schemas/ManagerInstallationDealOwners'
         version:
           $ref: '#/components/schemas/ManagerVersion'
         configuration:
@@ -6674,6 +6680,43 @@ components:
       type: object
       additionalProperties: false
       properties:
+        source_account_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        binding_revision:
+          type: string
+          minLength: 1
+          maxLength: 256
+        metadata_generation_id:
+          type: string
+          format: uuid
+        pipeline_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+        initial_stage_id:
+          $ref: '#/components/schemas/ManagerAmoID'
+      required:
+      - source_account_id
+      - binding_revision
+      - metadata_generation_id
+      - pipeline_id
+      - initial_stage_id
+    ManagerInstallationDealOwners:
+      type: object
+      additionalProperties: false
+      properties:
+        own:
+          $ref: '#/components/schemas/ManagerAmoID'
+        partner:
+          $ref: '#/components/schemas/ManagerAmoID'
+        direct:
+          $ref: '#/components/schemas/ManagerAmoID'
+        unclassified:
+          $ref: '#/components/schemas/ManagerAmoID'
+    ManagerSetInstallationDealSettings:
+      type: object
+      additionalProperties: false
+      properties:
+        owners:
+          $ref: '#/components/schemas/ManagerInstallationDealOwners'
         source_account_id:
           $ref: '#/components/schemas/ManagerAmoID'
         binding_revision:

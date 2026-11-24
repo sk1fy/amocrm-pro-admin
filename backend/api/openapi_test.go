@@ -276,7 +276,7 @@ func assertManagerProductSchema(t *testing.T, browser, owner *openapi3.Schema) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, name := range []string{"Product", "ProductCode", "ProductList", "TrialPolicy", "ProductMetrics", "Event", "EventList", "AmoID", "Version", "SetProductCompanyWorkflow", "ProductCompanyWorkflow", "CompanyWorkflowConfiguration", "CompanySource", "CompanyProjectionId", "CompanySummary", "CompanyRuntimeAccount", "CompanyContact", "CompanyContactLink", "CompanyWorkflowPipeline", "CompanyWorkflowStage"} {
+		for _, name := range []string{"Product", "ProductCode", "ProductList", "TrialPolicy", "ProductMetrics", "Event", "EventList", "AmoID", "Version", "SetProductCompanyWorkflow", "InstallationDealOwners", "ProductCompanyWorkflow", "CompanyWorkflowConfiguration", "CompanySource", "CompanyProjectionId", "CompanySummary", "CompanyRuntimeAccount", "CompanyContact", "CompanyContactLink", "CompanyWorkflowPipeline", "CompanyWorkflowStage"} {
 			encoded = bytes.ReplaceAll(encoded, []byte("#/components/schemas/Manager"+name+`"`), []byte("#/components/schemas/"+name+`"`))
 		}
 		var value any

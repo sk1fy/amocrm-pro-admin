@@ -37,7 +37,7 @@ const cards: { id: DirectoryBucket; label: string; hint: string }[] = [
 
 const owners = [
   { value: 'Наш клиент', label: 'Наш клиент', plural: 'Наши клиенты', tone: 'green' },
-  { value: 'Без партнёра', label: 'Свободный клиент', plural: 'Свободные', tone: 'inactive' },
+  { value: 'Свободный клиент', label: 'Свободный клиент', plural: 'Свободные', tone: 'inactive' },
   {
     value: 'Клиент партнёра',
     label: 'Клиент партнёра',

@@ -61,8 +61,16 @@ export function parseCompanySource(raw: unknown) {
     invalid()
   return source
 }
+export const dealOwnerLabels = {
+  own: 'Наш клиент',
+  partner: 'Клиент партнёра',
+  direct: 'Свободный клиент',
+  unclassified: 'Тип не указан',
+} as const
+export const dealOwnerKeys = Object.keys(dealOwnerLabels) as (keyof typeof dealOwnerLabels)[]
 export function parseWorkflowMetadata(raw: unknown) {
-  const item = object(raw, [
+  const item = object({ employees: null, ...record(raw) }, [
+    'employees',
     'generation_id',
     'source',
     'pipelines',
@@ -89,10 +97,16 @@ export function parseWorkflowMetadata(raw: unknown) {
   )
   if ((pipelines === null) !== (generation_id === null) || (pipelines !== null) !== source.complete)
     invalid()
-  return { generation_id, source, pipelines }
+  const employees = nullable(item.employees, (rows) =>
+    array(rows, (row) => {
+      const user = object(row, ['id', 'name'])
+      return { id: crmId(user.id), name: text(user.name) }
+    }),
+  )
+  return { generation_id, source, pipelines, employees }
 }
 export function parseCompanyWorkflow(raw: unknown) {
-  const item = object(raw, ['version', 'configuration'])
+  const item = object({ owners: {}, ...record(raw) }, ['version', 'configuration', 'owners'])
   const version = integer(item.version, 1)
   const configuration = nullable(item.configuration, (value) => {
     const c = object(value, [
@@ -117,7 +131,13 @@ export function parseCompanyWorkflow(raw: unknown) {
     }
   })
   if ((configuration === null) !== (version === 1)) invalid()
-  return { version, configuration }
+  const owners = record(item.owners)
+  const selected: Record<string, string> = {}
+  for (const [key, value] of Object.entries(owners)) {
+    if (!Object.hasOwn(dealOwnerLabels, key)) invalid()
+    selected[key] = crmId(value)
+  }
+  return { version, configuration, owners: selected }
 }
 export type CompanyWorkflow = ReturnType<typeof parseCompanyWorkflow>
 export type WorkflowCommand = Readonly<{

@@ -109,7 +109,12 @@ export function accountTitle(account: AccountDetail) {
   )
 }
 
-const clientStatuses = ['Без партнёра', 'Клиент партнёра', 'Наш клиент', 'Запрет работы'] as const
+const clientStatuses = [
+  'Свободный клиент',
+  'Клиент партнёра',
+  'Наш клиент',
+  'Запрет работы',
+] as const
 
 function ClientStatus({
   account,
