@@ -1042,6 +1042,30 @@ func (e TrialPolicyKind) Valid() bool {
 	}
 }
 
+// Defines values for WidgetCatalogPolicyAvailability.
+const (
+	WidgetCatalogPolicyAvailabilityActive   WidgetCatalogPolicyAvailability = "active"
+	WidgetCatalogPolicyAvailabilityArchived WidgetCatalogPolicyAvailability = "archived"
+	WidgetCatalogPolicyAvailabilityDraft    WidgetCatalogPolicyAvailability = "draft"
+	WidgetCatalogPolicyAvailabilityPilot    WidgetCatalogPolicyAvailability = "pilot"
+)
+
+// Valid indicates whether the value is a known member of the WidgetCatalogPolicyAvailability enum.
+func (e WidgetCatalogPolicyAvailability) Valid() bool {
+	switch e {
+	case WidgetCatalogPolicyAvailabilityActive:
+		return true
+	case WidgetCatalogPolicyAvailabilityArchived:
+		return true
+	case WidgetCatalogPolicyAvailabilityDraft:
+		return true
+	case WidgetCatalogPolicyAvailabilityPilot:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListAccountsParamsDataGroup.
 const (
 	ListAccountsParamsDataGroupBlocked   ListAccountsParamsDataGroup = "blocked"
@@ -2547,12 +2571,16 @@ type WidgetActivationStatus struct {
 
 // WidgetCatalogPolicy defines model for WidgetCatalogPolicy.
 type WidgetCatalogPolicy struct {
-	Confirmed *[]struct {
+	Availability *WidgetCatalogPolicyAvailability `json:"availability,omitempty"`
+	Confirmed    *[]struct {
 		Generation int                `json:"generation"`
 		Id         openapi_types.UUID `json:"id"`
 	} `json:"confirmed,omitempty"`
 	ProductCode string `json:"product_code"`
 }
+
+// WidgetCatalogPolicyAvailability defines model for WidgetCatalogPolicy.Availability.
+type WidgetCatalogPolicyAvailability string
 
 // Actor defines model for Actor.
 type Actor = string
