@@ -290,6 +290,11 @@ export function ProductEditor({
               <option value="active">Доступен</option>
               <option value="archived">Архив</option>
             </select>
+            {fields.availability === 'archived' && (
+              <small>
+                Новые установки закрыты. У ранее подключённых аккаунтов виджет продолжит работать.
+              </small>
+            )}
           </label>
         </EditorSection>
         <EditorSection section="links">
