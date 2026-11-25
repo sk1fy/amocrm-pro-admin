@@ -74,7 +74,11 @@ function AuthenticatedManagerApp() {
 
   if (session.isSuccess && session.data) {
     const manager = session.data
-    const scope = JSON.stringify([manager.id, manager.grants.slice().sort()])
+    const scope = JSON.stringify([
+      manager.id,
+      manager.grants.slice().sort(),
+      manager.widgetTechnicalControls,
+    ])
     const section = workspaceSection(location.search)
     const clients = section === 'clients'
     const widgets = section === 'widgets'
@@ -113,6 +117,7 @@ function AuthenticatedManagerApp() {
             />
           ) : widgets ? (
             <WidgetsPage
+              technicalControls={manager.widgetTechnicalControls}
               key={scope}
               {...location}
               scope={scope}

@@ -78,7 +78,7 @@
   display: grid;
   flex: 1;
   align-content: start;
-  gap: 14px;
+  gap: 16px;
   min-height: 0;
   min-width: 0;
   padding: 20px clamp(14px, 4vw, 24px);
@@ -117,7 +117,7 @@
 
 .form {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   min-width: 0;
 }
 
@@ -127,7 +127,7 @@
 
 .form fieldset {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -190,11 +190,11 @@
 
 .boxBody,
 .details {
-  padding: 12px 16px 14px;
+  padding: 14px 16px 16px;
 }
 
 .form label {
-  gap: 4px;
+  gap: 6px;
   color: var(--color-muted);
   font-size: 13px;
 }
@@ -256,4 +256,38 @@
   .details dl {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.drawer[data-creating='true'] {
+  inset: 0;
+  height: fit-content;
+  max-height: calc(100dvh - 32px);
+  width: min(40rem, calc(100% - 24px));
+  margin: auto;
+  border-radius: var(--radius);
+}
+
+.header > div {
+  margin-inline-end: auto;
+}
+
+.header .toggle {
+  padding: 5px 10px;
+  border: 1px solid var(--color-menu-text);
+  background: transparent;
+  color: white;
+  font-size: 12px;
+}
+
+.header .toggle[aria-pressed='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-header);
+}
+
+.boxHeading p {
+  margin-top: 4px;
+}
+
+.footer button {
+  font-weight: 700;
 }

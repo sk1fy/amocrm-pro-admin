@@ -226,7 +226,11 @@ function Attention({ stats }: { stats: Statistics }) {
     !stats.missing_install_link &&
     !stats.missing_instruction
   ) {
-    return <StatusBadge domain="product_attention" state="no_known_issues" variant="text" />
+    return (
+      <span className={styles.healthy}>
+        <StatusBadge domain="product_attention" state="no_known_issues" variant="text" />
+      </span>
+    )
   }
   return (
     <div className={styles.attention}>

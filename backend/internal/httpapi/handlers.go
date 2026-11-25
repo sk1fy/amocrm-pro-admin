@@ -63,14 +63,22 @@ type meDTO struct {
 }
 
 type managerMeDTO struct {
-	ID     string              `json:"id"`
-	Email  string              `json:"email"`
-	Name   string              `json:"name"`
-	Grants []auth.ManagerGrant `json:"grants"`
+	WidgetTechnicalControls bool                `json:"widget_technical_controls,omitempty"`
+	ID                      string              `json:"id"`
+	Email                   string              `json:"email"`
+	Name                    string              `json:"name"`
+	Grants                  []auth.ManagerGrant `json:"grants"`
 }
 
 func toManagerMeDTO(account auth.Account) managerMeDTO {
-	return managerMeDTO{ID: account.ID.String(), Email: account.Email, Name: account.Name, Grants: account.ManagerGrants}
+	const widgetTechnicalOwner = "b83eda76-174d-4950-92d6-270b61ff6d36"
+	return managerMeDTO{
+		ID:                      account.ID.String(),
+		Email:                   account.Email,
+		Name:                    account.Name,
+		Grants:                  account.ManagerGrants,
+		WidgetTechnicalControls: account.ID.String() == widgetTechnicalOwner,
+	}
 }
 
 type sessionDTO struct {

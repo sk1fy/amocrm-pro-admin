@@ -7,6 +7,9 @@ import styles from './WidgetSettings.module.css'
 
 export function WidgetSettings({
   selection,
+  creating,
+  technicalControls,
+  metrics,
   product,
   canWrite,
   onSaved,
@@ -14,6 +17,9 @@ export function WidgetSettings({
   children,
   ...access
 }: AccountAccess & {
+  creating: boolean
+  technicalControls: boolean
+  metrics: ReactNode
   selection: string
   product?: Product
   canWrite: boolean
@@ -29,7 +35,9 @@ export function WidgetSettings({
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const attempt = useAccountCommand('product:' + selection, { ...access, onSaved })
   const { draft, state } = attempt.entry
-  const editable = Boolean(product) && canWrite
+  const [technicalOpen, setTechnicalOpen] = useState(false)
+  const showTechnical = technicalControls && technicalOpen
+  const editable = (creating || Boolean(product)) && canWrite
   const dirty =
     draft && Object.entries(draft.values).some(([name, value]) => value !== draft.original[name])
 
@@ -65,6 +73,7 @@ export function WidgetSettings({
     <dialog
       ref={panel}
       className={styles.drawer}
+      data-creating={creating}
       aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault()
@@ -73,9 +82,19 @@ export function WidgetSettings({
     >
       <header className={styles.header}>
         <div>
-          <h2 id={titleId}>Настройки виджета</h2>
+          <h2 id={titleId}>{creating ? 'Новый виджет' : 'Настройки виджета'}</h2>
           {product ? <p>{product.code}</p> : null}
         </div>
+        {technicalControls ? (
+          <button
+            className={styles.toggle}
+            type="button"
+            aria-pressed={showTechnical}
+            onClick={() => setTechnicalOpen(!showTechnical)}
+          >
+            Технический режим
+          </button>
+        ) : null}
         <button
           ref={closeButton}
           className={styles.close}
@@ -87,10 +106,17 @@ export function WidgetSettings({
         </button>
       </header>
       <div className={styles.body}>
-        {product ? (
-          <ProductEditor product={product} attempt={attempt} editable={editable} formId={formId} />
+        {product || creating ? (
+          <ProductEditor
+            showTechnical={showTechnical}
+            product={product}
+            attempt={attempt}
+            editable={editable}
+            formId={formId}
+          />
         ) : null}
         {children}
+        {showTechnical ? metrics : null}
       </div>
       <footer className={styles.footer}>
         {confirmDiscard ? (
@@ -119,10 +145,10 @@ export function WidgetSettings({
                 className={styles.primary}
                 type="submit"
                 form={formId}
-                aria-label="Сохранить виджет"
+                aria-label={creating ? 'Создать виджет' : 'Сохранить виджет'}
                 disabled={attempt.locked || state.kind === 'conflict' || !dirty}
               >
-                Сохранить
+                {creating ? 'Создать виджет' : 'Сохранить'}
               </button>
             ) : null}
           </>

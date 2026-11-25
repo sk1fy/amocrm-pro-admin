@@ -5791,6 +5791,7 @@ components:
       additionalProperties: false
       required: [id, email, name, grants]
       properties:
+        widget_technical_controls: {type: boolean}
         id: {type: string, format: uuid}
         email: {type: string}
         name: {type: string}
