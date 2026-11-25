@@ -119,9 +119,11 @@ it.each([
   )
   openManager('?section=installations')
   const cell = (await screen.findByText(row.product_name)).closest('td')!
-  expect(within(cell).getByText('Установка')).toBeVisible()
+  expect(Boolean(within(cell).queryByText('Переустановка'))).toBe(afterRemoval)
   expect(within(cell).queryByText('после удаления')).toBeNull()
-  expect(Boolean(within(cell).queryByText('Повторная авторизация'))).toBe(event === 'reauthorized')
+  expect(Boolean(within(cell).queryByText('Повторная авторизация'))).toBe(
+    !afterRemoval && event === 'reauthorized',
+  )
 })
 
 it.each([

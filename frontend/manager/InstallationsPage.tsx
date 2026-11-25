@@ -503,10 +503,12 @@ export function InstallationsPage({
                                     ) : null}
                                     <span title={row.product_code}>{row.product_name}</span>
                                   </div>
-                                  {row.kind !== 'observed' && (
+                                  {(row.kind === 'reinstall' ||
+                                    row.last_lifecycle_event === 'reauthorized') && (
                                     <span className={styles.tags}>
-                                      <span className={styles.zone}>Установка</span>
-                                      {row.last_lifecycle_event === 'reauthorized' && (
+                                      {row.kind === 'reinstall' ? (
+                                        <StatusBadge domain="installation_kind" state="reinstall" />
+                                      ) : (
                                         <StatusBadge
                                           domain="installation_event"
                                           state="reauthorized"
