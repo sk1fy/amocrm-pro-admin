@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Отзывы и продление в карточке аккаунта](account-widget-feedback.md).
+
 - [Подписка клиента](account-subscription.md).
 
 - [Панель настроек виджета](manager-widget-settings-panel.md).

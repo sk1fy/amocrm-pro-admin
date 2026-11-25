@@ -179,6 +179,7 @@ function parseAccount(raw: unknown) {
   const item = record(raw)
   return {
     ...parseAccountSummary(item),
+    feedbackProducts: optional(item.feedback_product_ids, (value) => array(value, uuid)),
     subscription: optional(item.subscription, parseSubscription),
     previous_subscription: optional(item.previous_subscription, parseSubscription),
     identity_observed_at: optional(item.identity_observed_at, date),

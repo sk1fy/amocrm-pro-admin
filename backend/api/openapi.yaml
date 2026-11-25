@@ -783,6 +783,13 @@ paths:
                   - string
                   - 'null'
                   enum: [Свободный клиент, Клиент партнёра, Наш клиент, Запрет работы, null]
+                widget_feedback:
+                  type: object
+                  additionalProperties: false
+                  required: [product_id, left]
+                  properties:
+                    product_id: {type: string, format: uuid}
+                    left: {type: boolean}
                 partner_name: {type: [string, 'null'], maxLength: 200}
                 reason:
                   type: string
@@ -4807,6 +4814,7 @@ components:
       additionalProperties: false
       properties:
         subscription: {$ref: '#/components/schemas/ManagerAccountSubscription'}
+        feedback_product_ids: {type: array, uniqueItems: true, items: {type: string, format: uuid}}
         previous_subscription: {$ref: '#/components/schemas/ManagerAccountSubscription'}
         checks:
           type: array

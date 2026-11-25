@@ -198,17 +198,6 @@
   overflow-wrap: anywhere;
 }
 
-.profileFields label {
-  margin-block-start: 8px;
-}
-
-.profileFields summary,
-.widgetActions summary {
-  cursor: pointer;
-  color: var(--color-link);
-  font-weight: 700;
-}
-
 .refresh summary {
   padding: 7px 14px;
   border: 1px solid var(--color-primary);
@@ -318,17 +307,52 @@
   color: white;
 }
 
-.tableScroll
-  .widgetsTable
-  :is(th, td, span, time, small, button, summary, input, label, [popover]) {
-  font-size: 16px;
-}
-
 .tableScroll .widgetsTable th {
+  font-size: 11px;
+  letter-spacing: 0.025em;
   white-space: normal;
-  letter-spacing: normal;
 }
-
+.tableScroll .widgetsTable td {
+  font-size: 14px;
+  line-height: 1.35;
+}
+.widgetsTable .cellSecondary,
+.widgetsTable .widgetDetails small {
+  font-size: 12px;
+}
+.widgetsTable .renewButton {
+  background: var(--color-primary);
+  color: white;
+  border: 0;
+  padding: 6px 13px;
+  margin-top: 6px;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 700;
+}
+.widgetsTable .feedbackSwitch {
+  display: inline-flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 36px;
+  height: 20px;
+  min-height: 0;
+  padding: 2px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--color-muted);
+}
+.feedbackSwitch::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+}
+.widgetsTable .feedbackSwitch[aria-checked='true'] {
+  background: var(--color-primary);
+  justify-content: flex-end;
+}
 .currentInstallation {
   display: inline-flex;
   align-items: center;
@@ -420,16 +444,11 @@
   min-width: 9.5rem;
 }
 
-.widgetActions > button,
-.widgetActions > details {
+.widgetActions > button {
   margin-top: 5px;
 }
-
-.widgetActions details[open] {
+.widgetActions .renewButton[aria-expanded='true'] + section {
   min-width: 15rem;
-}
-
-.widgetActions details > section {
   margin-top: 8px;
 }
 
@@ -517,9 +536,9 @@
   border: 0;
   padding: 0;
   margin: 0;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 12px;
 }
 .subscriptionForm label {
   display: grid;
@@ -533,5 +552,30 @@
   max-width: 100%;
 }
 .wideField {
-  flex-basis: 100%;
+  grid-column: 1/-1;
+}
+.subscriptionForm input,
+.subscriptionForm select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.subscriptionForm > div:last-child {
+  margin-top: 14px;
+}
+.summaryPanel {
+  container-type: inline-size;
+}
+@container (max-width:450px) {
+  .subscriptionForm fieldset {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .subscriptionForm label:first-child {
+    grid-column: 1/-1;
+  }
+}
+@container (max-width:290px) {
+  .subscriptionForm fieldset {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

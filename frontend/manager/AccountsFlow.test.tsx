@@ -10,6 +10,7 @@ import {
   ratingField,
   updateAccountSearch,
 } from './accountsLocation'
+import { defaultSubscriptionEnd } from './AccountSubscription'
 import { ManagerApp } from './ManagerApp'
 
 const account = '661cf98b-8df1-42cc-beb4-443745c9a1c5'
@@ -317,4 +318,10 @@ it('previews the TOP classification and sends the package, deal and seat limit t
     ends_on: '2030-12-31',
     deal_id: '123',
   })
+})
+
+it('defaults to three Moscow calendar months and clamps to the last day of February', () => {
+  expect(defaultSubscriptionEnd(new Date('2026-11-30T20:59:59Z'))).toBe('2027-02-28')
+  expect(defaultSubscriptionEnd(new Date('2026-11-30T21:00:00Z'))).toBe('2027-03-01')
+  expect(defaultSubscriptionEnd(new Date('2023-11-30T12:00:00Z'))).toBe('2024-02-29')
 })
