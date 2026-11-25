@@ -1429,6 +1429,24 @@ func (e ListInstallationsParamsKind) Valid() bool {
 	}
 }
 
+// Defines values for ListInstallationsParamsState.
+const (
+	ListInstallationsParamsStateCurrent ListInstallationsParamsState = "current"
+	ListInstallationsParamsStateRemoved ListInstallationsParamsState = "removed"
+)
+
+// Valid indicates whether the value is a known member of the ListInstallationsParamsState enum.
+func (e ListInstallationsParamsState) Valid() bool {
+	switch e {
+	case ListInstallationsParamsStateCurrent:
+		return true
+	case ListInstallationsParamsStateRemoved:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListInstallationsParamsLine.
 const (
 	ListInstallationsParamsLineFREE ListInstallationsParamsLine = "FREE"
@@ -2876,6 +2894,7 @@ type ListInstallationsParams struct {
 	Q                  *string                             `form:"q,omitempty" json:"q,omitempty"`
 	Review             *ListInstallationsParamsReview      `form:"review,omitempty" json:"review,omitempty"`
 	Kind               *ListInstallationsParamsKind        `form:"kind,omitempty" json:"kind,omitempty"`
+	State              *ListInstallationsParamsState       `form:"state,omitempty" json:"state,omitempty"`
 	LastLifecycleEvent *LifecycleKind                      `form:"last_lifecycle_event,omitempty" json:"last_lifecycle_event,omitempty"`
 	ProductId          *openapi_types.UUID                 `form:"product_id,omitempty" json:"product_id,omitempty"`
 	Line               *ListInstallationsParamsLine        `form:"line,omitempty" json:"line,omitempty"`
@@ -2892,6 +2911,9 @@ type ListInstallationsParamsReview string
 
 // ListInstallationsParamsKind defines parameters for ListInstallations.
 type ListInstallationsParamsKind string
+
+// ListInstallationsParamsState defines parameters for ListInstallations.
+type ListInstallationsParamsState string
 
 // ListInstallationsParamsLine defines parameters for ListInstallations.
 type ListInstallationsParamsLine string
@@ -6057,6 +6079,18 @@ func NewListInstallationsRequest(server string, params *ListInstallationsParams)
 		if params.Kind != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", *params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.State != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {

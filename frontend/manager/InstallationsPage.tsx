@@ -273,6 +273,7 @@ export function InstallationsPage({
 }: Props) {
   const client = useQueryClient()
   const filters = getInstallationSearch(search)
+  filters.set('state', 'current')
   if (!filters.has('review')) filters.set('review', 'unreviewed')
   const activeQueue = filters.get('review') === 'reviewed' ? 'reviewed' : 'unreviewed'
   const searchKey = filters.toString()
@@ -502,11 +503,19 @@ export function InstallationsPage({
                                     ) : null}
                                     <span title={row.product_code}>{row.product_name}</span>
                                   </div>
-                                  {row.kind === 'reinstall' ? (
+                                  {(row.kind === 'reinstall' ||
+                                    row.last_lifecycle_event === 'reauthorized') && (
                                     <span className={styles.tags}>
-                                      <StatusBadge domain="installation_kind" state={row.kind} />
+                                      {row.kind === 'reinstall' ? (
+                                        <StatusBadge domain="installation_kind" state="reinstall" />
+                                      ) : (
+                                        <StatusBadge
+                                          domain="installation_event"
+                                          state="reauthorized"
+                                        />
+                                      )}
                                     </span>
-                                  ) : null}
+                                  )}
                                 </td>
                                 <td>
                                   {account || row.account_name ? (
