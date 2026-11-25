@@ -170,17 +170,26 @@
 
 .inviteFields {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  padding: 14px 16px 16px;
 }
 
 .inviteFields label,
 .commandResult label {
   display: grid;
-  gap: 4px;
+  gap: 5px;
+  min-width: 0;
+  color: var(--color-subtle);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .inviteFields input {
   width: 100%;
   min-width: 0;
+  min-height: 36px;
+  color: var(--color-text);
+  font-weight: 400;
 }
 
 .grants {
@@ -197,51 +206,239 @@
   gap: 4px;
 }
 
-.invite {
-  padding: 18px 20px 16px;
+:global(html):has(.inviteDialog[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
 }
 
-.invite h2 {
-  font-size: 1.125rem;
+.inviteDialog {
+  width: min(46rem, calc(100% - 24px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 24%);
+  overflow: hidden;
 }
 
-.invite header p {
-  margin-top: 3px;
+.inviteDialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.inviteDialog::backdrop {
+  background: rgb(0 0 0 / 42%);
+}
+
+.inviteHeader {
+  --color-focus: var(--color-focus-on-dark);
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px clamp(16px, 4vw, 24px);
+  background: var(--color-header);
+  color: #fff;
+}
+
+.inviteHeader h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.inviteHeader p {
+  margin: 4px 0 0;
+  color: var(--color-menu-text);
+  font-size: 13px;
+}
+
+.inviteClose {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-menu-text);
+}
+
+.inviteClose:hover:not(:disabled) {
+  border-color: transparent;
+  background: rgb(255 255 255 / 10%);
+  color: #fff;
+}
+
+.inviteClose svg {
+  width: 16px;
+  height: 16px;
+}
+
+.inviteBody {
+  display: grid;
+  flex: 1 1 auto;
+  align-content: start;
+  gap: 14px;
+  min-height: 0;
+  min-width: 0;
+  padding: 18px clamp(16px, 4vw, 24px);
+  background: var(--color-bg);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.inviteForm {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.inviteSection {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.inviteSectionHeading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.inviteSectionHeading > div {
+  min-width: 0;
+  margin-inline-end: auto;
+}
+
+.inviteSectionHeading h3 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.inviteSectionHeading p {
+  margin: 2px 0 0;
   color: var(--color-muted);
+  font-size: 13px;
 }
 
-.inviteFields {
-  max-width: 58rem;
-  gap: 12px 16px;
+.inviteSectionIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #cbdcff;
+  border-radius: var(--radius);
+  background: var(--color-accent-soft);
+  color: var(--color-primary);
 }
 
-.invite .grants {
-  gap: 10px;
-  padding: 10px 0 0;
+.inviteSectionIcon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.selectedCount {
+  flex: none;
+  padding: 3px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  color: var(--color-subtle);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.inviteSectionBody {
+  padding: 14px 16px 16px;
+}
+
+.inviteDialog .grants {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
   border: 0;
 }
 
-.invite .grants legend {
+.inviteDialog .grants legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   padding: 0;
-  font-weight: 700;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.invite .grantGroup {
-  padding: 10px 12px;
+.inviteDialog .grantGroup {
+  gap: 0;
+  padding: 10px 14px 6px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface-2);
 }
 
-.invite .choice {
-  min-height: 31px;
+.inviteDialog .grantGroup strong {
+  padding-bottom: 8px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--color-border-soft);
+  color: var(--color-subtle);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.inviteActions {
+.inviteDialog .choice {
+  min-height: 36px;
+  padding-block: 4px;
+  border-bottom: 1px solid var(--color-border-soft);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.inviteDialog .choice:last-child {
+  border-bottom: 0;
+}
+
+.inviteFooter {
   display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border-soft);
+  gap: 10px;
+  padding: 14px clamp(16px, 4vw, 24px);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.inviteFooter button {
+  min-height: 36px;
+  padding-inline: 16px;
+}
+
+.inviteHint {
+  margin-inline-end: auto;
+  color: var(--color-muted);
+  font-size: 13px;
 }
 
 .access {
@@ -309,16 +506,74 @@
 
 .commandResult {
   display: grid;
-  justify-items: start;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--tone-ok) 30%, var(--color-border));
+  border-radius: var(--radius);
+  background: var(--tone-ok-bg);
+}
+
+.resultTitle {
+  margin: 0;
+  color: var(--tone-ok);
+  font-weight: 700;
+}
+
+.resultNote {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.linkRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: 8px;
 }
 
-.commandResult label {
-  width: min(100%, 38rem);
+.linkRow label {
+  flex: 1 1 20rem;
+  min-width: 0;
 }
 
-.commandResult input {
+.linkRow input {
+  width: 100%;
   min-width: 0;
+  min-height: 36px;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--color-surface);
+}
+
+.linkRow button {
+  flex: none;
+  min-height: 36px;
+}
+
+.feedbackStatus {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-muted);
+}
+
+.feedbackAlert {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--tone-error) 35%, var(--color-border));
+  border-radius: var(--radius);
+  background: var(--tone-error-bg);
+  color: var(--tone-error);
+}
+
+.feedbackAlert p {
+  margin: 0;
 }
 
 .pager {
@@ -337,13 +592,24 @@
   padding: 8px 14px;
 }
 
-@media (max-width: 480px) {
-  .inviteFields {
+@media (max-width: 640px) {
+  .inviteFields,
+  .inviteDialog .grants {
     grid-template-columns: 1fr;
   }
 
+  .inviteSectionHeading {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
   .search input {
     flex: 1 1 180px;
     min-width: 0;
+  }
+
+  .inviteHint {
+    width: 100%;
   }
 }

@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Окно приглашения сотрудника](manager-staff-invite-dialog.md).
+
 - [Тарифы и продление теста](manager-widget-tariffs.md).
 
 - [Каталог и модальные формы виджетов](manager-widget-dialog.md).

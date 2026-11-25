@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, type FormEvent } from 'react'
+import { useId, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { isApiError } from '../src/api/client'
 import { createRequestKey } from '../src/features/operations/intents'
 import { StatusBadge } from '../src/components/StatusBadge'
@@ -209,12 +209,60 @@ function useStaffCommand(props: AccountAccess) {
     reset: () => setAttempt({ kind: 'idle' }),
   }
 }
+function InvitationLink({ link }: { link: string }) {
+  const field = useRef<HTMLInputElement>(null)
+  const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied' | 'manual'>('idle')
+
+  async function copy() {
+    setCopyState('copying')
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopyState('copied')
+    } catch {
+      setCopyState('manual')
+      field.current?.focus()
+      field.current?.select()
+    }
+  }
+
+  return (
+    <>
+      <p className={staffStyles.resultNote}>
+        Скопируйте ссылку сейчас. Она показывается один раз. Передайте её сотруднику самостоятельно.
+      </p>
+      <div className={staffStyles.linkRow}>
+        <label>
+          Ссылка приглашения
+          <input ref={field} readOnly value={link} onFocus={(event) => event.target.select()} />
+        </label>
+        <button
+          type="button"
+          data-variant="primary"
+          disabled={copyState === 'copying'}
+          onClick={() => void copy()}
+        >
+          Скопировать ссылку
+        </button>
+      </div>
+      <p role="status" className={staffStyles.resultNote}>
+        {copyState === 'copied' && 'Ссылка скопирована.'}
+        {copyState === 'manual' && 'Скопируйте ссылку вручную из поля выше.'}
+      </p>
+    </>
+  )
+}
+
 function CommandResult({ command }: { command: ReturnType<typeof useStaffCommand> }) {
   const { attempt } = command
-  if (attempt.kind === 'pending') return <p role="status">Выполняем действие…</p>
+  if (attempt.kind === 'pending')
+    return (
+      <p role="status" className={staffStyles.feedbackStatus}>
+        Выполняем действие…
+      </p>
+    )
   if (attempt.kind === 'unknown')
     return (
-      <div role="alert">
+      <div role="alert" className={staffStyles.feedbackAlert}>
         <p>
           Результат неизвестен. Обновите сотрудника для проверки. Точный повтор использует прежние
           данные и ключ.
@@ -224,30 +272,22 @@ function CommandResult({ command }: { command: ReturnType<typeof useStaffCommand
         </button>
       </div>
     )
-  if (attempt.kind === 'failed') return <p role="alert">{attempt.message}</p>
+  if (attempt.kind === 'failed')
+    return (
+      <p role="alert" className={staffStyles.feedbackAlert}>
+        {attempt.message}
+      </p>
+    )
   if (attempt.kind === 'done')
     return (
       <div className={staffStyles.commandResult}>
-        <p role="status">Действие выполнено.</p>
+        <p role="status" className={staffStyles.resultTitle}>
+          Действие выполнено.
+        </p>
         {attempt.link ? (
-          <>
-            <p>
-              Скопируйте ссылку сейчас. Она показывается один раз. Передайте её сотруднику
-              самостоятельно.
-            </p>
-            <label>
-              Ссылка приглашения
-              <input readOnly value={attempt.link} onFocus={(event) => event.target.select()} />
-            </label>
-            <button
-              type="button"
-              onClick={() => void navigator.clipboard?.writeText(attempt.link ?? '')}
-            >
-              Скопировать ссылку
-            </button>
-          </>
+          <InvitationLink key={attempt.link} link={attempt.link} />
         ) : attempt.unavailable ? (
-          <p>
+          <p className={staffStyles.resultNote}>
             Ссылка недоступна после повтора команды. Обновите сотрудника и явно перевыпустите
             ожидающее приглашение.
           </p>
@@ -410,54 +450,218 @@ function StaffEditor({ staff, catalog, props }: { staff: Staff; catalog: string[
     </section>
   )
 }
-function InviteForm({ catalog, props, open }: { catalog: string[]; props: Props; open: boolean }) {
+function InviteDialog({
+  open,
+  catalog,
+  props,
+  onClose,
+}: {
+  catalog: string[]
+  props: Props
+  onClose: () => void
+  open: boolean
+}) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  const feedback = useRef<HTMLDivElement>(null)
+  const formId = useId()
+  const descriptionId = useId()
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
   const [grants, setGrants] = useState<string[]>([])
   const command = useStaffCommand(props)
+  const created = command.attempt.kind === 'done'
+  const fieldsLocked = command.busy || created
+
+  useLayoutEffect(() => {
+    const node = dialog.current
+    if (!open || !node) return
+    const trigger = document.activeElement
+    if (!node.open) node.showModal()
+    return () => {
+      if (node.open) node.close()
+      if (trigger instanceof HTMLElement && trigger !== document.body && trigger.isConnected) {
+        trigger.focus({ preventScroll: true })
+      }
+    }
+  }, [open])
+
+  useLayoutEffect(() => {
+    if (open && command.attempt.kind !== 'pending') feedback.current?.focus()
+  }, [open, command.attempt.kind])
+
+  function close() {
+    if (command.attempt.kind === 'pending') return
+    if (command.attempt.kind !== 'unknown') inviteAnother()
+    onClose()
+  }
+
+  function inviteAnother() {
+    setName('')
+    setEmail('')
+    setGrants([])
+    command.reset()
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const form = new FormData(event.currentTarget)
+    if (fieldsLocked || grants.length === 0) return
     void command.execute({
       path: '',
       method: 'POST',
       key: createRequestKey(),
       body: JSON.stringify({
-        email: String(form.get('email') ?? '').trim(),
-        name: String(form.get('name') ?? '').trim(),
+        email: email.trim(),
+        name: name.trim(),
         grants,
       }),
     })
   }
+
+  if (!open) return null
   return (
-    <section
-      className={`${staffStyles.surface} ${staffStyles.invite}`}
+    <dialog
+      ref={dialog}
+      className={staffStyles.inviteDialog}
       id="staff-invitation"
       aria-labelledby="staff-invitation-title"
-      hidden={!open}
+      aria-describedby={descriptionId}
+      onCancel={(event) => {
+        event.preventDefault()
+        close()
+      }}
     >
-      <header>
-        <h2 id="staff-invitation-title">Пригласить сотрудника</h2>
-        <p>Выберите права. Сотрудник задаст пароль по ссылке приглашения.</p>
+      <header className={staffStyles.inviteHeader}>
+        <div>
+          <h2 id="staff-invitation-title">Пригласить сотрудника</h2>
+          <p id={descriptionId}>
+            {created
+              ? `Приглашение для ${name.trim()} · ${email.trim()}`
+              : 'Выберите права доступа. Сотрудник задаст пароль по одноразовой ссылке приглашения.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          className={staffStyles.inviteClose}
+          aria-label="Закрыть окно приглашения"
+          disabled={command.attempt.kind === 'pending'}
+          onClick={close}
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          >
+            <path d="m4 4 8 8m0-8-8 8" />
+          </svg>
+        </button>
       </header>
-      <form onSubmit={submit} className={staffStyles.commandForm}>
-        <div className={staffStyles.inviteFields}>
-          <label>
-            Имя
-            <input name="name" autoComplete="off" required disabled={command.busy} />
-          </label>
-          <label>
-            Email
-            <input type="email" name="email" autoComplete="off" required disabled={command.busy} />
-          </label>
-        </div>
-        <Grants catalog={catalog} selected={grants} onChange={setGrants} disabled={command.busy} />
-        <div className={staffStyles.inviteActions}>
-          <button data-variant="primary" disabled={command.busy || grants.length === 0}>
-            Создать приглашение
-          </button>
-        </div>
-      </form>
-      <CommandResult command={command} />
-    </section>
+      <div className={staffStyles.inviteBody}>
+        {command.attempt.kind !== 'idle' && (
+          <div ref={feedback} tabIndex={-1}>
+            <CommandResult command={command} />
+          </div>
+        )}
+        {!created && (
+          <form id={formId} onSubmit={submit} className={staffStyles.inviteForm}>
+            <section className={staffStyles.inviteSection} aria-label="Данные сотрудника">
+              <header className={staffStyles.inviteSectionHeading}>
+                <span className={staffStyles.inviteSectionIcon} aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M5 20v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2m-3-12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Данные сотрудника</h3>
+                  <p>Имя и рабочий email для входа в кабинет менеджеров</p>
+                </div>
+              </header>
+              <div className={staffStyles.inviteFields}>
+                <label>
+                  Имя
+                  <input
+                    name="name"
+                    placeholder="Например, Анна Петрова"
+                    autoComplete="off"
+                    required
+                    value={name}
+                    disabled={fieldsLocked}
+                    onChange={(event) => setName(event.currentTarget.value)}
+                  />
+                </label>
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="name@company.ru"
+                    autoComplete="off"
+                    required
+                    value={email}
+                    disabled={fieldsLocked}
+                    onChange={(event) => setEmail(event.currentTarget.value)}
+                  />
+                </label>
+              </div>
+            </section>
+            <section className={staffStyles.inviteSection} aria-label="Права доступа">
+              <header className={staffStyles.inviteSectionHeading}>
+                <span className={staffStyles.inviteSectionIcon} aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 3 5 6v6c0 4.5 3 7.8 7 9 4-1.2 7-4.5 7-9V6l-7-3Zm-2.5 9.2 1.8 1.8 3.5-3.8" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>Права в кабинете менеджеров</h3>
+                  <p>Отметьте минимум одно право, чтобы активировать приглашение</p>
+                </div>
+                <span className={staffStyles.selectedCount}>Выбрано: {grants.length}</span>
+              </header>
+              <div className={staffStyles.inviteSectionBody}>
+                <Grants
+                  catalog={catalog}
+                  selected={grants}
+                  onChange={setGrants}
+                  disabled={fieldsLocked}
+                />
+              </div>
+            </section>
+          </form>
+        )}
+      </div>
+      <footer className={staffStyles.inviteFooter}>
+        {created ? (
+          <>
+            <button type="button" onClick={inviteAnother}>
+              Пригласить ещё
+            </button>
+            <button type="button" data-variant="primary" onClick={close}>
+              Готово
+            </button>
+          </>
+        ) : (
+          <>
+            <span className={staffStyles.inviteHint}>
+              {grants.length === 0
+                ? 'Выберите хотя бы одно право'
+                : `Выбрано прав: ${grants.length}`}
+            </span>
+            <button type="button" disabled={command.attempt.kind === 'pending'} onClick={close}>
+              Отмена
+            </button>
+            <button
+              type="submit"
+              form={formId}
+              data-variant="primary"
+              disabled={command.busy || grants.length === 0}
+            >
+              Создать приглашение
+            </button>
+          </>
+        )}
+      </footer>
+    </dialog>
   )
 }
 
@@ -633,9 +837,10 @@ export function StaffPage(props: Props) {
               <button
                 type="button"
                 data-variant="primary"
+                aria-haspopup="dialog"
                 aria-expanded={inviteOpen}
                 aria-controls="staff-invitation"
-                onClick={() => setInviteOpen(!inviteOpen)}
+                onClick={() => setInviteOpen(true)}
               >
                 Пригласить сотрудника
               </button>
@@ -643,6 +848,15 @@ export function StaffPage(props: Props) {
           </div>
         ) : null}
       </header>
+      {canInvite && catalog.data ? (
+        <InviteDialog
+          key={props.scope}
+          open={inviteOpen && !selected}
+          catalog={catalog.data}
+          props={props}
+          onClose={() => setInviteOpen(false)}
+        />
+      ) : null}
       {canManage ? (
         <>
           {selected ? (
@@ -679,9 +893,6 @@ export function StaffPage(props: Props) {
             </>
           ) : (
             <>
-              {canInvite && catalog.data ? (
-                <InviteForm catalog={catalog.data} props={props} open={inviteOpen} />
-              ) : null}
               <form
                 onSubmit={filter}
                 key={params.get('staff_search')}
