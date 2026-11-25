@@ -116,7 +116,13 @@ export function useAccountCommand(
         options.onSaved(result.product)
         options.onCompleted?.()
       } else if (result.kind === 'rejected') {
-        setState({ kind: 'error', message: 'Команда отклонена. Черновик сохранён.' })
+        setState({
+          kind: 'error',
+          message:
+            original.command.kind === 'refresh'
+              ? 'Часть данных не удалось обновить.'
+              : 'Команда отклонена. Черновик сохранён.',
+        })
         options.onSaved()
       } else {
         if (original.id && original.id !== result.id) {
@@ -245,10 +251,16 @@ export function useAccountCommand(
 
 type EditorCommand = ReturnType<typeof useAccountCommand>
 
-export function CommandFeedback({ command }: { command: EditorCommand }) {
+export function CommandFeedback({
+  command,
+  savedLabel = 'Сохранено.',
+}: {
+  command: EditorCommand
+  savedLabel?: string
+}) {
   const state = command.entry.state
   if (state.kind === 'idle' || state.kind === 'conflict') return null
-  if (state.kind === 'saved') return <p role="status">Сохранено.</p>
+  if (state.kind === 'saved') return <p role="status">{savedLabel}</p>
   if (state.kind === 'busy') return <p role="status">Проверяем результат команды…</p>
   if (state.kind === 'error') return <p role="alert">{state.message}</p>
   const pending = state.pending

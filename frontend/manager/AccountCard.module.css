@@ -198,26 +198,6 @@
   overflow-wrap: anywhere;
 }
 
-.refresh summary {
-  padding: 7px 14px;
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-sm);
-  background: var(--color-primary);
-  color: white;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.refresh form {
-  margin-block-start: 6px;
-  justify-items: start;
-}
-
-.refresh label {
-  display: inline-flex;
-  align-items: center;
-}
-
 .sectionHeader {
   padding: 14px 20px;
   border-bottom: 1px solid var(--color-border-soft);
@@ -634,4 +614,22 @@
   display: inline;
   font: inherit;
   color: inherit;
+}
+
+.refreshButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding-inline: 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusHistory {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--color-subtle);
 }

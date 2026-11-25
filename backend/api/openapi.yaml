@@ -971,6 +971,7 @@ paths:
                     enum:
                     - license
                     - users
+                    - amostart
                   minItems: 1
                   uniqueItems: true
                 reason:
@@ -4829,6 +4830,15 @@ components:
           type:
           - string
           - 'null'
+        classification_change:
+          type: object
+          additionalProperties: false
+          required: [occurred_at, source]
+          properties:
+            occurred_at: {type: string, format: date-time}
+            source: {type: string, enum: [manual, subscription]}
+            previous: {type: string}
+            current: {type: string}
         identity_observed_at:
           type: string
           format: date-time

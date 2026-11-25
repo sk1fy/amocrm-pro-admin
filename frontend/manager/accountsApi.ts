@@ -65,6 +65,7 @@ function parseObservation<T>(raw: unknown, parse: (value: unknown) => T) {
     source: text(item.source),
     observed_at: optional(item.observed_at, date),
     fresh_until: optional(item.fresh_until, date),
+    error_code: optional(item.error_code, text),
   }
 }
 export type AccountObservation<T> = ReturnType<typeof parseObservation<T>>
@@ -183,6 +184,15 @@ function parseAccount(raw: unknown) {
     subscription: optional(item.subscription, parseSubscription),
     previous_subscription: optional(item.previous_subscription, parseSubscription),
     identity_observed_at: optional(item.identity_observed_at, date),
+    classification_change: optional(item.classification_change, (raw) => {
+      const change = record(raw)
+      return {
+        occurred_at: date(change.occurred_at),
+        source: listedValue(change.source, ['manual', 'subscription'] as const),
+        previous: optional(change.previous, text),
+        current: optional(change.current, text),
+      }
+    }),
     note: nullable(item.note, text),
     region: nullable(item.region, text),
     time_zone: nullable(item.time_zone, text),

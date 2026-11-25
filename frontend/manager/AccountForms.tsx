@@ -23,6 +23,7 @@ export function AccountForm({
   onCancel,
   inline = false,
   actionsOnEdit = false,
+  iconActions = false,
 }: EditorProps & {
   id: string
   title: string
@@ -32,6 +33,7 @@ export function AccountForm({
   onCancel?: () => void
   inline?: boolean
   actionsOnEdit?: boolean
+  iconActions?: boolean
   command: (fields: Fields, original: Fields, version: number, key: string) => AccountCommand
   children: (
     values: Fields,
@@ -45,7 +47,7 @@ export function AccountForm({
   return (
     <section className={inline ? undefined : styles.panel} aria-label={title}>
       <form
-        className={styles.form}
+        className={iconActions ? styles.iconActionForm : styles.form}
         onSubmit={(event) => {
           event.preventDefault()
           if (!draft) return
@@ -69,21 +71,25 @@ export function AccountForm({
           <div className={styles.actions}>
             <button
               type="submit"
+              aria-label={iconActions ? 'Подтвердить изменение статуса' : undefined}
+              title={iconActions ? 'Подтвердить' : undefined}
               data-variant={inline ? 'primary' : undefined}
               disabled={!draft || attempt.locked || state.kind === 'conflict'}
             >
-              {submitLabel}
+              {iconActions ? <span aria-hidden="true">✓</span> : submitLabel}
             </button>
             {onCancel || actionsOnEdit ? (
               <button
                 type="button"
+                aria-label={iconActions ? 'Отменить изменение статуса' : undefined}
+                title={iconActions ? 'Отменить' : undefined}
                 disabled={attempt.locked}
                 onClick={() => {
                   attempt.discardDraft()
                   onCancel?.()
                 }}
               >
-                Отмена
+                {iconActions ? <span aria-hidden="true">×</span> : 'Отмена'}
               </button>
             ) : null}
           </div>
