@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { createRequestKey } from '../src/features/operations/intents'
 import { StatusBadge } from '../src/components/StatusBadge'
 import { formatNull, formatTime, formatRelativeTime } from '../src/lib/format'
@@ -71,9 +71,12 @@ export function AccountEvidence<T>({
 
 function AccountRefresh({ account, ...actions }: AccountActions & { account: AccountDetail }) {
   const attempt = useAccountCommand(account.account_id + ':refresh', actions)
+  const refreshButton = useRef<HTMLButtonElement>(null)
+  const completed = attempt.entry.state.kind === 'saved' || attempt.entry.state.kind === 'error'
   return (
-    <div>
+    <div className={card.refreshControl}>
       <button
+        ref={refreshButton}
         type="button"
         className={`${card.primary} ${card.refreshButton}`}
         disabled={attempt.locked}
@@ -100,7 +103,22 @@ function AccountRefresh({ account, ...actions }: AccountActions & { account: Acc
         </svg>
         Обновить
       </button>
-      <CommandFeedback command={attempt} savedLabel="Данные обновлены." />
+      <div className={card.refreshFeedback}>
+        <CommandFeedback command={attempt} savedLabel="Данные обновлены." />
+        {completed ? (
+          <button
+            type="button"
+            className={card.refreshFeedbackDismiss}
+            aria-label="Закрыть сообщение об обновлении"
+            onClick={() => {
+              attempt.discardDraft()
+              refreshButton.current?.focus()
+            }}
+          >
+            ×
+          </button>
+        ) : null}
+      </div>
     </div>
   )
 }

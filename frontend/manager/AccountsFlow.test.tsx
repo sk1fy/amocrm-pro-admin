@@ -367,10 +367,14 @@ it('refreshes account data, users and amoSTART together and shows the confirmed 
     false,
     true,
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Обновить' }))
+  const refreshButton = await screen.findByRole('button', { name: 'Обновить' })
+  fireEvent.click(refreshButton)
   expect(await screen.findByText('15.03.2030')).toBeVisible()
   expect(screen.getByText(/Данные аккаунта обновлены/)).toBeVisible()
   expect(screen.getByText('Расширенный')).toBeVisible()
+  fireEvent.click(screen.getByRole('button', { name: 'Закрыть сообщение об обновлении' }))
+  expect(screen.queryByText('Данные обновлены.')).not.toBeInTheDocument()
+  expect(refreshButton).toHaveFocus()
   expect(update).toHaveBeenCalledTimes(1)
 })
 
