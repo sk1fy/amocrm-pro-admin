@@ -138,7 +138,9 @@ function Widgets({
                 <th scope="col">Сделка</th>
                 <th scope="col">Контакт из формы активации</th>
                 <th scope="col">Отзыв</th>
-                <th scope="col">Проверка и действия</th>
+                <th scope="col" className={card.actionsHeading}>
+                  Действия
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -178,6 +180,12 @@ function Widgets({
     </section>
   )
 }
+
+const reviewDate = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+})
 
 function Widget({
   account,
@@ -222,6 +230,13 @@ function Widget({
   const latest = current.isError ? undefined : current.data?.items[0]
   const renewalRow = latest ?? row
   const authorizationInfoId = `widget-authorization-${row.id}`
+  const reviewStamp = row.review.reviewed_at ? (
+    <time dateTime={row.review.reviewed_at}>
+      {'✓ проверен ' + reviewDate.format(new Date(row.review.reviewed_at))}
+    </time>
+  ) : (
+    '✓ проверен'
+  )
   const deal = row.deal
   return (
     <tr>
@@ -328,6 +343,19 @@ function Widget({
         />
       </td>
       <td className={card.widgetActions}>
+        <div className={card.actionStatus}>
+          {row.kind === 'observed' ? (
+            <StatusBadge
+              domain="installation_event"
+              state={row.last_lifecycle_event}
+              variant="text"
+            />
+          ) : row.review.reviewed ? (
+            <span className={card.reviewStamp}>{reviewStamp}</span>
+          ) : (
+            <ReviewBadge row={row} />
+          )}
+        </div>
         <div className={card.actionStack}>
           {row.kind !== 'observed' && onReview && (
             <button type="button" onClick={() => onReview(row)} disabled={reviewLocked}>
@@ -407,24 +435,6 @@ function Widget({
               )}
             </div>
           ) : null}
-        </div>
-        <div className={card.actionStatus}>
-          {row.kind === 'observed' ? (
-            <StatusBadge
-              domain="installation_event"
-              state={row.last_lifecycle_event}
-              variant="text"
-            />
-          ) : (
-            <>
-              <ReviewBadge row={row} />
-              {row.review.reviewed_at ? (
-                <time className={card.cellSecondary} dateTime={row.review.reviewed_at}>
-                  {formatTime(row.review.reviewed_at)}
-                </time>
-              ) : null}
-            </>
-          )}
         </div>
       </td>
     </tr>
