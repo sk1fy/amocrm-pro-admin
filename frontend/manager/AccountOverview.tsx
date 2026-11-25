@@ -212,7 +212,7 @@ function ClientStatus({
       ) : null}
       {statusChange ? (
         <p className={card.statusHistory}>
-          {statusChange.source === 'subscription' ? 'При выдаче подписки' : 'Вручную'} ·{' '}
+          {statusChange.source === 'subscription' ? 'По подписке' : 'Вручную'} ·{' '}
           <time dateTime={statusChange.occurred_at}>{formatTime(statusChange.occurred_at)}</time> ·{' '}
           {statusChange.previous ?? 'Не указан'} → {statusChange.current ?? 'Не указан'}
         </p>
@@ -310,6 +310,7 @@ export function AccountOverview({
   const updatedAt = [
     account.identity_observed_at,
     account.active_users.observed_at,
+    account.license.observed_at,
     ...(account.checks ?? [])
       .filter((check) => check.component !== 'installations')
       .map((check) => check.succeeded_at),

@@ -358,6 +358,7 @@ it('refreshes account data, users and amoSTART together and shows the confirmed 
             license: {
               state: 'fresh',
               source: 'amoSTART',
+              observed_at: '2026-11-18T19:30:00Z',
               value: { license_until: '2030-03-14T21:00:00Z', tariff: 'Расширенный' },
             },
           }
@@ -368,6 +369,7 @@ it('refreshes account data, users and amoSTART together and shows the confirmed 
   )
   fireEvent.click(await screen.findByRole('button', { name: 'Обновить' }))
   expect(await screen.findByText('15.03.2030')).toBeVisible()
+  expect(screen.getByText(/Данные аккаунта обновлены/)).toBeVisible()
   expect(screen.getByText('Расширенный')).toBeVisible()
   expect(update).toHaveBeenCalledTimes(1)
 })
