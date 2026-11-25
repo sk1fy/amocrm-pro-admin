@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { ManagerApp } from './ManagerApp'
 import { captureInvitation } from './AcceptInvitationPage'
 import { StaffPage, staffSearch } from './StaffPage'
@@ -29,6 +29,15 @@ function wrap(children: React.ReactNode) {
     </StrictMode>,
   )
 }
+beforeEach(() => {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true
+  }
+  HTMLDialogElement.prototype.close = function () {
+    this.open = false
+    this.dispatchEvent(new Event('close'))
+  }
+})
 afterEach(() => {
   vi.unstubAllGlobals()
   resetApiSession()
@@ -124,14 +133,19 @@ it('shows assigned grants, preserves paging filters and opens invitation without
   expect(changed.has('staff_cursor')).toBe(false)
 
   const invite = screen.getByRole('button', { name: 'Пригласить сотрудника' })
+  expect(invite).toHaveAttribute('aria-haspopup', 'dialog')
   expect(invite).toHaveAttribute('aria-expanded', 'false')
-  expect(screen.queryByRole('heading', { name: 'Пригласить сотрудника' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('dialog', { name: 'Пригласить сотрудника' })).not.toBeInTheDocument()
   fireEvent.click(invite)
   expect(invite).toHaveAttribute('aria-expanded', 'true')
-  expect(screen.getByRole('heading', { name: 'Пригласить сотрудника' })).toBeVisible()
-  expect(screen.getByRole('button', { name: 'Создать приглашение' })).toBeDisabled()
-  const invitation = screen.getByRole('region', { name: 'Пригласить сотрудника' })
+  const invitation = screen.getByRole('dialog', { name: 'Пригласить сотрудника' })
+  expect(invitation).toBeVisible()
+  expect(within(invitation).getByRole('heading', { name: 'Пригласить сотрудника' })).toBeVisible()
+  expect(within(invitation).getByRole('button', { name: 'Создать приглашение' })).toBeDisabled()
   expect(within(invitation).getByRole('switch', { name: 'Просмотр клиентов' })).not.toBeChecked()
+  fireEvent.click(within(invitation).getByRole('button', { name: 'Отмена' }))
+  expect(screen.queryByRole('dialog', { name: 'Пригласить сотрудника' })).not.toBeInTheDocument()
+  expect(invite).toHaveAttribute('aria-expanded', 'false')
   expect(screen.queryByRole('heading', { name: 'Аудит безопасности' })).not.toBeInTheDocument()
   expect(
     fetcher.mock.calls.every(
@@ -140,6 +154,140 @@ it('shows assigned grants, preserves paging filters and opens invitation without
         (init?.method === undefined || init.method === 'GET'),
     ),
   ).toBe(true)
+})
+
+async function submitInvitation() {
+  wrap(
+    <StaffPage
+      scope="invite-modal"
+      managerId={id}
+      grants={['staff.manage', 'identity.manage']}
+      search="section=staff"
+      navigate={vi.fn()}
+      onExpired={vi.fn()}
+      onForbidden={vi.fn()}
+    />,
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Пригласить сотрудника' }))
+  const dialog = await screen.findByRole('dialog', { name: 'Пригласить сотрудника' })
+  fireEvent.change(within(dialog).getByLabelText('Имя'), { target: { value: 'Новый менеджер' } })
+  fireEvent.change(within(dialog).getByLabelText('Email'), {
+    target: { value: 'new@example.invalid' },
+  })
+  fireEvent.click(within(dialog).getByRole('switch', { name: 'Просмотр клиентов' }))
+  const submit = within(dialog).getByRole('button', { name: 'Создать приглашение' })
+  expect(submit).toBeEnabled()
+  fireEvent.click(submit)
+  return dialog
+}
+
+it('creates an invitation in the modal dialog and allows inviting another employee', async () => {
+  const invited = {
+    ...staff,
+    id: '8a1f0dc6-4090-4a8e-8a39-7c87be5cf34d',
+    email: 'new@example.invalid',
+    name: 'Новый менеджер',
+    status: 'invited',
+    grants: ['clients.read'],
+  }
+  const posts: string[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith('/grants'))
+        return Response.json({ items: ['clients.read', 'feed.read'] })
+      if (init?.method === 'POST') {
+        posts.push(String(init.body))
+        return Response.json(
+          {
+            staff: invited,
+            invitation_url: window.location.origin + '/managers#invitation=fixture',
+            link_unavailable: false,
+          },
+          { status: 201 },
+        )
+      }
+      return Response.json({ items: [staff], next_cursor: null })
+    }),
+  )
+  const dialog = await submitInvitation()
+  await waitFor(() =>
+    expect(within(dialog).getByLabelText('Ссылка приглашения')).toHaveValue(
+      window.location.origin + '/managers#invitation=fixture',
+    ),
+  )
+  expect(posts).toEqual([
+    JSON.stringify({
+      email: 'new@example.invalid',
+      name: 'Новый менеджер',
+      grants: ['clients.read'],
+    }),
+  ])
+  const copy = within(dialog).getByRole('button', { name: 'Скопировать ссылку' })
+  const linkField = within(dialog).getByLabelText<HTMLInputElement>('Ссылка приглашения')
+  vi.stubGlobal('navigator', Object.create(navigator, { clipboard: { value: undefined } }))
+  fireEvent.click(copy)
+  expect(await within(dialog).findByText('Скопируйте ссылку вручную из поля выше.')).toBeVisible()
+  expect(linkField).toHaveFocus()
+  expect(linkField.selectionEnd).toBe(linkField.value.length)
+
+  const writeText = vi.fn<(link: string) => Promise<void>>()
+  vi.stubGlobal('navigator', Object.create(navigator, { clipboard: { value: { writeText } } }))
+  writeText.mockRejectedValueOnce(new DOMException('Permission denied', 'NotAllowedError'))
+  fireEvent.click(copy)
+  expect(await within(dialog).findByText('Скопируйте ссылку вручную из поля выше.')).toBeVisible()
+  expect(within(dialog).queryByText('Ссылка скопирована.')).not.toBeInTheDocument()
+
+  let finishCopy!: () => void
+  writeText.mockImplementationOnce(
+    () =>
+      new Promise<void>((resolve) => {
+        finishCopy = resolve
+      }),
+  )
+  fireEvent.click(copy)
+  expect(copy).toBeDisabled()
+  expect(within(dialog).queryByText('Ссылка скопирована.')).not.toBeInTheDocument()
+  finishCopy()
+  expect(await within(dialog).findByText('Ссылка скопирована.')).toBeVisible()
+  expect(writeText).toHaveBeenCalledWith(linkField.value)
+  expect(within(dialog).getByRole('button', { name: 'Готово' })).toBeVisible()
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Пригласить ещё' }))
+  expect(within(dialog).getByLabelText('Имя')).toHaveValue('')
+  expect(within(dialog).getByLabelText('Email')).toHaveValue('')
+  expect(within(dialog).getByRole('button', { name: 'Создать приглашение' })).toBeDisabled()
+})
+
+it('retains the invitation and retries its exact request after closing an unknown result', async () => {
+  const requests: Array<{ body: BodyInit | null | undefined; key: string | null }> = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith('/grants')) return Response.json({ items: ['clients.read'] })
+      if (init?.method === 'POST') {
+        requests.push({ body: init.body, key: new Headers(init.headers).get('Idempotency-Key') })
+        if (requests.length === 1) throw new TypeError('connection lost')
+        return Response.json({ staff, link_unavailable: true })
+      }
+      return Response.json({ items: [staff], next_cursor: null })
+    }),
+  )
+  let dialog = await submitInvitation()
+  await within(dialog).findByRole('button', { name: 'Повторить прежнюю команду' })
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Закрыть окно приглашения' }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Пригласить сотрудника' }))
+  dialog = await screen.findByRole('dialog', { name: 'Пригласить сотрудника' })
+  expect(within(dialog).getByLabelText('Email')).toHaveValue('new@example.invalid')
+  expect(within(dialog).getByLabelText('Имя')).toBeDisabled()
+  expect(within(dialog).getByRole('switch', { name: 'Просмотр клиентов' })).toBeChecked()
+  expect(within(dialog).getByRole('button', { name: 'Создать приглашение' })).toBeDisabled()
+  expect(requests).toHaveLength(1)
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Повторить прежнюю команду' }))
+  expect(await within(dialog).findByText(/Ссылка недоступна после повтора/)).toBeVisible()
+  expect(requests).toHaveLength(2)
+  expect(requests[0]?.key).toMatch(/^[0-9a-f-]{36}$/)
+  expect(requests[1]).toEqual(requests[0])
 })
 
 it('saves individual right switches once per row and retains the other grants', async () => {
