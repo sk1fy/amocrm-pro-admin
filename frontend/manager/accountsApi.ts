@@ -282,6 +282,9 @@ export async function listWidgets(
     return {
       ...row,
       product_id: uuid(raw.product_id),
+      ...(raw.trial_extension_days === undefined
+        ? {}
+        : { trial_extension_days: integer(raw.trial_extension_days, 1) }),
       entitlement_version: parseAccess(raw.access, account, raw.product_id),
     }
   })

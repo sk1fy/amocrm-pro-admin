@@ -23,8 +23,6 @@ import (
 	wire "github.com/sk1fy/amocrm-pro-admin/internal/platformwire"
 )
 
-const ManagerAccountBodyLimit = 32 << 10
-
 type AccountResponse struct {
 	Status int
 	ETag   string
@@ -40,6 +38,13 @@ type AccountEndpoint struct {
 	readGrant auth.ManagerGrant
 	status    int
 	model     func() any
+}
+
+func (e AccountEndpoint) BodyLimit() int64 {
+	if e.kind == kindCreateProduct || e.kind == kindUpdateProduct {
+		return 512 << 10
+	}
+	return 32 << 10
 }
 
 func (e AccountEndpoint) Mutates() bool         { return e.kind != "" }

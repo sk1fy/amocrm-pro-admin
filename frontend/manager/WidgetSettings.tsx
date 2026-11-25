@@ -88,11 +88,28 @@ export function WidgetSettings({
         {technicalControls ? (
           <button
             className={styles.toggle}
+            aria-label="Технический режим"
+            title="Технические настройки"
             type="button"
             aria-pressed={showTechnical}
             onClick={() => setTechnicalOpen(!showTechnical)}
           >
-            Технический режим
+            <svg
+              aria-hidden="true"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinejoin="round"
+            >
+              <path
+                d="m9.5 3 .6-1h3.8l.6 2.4 1.7 1 2.4-.7 1.9 3.3-1.8 1.8v2.4l1.8 1.8-1.9 3.3-2.4-.7-1.7 1-.6 2.4h-3.8l-.6-2.4-1.7-1-2.4.7-1.9-3.3 1.8-1.8V9.8L3.5 8l1.9-3.3 2.4.7 1.7-1Z"
+                transform="translate(0 1)"
+              />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
           </button>
         ) : null}
         <button

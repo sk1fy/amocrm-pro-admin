@@ -1235,6 +1235,7 @@ paths:
                 product_id:
                   type: string
                   format: uuid
+                trial_days: {type: integer, minimum: 1, maximum: 365}
                 target_until:
                   type: string
                   format: date-time
@@ -2194,6 +2195,8 @@ paths:
                   items:
                     type: string
                     format: uuid
+                trial_extension_days: {type: integer, minimum: 1, maximum: 365}
+                tariff_options: {$ref: '#/components/schemas/ProductTariffOptions'}
                 tariff_version:
                   type:
                   - integer
@@ -2372,6 +2375,8 @@ paths:
                   items:
                     type: string
                     format: uuid
+                trial_extension_days: {type: integer, minimum: 1, maximum: 365}
+                tariff_options: {$ref: '#/components/schemas/ProductTariffOptions'}
                 tariff_version:
                   type:
                   - integer
@@ -4477,6 +4482,18 @@ components:
     RetryAfter:
       schema: {type: string, pattern: '^[0-9]+$'}
   schemas:
+    ProductTariffOptions:
+      type: array
+      maxItems: 50
+      items:
+        type: object
+        additionalProperties: false
+        required: [name, months, price_kopecks, per_user]
+        properties:
+          name: {type: string, minLength: 1, maxLength: 200}
+          months: {type: integer, minimum: 1, maximum: 1200}
+          price_kopecks: {type: integer, format: int64, minimum: 0, maximum: 999999999999}
+          per_user: {type: boolean}
     ManagerStaffMember:
       type: object
       additionalProperties: false
@@ -5405,6 +5422,7 @@ components:
           pattern: '^[1-9][0-9]{0,18}$'
         product_id: {type: string, format: uuid}
         product_code: {type: string, maxLength: 63, pattern: '^[a-z0-9]+(?:[-_][a-z0-9]+)*$'}
+        trial_extension_days: {type: integer, minimum: 1, maximum: 365}
         product_name: {type: string}
         product_line: {type: string, enum: [FREE, TOP, PRO]}
         account_domain: {type: string}
@@ -5490,6 +5508,8 @@ components:
           items:
             type: string
             format: uuid
+        trial_extension_days: {type: integer, minimum: 1, maximum: 365}
+        tariff_options: {$ref: '#/components/schemas/ProductTariffOptions'}
         tariff_version:
           type:
           - integer

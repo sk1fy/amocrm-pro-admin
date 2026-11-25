@@ -28,6 +28,7 @@ function managerCard(
   current: () => { version: number; note: string | null },
   renew = false,
   refresh = false,
+  widget?: Record<string, unknown>,
 ) {
   window.history.replaceState(null, '', '/managers?' + accountSearch('section=clients', account))
   const dispatch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -37,6 +38,7 @@ function managerCard(
         renew ? { ...manager, grants: [...manager.grants, 'clients.renew'] } : manager,
       )
     if (
+      url === path + '/renewals' ||
       url === path + '/subscription' ||
       url === path + '/profile' ||
       (refresh && url === path + '/refresh')
@@ -52,9 +54,9 @@ function managerCard(
           { id: '10002', name: 'Алексей', is_active: false, is_admin: false },
         ],
       })
-    if (url === path + '/widgets?limit=100' || url === path + '/history')
+    if (url.startsWith(path + '/widgets?') || url === path + '/history')
       return Response.json({
-        items: [],
+        items: widget && url.includes('/widgets?') ? [widget] : [],
         next_cursor: null,
         snapshot_at: '2026-11-18T19:30:00Z',
         query_hash: 'fixture',
@@ -81,6 +83,7 @@ function managerCard(
           { action: 'account.profile', allowed: true },
           { action: 'account.refresh', allowed: refresh },
           { action: 'account.subscription', allowed: renew },
+          { action: 'account.renewal', allowed: renew },
         ],
       },
       { headers: { ETag: '"' + version + '"' } },
@@ -410,4 +413,53 @@ it('confirms or cancels a status change without asking for a reason', async () =
   fireEvent.click(screen.getByRole('button', { name: 'Подтвердить изменение статуса' }))
   expect(await screen.findByText(/Не указан → Свободный клиент/)).toBeVisible()
   expect(update).toHaveBeenCalledTimes(1)
+})
+
+it('previews an expired trial from the Platform snapshot and waits for confirmation', async () => {
+  const product = '11111111-1111-4111-8111-111111111111'
+  const computed = '2026-11-17T10:00:00Z'
+  const expired = '2026-11-10T10:00:00Z'
+  const send = vi.fn(() => new Response(null, { status: 503 }))
+  managerCard(send, () => ({ version: 1, note: null }), true, false, {
+    id: product,
+    account_id: account,
+    amo_account_id: '9007199254740993',
+    product_id: product,
+    product_code: 'trial',
+    product_name: 'Пробный виджет',
+    product_line: 'PRO',
+    trial_extension_days: 14,
+    generation: 1,
+    kind: 'widget',
+    installed_at: expired,
+    removed_at: null,
+    last_lifecycle_event: 'installed',
+    lifecycle: 'current',
+    authorization: 'authorized',
+    activation_status: 'unknown',
+    review: { reviewed: false },
+    access: {
+      account_id: account,
+      product_id: product,
+      entitlement_version: 1,
+      active: false,
+      source: 'own_trial',
+      own_until: expired,
+      valid_until: expired,
+      computed_at: computed,
+    },
+    version: 1,
+  })
+  fireEvent.click(await screen.findByRole('button', { name: 'Продлить' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Тест +14 дней' }))
+  expect(await screen.findByText(/Новый срок теста/)).toBeVisible()
+  expect(send).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Продлить доступ' }))
+  await waitFor(() =>
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.stringContaining('"target_until":"2026-12-01T10:00:00.000Z"'),
+      }),
+    ),
+  )
 })
