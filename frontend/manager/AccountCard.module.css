@@ -464,3 +464,74 @@
     border-top: 1px solid var(--color-border-soft);
   }
 }
+
+.summaryPanel .panelTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--color-muted);
+  text-transform: uppercase;
+}
+.panelTitle span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: var(--color-link);
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  font-size: 19px;
+}
+.emptyNote {
+  color: var(--color-muted);
+  font-style: italic;
+}
+.noteInput {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+}
+.subscriptionTitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.subscriptionForm,
+.overLimit {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--tone-attention) 35%, var(--color-border));
+  background: var(--tone-attention-bg);
+  border-radius: 6px;
+}
+.overLimit {
+  color: var(--tone-error);
+  border-color: color-mix(in srgb, var(--tone-error) 35%, var(--color-border));
+  background: var(--tone-error-bg);
+}
+.subscriptionForm fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.subscriptionForm label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+.subscriptionForm input,
+.subscriptionForm select {
+  max-width: 100%;
+}
+.wideField {
+  flex-basis: 100%;
+}

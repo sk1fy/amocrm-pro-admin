@@ -22,6 +22,10 @@ const historyGroups: { label: string; kinds: ManagerEvent['kind'][] }[] = [
     kinds: [
       'installation_reviewed',
       'installation_unreviewed',
+      'subscription_granted',
+      'subscription_renewed',
+      'subscription_seats',
+      'subscription_revoked',
       'account_profile_updated',
       'portrait_updated',
     ],

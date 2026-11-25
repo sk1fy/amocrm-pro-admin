@@ -549,3 +549,7 @@ PUT использует собственный If-Match workflow, Idempotency-K
 Для настройки сделок по установкам company-workflow-metadata возвращает employees из снимка корпоративной amoCRM. У GET и PUT installation-deal-settings поле owners содержит ID сотрудников по ключам direct, partner, own и unclassified. При передаче owners команда заменяет набор целиком, пустой объект сбрасывает назначения. Пропуск поля сохраняет набор.
 
 Список установок принимает необязательный фильтр state со значениями current или removed. Экран очереди передаёт current, поэтому счётчики обеих вкладок и страницы используют один набор эпизодов.
+
+POST /api/v1/managers/accounts/{id}/subscription принимает действия
+grant, renew, seats и revoke. Требует clients.renew, версию профиля и
+ключ идемпотентности. Результат — актуальная карточка с новой версией.

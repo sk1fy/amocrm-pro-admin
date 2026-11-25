@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Подписка клиента](account-subscription.md).
+
 - [Панель настроек виджета](manager-widget-settings-panel.md).
 
 - [Скрыть аудит в карточке клиента](hide-manager-audit.md).

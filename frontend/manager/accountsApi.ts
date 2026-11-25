@@ -160,10 +160,27 @@ function parseOverview(raw: unknown) {
 }
 export type AccountOverviewCounts = ReturnType<typeof parseOverview>
 
+function parseSubscription(raw: unknown) {
+  const item = record(raw)
+  const plan = item.plan
+  if (plan !== 'top' && plan !== 'unified') invalid()
+  const ends = text(item.ends_on)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ends)) invalid()
+  return {
+    plan: plan as 'top' | 'unified',
+    ends_on: ends,
+    seats: integer(item.seats, 1),
+    deal_id: text(item.deal_id),
+    state: text(item.state),
+    changed_at: date(item.changed_at),
+  }
+}
 function parseAccount(raw: unknown) {
   const item = record(raw)
   return {
     ...parseAccountSummary(item),
+    subscription: optional(item.subscription, parseSubscription),
+    previous_subscription: optional(item.previous_subscription, parseSubscription),
     identity_observed_at: optional(item.identity_observed_at, date),
     note: nullable(item.note, text),
     region: nullable(item.region, text),
@@ -428,7 +445,7 @@ export async function listNiches(cursor: string, signal: AbortSignal, search = '
 export type AccountCommand =
   | Readonly<{ kind: 'refresh'; account: AccountId; key: string; body: string }>
   | Readonly<{
-      kind: 'profile' | 'portrait' | 'audit'
+      kind: 'profile' | 'portrait' | 'audit' | 'subscription'
       account: AccountId
       key: string
       body: string
@@ -450,6 +467,7 @@ const suffixes = {
   portrait: '/portrait',
   audit: '/portrait/audit-dates',
   renewal: '/renewals',
+  subscription: '/subscription',
 }
 
 export type ManagerCommand = AccountCommand | ProductCommand | WorkflowCommand

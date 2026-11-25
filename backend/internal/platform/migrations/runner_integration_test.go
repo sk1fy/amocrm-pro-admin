@@ -29,8 +29,8 @@ func TestMigratorLifecycle(t *testing.T) {
 	}
 	testkit.Reset(t, pool)
 	assertAppTables(t, pool, true)
-	if count := migrationCount(t, pool); count != 15 {
-		t.Fatalf("applied = %d, want 15", count)
+	if count := migrationCount(t, pool); count != 16 {
+		t.Fatalf("applied = %d, want 16", count)
 	}
 
 	if err := migrations.RequireDownConfirmation(func(string) string { return "" }); err == nil {
@@ -66,8 +66,8 @@ func TestMigratorLifecycle(t *testing.T) {
 			t.Fatalf("parallel up: %v", err)
 		}
 	}
-	if count := migrationCount(t, pool); count != 15 {
-		t.Fatalf("parallel up applied = %d, want 15", count)
+	if count := migrationCount(t, pool); count != 16 {
+		t.Fatalf("parallel up applied = %d, want 16", count)
 	}
 	assertAppTables(t, pool, true)
 	if err := runner.EnsureCurrent(ctx); err != nil {

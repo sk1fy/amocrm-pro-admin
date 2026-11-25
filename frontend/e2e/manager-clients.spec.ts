@@ -31,9 +31,6 @@ async function editNote(page: Page, note: string) {
     .getByRole('button', { name: /^(Добавить|Изменить)$/ })
     .click()
   await page.getByRole('textbox', { name: 'Заметка', exact: true }).fill(note)
-  await page
-    .getByRole('textbox', { name: 'Причина изменения' })
-    .fill('Проверка работы двух сотрудников')
 }
 
 function portraitRating(page: Page, value: string) {

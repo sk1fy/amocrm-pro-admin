@@ -14,6 +14,7 @@ export function AccountForm({
   initial,
   command,
   onSaved,
+  onCompleted,
   onExpired,
   onForbidden,
   children,
@@ -39,7 +40,7 @@ export function AccountForm({
   ) => ReactNode
   current?: ReactNode
 }) {
-  const attempt = useAccountCommand(id, { onSaved, onExpired, onForbidden })
+  const attempt = useAccountCommand(id, { onSaved, onCompleted, onExpired, onForbidden })
   const { draft, state } = attempt.entry
   return (
     <section className={inline ? undefined : styles.panel} aria-label={title}>

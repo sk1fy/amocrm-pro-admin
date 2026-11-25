@@ -662,6 +662,7 @@ export function ManagerAccountCard({
       ) : (
         <>
           <AccountOverview
+            canRenew={grants.includes('clients.renew')}
             account={account}
             canWrite={canWrite}
             usersLink={(label) => (

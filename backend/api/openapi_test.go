@@ -112,8 +112,8 @@ func TestManagerClientsContractSeparatesSearchAndCommands(t *testing.T) {
 			t.Fatalf("browser route has wrong command or CSRF headers: %s %s", route.Method, route.Path)
 		}
 	}
-	if count != 20 {
-		t.Fatalf("manager client operations = %d, want 20", count)
+	if count != 21 {
+		t.Fatalf("manager client operations = %d, want 21", count)
 	}
 }
 

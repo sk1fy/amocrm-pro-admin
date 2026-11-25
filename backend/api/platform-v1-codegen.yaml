@@ -15,6 +15,7 @@ output-options:
     - searchAccounts
     - getAccount
     - updateAccountProfile
+    - changeAccountSubscription
     - requestAccountRefresh
     - getAccountLicenseHistory
     - listAccountWidgets

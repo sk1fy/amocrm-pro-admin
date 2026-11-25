@@ -56,6 +56,8 @@ func (c *Client) callAccount(ctx context.Context, action accountAction, actor st
 		return c.wire.GetAccount(ctx, target, &wire.GetAccountParams{XPlatformActor: actor}, editQuery)
 	case "updateAccountProfile":
 		return c.wire.UpdateAccountProfileWithBody(ctx, target, &wire.UpdateAccountProfileParams{XPlatformActor: actor, IdempotencyKey: item.Key, IfMatch: etag}, media, bytes.NewReader(body), editQuery)
+	case "changeAccountSubscription":
+		return c.wire.ChangeAccountSubscriptionWithBody(ctx, target, &wire.ChangeAccountSubscriptionParams{XPlatformActor: actor, IdempotencyKey: item.Key, IfMatch: etag}, media, bytes.NewReader(body), editQuery)
 	case "requestAccountRefresh":
 		return c.wire.RequestAccountRefreshWithBody(ctx, target, &wire.RequestAccountRefreshParams{XPlatformActor: actor, IdempotencyKey: item.Key}, media, bytes.NewReader(body), editQuery)
 	case "getAccountLicenseHistory":
