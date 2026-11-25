@@ -137,8 +137,50 @@
 .refreshArea {
   display: grid;
   align-content: center;
+  margin-inline-start: auto;
   padding: 12px 20px;
   border-inline-start: 1px solid var(--color-border-soft);
+}
+
+.refreshControl {
+  position: relative;
+}
+
+.refreshFeedback {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1;
+  inset-block-start: calc(100% + 6px);
+  inset-inline-end: 0;
+  inline-size: max-content;
+  max-inline-size: min(19rem, calc(100vw - 3.5rem));
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-pop);
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.refreshFeedback:empty {
+  display: none;
+}
+
+.refreshFeedback p {
+  margin: 0;
+}
+
+.refreshFeedback button {
+  pointer-events: auto;
+}
+
+.refreshFeedback .refreshFeedbackDismiss {
+  flex: 0 0 auto;
+  padding: 2px 8px;
 }
 
 .observation {
@@ -511,6 +553,10 @@
     padding-inline: 12px;
     border-inline-start: 0;
     border-top: 1px solid var(--color-border-soft);
+  }
+
+  .refreshFeedback {
+    inset-inline: 0 auto;
   }
 }
 
