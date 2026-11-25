@@ -286,8 +286,7 @@ function Widget({
           <strong>{row.product_name || row.product_code}</strong>
         </div>
         <span className={card.cellSecondary}>
-          {row.product_code}
-          {row.kind === 'observed' ? ' · Наблюдение Core' : ' · Эпизод ' + row.generation}
+          {row.widget_version ? 'Версия ' + row.widget_version : 'Версия не получена'}
         </span>
       </td>
       <td>
@@ -329,98 +328,104 @@ function Widget({
         />
       </td>
       <td className={card.widgetActions}>
-        {row.kind === 'observed' ? (
-          <StatusBadge
-            domain="installation_event"
-            state={row.last_lifecycle_event}
-            variant="text"
-          />
-        ) : (
-          <>
-            <ReviewBadge row={row} />
-            {row.review.reviewed_at ? (
-              <time className={card.cellSecondary} dateTime={row.review.reviewed_at}>
-                {formatTime(row.review.reviewed_at)}
-              </time>
-            ) : null}
-            {onReview ? (
-              <button type="button" onClick={() => onReview(row)} disabled={reviewLocked}>
-                {row.review.reviewed ? 'Снять отметку' : 'Отметить проверку'}
-              </button>
-            ) : null}
-          </>
-        )}
-        {canRenewRow ? (
-          <div>
-            <button
-              type="button"
-              className={card.renewButton}
-              aria-expanded={renewing}
-              onClick={() => setRenewing(!renewing)}
-            >
-              Продлить
+        <div className={card.actionStack}>
+          {row.kind !== 'observed' && onReview && (
+            <button type="button" onClick={() => onReview(row)} disabled={reviewLocked}>
+              {row.review.reviewed ? 'Снять отметку' : 'Отметить проверку'}
             </button>
-            {renewing && (
-              <>
-                {fromSnapshot && renewing ? (
-                  current.isError ? (
-                    <ReadFailure error={current.error} retry={() => void current.refetch()} />
-                  ) : current.isPending ? (
-                    <p role="status">Проверяем текущий срок…</p>
-                  ) : !latest ? (
-                    <p role="alert">Текущая установка не найдена.</p>
-                  ) : null
-                ) : null}
-                {!fromSnapshot || latest ? (
-                  <AccountForm
-                    {...actions}
-                    id={selected.id + ':renewal:' + renewalRow.product_id}
-                    title="Продление тарифа виджета"
-                    version={renewalRow.entitlement_version}
-                    initial={{ until: '', reason: '' }}
-                    current={<p>Текущий срок тарифа: {formatTime(renewalRow.access.own_until)}.</p>}
-                    submitLabel="Продлить доступ"
-                    command={(fields, _, version, key) => ({
-                      kind: 'renewal',
-                      account: selected.id,
-                      product: renewalRow.product_id,
-                      version,
-                      key,
-                      body: JSON.stringify({
-                        product_id: renewalRow.product_id,
-                        target_until: new Date(fields.until).toISOString(),
-                        reason: fields.reason.trim(),
-                      }),
-                    })}
-                  >
-                    {(fields, edit) => (
-                      <>
-                        <label>
-                          Продлить до
-                          <input
-                            type="datetime-local"
-                            required
-                            value={fields.until}
-                            onChange={(event) => edit('until', event.target.value)}
-                          />
-                        </label>
-                        <label>
-                          Причина продления
-                          <input
-                            required
-                            maxLength={1000}
-                            value={fields.reason}
-                            onChange={(event) => edit('reason', event.target.value)}
-                          />
-                        </label>
-                      </>
-                    )}
-                  </AccountForm>
-                ) : null}
-              </>
-            )}
-          </div>
-        ) : null}
+          )}
+          {canRenewRow ? (
+            <div>
+              <button
+                type="button"
+                className={card.renewButton}
+                aria-expanded={renewing}
+                onClick={() => setRenewing(!renewing)}
+              >
+                Продлить
+              </button>
+              {renewing && (
+                <>
+                  {fromSnapshot && renewing ? (
+                    current.isError ? (
+                      <ReadFailure error={current.error} retry={() => void current.refetch()} />
+                    ) : current.isPending ? (
+                      <p role="status">Проверяем текущий срок…</p>
+                    ) : !latest ? (
+                      <p role="alert">Текущая установка не найдена.</p>
+                    ) : null
+                  ) : null}
+                  {!fromSnapshot || latest ? (
+                    <AccountForm
+                      {...actions}
+                      id={selected.id + ':renewal:' + renewalRow.product_id}
+                      title="Продление тарифа виджета"
+                      version={renewalRow.entitlement_version}
+                      initial={{ until: '', reason: '' }}
+                      current={
+                        <p>Текущий срок тарифа: {formatTime(renewalRow.access.own_until)}.</p>
+                      }
+                      submitLabel="Продлить доступ"
+                      command={(fields, _, version, key) => ({
+                        kind: 'renewal',
+                        account: selected.id,
+                        product: renewalRow.product_id,
+                        version,
+                        key,
+                        body: JSON.stringify({
+                          product_id: renewalRow.product_id,
+                          target_until: new Date(fields.until).toISOString(),
+                          reason: fields.reason.trim(),
+                        }),
+                      })}
+                    >
+                      {(fields, edit) => (
+                        <>
+                          <label>
+                            Продлить до
+                            <input
+                              type="datetime-local"
+                              required
+                              value={fields.until}
+                              onChange={(event) => edit('until', event.target.value)}
+                            />
+                          </label>
+                          <label>
+                            Причина продления
+                            <input
+                              required
+                              maxLength={1000}
+                              value={fields.reason}
+                              onChange={(event) => edit('reason', event.target.value)}
+                            />
+                          </label>
+                        </>
+                      )}
+                    </AccountForm>
+                  ) : null}
+                </>
+              )}
+            </div>
+          ) : null}
+        </div>
+        <div className={card.actionStatus}>
+          {row.kind === 'observed' ? (
+            <StatusBadge
+              domain="installation_event"
+              state={row.last_lifecycle_event}
+              variant="text"
+            />
+          ) : (
+            <>
+              <ReviewBadge row={row} />
+              {row.review.reviewed_at ? (
+                <time className={card.cellSecondary} dateTime={row.review.reviewed_at}>
+                  {formatTime(row.review.reviewed_at)}
+                </time>
+              ) : null}
+            </>
+          )}
+        </div>
       </td>
     </tr>
   )
@@ -442,14 +447,15 @@ function FeedbackSwitch({
   const conflict = cmd.entry.state.kind === 'conflict'
   return (
     <>
-      <button
+      <input
         className={card.feedbackSwitch}
-        type="button"
+        type="checkbox"
         role="switch"
+        checked={checked}
         aria-checked={checked}
         aria-label={'Отзыв о виджете ' + row.product_name}
         disabled={!editable || !account.feedbackProducts || cmd.locked || conflict}
-        onClick={() =>
+        onChange={() =>
           cmd.start({
             kind: 'profile',
             account: account.account_id,

@@ -2228,6 +2228,7 @@ type Installation struct {
 	RemovedAt             nullable.Nullable[time.Time]   `json:"removed_at"`
 	Review                Review                         `json:"review"`
 	Version               int                            `json:"version"`
+	WidgetVersion         *string                        `json:"widget_version,omitempty"`
 }
 
 // InstallationActivationStatus defines model for Installation.ActivationStatus.
