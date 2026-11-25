@@ -21,11 +21,12 @@ import (
 
 // Defines values for AccessStateSource.
 const (
-	AccessStateSourceFree     AccessStateSource = "free"
-	AccessStateSourceManual   AccessStateSource = "manual"
-	AccessStateSourceNone     AccessStateSource = "none"
-	AccessStateSourceOwnPaid  AccessStateSource = "own_paid"
-	AccessStateSourceOwnTrial AccessStateSource = "own_trial"
+	AccessStateSourceFree         AccessStateSource = "free"
+	AccessStateSourceManual       AccessStateSource = "manual"
+	AccessStateSourceNone         AccessStateSource = "none"
+	AccessStateSourceOwnPaid      AccessStateSource = "own_paid"
+	AccessStateSourceOwnTrial     AccessStateSource = "own_trial"
+	AccessStateSourceSubscription AccessStateSource = "subscription"
 )
 
 // Valid indicates whether the value is a known member of the AccessStateSource enum.
@@ -40,6 +41,8 @@ func (e AccessStateSource) Valid() bool {
 	case AccessStateSourceOwnPaid:
 		return true
 	case AccessStateSourceOwnTrial:
+		return true
+	case AccessStateSourceSubscription:
 		return true
 	default:
 		return false
@@ -61,6 +64,51 @@ func (e AccountCheckComponent) Valid() bool {
 	case AccountCheckComponentInstallations:
 		return true
 	case AccountCheckComponentUsers:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AccountSubscriptionPlan.
+const (
+	AccountSubscriptionPlanTop     AccountSubscriptionPlan = "top"
+	AccountSubscriptionPlanUnified AccountSubscriptionPlan = "unified"
+)
+
+// Valid indicates whether the value is a known member of the AccountSubscriptionPlan enum.
+func (e AccountSubscriptionPlan) Valid() bool {
+	switch e {
+	case AccountSubscriptionPlanTop:
+		return true
+	case AccountSubscriptionPlanUnified:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AccountSubscriptionState.
+const (
+	AccountSubscriptionStateActive        AccountSubscriptionState = "active"
+	AccountSubscriptionStateAwaitingUsers AccountSubscriptionState = "awaiting_users"
+	AccountSubscriptionStateExpired       AccountSubscriptionState = "expired"
+	AccountSubscriptionStateRevoked       AccountSubscriptionState = "revoked"
+	AccountSubscriptionStateSuspended     AccountSubscriptionState = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the AccountSubscriptionState enum.
+func (e AccountSubscriptionState) Valid() bool {
+	switch e {
+	case AccountSubscriptionStateActive:
+		return true
+	case AccountSubscriptionStateAwaitingUsers:
+		return true
+	case AccountSubscriptionStateExpired:
+		return true
+	case AccountSubscriptionStateRevoked:
+		return true
+	case AccountSubscriptionStateSuspended:
 		return true
 	default:
 		return false
@@ -429,6 +477,10 @@ const (
 	EventKindPortraitUpdated        EventKind = "portrait_updated"
 	EventKindReauthorized           EventKind = "reauthorized"
 	EventKindReinstalled            EventKind = "reinstalled"
+	EventKindSubscriptionGranted    EventKind = "subscription_granted"
+	EventKindSubscriptionRenewed    EventKind = "subscription_renewed"
+	EventKindSubscriptionRevoked    EventKind = "subscription_revoked"
+	EventKindSubscriptionSeats      EventKind = "subscription_seats"
 	EventKindUninstalled            EventKind = "uninstalled"
 )
 
@@ -452,6 +504,14 @@ func (e EventKind) Valid() bool {
 	case EventKindReauthorized:
 		return true
 	case EventKindReinstalled:
+		return true
+	case EventKindSubscriptionGranted:
+		return true
+	case EventKindSubscriptionRenewed:
+		return true
+	case EventKindSubscriptionRevoked:
+		return true
+	case EventKindSubscriptionSeats:
 		return true
 	case EventKindUninstalled:
 		return true
@@ -1257,6 +1317,10 @@ const (
 	ListAccountHistoryParamsKindPortraitUpdated        ListAccountHistoryParamsKind = "portrait_updated"
 	ListAccountHistoryParamsKindReauthorized           ListAccountHistoryParamsKind = "reauthorized"
 	ListAccountHistoryParamsKindReinstalled            ListAccountHistoryParamsKind = "reinstalled"
+	ListAccountHistoryParamsKindSubscriptionGranted    ListAccountHistoryParamsKind = "subscription_granted"
+	ListAccountHistoryParamsKindSubscriptionRenewed    ListAccountHistoryParamsKind = "subscription_renewed"
+	ListAccountHistoryParamsKindSubscriptionRevoked    ListAccountHistoryParamsKind = "subscription_revoked"
+	ListAccountHistoryParamsKindSubscriptionSeats      ListAccountHistoryParamsKind = "subscription_seats"
 	ListAccountHistoryParamsKindUninstalled            ListAccountHistoryParamsKind = "uninstalled"
 )
 
@@ -1280,6 +1344,14 @@ func (e ListAccountHistoryParamsKind) Valid() bool {
 	case ListAccountHistoryParamsKindReauthorized:
 		return true
 	case ListAccountHistoryParamsKindReinstalled:
+		return true
+	case ListAccountHistoryParamsKindSubscriptionGranted:
+		return true
+	case ListAccountHistoryParamsKindSubscriptionRenewed:
+		return true
+	case ListAccountHistoryParamsKindSubscriptionRevoked:
+		return true
+	case ListAccountHistoryParamsKindSubscriptionSeats:
 		return true
 	case ListAccountHistoryParamsKindUninstalled:
 		return true
@@ -1333,6 +1405,48 @@ func (e RequestAccountRefreshJSONBodyComponents) Valid() bool {
 	}
 }
 
+// Defines values for ChangeAccountSubscriptionJSONBodyAction.
+const (
+	ChangeAccountSubscriptionJSONBodyActionSubscriptionGrant  ChangeAccountSubscriptionJSONBodyAction = "grant"
+	ChangeAccountSubscriptionJSONBodyActionSubscriptionRenew  ChangeAccountSubscriptionJSONBodyAction = "renew"
+	ChangeAccountSubscriptionJSONBodyActionSubscriptionRevoke ChangeAccountSubscriptionJSONBodyAction = "revoke"
+	ChangeAccountSubscriptionJSONBodyActionSubscriptionSeats  ChangeAccountSubscriptionJSONBodyAction = "seats"
+)
+
+// Valid indicates whether the value is a known member of the ChangeAccountSubscriptionJSONBodyAction enum.
+func (e ChangeAccountSubscriptionJSONBodyAction) Valid() bool {
+	switch e {
+	case ChangeAccountSubscriptionJSONBodyActionSubscriptionGrant:
+		return true
+	case ChangeAccountSubscriptionJSONBodyActionSubscriptionRenew:
+		return true
+	case ChangeAccountSubscriptionJSONBodyActionSubscriptionRevoke:
+		return true
+	case ChangeAccountSubscriptionJSONBodyActionSubscriptionSeats:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChangeAccountSubscriptionJSONBodyPlan.
+const (
+	ChangeAccountSubscriptionJSONBodyPlanTop     ChangeAccountSubscriptionJSONBodyPlan = "top"
+	ChangeAccountSubscriptionJSONBodyPlanUnified ChangeAccountSubscriptionJSONBodyPlan = "unified"
+)
+
+// Valid indicates whether the value is a known member of the ChangeAccountSubscriptionJSONBodyPlan enum.
+func (e ChangeAccountSubscriptionJSONBodyPlan) Valid() bool {
+	switch e {
+	case ChangeAccountSubscriptionJSONBodyPlanTop:
+		return true
+	case ChangeAccountSubscriptionJSONBodyPlanUnified:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListAccountWidgetsParamsState.
 const (
 	ListAccountWidgetsParamsStateCurrent ListAccountWidgetsParamsState = "current"
@@ -1362,6 +1476,10 @@ const (
 	ListFeedParamsKindPortraitUpdated        ListFeedParamsKind = "portrait_updated"
 	ListFeedParamsKindReauthorized           ListFeedParamsKind = "reauthorized"
 	ListFeedParamsKindReinstalled            ListFeedParamsKind = "reinstalled"
+	ListFeedParamsKindSubscriptionGranted    ListFeedParamsKind = "subscription_granted"
+	ListFeedParamsKindSubscriptionRenewed    ListFeedParamsKind = "subscription_renewed"
+	ListFeedParamsKindSubscriptionRevoked    ListFeedParamsKind = "subscription_revoked"
+	ListFeedParamsKindSubscriptionSeats      ListFeedParamsKind = "subscription_seats"
 	ListFeedParamsKindUninstalled            ListFeedParamsKind = "uninstalled"
 )
 
@@ -1385,6 +1503,14 @@ func (e ListFeedParamsKind) Valid() bool {
 	case ListFeedParamsKindReauthorized:
 		return true
 	case ListFeedParamsKindReinstalled:
+		return true
+	case ListFeedParamsKindSubscriptionGranted:
+		return true
+	case ListFeedParamsKindSubscriptionRenewed:
+		return true
+	case ListFeedParamsKindSubscriptionRevoked:
+		return true
+	case ListFeedParamsKindSubscriptionSeats:
 		return true
 	case ListFeedParamsKindUninstalled:
 		return true
@@ -1703,13 +1829,15 @@ type AccountDetail struct {
 	DomainAliases       nullable.Nullable[[]string] `json:"domain_aliases"`
 
 	// IdentityObservedAt Время последнего наблюдения домена, имени и часового пояса аккаунта в amoCRM.
-	IdentityObservedAt *time.Time                `json:"identity_observed_at,omitempty"`
-	License            ObservationLicense        `json:"license"`
-	Note               nullable.Nullable[string] `json:"note"`
-	PartnerName        nullable.Nullable[string] `json:"partner_name,omitempty"`
-	Region             nullable.Nullable[string] `json:"region"`
-	TimeZone           nullable.Nullable[string] `json:"time_zone"`
-	Version            int                       `json:"version"`
+	IdentityObservedAt   *time.Time                `json:"identity_observed_at,omitempty"`
+	License              ObservationLicense        `json:"license"`
+	Note                 nullable.Nullable[string] `json:"note"`
+	PartnerName          nullable.Nullable[string] `json:"partner_name,omitempty"`
+	PreviousSubscription *AccountSubscription      `json:"previous_subscription,omitempty"`
+	Region               nullable.Nullable[string] `json:"region"`
+	Subscription         *AccountSubscription      `json:"subscription,omitempty"`
+	TimeZone             nullable.Nullable[string] `json:"time_zone"`
+	Version              int                       `json:"version"`
 }
 
 // AccountList defines model for AccountList.
@@ -1732,6 +1860,22 @@ type AccountOverviewGroup struct {
 	ByClassification map[string]int `json:"by_classification"`
 	Total            int            `json:"total"`
 }
+
+// AccountSubscription defines model for AccountSubscription.
+type AccountSubscription struct {
+	ChangedAt time.Time                `json:"changed_at"`
+	DealId    string                   `json:"deal_id"`
+	EndsOn    openapi_types.Date       `json:"ends_on"`
+	Plan      AccountSubscriptionPlan  `json:"plan"`
+	Seats     int                      `json:"seats"`
+	State     AccountSubscriptionState `json:"state"`
+}
+
+// AccountSubscriptionPlan defines model for AccountSubscription.Plan.
+type AccountSubscriptionPlan string
+
+// AccountSubscriptionState defines model for AccountSubscription.State.
+type AccountSubscriptionState string
 
 // AccountSummary defines model for AccountSummary.
 type AccountSummary struct {
@@ -2838,6 +2982,28 @@ type CreateAccountRenewalParams struct {
 	IfMatch        IfMatch        `json:"If-Match"`
 }
 
+// ChangeAccountSubscriptionJSONBody defines parameters for ChangeAccountSubscription.
+type ChangeAccountSubscriptionJSONBody struct {
+	Action ChangeAccountSubscriptionJSONBodyAction `json:"action"`
+	DealId *string                                 `json:"deal_id,omitempty"`
+	EndsOn *openapi_types.Date                     `json:"ends_on,omitempty"`
+	Plan   *ChangeAccountSubscriptionJSONBodyPlan  `json:"plan,omitempty"`
+	Seats  *int                                    `json:"seats,omitempty"`
+}
+
+// ChangeAccountSubscriptionParams defines parameters for ChangeAccountSubscription.
+type ChangeAccountSubscriptionParams struct {
+	XPlatformActor Actor          `json:"X-Platform-Actor"`
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+	IfMatch        IfMatch        `json:"If-Match"`
+}
+
+// ChangeAccountSubscriptionJSONBodyAction defines parameters for ChangeAccountSubscription.
+type ChangeAccountSubscriptionJSONBodyAction string
+
+// ChangeAccountSubscriptionJSONBodyPlan defines parameters for ChangeAccountSubscription.
+type ChangeAccountSubscriptionJSONBodyPlan string
+
 // ListAccountWidgetsParams defines parameters for ListAccountWidgets.
 type ListAccountWidgetsParams struct {
 	Limit          *int                           `form:"limit,omitempty" json:"limit,omitempty"`
@@ -3145,6 +3311,9 @@ type RequestAccountRefreshJSONRequestBody RequestAccountRefreshJSONBody
 
 // CreateAccountRenewalJSONRequestBody defines body for CreateAccountRenewal for application/json ContentType.
 type CreateAccountRenewalJSONRequestBody CreateAccountRenewalJSONBody
+
+// ChangeAccountSubscriptionJSONRequestBody defines body for ChangeAccountSubscription for application/json ContentType.
+type ChangeAccountSubscriptionJSONRequestBody ChangeAccountSubscriptionJSONBody
 
 // SetInstallationDealSettingsJSONRequestBody defines body for SetInstallationDealSettings for application/json ContentType.
 type SetInstallationDealSettingsJSONRequestBody = SetInstallationDealSettings
@@ -3473,6 +3642,14 @@ type ClientInterface interface {
 	//
 	// If-Match относится к версии собственных прав выбранного account/product. Возвращается обновлённая версия права.
 	CreateAccountRenewal(ctx context.Context, id openapi_types.UUID, params *CreateAccountRenewalParams, body CreateAccountRenewalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ChangeAccountSubscriptionWithBody performs a POST /internal/platform/v1/managers/accounts/{id}/subscription (the `ChangeAccountSubscription` operationId) request,
+	// with any type of body and a specified content type.
+	ChangeAccountSubscriptionWithBody(ctx context.Context, id openapi_types.UUID, params *ChangeAccountSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ChangeAccountSubscription performs a POST /internal/platform/v1/managers/accounts/{id}/subscription (the `ChangeAccountSubscription` operationId) request.
+	// Takes a body of the `application/json` content type.
+	ChangeAccountSubscription(ctx context.Context, id openapi_types.UUID, params *ChangeAccountSubscriptionParams, body ChangeAccountSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListAccountWidgets performs a GET /internal/platform/v1/managers/accounts/{id}/widgets (the `ListAccountWidgets` operationId) request.
 	ListAccountWidgets(ctx context.Context, id openapi_types.UUID, params *ListAccountWidgetsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3853,6 +4030,34 @@ func (c *Client) CreateAccountRenewalWithBody(ctx context.Context, id openapi_ty
 // If-Match относится к версии собственных прав выбранного account/product. Возвращается обновлённая версия права.
 func (c *Client) CreateAccountRenewal(ctx context.Context, id openapi_types.UUID, params *CreateAccountRenewalParams, body CreateAccountRenewalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateAccountRenewalRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ChangeAccountSubscriptionWithBody performs a POST /internal/platform/v1/managers/accounts/{id}/subscription (the `ChangeAccountSubscription` operationId) request,
+// with any type of body and a specified content type.
+func (c *Client) ChangeAccountSubscriptionWithBody(ctx context.Context, id openapi_types.UUID, params *ChangeAccountSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewChangeAccountSubscriptionRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ChangeAccountSubscription performs a POST /internal/platform/v1/managers/accounts/{id}/subscription (the `ChangeAccountSubscription` operationId) request.
+// Takes a body of the `application/json` content type.
+func (c *Client) ChangeAccountSubscription(ctx context.Context, id openapi_types.UUID, params *ChangeAccountSubscriptionParams, body ChangeAccountSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewChangeAccountSubscriptionRequest(c.Server, id, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5503,6 +5708,84 @@ func NewCreateAccountRenewalRequestWithBody(server string, id openapi_types.UUID
 	}
 
 	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/renewals", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Platform-Actor", params.XPlatformActor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Platform-Actor", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam1)
+
+		var headerParam2 string
+
+		headerParam2, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam2)
+
+	}
+
+	return req, nil
+}
+
+// NewChangeAccountSubscriptionRequest calls the generic ChangeAccountSubscription builder with application/json body
+func NewChangeAccountSubscriptionRequest(server string, id openapi_types.UUID, params *ChangeAccountSubscriptionParams, body ChangeAccountSubscriptionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewChangeAccountSubscriptionRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewChangeAccountSubscriptionRequestWithBody constructs an http.Request for the ChangeAccountSubscription method, with any body, and a specified content type
+func NewChangeAccountSubscriptionRequestWithBody(server string, id openapi_types.UUID, params *ChangeAccountSubscriptionParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/internal/platform/v1/managers/accounts/%s/subscription", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7602,6 +7885,16 @@ type ClientWithResponsesInterface interface {
 	// If-Match относится к версии собственных прав выбранного account/product. Возвращается обновлённая версия права.
 	CreateAccountRenewalWithResponse(ctx context.Context, id openapi_types.UUID, params *CreateAccountRenewalParams, body CreateAccountRenewalJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAccountRenewalResponse, error)
 
+	// ChangeAccountSubscriptionWithBodyWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/subscription (the `ChangeAccountSubscription` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ChangeAccountSubscriptionWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *ChangeAccountSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ChangeAccountSubscriptionResponse, error)
+
+	// ChangeAccountSubscriptionWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/subscription (the `ChangeAccountSubscription` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	ChangeAccountSubscriptionWithResponse(ctx context.Context, id openapi_types.UUID, params *ChangeAccountSubscriptionParams, body ChangeAccountSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*ChangeAccountSubscriptionResponse, error)
+
 	// ListAccountWidgetsWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/widgets (the `ListAccountWidgets` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -9062,6 +9355,124 @@ func (r CreateAccountRenewalResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateAccountRenewalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ChangeAccountSubscriptionResponse200Headers the declared response headers of an HTTP 200 response for ChangeAccountSubscription
+type ChangeAccountSubscriptionResponse200Headers struct {
+	ETag *string
+}
+
+// ChangeAccountSubscriptionResponse429Headers the declared response headers of an HTTP 429 response for ChangeAccountSubscription
+type ChangeAccountSubscriptionResponse429Headers struct {
+	RetryAfter *string
+}
+
+// ChangeAccountSubscriptionResponse503Headers the declared response headers of an HTTP 503 response for ChangeAccountSubscription
+type ChangeAccountSubscriptionResponse503Headers struct {
+	RetryAfter *string
+}
+
+type ChangeAccountSubscriptionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AccountDetail
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error400
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error401
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error403
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error404
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error409
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error422
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error429
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error503
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ChangeAccountSubscriptionResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ChangeAccountSubscriptionResponse429Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ChangeAccountSubscriptionResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ChangeAccountSubscriptionResponse) GetJSON200() *AccountDetail {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ChangeAccountSubscriptionResponse) GetJSON400() *Error400 {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ChangeAccountSubscriptionResponse) GetJSON401() *Error401 {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ChangeAccountSubscriptionResponse) GetJSON403() *Error403 {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ChangeAccountSubscriptionResponse) GetJSON404() *Error404 {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ChangeAccountSubscriptionResponse) GetJSON409() *Error409 {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r ChangeAccountSubscriptionResponse) GetJSON422() *Error422 {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ChangeAccountSubscriptionResponse) GetJSON429() *Error429 {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ChangeAccountSubscriptionResponse) GetJSON503() *Error503 {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ChangeAccountSubscriptionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ChangeAccountSubscriptionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ChangeAccountSubscriptionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ChangeAccountSubscriptionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -11777,6 +12188,28 @@ func (c *ClientWithResponses) CreateAccountRenewalWithResponse(ctx context.Conte
 	return ParseCreateAccountRenewalResponse(rsp)
 }
 
+// ChangeAccountSubscriptionWithBodyWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/subscription (the `ChangeAccountSubscription` operationId) request,
+// with any type of body and a specified content type.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ChangeAccountSubscriptionWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *ChangeAccountSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ChangeAccountSubscriptionResponse, error) {
+	rsp, err := c.ChangeAccountSubscriptionWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseChangeAccountSubscriptionResponse(rsp)
+}
+
+// ChangeAccountSubscriptionWithResponse performs a POST /internal/platform/v1/managers/accounts/{id}/subscription (the `ChangeAccountSubscription` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ChangeAccountSubscriptionWithResponse(ctx context.Context, id openapi_types.UUID, params *ChangeAccountSubscriptionParams, body ChangeAccountSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*ChangeAccountSubscriptionResponse, error) {
+	rsp, err := c.ChangeAccountSubscription(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseChangeAccountSubscriptionResponse(rsp)
+}
+
 // ListAccountWidgetsWithResponse performs a GET /internal/platform/v1/managers/accounts/{id}/widgets (the `ListAccountWidgets` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -13382,6 +13815,121 @@ func ParseCreateAccountRenewalResponse(rsp *http.Response) (*CreateAccountRenewa
 		response.Headers429 = &headers
 	case rsp.StatusCode == 503:
 		var headers CreateAccountRenewalResponse503Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseChangeAccountSubscriptionResponse parses an HTTP response from a ChangeAccountSubscriptionWithResponse call
+func ParseChangeAccountSubscriptionResponse(rsp *http.Response) (*ChangeAccountSubscriptionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ChangeAccountSubscriptionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AccountDetail
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error400
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error401
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error403
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error404
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error409
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error422
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error429
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error503
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ChangeAccountSubscriptionResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers ChangeAccountSubscriptionResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 503:
+		var headers ChangeAccountSubscriptionResponse503Headers
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {

@@ -225,6 +225,10 @@ it('shows the widget and applies history groups across the event stream', async 
   expect(search.getAll('history_kind')).toEqual([
     'installation_reviewed',
     'installation_unreviewed',
+    'subscription_granted',
+    'subscription_renewed',
+    'subscription_seats',
+    'subscription_revoked',
     'account_profile_updated',
     'portrait_updated',
   ])

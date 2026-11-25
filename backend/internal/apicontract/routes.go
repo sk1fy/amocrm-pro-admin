@@ -32,6 +32,7 @@ var (
 	ManagerAccountSearch               = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/search"}
 	ManagerAccount                     = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}"}
 	ManagerAccountProfile              = Route{Method: http.MethodPatch, Path: ManagerPrefix + "/accounts/{id}/profile"}
+	ManagerAccountSubscription         = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/{id}/subscription"}
 	ManagerAccountRefresh              = Route{Method: http.MethodPost, Path: ManagerPrefix + "/accounts/{id}/refresh"}
 	ManagerAccountLicenseHistory       = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/license-history"}
 	ManagerAccountWidgets              = Route{Method: http.MethodGet, Path: ManagerPrefix + "/accounts/{id}/widgets"}
@@ -115,6 +116,7 @@ var (
 		ManagerAccountSearch,
 		ManagerAccount,
 		ManagerAccountProfile,
+		ManagerAccountSubscription,
 		ManagerAccountRefresh,
 		ManagerAccountLicenseHistory,
 		ManagerAccountWidgets,

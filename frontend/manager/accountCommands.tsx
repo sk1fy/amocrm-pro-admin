@@ -61,6 +61,7 @@ export function useAccountCommand(
   id: string,
   options: {
     onSaved: (product?: Product) => void
+    onCompleted?: () => void
     onWorkflowSaved?: (workflow: CompanyWorkflow) => void
     onExpired: () => void
     onForbidden: () => void
@@ -113,6 +114,7 @@ export function useAccountCommand(
       } else if (result.kind === 'completed') {
         setState({ kind: 'saved' }, true)
         options.onSaved(result.product)
+        options.onCompleted?.()
       } else if (result.kind === 'rejected') {
         setState({ kind: 'error', message: 'Команда отклонена. Черновик сохранён.' })
         options.onSaved()

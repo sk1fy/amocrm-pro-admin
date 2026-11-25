@@ -131,6 +131,15 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 				httpx.WriteJSON(w, http.StatusOK, map[string]any{"state": "stale", "source": "amo", "observed_at": now.Add(-time.Hour),
 					"fresh_until": now.Add(-time.Minute), "value": []any{map[string]any{"id": "99", "name": "Fixture Staff", "is_active": true, "is_admin": false, "email": "fixture@example.invalid"}}})
 			}
+		case "/accounts/" + accountID.String() + "/subscription":
+			if actor.Actor.SubjectId != writer.ID || actor.CommandId == nil || r.Header.Get("If-Match") != `"1"` {
+				t.Error("subscription actor/version missing")
+				return
+			}
+			response := detail()
+			response["subscription"] = map[string]any{"plan": "top", "ends_on": "2030-12-31", "state": "active", "deal_id": "123", "seats": 3, "changed_at": now}
+			w.Header().Set("ETag", `"2"`)
+			httpx.WriteJSON(w, http.StatusOK, response)
 		case "/accounts/" + accountID.String() + "/profile":
 			if actor.Actor.SubjectId != writer.ID || actor.CommandId == nil || r.Header.Get("If-Match") != "\"1\"" {
 				t.Error("profile command had the wrong subject or precondition")
@@ -268,6 +277,13 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 	call(http.MethodGet, accountPath+"/crm-users?active=true", readerCookie, "", uuid.Nil, "", false, http.StatusOK)
 	call(http.MethodGet, accountPath+"/crm-users", readerCookie, "", uuid.Nil, "", false, http.StatusServiceUnavailable)
 	call(http.MethodGet, "/accounts?q=grants-version", readerCookie, "", uuid.Nil, "", false, http.StatusServiceUnavailable)
+
+	const grantSubscription = `{"action":"grant","plan":"top","ends_on":"2030-12-31","seats":3,"deal_id":"123"}`
+	call(http.MethodPost, accountPath+"/subscription", readerCookie, grantSubscription, uuid.New(), `"1"`, true, http.StatusForbidden)
+	granted := call(http.MethodPost, accountPath+"/subscription", writerCookie, grantSubscription, uuid.New(), `"1"`, true, http.StatusOK)
+	if !strings.Contains(granted.Body.String(), `"ends_on":"2030-12-31"`) {
+		t.Fatalf("subscription lost in manager response: %s", granted.Body.String())
+	}
 
 	const patch = `{"reason":"fixture","note":null}`
 	call(http.MethodPatch, accountPath+"/profile", readerCookie, patch, profileKey, "\"1\"", true, http.StatusForbidden)

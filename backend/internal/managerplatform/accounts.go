@@ -71,6 +71,7 @@ func AccountEndpoints() []AccountEndpoint {
 		{apicontract.ManagerAccountSearch, "searchAccounts", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.AccountList]},
 		{apicontract.ManagerAccount, "getAccount", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.AccountDetail]},
 		{apicontract.ManagerAccountProfile, "updateAccountProfile", kindProfile, auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.AccountDetail]},
+		{apicontract.ManagerAccountSubscription, "changeAccountSubscription", kindSubscription, auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.AccountDetail]},
 		{apicontract.ManagerAccountRefresh, "requestAccountRefresh", kindRefresh, auth.GrantClientsRead, http.StatusAccepted, newManagerModel[wire.Operation]},
 		{apicontract.ManagerAccountLicenseHistory, "getAccountLicenseHistory", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.LicenseEvidenceList]},
 		{apicontract.ManagerAccountWidgets, "listAccountWidgets", "", auth.GrantClientsRead, http.StatusOK, newManagerModel[wire.InstallationList]},

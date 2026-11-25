@@ -15,6 +15,7 @@ const (
 	kindUpdateProduct            commandKind = "product.update"
 	kindReview                   commandKind = "installation.review"
 	kindRetryDeal                commandKind = "installation.crm_deal.retry"
+	kindSubscription             commandKind = "account.subscription"
 	kindProfile                  commandKind = "account.profile"
 	kindPortrait                 commandKind = "account.portrait"
 	kindAuditDate                commandKind = "account.portrait_audit_date"
@@ -50,6 +51,8 @@ func (kind commandKind) policy() commandPolicy {
 		return commandPolicy{grant: auth.GrantClientsWrite, target: "account", bound: true, version: true}
 	case kindRefresh:
 		return commandPolicy{grant: auth.GrantClientsWrite, target: "account", bound: true, async: true}
+	case kindSubscription:
+		return commandPolicy{grant: auth.GrantClientsRenew, target: "account", bound: true, version: true}
 	case kindRenewal:
 		return commandPolicy{grant: auth.GrantClientsRenew, target: "account", bound: true, version: true, related: true}
 	case kindTemplate:

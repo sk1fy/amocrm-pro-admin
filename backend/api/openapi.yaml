@@ -841,6 +841,93 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/managers/accounts/{id}/subscription:
+    post:
+      operationId: changeAccountSubscriptionForManagers
+      tags:
+      - Managers
+      security:
+      - managerSession: []
+      summary: Change the account subscription.
+      description: Requires clients.renew on the manager host.
+      x-manager-grant: clients.renew
+      parameters:
+      - $ref: '#/components/parameters/RequestID'
+      - $ref: '#/components/parameters/RequestedWith'
+      - $ref: '#/components/parameters/ManagerOrigin'
+      - $ref: '#/components/parameters/ManagerIdempotencyKey'
+      - $ref: '#/components/parameters/ManagerIfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action]
+              properties:
+                action: {type: string, enum: [grant, renew, seats, revoke], x-enum-varnames: [SubscriptionGrant, SubscriptionRenew, SubscriptionSeats, SubscriptionRevoke]}
+                plan: {type: string, enum: [top, unified]}
+                ends_on: {type: string, format: date}
+                seats: {type: integer, minimum: 1, maximum: 1000000}
+                deal_id: {type: string, pattern: '^[1-9][0-9]{0,14}$'}
+      responses:
+        '200':
+          description: Change the account subscription.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerAccountDetail'
+          headers:
+            ETag:
+              schema:
+                type: string
+        '202':
+          description: Poll the owned command at Location. The state is unknown_outcome until the outcome is known.
+          headers:
+            Location:
+              schema:
+                type: string
+            Retry-After:
+              $ref: '#/components/headers/RetryAfter'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerOperation'
+        '400':
+          $ref: '#/components/responses/InvalidArgument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/ManagerPlatformRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ManagerPlatformUnavailable'
+        '409':
+          description: >-
+            details.code is idempotency_conflict, version_conflict or state_conflict.
+            An applicable current version is numeric details.current_version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: The Platform business rule rejected the command. details.code is a safe public reason.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/managers/accounts/{id}/refresh:
     post:
       operationId: requestAccountRefreshForManagers
@@ -2401,6 +2488,10 @@ paths:
             - account_profile_updated
             - portrait_updated
             - access_renewed
+            - subscription_granted
+            - subscription_renewed
+            - subscription_seats
+            - subscription_revoked
       - name: product_id
         in: query
         required: false
@@ -2495,6 +2586,10 @@ paths:
             - account_profile_updated
             - portrait_updated
             - access_renewed
+            - subscription_granted
+            - subscription_renewed
+            - subscription_seats
+            - subscription_revoked
       - name: product_id
         in: query
         required: false
@@ -4696,10 +4791,23 @@ components:
       required:
       - field_id
       - op
+    ManagerAccountSubscription:
+      type: object
+      additionalProperties: false
+      required: [plan, ends_on, seats, deal_id, state, changed_at]
+      properties:
+        plan: {type: string, enum: [top, unified]}
+        ends_on: {type: string, format: date}
+        seats: {type: integer, minimum: 1}
+        deal_id: {type: string}
+        state: {type: string, enum: [active, suspended, expired, revoked, awaiting_users]}
+        changed_at: {type: string, format: date-time}
     ManagerAccountDetail:
       type: object
       additionalProperties: false
       properties:
+        subscription: {$ref: '#/components/schemas/ManagerAccountSubscription'}
+        previous_subscription: {$ref: '#/components/schemas/ManagerAccountSubscription'}
         checks:
           type: array
           maxItems: 3
@@ -5220,7 +5328,7 @@ components:
         product_id: {type: string, format: uuid}
         active: {type: boolean}
         valid_until: {type: [string, 'null'], format: date-time}
-        source: {type: string, enum: [own_trial, free, own_paid, manual, none]}
+        source: {type: string, enum: [own_trial, free, own_paid, manual, subscription, none]}
         reason_codes: {type: array, items: {type: string}}
         own_until: {type: [string, 'null'], format: date-time}
         entitlement_version: {type: integer, minimum: 1, maximum: 9007199254740991}
@@ -6404,6 +6512,10 @@ components:
           - account_profile_updated
           - portrait_updated
           - access_renewed
+          - subscription_granted
+          - subscription_renewed
+          - subscription_seats
+          - subscription_revoked
         occurred_at:
           type: string
           format: date-time

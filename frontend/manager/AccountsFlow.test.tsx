@@ -25,12 +25,16 @@ const unknown = { state: 'unknown', source: 'amoCRM' }
 function managerCard(
   update: (init?: RequestInit) => Response,
   current: () => { version: number; note: string | null },
+  renew = false,
 ) {
   window.history.replaceState(null, '', '/managers?' + accountSearch('section=clients', account))
   const dispatch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
-    if (url === '/api/v1/managers/me') return Response.json(manager)
-    if (url === path + '/profile') return update(init)
+    if (url === '/api/v1/managers/me')
+      return Response.json(
+        renew ? { ...manager, grants: [...manager.grants, 'clients.renew'] } : manager,
+      )
+    if (url === path + '/subscription' || url === path + '/profile') return update(init)
     if (url === path + '/crm-users')
       return Response.json({
         state: 'fresh',
@@ -49,7 +53,8 @@ function managerCard(
         query_hash: 'fixture',
       })
     if (url !== path) throw new Error('unexpected request ' + url)
-    const { version, note } = current()
+    const detail = current()
+    const { version } = detail
     return Response.json(
       {
         account_id: account,
@@ -61,12 +66,14 @@ function managerCard(
         active_products_count: 0,
         license: { state: 'unsupported', source: 'amoCRM' },
         active_users: unknown,
-        version,
-        note,
+        ...detail,
         region: null,
         time_zone: null,
         amostart: unknown,
-        capabilities: [{ action: 'account.profile', allowed: true }],
+        capabilities: [
+          { action: 'account.profile', allowed: true },
+          { action: 'account.subscription', allowed: renew },
+        ],
       },
       { headers: { ETag: '"' + version + '"' } },
     )
@@ -86,9 +93,6 @@ async function editNote(value: string) {
   if (edit) fireEvent.click(edit)
   fireEvent.change(await screen.findByRole('textbox', { name: 'Заметка' }), {
     target: { value },
-  })
-  fireEvent.change(screen.getByRole('textbox', { name: 'Причина изменения' }), {
-    target: { value: 'Причина' },
   })
 }
 
@@ -202,7 +206,7 @@ it('retains a stale note draft and uses the current version only after explicit 
   await waitFor(() => expect(rebase).toBeEnabled())
   fireEvent.click(rebase)
   fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
-  await screen.findByText('Сохранено.')
+  await screen.findByText('Мой черновик')
   expect(calls).toHaveLength(2)
   expect(calls[0]?.version).toBe('"1"')
   expect(calls[1]?.version).toBe('"2"')
@@ -262,4 +266,55 @@ it('filters the CRM users snapshot by status and name using the account URL', as
   fireEvent.click(screen.getByRole('link', { name: 'Все · 2' }))
   expect(screen.getByRole('cell', { name: 'Алексей' })).toBeVisible()
   expect(screen.queryByRole('cell', { name: 'Ирина' })).not.toBeInTheDocument()
+})
+
+it('previews the TOP classification and sends the package, deal and seat limit together', async () => {
+  let version = 1
+  let sent: unknown
+  managerCard(
+    (init) => {
+      sent = JSON.parse(String(init?.body))
+      version = 2
+      return Response.json({ account_id: account, version }, { headers: { ETag: '"2"' } })
+    },
+    () => ({
+      version,
+      note: null,
+      active_users: { state: 'fresh', value: 3, source: 'amoCRM' },
+      ...(version === 2
+        ? {
+            classification: 'Наш клиент',
+            subscription: {
+              plan: 'top',
+              seats: 3,
+              deal_id: '123',
+              ends_on: '2030-12-31',
+              state: 'active',
+              changed_at: '2026-11-25T00:00:00Z',
+            },
+          }
+        : {}),
+    }),
+    true,
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Выдать подписку' }))
+  expect(screen.getByText(/После выдачи статус клиента изменится/)).toHaveTextContent('Наш клиент')
+  expect(screen.getByLabelText('Лимит пользователей')).toHaveValue(3)
+  expect(screen.getByRole('button', { name: 'Выдать' })).toBeDisabled()
+  fireEvent.change(screen.getByLabelText('Действует до'), { target: { value: '2030-12-31' } })
+  fireEvent.change(screen.getByLabelText('Сделка в amoCRM — основание'), {
+    target: { value: 'https://rakurscrm.amocrm.ru/leads/detail/123' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Выдать' }))
+  expect(await screen.findByRole('link', { name: '№123 ↗' })).toHaveAttribute(
+    'href',
+    'https://rakurscrm.amocrm.ru/leads/detail/123',
+  )
+  expect(sent).toEqual({
+    action: 'grant',
+    plan: 'top',
+    seats: 3,
+    ends_on: '2030-12-31',
+    deal_id: '123',
+  })
 })

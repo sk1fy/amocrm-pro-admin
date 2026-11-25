@@ -47,6 +47,7 @@ export type StateDomain =
   | 'client_data'
   | 'client_renewal'
   | 'product_access'
+  | 'subscription_status'
   | 'product_access_source'
   | 'product_availability'
   | 'product_attention'
@@ -360,7 +361,15 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     active: { tone: 'ok', label: 'Действует' },
     inactive: { tone: 'off', label: 'Не действует' },
   },
+  subscription_status: {
+    active: { tone: 'ok', label: 'Действует' },
+    suspended: { tone: 'error', label: 'Приостановлена' },
+    expired: { tone: 'off', label: 'Срок истёк' },
+    revoked: { tone: 'off', label: 'Снята' },
+    awaiting_users: { tone: 'attention', label: 'Ожидает данных о пользователях' },
+  },
   product_access_source: {
+    subscription: { tone: 'ok', label: 'Подписка аккаунта' },
     own_trial: { tone: 'attention', label: 'Пробный период' },
     free: { tone: 'ok', label: 'Бесплатный доступ' },
     own_paid: { tone: 'ok', label: 'Оплата продукта' },

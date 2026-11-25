@@ -1,13 +1,4 @@
-import { formatTime } from '../src/lib/format'
 import type { AccountCheck } from './accountsApi'
-import card from './AccountCard.module.css'
-import styles from './Accounts.module.css'
-
-const components = {
-  installations: 'Установки наших виджетов',
-  identity: 'Данные аккаунта amoCRM',
-  users: 'Пользователи amoCRM',
-}
 
 const reasons: Record<string, string> = {
   account_blocked: 'Запрет работы',
@@ -26,24 +17,4 @@ export function accountCheckLabel(check: AccountCheck, now: Date) {
   return now.getTime() - Date.parse(check.succeeded_at) >= 86400000
     ? 'Данные устарели'
     : 'Данные актуальны'
-}
-
-export function AccountChecks({ checks }: { checks: AccountCheck[] | undefined }) {
-  if (!checks?.length) return null
-  const now = new Date()
-  return (
-    <details className={card.summaryPanel}>
-      <summary>Суточная проверка аккаунта</summary>
-      <dl className={styles.facts}>
-        {checks.map((check) => (
-          <div key={check.component}>
-            <dt>{components[check.component]}</dt>
-            <dd>{accountCheckLabel(check, now)}</dd>
-            <dd>Последняя проверка · {formatTime(check.attempted_at)}</dd>
-            <dd>Последнее успешное обновление · {formatTime(check.succeeded_at)}</dd>
-          </div>
-        ))}
-      </dl>
-    </details>
-  )
 }

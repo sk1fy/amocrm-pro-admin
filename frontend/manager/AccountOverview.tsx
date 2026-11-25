@@ -1,11 +1,11 @@
 import { useState, type ReactNode } from 'react'
 import { createRequestKey } from '../src/features/operations/intents'
 import { StatusBadge } from '../src/components/StatusBadge'
-import { formatNull, formatTime } from '../src/lib/format'
+import { formatNull, formatTime, formatRelativeTime } from '../src/lib/format'
 import { lookupState } from '../src/states'
 import type { AccountDetail, AccountObservation } from './accountsApi'
 import { CommandFeedback, useAccountCommand } from './accountCommands'
-import { AccountChecks } from './AccountChecks'
+import { AccountSubscription } from './AccountSubscription'
 import { AccountForm } from './AccountForms'
 import styles from './Accounts.module.css'
 import card from './AccountCard.module.css'
@@ -221,7 +221,9 @@ function AccountNote({
   return (
     <section className={card.summaryPanel} aria-labelledby="account-note">
       <header className={card.noteHeading}>
-        <h2 id="account-note">Примечание</h2>
+        <h2 id="account-note" className={card.panelTitle}>
+          <span aria-hidden="true">✎</span>Примечание
+        </h2>
         {editable && !editing ? (
           <button type="button" onClick={() => setEditing(true)}>
             {account.note ? 'Изменить' : 'Добавить'}
@@ -236,61 +238,46 @@ function AccountNote({
           title="Профиль клиента"
           version={account.version}
           onCancel={() => setEditing(false)}
-          initial={{ name: account.display_name ?? '', note: account.note ?? '', reason: '' }}
+          onCompleted={() => setEditing(false)}
+          initial={{ note: account.note ?? '' }}
           current={<p>Текущая заметка: {account.note ?? '—'}</p>}
-          command={(fields, original, version, key) => ({
+          command={(fields, _original, version, key) => ({
             kind: 'profile',
             account: account.account_id,
             version,
             key,
             body: JSON.stringify({
-              display_name: fields.name === original.name ? undefined : fields.name.trim() || null,
-              note: fields.note === original.note ? undefined : fields.note || null,
-              reason: fields.reason.trim(),
+              note: fields.note.trim() || null,
+              reason: 'Изменение примечания',
             }),
           })}
         >
           {(fields, edit) => (
-            <>
-              <label>
-                Заметка
-                <textarea
-                  value={fields.note}
-                  placeholder="Договорённости, кто принимает решения, когда звонить"
-                  maxLength={4000}
-                  onChange={(event) => edit('note', event.target.value)}
-                />
-              </label>
-              <label>
-                Причина изменения
-                <input
-                  required
-                  value={fields.reason}
-                  maxLength={1000}
-                  onChange={(event) => edit('reason', event.target.value)}
-                />
-              </label>
-              <details className={card.profileFields}>
-                <summary>Название аккаунта</summary>
-                <label>
-                  Название
-                  <input
-                    value={fields.name}
-                    maxLength={512}
-                    onChange={(event) => edit('name', event.target.value)}
-                  />
-                </label>
-              </details>
-            </>
+            <textarea
+              aria-label="Заметка"
+              ref={(element) => {
+                if (element && !element.dataset.focused) {
+                  element.dataset.focused = 'true'
+                  element.focus()
+                }
+              }}
+              className={card.noteInput}
+              value={fields.note}
+              maxLength={4000}
+              placeholder="Договорённости, кто принимает решения, когда звонить"
+              onChange={(event) => edit('note', event.target.value)}
+            />
           )}
         </AccountForm>
       ) : !account.note ? (
-        <p className={styles.meta}>Нет примечания.</p>
+        <p className={card.emptyNote}>
+          Нет примечания. Запишите договорённости, кто принимает решения, когда удобно звонить.
+        </p>
       ) : null}
-      {account.note ? (
+      {!editing && account.note ? (
         <dl className={card.savedNote}>
           <dt>
-            {editing ? 'Сохранённая заметка' : <span className={card.visuallyHidden}>Заметка</span>}
+            <span className={card.visuallyHidden}>Заметка</span>
           </dt>
           <dd>{account.note}</dd>
         </dl>
@@ -302,13 +289,24 @@ function AccountNote({
 export function AccountOverview({
   account,
   canWrite,
+  canRenew,
   usersLink,
   ...actions
 }: AccountActions & {
   account: AccountDetail
   canWrite: boolean
+  canRenew: boolean
   usersLink: (label: string) => ReactNode
 }) {
+  const updatedAt = [
+    account.identity_observed_at,
+    account.active_users.observed_at,
+    ...(account.checks ?? [])
+      .filter((check) => check.component !== 'installations')
+      .map((check) => check.succeeded_at),
+  ]
+    .filter((date): date is string => !!date)
+    .sort((a, b) => Date.parse(b) - Date.parse(a))[0]
   const title = accountTitle(account)
   const license = observedValue(account.license)
   const activeUsers = observedValue(account.active_users)
@@ -351,14 +349,53 @@ export function AccountOverview({
                 <> · прежние домены {account.domain_aliases.join(', ')}</>
               ) : null}
             </p>
-            {account.identity_observed_at ? (
-              <p className={styles.meta}>
-                Данные аккаунта обновлены{' '}
-                <time dateTime={account.identity_observed_at}>
-                  {formatTime(account.identity_observed_at)}
-                </time>
-              </p>
-            ) : null}
+            <p className={styles.meta}>
+              {updatedAt ? (
+                <>
+                  Данные аккаунта обновлены{' '}
+                  <time dateTime={updatedAt}>
+                    {formatTime(updatedAt)} ({formatRelativeTime(updatedAt)})
+                  </time>
+                </>
+              ) : (
+                'Данные аккаунта ещё не обновлялись'
+              )}
+            </p>
+            {editable && (
+              <details className={card.profileFields}>
+                <summary>Название аккаунта</summary>
+                <AccountForm
+                  {...actions}
+                  inline
+                  actionsOnEdit
+                  title="Название аккаунта"
+                  id={account.account_id + ':name'}
+                  version={account.version}
+                  initial={{ name: account.display_name ?? '' }}
+                  command={(fields, _original, version, key) => ({
+                    kind: 'profile',
+                    account: account.account_id,
+                    version,
+                    key,
+                    body: JSON.stringify({
+                      display_name: fields.name.trim() || null,
+                      reason: 'Изменение названия аккаунта',
+                    }),
+                  })}
+                >
+                  {(fields, edit) => (
+                    <label>
+                      Название
+                      <input
+                        maxLength={512}
+                        value={fields.name}
+                        onChange={(e) => edit('name', e.target.value)}
+                      />
+                    </label>
+                  )}
+                </AccountForm>
+              </details>
+            )}
           </div>
           <ClientStatus account={account} editable={editable} {...actions} />
         </div>
@@ -382,6 +419,10 @@ export function AccountOverview({
               <dd>{activeUsers === undefined ? '—' : usersLink(String(activeUsers))}</dd>
               <ObservationSource value={account.active_users} />
             </div>
+            <div>
+              <dt>Активные продукты</dt>
+              <dd>{account.active_products_count}</dd>
+            </div>
             {amostart !== undefined ? (
               <div>
                 <dt>amoSTART</dt>
@@ -397,14 +438,16 @@ export function AccountOverview({
           ) : null}
         </div>
       </section>
-      <AccountChecks checks={account.checks} />
       <div className={card.summaryGrid}>
-        <section className={card.summaryPanel} aria-label="Продукты аккаунта">
-          <h2>Продукты аккаунта</h2>
-          <p>
-            Активные продукты <strong>{account.active_products_count}</strong>
-          </p>
-        </section>
+        <AccountSubscription
+          key={account.account_id}
+          account={account}
+          editable={
+            canRenew &&
+            account.capabilities.some((cap) => cap.action === 'account.subscription' && cap.allowed)
+          }
+          {...actions}
+        />
         <AccountNote account={account} editable={editable} {...actions} />
       </div>
     </>
