@@ -16,6 +16,15 @@ export type AccountActions = {
   onForbidden: () => void
 }
 
+const licenseDateFormat = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  timeZone: 'Europe/Moscow',
+})
+
+const licenseCalendarDay = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Moscow' })
+
 function observedValue<T>(value: AccountObservation<T>) {
   return value.state === 'fresh' || value.state === 'stale' ? value.value : undefined
 }
@@ -63,41 +72,36 @@ export function AccountEvidence<T>({
 function AccountRefresh({ account, ...actions }: AccountActions & { account: AccountDetail }) {
   const attempt = useAccountCommand(account.account_id + ':refresh', actions)
   return (
-    <details className={card.refresh}>
-      <summary>Обновить данные</summary>
-      <form
-        className={styles.form}
-        onSubmit={(event) => {
-          event.preventDefault()
-          const fields = new FormData(event.currentTarget)
-          const components = fields.getAll('component')
-          if (components.length === 0) return
+    <div>
+      <button
+        type="button"
+        className={`${card.primary} ${card.refreshButton}`}
+        disabled={attempt.locked}
+        onClick={() =>
           attempt.start({
             kind: 'refresh',
             account: account.account_id,
             key: createRequestKey(),
             body: JSON.stringify({
-              components,
-              reason: 'Обновление наблюдений из карточки клиента',
+              components: ['users', 'license', 'amostart'],
+              reason: 'Обновление данных из карточки клиента',
             }),
           })
-        }}
+        }
       >
-        <fieldset disabled={attempt.locked}>
-          <legend>Что обновить</legend>
-          <label>
-            <input type="checkbox" name="component" value="users" defaultChecked /> Пользователи
-          </label>
-          <label>
-            <input type="checkbox" name="component" value="license" /> Данные аккаунта
-          </label>
-        </fieldset>
-        <button type="submit" className={card.primary} disabled={attempt.locked}>
-          Обновить
-        </button>
-      </form>
-      <CommandFeedback command={attempt} />
-    </details>
+        <svg aria-hidden="true" width="17" height="17" viewBox="0 0 20 20" fill="none">
+          <path
+            d="M17 5v4h-4M17 9a6.8 6.8 0 1 0-.6 4.3"
+            stroke="currentColor"
+            strokeWidth="1.45"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Обновить
+      </button>
+      <CommandFeedback command={attempt} savedLabel="Данные обновлены." />
+    </div>
   )
 }
 
@@ -124,19 +128,25 @@ function ClientStatus({
   const classification = account.classification ?? ''
   const partnerName = account.partner_name ?? ''
   const isKnown = clientStatuses.some((value) => value === classification)
+  const statusChange = account.classification_change
+  const subscription = account.subscription
+  const lockedByTop =
+    subscription?.plan === 'top' &&
+    ['active', 'suspended', 'awaiting_users'].includes(subscription.state)
 
   return (
     <div className={card.classification}>
       <p className={card.fieldTitle}>Статус клиента</p>
-      {editable ? (
+      {editable && !lockedByTop ? (
         <AccountForm
           {...actions}
           inline
           actionsOnEdit
+          iconActions
           id={account.account_id + ':classification'}
           title="Изменение статуса"
           version={account.version}
-          initial={{ classification, partnerName, reason: '' }}
+          initial={{ classification, partnerName }}
           current={
             <StatusBadge domain="client_classification" state={classification || 'unknown'} calm />
           }
@@ -155,11 +165,11 @@ function ClientStatus({
                 fields.partnerName.trim() !== original.partnerName
                   ? fields.partnerName.trim()
                   : undefined,
-              reason: fields.reason.trim(),
+              reason: 'Изменение статуса клиента',
             }),
           })}
         >
-          {(fields, edit, hasDraft) => (
+          {(fields, edit) => (
             <>
               <select
                 aria-label="Статус клиента"
@@ -188,17 +198,6 @@ function ClientStatus({
                   />
                 </label>
               ) : null}
-              {hasDraft ? (
-                <label>
-                  Причина изменения
-                  <input
-                    required
-                    maxLength={1000}
-                    value={fields.reason}
-                    onChange={(event) => edit('reason', event.target.value)}
-                  />
-                </label>
-              ) : null}
             </>
           )}
         </AccountForm>
@@ -208,6 +207,16 @@ function ClientStatus({
           {partnerName ? <p className={styles.meta}>{partnerName}</p> : null}
         </>
       )}
+      {lockedByTop ? (
+        <p className={card.statusHistory}>Статус закреплён подпиской «Все TOP — Наш клиент».</p>
+      ) : null}
+      {statusChange ? (
+        <p className={card.statusHistory}>
+          {statusChange.source === 'subscription' ? 'По подписке' : 'Вручную'} ·{' '}
+          <time dateTime={statusChange.occurred_at}>{formatTime(statusChange.occurred_at)}</time> ·{' '}
+          {statusChange.previous ?? 'Не указан'} → {statusChange.current ?? 'Не указан'}
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -301,6 +310,7 @@ export function AccountOverview({
   const updatedAt = [
     account.identity_observed_at,
     account.active_users.observed_at,
+    account.license.observed_at,
     ...(account.checks ?? [])
       .filter((check) => check.component !== 'installations')
       .map((check) => check.succeeded_at),
@@ -309,8 +319,11 @@ export function AccountOverview({
     .sort((a, b) => Date.parse(b) - Date.parse(a))[0]
   const title = accountTitle(account)
   const license = observedValue(account.license)
+  const licenseDate = license?.license_until ? new Date(license.license_until) : null
+  const licenseExpired =
+    licenseDate && licenseCalendarDay.format(licenseDate) < licenseCalendarDay.format(new Date())
+  const licenseError = account.license.error_code
   const activeUsers = observedValue(account.active_users)
-  const amostart = observedValue(account.amostart)
   const editable =
     canWrite &&
     account.capabilities.some(
@@ -373,11 +386,21 @@ export function AccountOverview({
             </div>
             <div>
               <dt>Действует до</dt>
-              <dd>{formatTime(license?.license_until)}</dd>
+              <dd>{licenseDate ? licenseDateFormat.format(licenseDate) : '—'}</dd>
+              {licenseExpired ? <span className={styles.meta}>Лицензия истекла</span> : null}
               {license?.paid_seat_limit != null ? (
                 <span className={styles.meta}>Оплаченных мест {license.paid_seat_limit}</span>
               ) : null}
               <ObservationSource value={account.license} />
+              {licenseError?.startsWith('amostart_') ? (
+                <span className={styles.meta}>
+                  {licenseError === 'amostart_not_configured'
+                    ? 'Доступ к amoSTART не настроен.'
+                    : licenseError === 'amostart_license_unavailable'
+                      ? 'amoSTART не подтвердил срок оплаты.'
+                      : 'Не удалось получить данные из amoSTART.'}
+                </span>
+              ) : null}
             </div>
             <div>
               <dt>Активные пользователи</dt>
@@ -388,13 +411,6 @@ export function AccountOverview({
               <dt>Активные продукты</dt>
               <dd>{account.active_products_count}</dd>
             </div>
-            {amostart !== undefined ? (
-              <div>
-                <dt>amoSTART</dt>
-                <dd>{formatTime(amostart)}</dd>
-                <ObservationSource value={account.amostart} />
-              </div>
-            ) : null}
           </dl>
           {canRefresh ? (
             <div className={card.refreshArea}>

@@ -27,6 +27,7 @@ function managerCard(
   update: (init?: RequestInit) => Response,
   current: () => { version: number; note: string | null },
   renew = false,
+  refresh = false,
 ) {
   window.history.replaceState(null, '', '/managers?' + accountSearch('section=clients', account))
   const dispatch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -35,7 +36,12 @@ function managerCard(
       return Response.json(
         renew ? { ...manager, grants: [...manager.grants, 'clients.renew'] } : manager,
       )
-    if (url === path + '/subscription' || url === path + '/profile') return update(init)
+    if (
+      url === path + '/subscription' ||
+      url === path + '/profile' ||
+      (refresh && url === path + '/refresh')
+    )
+      return update(init)
     if (url === path + '/crm-users')
       return Response.json({
         state: 'fresh',
@@ -73,6 +79,7 @@ function managerCard(
         amostart: unknown,
         capabilities: [
           { action: 'account.profile', allowed: true },
+          { action: 'account.refresh', allowed: refresh },
           { action: 'account.subscription', allowed: renew },
         ],
       },
@@ -324,4 +331,79 @@ it('defaults to three Moscow calendar months and clamps to the last day of Febru
   expect(defaultSubscriptionEnd(new Date('2026-11-30T20:59:59Z'))).toBe('2027-02-28')
   expect(defaultSubscriptionEnd(new Date('2026-11-30T21:00:00Z'))).toBe('2027-03-01')
   expect(defaultSubscriptionEnd(new Date('2023-11-30T12:00:00Z'))).toBe('2024-02-29')
+})
+
+it('refreshes account data, users and amoSTART together and shows the confirmed date', async () => {
+  let refreshed = false
+  const update = vi.fn((init?: RequestInit) => {
+    expect(init?.method).toBe('POST')
+    expect(JSON.parse(String(init?.body)).components).toEqual(['users', 'license', 'amostart'])
+    refreshed = true
+    return Response.json(
+      {
+        id: '5ed4f098-e3c3-4a18-822e-ca494e4a20e9',
+        state: 'platform_operation',
+        operation: { target_id: account, kind: 'account.refresh', state: 'succeeded' },
+      },
+      { status: 202 },
+    )
+  })
+  managerCard(
+    update,
+    () => ({
+      version: 1,
+      note: null,
+      ...(refreshed
+        ? {
+            license: {
+              state: 'fresh',
+              source: 'amoSTART',
+              observed_at: '2026-11-18T19:30:00Z',
+              value: { license_until: '2030-03-14T21:00:00Z', tariff: 'Расширенный' },
+            },
+          }
+        : {}),
+    }),
+    false,
+    true,
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Обновить' }))
+  expect(await screen.findByText('15.03.2030')).toBeVisible()
+  expect(screen.getByText(/Данные аккаунта обновлены/)).toBeVisible()
+  expect(screen.getByText('Расширенный')).toBeVisible()
+  expect(update).toHaveBeenCalledTimes(1)
+})
+
+it('confirms or cancels a status change without asking for a reason', async () => {
+  let changed = false
+  const update = vi.fn((init?: RequestInit) => {
+    expect(init?.method).toBe('PATCH')
+    expect(JSON.parse(String(init?.body)).classification).toBe('Свободный клиент')
+    changed = true
+    return Response.json({ account_id: account, version: 2 }, { headers: { ETag: '"2"' } })
+  })
+  managerCard(update, () => ({
+    version: changed ? 2 : 1,
+    note: null,
+    ...(changed
+      ? {
+          classification: 'Свободный клиент',
+          classification_change: {
+            occurred_at: '2026-11-18T19:30:00Z',
+            source: 'manual',
+            current: 'Свободный клиент',
+          },
+        }
+      : {}),
+  }))
+  const select = await screen.findByRole('combobox', { name: 'Статус клиента' })
+  fireEvent.change(select, { target: { value: 'Свободный клиент' } })
+  expect(screen.queryByRole('textbox', { name: 'Причина изменения' })).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Отменить изменение статуса' }))
+  expect(select).toHaveValue('')
+  expect(update).not.toHaveBeenCalled()
+  fireEvent.change(select, { target: { value: 'Свободный клиент' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Подтвердить изменение статуса' }))
+  expect(await screen.findByText(/Не указан → Свободный клиент/)).toBeVisible()
+  expect(update).toHaveBeenCalledTimes(1)
 })

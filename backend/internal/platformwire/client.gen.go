@@ -70,6 +70,24 @@ func (e AccountCheckComponent) Valid() bool {
 	}
 }
 
+// Defines values for AccountDetailClassificationChangeSource.
+const (
+	AccountDetailClassificationChangeSourceManual       AccountDetailClassificationChangeSource = "manual"
+	AccountDetailClassificationChangeSourceSubscription AccountDetailClassificationChangeSource = "subscription"
+)
+
+// Valid indicates whether the value is a known member of the AccountDetailClassificationChangeSource enum.
+func (e AccountDetailClassificationChangeSource) Valid() bool {
+	switch e {
+	case AccountDetailClassificationChangeSourceManual:
+		return true
+	case AccountDetailClassificationChangeSourceSubscription:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AccountSubscriptionPlan.
 const (
 	AccountSubscriptionPlanTop     AccountSubscriptionPlan = "top"
@@ -1389,13 +1407,16 @@ func (e UpdateAccountProfileJSONBodyClassification) Valid() bool {
 
 // Defines values for RequestAccountRefreshJSONBodyComponents.
 const (
-	RequestAccountRefreshJSONBodyComponentsLicense RequestAccountRefreshJSONBodyComponents = "license"
-	RequestAccountRefreshJSONBodyComponentsUsers   RequestAccountRefreshJSONBodyComponents = "users"
+	RequestAccountRefreshJSONBodyComponentsAmostart RequestAccountRefreshJSONBodyComponents = "amostart"
+	RequestAccountRefreshJSONBodyComponentsLicense  RequestAccountRefreshJSONBodyComponents = "license"
+	RequestAccountRefreshJSONBodyComponentsUsers    RequestAccountRefreshJSONBodyComponents = "users"
 )
 
 // Valid indicates whether the value is a known member of the RequestAccountRefreshJSONBodyComponents enum.
 func (e RequestAccountRefreshJSONBodyComponents) Valid() bool {
 	switch e {
+	case RequestAccountRefreshJSONBodyComponentsAmostart:
+		return true
 	case RequestAccountRefreshJSONBodyComponentsLicense:
 		return true
 	case RequestAccountRefreshJSONBodyComponentsUsers:
@@ -1816,18 +1837,24 @@ type AccountCheckComponent string
 
 // AccountDetail defines model for AccountDetail.
 type AccountDetail struct {
-	AccountId           openapi_types.UUID          `json:"account_id"`
-	ActiveProductsCount int                         `json:"active_products_count"`
-	ActiveUsers         ObservationCount            `json:"active_users"`
-	AmoAccountId        AmoID                       `json:"amo_account_id"`
-	Amostart            ObservationDate             `json:"amostart"`
-	Capabilities        []Capability                `json:"capabilities"`
-	Checks              *[]AccountCheck             `json:"checks,omitempty"`
-	Classification      nullable.Nullable[string]   `json:"classification"`
-	CurrentDomain       nullable.Nullable[string]   `json:"current_domain"`
-	DisplayName         nullable.Nullable[string]   `json:"display_name"`
-	DomainAliases       nullable.Nullable[[]string] `json:"domain_aliases"`
-	FeedbackProductIds  *[]openapi_types.UUID       `json:"feedback_product_ids,omitempty"`
+	AccountId            openapi_types.UUID        `json:"account_id"`
+	ActiveProductsCount  int                       `json:"active_products_count"`
+	ActiveUsers          ObservationCount          `json:"active_users"`
+	AmoAccountId         AmoID                     `json:"amo_account_id"`
+	Amostart             ObservationDate           `json:"amostart"`
+	Capabilities         []Capability              `json:"capabilities"`
+	Checks               *[]AccountCheck           `json:"checks,omitempty"`
+	Classification       nullable.Nullable[string] `json:"classification"`
+	ClassificationChange *struct {
+		Current    *string                                 `json:"current,omitempty"`
+		OccurredAt time.Time                               `json:"occurred_at"`
+		Previous   *string                                 `json:"previous,omitempty"`
+		Source     AccountDetailClassificationChangeSource `json:"source"`
+	} `json:"classification_change,omitempty"`
+	CurrentDomain      nullable.Nullable[string]   `json:"current_domain"`
+	DisplayName        nullable.Nullable[string]   `json:"display_name"`
+	DomainAliases      nullable.Nullable[[]string] `json:"domain_aliases"`
+	FeedbackProductIds *[]openapi_types.UUID       `json:"feedback_product_ids,omitempty"`
 
 	// IdentityObservedAt Время последнего наблюдения домена, имени и часового пояса аккаунта в amoCRM.
 	IdentityObservedAt   *time.Time                `json:"identity_observed_at,omitempty"`
@@ -1840,6 +1867,9 @@ type AccountDetail struct {
 	TimeZone             nullable.Nullable[string] `json:"time_zone"`
 	Version              int                       `json:"version"`
 }
+
+// AccountDetailClassificationChangeSource defines model for AccountDetail.ClassificationChange.Source.
+type AccountDetailClassificationChangeSource string
 
 // AccountList defines model for AccountList.
 type AccountList struct {

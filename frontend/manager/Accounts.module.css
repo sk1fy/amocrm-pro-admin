@@ -132,3 +132,23 @@
   padding: 0;
   border: 0;
 }
+
+.iconActionForm {
+  composes: form;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.iconActionForm > fieldset {
+  flex: 1;
+}
+
+.iconActionForm > .actions {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.iconActionForm > .actions > button {
+  padding-inline: 8px;
+}
