@@ -4,7 +4,6 @@ import { isApiError } from '../src/api/client'
 import { formatTime } from '../src/lib/format'
 import { ManagerLink } from './accountsLocation'
 import { ReadFailure, useAccountAccessError, type AccountAccess } from './AccountsPage'
-import { NewProductEditor } from './ProductEditor'
 import { WidgetSettings } from './WidgetSettings'
 import {
   WidgetConnectionProblems,
@@ -49,16 +48,19 @@ export function WidgetsPage({
   search,
   navigate,
   grants,
+  technicalControls,
   ...access
 }: AccountAccess & {
   search: string
   navigate: (search: string, replace?: boolean) => void
+  technicalControls: boolean
   grants: string[]
 }) {
   const params = new URLSearchParams(search),
     selected = params.get('product')
   const id = isProductId(selected) ? selected : null
   const creating = params.get('product_new') === '1'
+  const dialogSelection = creating ? 'new' : selected
   const canRead = grants.includes('catalog.read'),
     canWrite = grants.includes('catalog.manage'),
     canStats = grants.includes('stats.read')
@@ -77,7 +79,7 @@ export function WidgetsPage({
   const list = useQuery({
     queryKey: [...productsKey, access.scope, queryString],
     queryFn: ({ signal }) => listProducts(queryString, signal),
-    enabled: canRead && !creating,
+    enabled: canRead,
     placeholderData: keepPreviousData,
     retry: false,
   })
@@ -101,30 +103,41 @@ export function WidgetsPage({
     if (value) {
       setSaved(value)
       client.setQueryData([...productsKey, access.scope, 'detail', value.id], value)
-      if (creating) navigate(productSearch(search, { product: value.id, product_new: null }), true)
+      if (creating) {
+        if (openedFromCatalog.current === 'new') openedFromCatalog.current = value.id
+        navigate(productSearch(search, { product: value.id, product_new: null }), true)
+      }
     }
     void client.invalidateQueries({ queryKey: productsKey })
   }
   const apply = useCallback(
     (updates: Record<string, string | null>) => {
-      if (selected) return
+      if (selected || creating) return
       const filters: Record<string, string | null> = { products_cursor: null }
       for (const [key, value] of Object.entries(updates)) filters['products_' + key] = value
       const next = productSearch(search, filters)
       if (next !== new URLSearchParams(search).toString()) navigate(next)
     },
-    [search, navigate, selected],
+    [search, navigate, selected, creating],
   )
   const productLocation = (product: ProductId) => productSearch(search, { product })
   function openProduct(next: string) {
-    openedFromCatalog.current = new URLSearchParams(next).get('product')
+    openedFromCatalog.current = new URLSearchParams(next).get('product') ?? 'new'
     navigate(next)
   }
   function closeProduct() {
-    if (selected && openedFromCatalog.current === selected) {
+    if (dialogSelection && openedFromCatalog.current === dialogSelection) {
       window.history.back()
     } else {
-      navigate(productSearch(search, { product: null, metrics_from: null, metrics_to: null }), true)
+      navigate(
+        productSearch(search, {
+          product: null,
+          product_new: null,
+          metrics_from: null,
+          metrics_to: null,
+        }),
+        true,
+      )
     }
   }
   const cursorExpired = query.has('cursor') && isApiError(list.error) && list.error.status === 400
@@ -135,30 +148,30 @@ export function WidgetsPage({
     <section className={styles.workspace + ' ' + catalogStyles.directory}>
       <div className={catalogStyles.heading}>
         <div>
-          <h1>{creating ? 'Новый виджет' : 'Виджеты'}</h1>
-          {!creating && canRead ? (
-            <p className={styles.meta}>Выберите виджет, чтобы открыть его настройки.</p>
+          <h1>Виджеты</h1>
+          {canRead ? (
+            <p className={styles.meta}>
+              {canOverview && (
+                <>
+                  График показывает установки по месяцам за год.
+                  <br />
+                </>
+              )}
+              Нажмите на строку, чтобы открыть настройки виджета.
+            </p>
           ) : null}
         </div>
         <div className={catalogStyles.headingActions}>
-          {creating && canRead ? (
-            <ManagerLink
-              search={productSearch(search, { product: null, product_new: null })}
-              navigate={navigate}
-            >
-              Все виджеты
-            </ManagerLink>
-          ) : null}
-          {canWrite && !creating ? (
+          {canWrite ? (
             <ManagerLink
               search={productSearch(search, { product: null, product_new: '1' })}
-              navigate={navigate}
+              navigate={openProduct}
               className={catalogStyles.create}
             >
               Новый виджет
             </ManagerLink>
           ) : null}
-          {!creating && list.data && !list.isPlaceholderData ? (
+          {list.data && !list.isPlaceholderData ? (
             <p className={styles.meta}>
               Platform ·{' '}
               <time dateTime={list.data.snapshot_at}>{formatTime(list.data.snapshot_at)}</time>
@@ -166,16 +179,12 @@ export function WidgetsPage({
           ) : null}
         </div>
       </div>
-      {creating ? (
-        canWrite ? (
-          <NewProductEditor {...access} onSaved={save} />
-        ) : (
-          <p role="alert">Нет права на изменение каталога.</p>
-        )
-      ) : !canRead ? (
+      {!canRead ? (
         <p role="alert">
           Нет доступа к списку виджетов.
-          {canStats && !selected ? ' Откройте прямую ссылку на метрики виджета.' : ''}
+          {technicalControls && canStats && !selected
+            ? ' Откройте прямую ссылку на метрики виджета.'
+            : ''}
         </p>
       ) : (
         <>
@@ -258,17 +267,41 @@ export function WidgetsPage({
           )}
         </>
       )}
-      {!creating && selected ? (
+      {creating && !canWrite ? <p role="alert">Нет права на изменение каталога.</p> : null}
+      {dialogSelection && (!creating || canWrite) ? (
         <WidgetSettings
-          key={selected}
-          selection={selected}
-          product={product}
+          key={dialogSelection}
+          creating={creating}
+          selection={dialogSelection}
+          technicalControls={technicalControls && (canRead || canStats || canWrite)}
+          product={creating ? undefined : product}
           canWrite={canWrite}
           {...access}
           onSaved={save}
           onClose={closeProduct}
+          metrics={
+            !creating && id && canStats ? (
+              canRead || product ? (
+                <details
+                  className={settingsStyles.details}
+                  open={params.has('metrics_from') || params.has('metrics_to')}
+                >
+                  <summary>Метрики виджета</summary>
+                  <ProductMetrics
+                    id={id}
+                    search={search}
+                    navigate={navigate}
+                    {...access}
+                    embedded
+                  />
+                </details>
+              ) : (
+                <ProductMetrics id={id} search={search} navigate={navigate} {...access} />
+              )
+            ) : null
+          }
         >
-          {!id ? (
+          {creating ? null : !id ? (
             <p role="alert">Некорректный идентификатор виджета.</p>
           ) : (
             <>
@@ -280,25 +313,6 @@ export function WidgetsPage({
                 ) : null
               ) : !product ? (
                 <p>Нет доступа к карточке каталога.</p>
-              ) : null}
-              {canStats ? (
-                canRead || product ? (
-                  <details
-                    className={settingsStyles.details}
-                    open={params.has('metrics_from') || params.has('metrics_to')}
-                  >
-                    <summary>Метрики виджета</summary>
-                    <ProductMetrics
-                      id={id}
-                      search={search}
-                      navigate={navigate}
-                      {...access}
-                      embedded
-                    />
-                  </details>
-                ) : (
-                  <ProductMetrics id={id} search={search} navigate={navigate} {...access} />
-                )
               ) : null}
             </>
           )}

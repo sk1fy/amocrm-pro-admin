@@ -1,7 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { createRequestKey } from '../src/features/operations/intents'
 import { CommandFeedback, useAccountCommand, VersionConflict } from './accountCommands'
-import type { AccountAccess } from './AccountsPage'
 import { isUUID } from './installationsApi'
 import type { Product } from './productsApi'
 import { separateProductLinks } from './productLinks'
@@ -125,24 +124,18 @@ function EditorSection({
   )
 }
 
-export function NewProductEditor({
-  onSaved,
-  ...access
-}: AccountAccess & { onSaved: (product?: Product) => void }) {
-  const attempt = useAccountCommand('product:new', { ...access, onSaved })
-  return <ProductEditor attempt={attempt} editable />
-}
-
 export function ProductEditor({
   product,
   attempt,
   editable,
   formId,
+  showTechnical,
 }: {
   product?: Product
   attempt: ReturnType<typeof useAccountCommand>
   editable: boolean
-  formId?: string
+  showTechnical: boolean
+  formId: string
 }) {
   const originalLinks = product?.links ?? noLinks
   const parts = separateProductLinks(originalLinks)
@@ -297,7 +290,7 @@ export function ProductEditor({
             )}
           </label>
         </EditorSection>
-        <EditorSection section="links">
+        <EditorSection section="links" description="Адреса для установки виджета и его инструкции.">
           {editable ? (
             <>
               <label>
@@ -356,7 +349,7 @@ export function ProductEditor({
             />
           </label>
         </EditorSection>
-        {product ? (
+        {showTechnical && product ? (
           <details className={styles.details}>
             <summary>Технические данные</summary>
             <dl>
@@ -367,7 +360,7 @@ export function ProductEditor({
             </dl>
           </details>
         ) : null}
-        {editable ? (
+        {showTechnical && editable ? (
           <label className={styles.details}>
             {product ? 'Добавить UUID интеграции Core' : 'Подтверждённые интеграции'}
             <textarea
@@ -388,15 +381,6 @@ export function ProductEditor({
       ) : (
         <p>Каталог доступен только для чтения.</p>
       )}
-      {!product ? (
-        <button
-          type="submit"
-          className={styles.primary}
-          disabled={attempt.locked || state.kind === 'conflict'}
-        >
-          Создать виджет
-        </button>
-      ) : null}
     </form>
   )
 }

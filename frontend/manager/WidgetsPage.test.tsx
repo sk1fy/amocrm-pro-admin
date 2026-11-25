@@ -34,13 +34,16 @@ function open(
   grants: string[],
   search: string,
   handler: (url: URL, init?: RequestInit) => Response,
+  technicalControls = false,
 ) {
   window.history.replaceState(null, '', '/managers?' + search)
   vi.stubGlobal(
     'fetch',
     vi.fn<typeof fetch>().mockImplementation(async (url, init) => {
       const path = new URL(String(url), window.location.origin)
-      return path.pathname.endsWith('/me') ? Response.json(profile(grants)) : handler(path, init)
+      return path.pathname.endsWith('/me')
+        ? Response.json({ ...profile(grants), widget_technical_controls: technicalControls })
+        : handler(path, init)
     }),
   )
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -79,17 +82,25 @@ it('keeps catalog filters separate and clears entity selection between sections'
 
 it('loads metrics for stats-only grants without a list or detail read', async () => {
   const paths: string[] = []
-  open(['stats.read'], 'section=widgets&product=' + id + '&metrics_from=2026-01-01', (url) => {
-    paths.push(url.pathname + url.search)
-    expect(url.pathname).toBe('/api/v1/managers/products/' + id + '/metrics')
-    expect(url.searchParams.get('from')).toBe('2026-01-01')
-    return Response.json({
-      confirmed_installations: 3,
-      active_accesses: 3,
-      activations: 0,
-      snapshot_at: time,
-    })
-  })
+  open(
+    ['stats.read'],
+    'section=widgets&product=' + id + '&metrics_from=2026-01-01',
+    (url) => {
+      paths.push(url.pathname + url.search)
+      expect(url.pathname).toBe('/api/v1/managers/products/' + id + '/metrics')
+      expect(url.searchParams.get('from')).toBe('2026-01-01')
+      return Response.json({
+        confirmed_installations: 3,
+        active_accesses: 3,
+        activations: 0,
+        snapshot_at: time,
+      })
+    },
+    true,
+  )
+  const toggle = await screen.findByRole('button', { name: 'Технический режим' })
+  expect(paths).toHaveLength(0)
+  fireEvent.click(toggle)
   expect(
     await screen.findByText(
       'Активации считаются по записям формы для установок выбранного периода.',
@@ -115,6 +126,8 @@ it('recovers a catalog-only create DTO on HTTP by exact resubmission after a com
       ? Response.json(product, { status: 201, headers: { ETag: '"1"' } })
       : Response.json({ id: receipt, state: 'unknown_outcome' }, { status: 202 })
   })
+  expect(await screen.findByRole('dialog', { name: 'Новый виджет' })).toBeVisible()
+  expect(screen.queryByRole('button', { name: 'Технический режим' })).toBeNull()
   fireEvent.change(await screen.findByLabelText('Код'), { target: { value: 'test-widget' } })
   fireEvent.change(screen.getByLabelText('Название'), { target: { value: 'Виджет' } })
   fireEvent.click(screen.getByRole('button', { name: 'Создать виджет' }))
@@ -149,7 +162,11 @@ it('retains an editor draft on conflict and rebases only through an explicit act
     }
     return Response.json(current, { headers: { ETag: '"' + current.version + '"' } })
   })
-  fireEvent.change(await screen.findByLabelText('Название'), { target: { value: 'Мой черновик' } })
+  const name = await screen.findByLabelText('Название')
+  expect(screen.queryByText('Технические данные')).toBeNull()
+  expect(screen.queryByLabelText('Добавить UUID интеграции Core')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Технический режим' })).toBeNull()
+  fireEvent.change(name, { target: { value: 'Мой черновик' } })
   fireEvent.click(screen.getByRole('button', { name: 'Сохранить виджет' }))
   await screen.findByText('Текущее название: Сохранено коллегой')
   expect(screen.getByLabelText('Название')).toHaveValue('Мой черновик')
@@ -185,6 +202,7 @@ it('uses refreshed same-version mappings for the next edit and preserves a pendi
       }
       return Response.json(current, { headers: { ETag: '"' + current.version + '"' } })
     },
+    true,
   )
   fireEvent.change(await screen.findByLabelText('Название'), {
     target: { value: 'Сохранённое название' },
@@ -194,6 +212,8 @@ it('uses refreshed same-version mappings for the next edit and preserves a pendi
 
   current = { ...current, integration_refs: [originalRef, refreshedRef] }
   await act(() => client.invalidateQueries({ queryKey: ['managers', 'products'] }))
+  expect(screen.queryByText('Технические данные')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Технический режим' }))
   fireEvent.click(screen.getByText('Технические данные'))
   await waitFor(() =>
     expect(screen.getByText([originalRef, refreshedRef].join(', '))).toBeVisible(),

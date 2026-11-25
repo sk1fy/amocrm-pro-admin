@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Каталог и модальные формы виджетов](manager-widget-dialog.md).
+
 - [Отзывы и продление в карточке аккаунта](account-widget-feedback.md).
 
 - [Подписка клиента](account-subscription.md).

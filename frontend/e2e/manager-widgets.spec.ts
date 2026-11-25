@@ -38,19 +38,6 @@ async function signIn(page: Page, email: string, address: string) {
   await page.getByRole('button', { name: 'Войти', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible()
 }
-async function metric(page: Page, label: string, value: string) {
-  const summary = page.locator('details > summary').filter({ hasText: 'Метрики виджета' })
-  if (
-    (await summary.count()) &&
-    (await summary.locator('xpath=..').getAttribute('open')) === null
-  ) {
-    await summary.click()
-  }
-  const term = page.getByRole('term').filter({ hasText: label })
-  await expect(term).toBeVisible()
-  await expect(term.locator('xpath=following-sibling::dd[1]')).toHaveText(value)
-}
-
 test('widget catalog saves across managers, preserves stale drafts, and keeps navigation filters', async ({
   page,
   browser,
@@ -74,10 +61,8 @@ test('widget catalog saves across managers, preserves stale drafts, and keeps na
   await expect(page.getByLabel('Название', { exact: true })).toHaveValue('Pilot Widget')
   await expect(page.getByLabel('Пробный период')).toHaveValue('90')
   await expect(page.getByLabel('Подтверждённая версия тарифа')).toHaveValue('')
-  await metric(page, 'Подтверждённые установки за период', installations)
-  await metric(page, 'Текущие активные доступы', active)
-  await metric(page, 'Записанные активации', '0')
-  await expect(page.getByText(/Активации считаются по записям формы/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Технический режим' })).toHaveCount(0)
+  await expect(page.getByText('Метрики виджета', { exact: true })).toHaveCount(0)
   const other = await browser.newPage()
   try {
     await signIn(other, colleague, card())
@@ -172,11 +157,17 @@ test('independent catalog, reader, stats, and restricted grants work against rea
       if (request.url().includes(path)) statsReads.push(request.url())
     })
     await signIn(metrics, stats, card())
-    await metric(metrics, 'Подтверждённые установки за период', installations)
-    await metric(metrics, 'Текущие активные доступы', active)
-    await metric(metrics, 'Записанные активации', '0')
-    expect(statsReads.length).toBeGreaterThan(0)
-    expect(statsReads.every((address) => new URL(address).pathname.endsWith('/metrics'))).toBe(true)
+    await expect(metrics.getByRole('dialog')).toBeVisible()
+    await expect(metrics.getByRole('button', { name: 'Технический режим' })).toHaveCount(0)
+    expect(statsReads).toEqual([])
+    const aggregate = await metrics.request.get(
+      new URL(path + '/' + productId + '/metrics', origin).href,
+    )
+    expect(await aggregate.json()).toMatchObject({
+      confirmed_installations: Number(installations),
+      active_accesses: Number(active),
+      activations: 0,
+    })
     expect((await metrics.request.get(new URL(path + '/' + productId, origin).href)).status()).toBe(
       403,
     )
@@ -252,6 +243,5 @@ test('saved widget metadata and trial rule survive Admin and Platform restart', 
   await expect(page.getByLabel('Название', { exact: true })).toHaveValue(finalName)
   await expect(page.getByLabel('Подтверждённая версия тарифа')).toHaveValue('2')
   await expect(page.getByLabel('Пробный период')).toHaveValue('none')
-  await metric(page, 'Подтверждённые установки за период', installations)
-  await metric(page, 'Текущие активные доступы', active)
+  await expect(page.getByRole('button', { name: 'Технический режим' })).toHaveCount(0)
 })

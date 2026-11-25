@@ -4,6 +4,7 @@ type Manager = {
   id: string
   email: string
   name: string
+  widgetTechnicalControls: boolean
   grants: string[]
 }
 
@@ -29,7 +30,14 @@ function parseManager(value: unknown): Manager {
     value.grants.length > 0 &&
     value.grants.every((grant: unknown): grant is string => typeof grant === 'string')
   ) {
-    return { id: value.id, email: value.email, name: value.name, grants: value.grants }
+    return {
+      widgetTechnicalControls:
+        'widget_technical_controls' in value && value.widget_technical_controls === true,
+      id: value.id,
+      email: value.email,
+      name: value.name,
+      grants: value.grants,
+    }
   }
   throw new Error('invalid manager profile')
 }
