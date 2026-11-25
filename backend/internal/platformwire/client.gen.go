@@ -2257,6 +2257,7 @@ type Installation struct {
 	ProductName           string                         `json:"product_name"`
 	RemovedAt             nullable.Nullable[time.Time]   `json:"removed_at"`
 	Review                Review                         `json:"review"`
+	TrialExtensionDays    *int                           `json:"trial_extension_days,omitempty"`
 	Version               int                            `json:"version"`
 	WidgetVersion         *string                        `json:"widget_version,omitempty"`
 }
@@ -2597,9 +2598,11 @@ type Product struct {
 		Label string `json:"label"`
 		Url   string `json:"url"`
 	} `json:"links"`
-	TariffVersion nullable.Nullable[int] `json:"tariff_version"`
-	TrialPolicy   TrialPolicy            `json:"trial_policy"`
-	Version       int                    `json:"version"`
+	TariffOptions      *ProductTariffOptions  `json:"tariff_options,omitempty"`
+	TariffVersion      nullable.Nullable[int] `json:"tariff_version"`
+	TrialExtensionDays *int                   `json:"trial_extension_days,omitempty"`
+	TrialPolicy        TrialPolicy            `json:"trial_policy"`
+	Version            int                    `json:"version"`
 }
 
 // ProductAvailability defines model for Product.Availability.
@@ -2696,6 +2699,14 @@ type ProductOverviewSummary struct {
 	Installations   int `json:"installations"`
 	Recent          int `json:"recent"`
 	Total           int `json:"total"`
+}
+
+// ProductTariffOptions defines model for ProductTariffOptions.
+type ProductTariffOptions = []struct {
+	Months       int    `json:"months"`
+	Name         string `json:"name"`
+	PerUser      bool   `json:"per_user"`
+	PriceKopecks int64  `json:"price_kopecks"`
 }
 
 // ProofClaims defines model for ProofClaims.
@@ -3009,6 +3020,7 @@ type CreateAccountRenewalJSONBody struct {
 	ProductId   openapi_types.UUID `json:"product_id"`
 	Reason      string             `json:"reason"`
 	TargetUntil time.Time          `json:"target_until"`
+	TrialDays   *int               `json:"trial_days,omitempty"`
 }
 
 // CreateAccountRenewalParams defines parameters for CreateAccountRenewal.
@@ -3263,8 +3275,10 @@ type CreateProductJSONBody struct {
 		Label string `json:"label"`
 		Url   string `json:"url"`
 	} `json:"links"`
-	TariffVersion nullable.Nullable[int] `json:"tariff_version"`
-	TrialPolicy   TrialPolicy            `json:"trial_policy"`
+	TariffOptions      *ProductTariffOptions  `json:"tariff_options,omitempty"`
+	TariffVersion      nullable.Nullable[int] `json:"tariff_version"`
+	TrialExtensionDays *int                   `json:"trial_extension_days,omitempty"`
+	TrialPolicy        TrialPolicy            `json:"trial_policy"`
 }
 
 // CreateProductParams defines parameters for CreateProduct.
@@ -3294,8 +3308,10 @@ type UpdateProductJSONBody struct {
 		Label string `json:"label"`
 		Url   string `json:"url"`
 	} `json:"links,omitempty"`
-	TariffVersion nullable.Nullable[int] `json:"tariff_version,omitempty"`
-	TrialPolicy   *TrialPolicy           `json:"trial_policy,omitempty"`
+	TariffOptions      *ProductTariffOptions  `json:"tariff_options,omitempty"`
+	TariffVersion      nullable.Nullable[int] `json:"tariff_version,omitempty"`
+	TrialExtensionDays *int                   `json:"trial_extension_days,omitempty"`
+	TrialPolicy        *TrialPolicy           `json:"trial_policy,omitempty"`
 }
 
 // UpdateProductParams defines parameters for UpdateProduct.

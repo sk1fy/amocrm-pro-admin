@@ -43,6 +43,17 @@ export function parseProduct(raw: unknown) {
       if (!isUUID(value)) invalid()
       return value
     }),
+    trial_extension_days: integer(item.trial_extension_days ?? 7, 1),
+    tariff_options: array(item.tariff_options === undefined ? [] : item.tariff_options, (raw) => {
+      const option = record(raw)
+      if (typeof option.per_user !== 'boolean') invalid()
+      return {
+        name: text(option.name),
+        months: integer(option.months, 1),
+        price_kopecks: integer(option.price_kopecks, 0),
+        per_user: option.per_user,
+      }
+    }),
     tariff_version: item.tariff_version === null ? null : integer(item.tariff_version, 1),
     trial_policy: {
       kind,

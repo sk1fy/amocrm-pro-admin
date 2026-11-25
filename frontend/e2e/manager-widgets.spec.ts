@@ -60,7 +60,7 @@ test('widget catalog saves across managers, preserves stale drafts, and keeps na
   await page.getByRole('link', { name: 'Pilot Widget', exact: true }).click()
   await expect(page.getByLabel('Название', { exact: true })).toHaveValue('Pilot Widget')
   await expect(page.getByLabel('Пробный период')).toHaveValue('90')
-  await expect(page.getByLabel('Подтверждённая версия тарифа')).toHaveValue('')
+  await expect(page.getByLabel('Продление теста, дней')).toHaveValue('7')
   await expect(page.getByRole('button', { name: 'Технический режим' })).toHaveCount(0)
   await expect(page.getByText('Метрики виджета', { exact: true })).toHaveCount(0)
   const other = await browser.newPage()
@@ -69,7 +69,7 @@ test('widget catalog saves across managers, preserves stale drafts, and keeps na
     await other.getByLabel('Название', { exact: true }).fill(finalName)
     await page.getByLabel('Название', { exact: true }).fill(firstName)
     await page.getByLabel('Пробный период').selectOption('none')
-    await page.getByLabel('Подтверждённая версия тарифа').fill('2')
+    await page.getByLabel('Продление теста, дней').fill('14')
     const saved = page.waitForResponse(
       (r) =>
         r.url() === new URL(path + '/' + productId, origin).href &&
@@ -98,7 +98,7 @@ test('widget catalog saves across managers, preserves stale drafts, and keeps na
     await expect(other.getByLabel('Название', { exact: true })).toHaveValue(finalName)
     await expect(other.getByLabel('Пробный период')).toHaveValue('none')
     await other.screenshot({ path: test.info().outputPath('widget-rebased.png'), fullPage: true })
-    await expect(other.getByLabel('Подтверждённая версия тарифа')).toHaveValue('2')
+    await expect(other.getByLabel('Продление теста, дней')).toHaveValue('14')
     await expect(page.getByRole('dialog', { name: 'Настройки виджета' })).toBeVisible()
     await page.getByRole('button', { name: 'Закрыть настройки' }).click()
     await expect(page).toHaveURL(list)
@@ -241,7 +241,7 @@ test('saved widget metadata and trial rule survive Admin and Platform restart', 
   await signIn(page, colleague, card())
   await expect(page.getByRole('dialog', { name: 'Настройки виджета' })).toBeVisible()
   await expect(page.getByLabel('Название', { exact: true })).toHaveValue(finalName)
-  await expect(page.getByLabel('Подтверждённая версия тарифа')).toHaveValue('2')
+  await expect(page.getByLabel('Продление теста, дней')).toHaveValue('14')
   await expect(page.getByLabel('Пробный период')).toHaveValue('none')
   await expect(page.getByRole('button', { name: 'Технический режим' })).toHaveCount(0)
 })

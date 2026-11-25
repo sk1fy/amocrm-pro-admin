@@ -1,8 +1,9 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { createRequestKey } from '../src/features/operations/intents'
 import { CommandFeedback, useAccountCommand, VersionConflict } from './accountCommands'
 import { isUUID } from './installationsApi'
 import type { Product } from './productsApi'
+import { ProductTariffs, tariffDraft, tariffOptions } from './ProductTariffs'
 import { separateProductLinks } from './productLinks'
 import styles from './WidgetSettings.module.css'
 
@@ -18,7 +19,9 @@ function valuesOf(product: Product | undefined, links: ReturnType<typeof separat
     display_name: product?.display_name ?? '',
     line: product?.line ?? 'FREE',
     availability: product?.availability ?? 'draft',
+    trial_extension_days: String(product?.trial_extension_days ?? 7),
     tariff_version: product?.tariff_version?.toString() ?? '',
+    tariff_options: tariffDraft(product?.tariff_options ?? []),
     trial: trial?.kind === 'once' ? String(trial.duration_days) : (trial?.kind ?? 'none'),
     installation_url: links.installation?.url ?? '',
     instruction_url: links.instruction?.url ?? '',
@@ -137,6 +140,7 @@ export function ProductEditor({
   showTechnical: boolean
   formId: string
 }) {
+  const hint = useId()
   const originalLinks = product?.links ?? noLinks
   const parts = separateProductLinks(originalLinks)
   const initial = valuesOf(product, parts)
@@ -165,12 +169,21 @@ export function ProductEditor({
       setError('Проверьте ссылки и подтверждённые UUID интеграций.')
       return
     }
-    const tariff = fields.tariff_version ? Number(fields.tariff_version) : null
-    if (tariff !== null && (!Number.isSafeInteger(tariff) || tariff < 1)) {
-      setError('Укажите целую подтверждённую версию тарифа.')
+    const tariffs = tariffOptions(fields.tariff_options)
+    if (!tariffs) {
+      setError(
+        'Проверьте название, срок и цену каждого тарифа. Цена указывается с точностью до копейки.',
+      )
       return
     }
-    const trial = fields.trial
+    const trial =
+      fields.line === 'FREE'
+        ? product?.line === 'FREE' && product.trial_policy.kind === 'none'
+          ? 'none'
+          : 'free'
+        : fields.trial === 'free'
+          ? 'none'
+          : fields.trial
     if (
       (trial === 'free' && fields.line !== 'FREE') ||
       (trial === '90' && fields.line !== 'TOP') ||
@@ -185,7 +198,11 @@ export function ProductEditor({
       line: fields.line,
       availability: fields.availability,
       integration_refs: refs,
-      tariff_version: tariff,
+      tariff_version: fields.tariff_version ? Number(fields.tariff_version) : null,
+      ...(fields.trial_extension_days !== initial.trial_extension_days
+        ? { trial_extension_days: Number(fields.trial_extension_days) }
+        : {}),
+      ...(fields.tariff_options !== initial.tariff_options ? { tariff_options: tariffs } : {}),
       trial_policy: {
         kind: trial === 'none' || trial === 'free' ? trial : 'once',
         duration_days: trial === 'none' || trial === 'free' ? null : Number(trial),
@@ -255,7 +272,13 @@ export function ProductEditor({
             </label>
             <label>
               Пробный период
-              <select value={fields.trial} onChange={(event) => edit('trial', event.target.value)}>
+              <select
+                disabled={fields.line === 'FREE'}
+                value={
+                  fields.line === 'FREE' ? 'free' : fields.trial === 'free' ? 'none' : fields.trial
+                }
+                onChange={(event) => edit('trial', event.target.value)}
+              >
                 <option value="none">Отключён</option>
                 <option value="free" disabled={fields.line !== 'FREE'}>
                   Бесплатный
@@ -272,6 +295,23 @@ export function ProductEditor({
               </select>
             </label>
           </div>
+          <label>
+            Продление теста, дней
+            <input
+              aria-describedby={hint + '-extension'}
+              type="number"
+              min="1"
+              max="365"
+              step="1"
+              required
+              disabled={fields.line === 'FREE'}
+              value={fields.trial_extension_days}
+              onChange={(e) => edit('trial_extension_days', e.target.value)}
+            />
+          </label>
+          <small className={styles.hint} id={hint + '-extension'}>
+            Шаг кнопки «Тест +N дней» в карточке клиента. По умолчанию 7 дней.
+          </small>
           <label>
             Доступность
             <select
@@ -297,18 +337,26 @@ export function ProductEditor({
                 Ссылка на установку
                 <input
                   type="url"
+                  aria-describedby={hint + '-install'}
                   value={fields.installation_url}
                   onChange={(event) => edit('installation_url', event.target.value)}
                 />
               </label>
+              <small className={styles.hint} id={hint + '-install'}>
+                По этой ссылке клиент переходит к установке виджета в amoCRM.
+              </small>
               <label>
                 Ссылка на инструкцию
                 <input
                   type="url"
+                  aria-describedby={hint + '-guide'}
                   value={fields.instruction_url}
                   onChange={(event) => edit('instruction_url', event.target.value)}
                 />
               </label>
+              <small className={styles.hint} id={hint + '-guide'}>
+                По кнопке «Инструкция» открывается руководство по работе с виджетом.
+              </small>
               <details>
                 <summary>Другие ссылки</summary>
                 <label>
@@ -336,28 +384,36 @@ export function ProductEditor({
         </EditorSection>
         <EditorSection
           section="tariffs"
-          description="Platform проверяет, что версия тарифа подтверждена для этого виджета."
+          description="Стоимость за весь срок в месяцах. Для расчёта за каждого пользователя отметьте «за польз.»."
         >
-          <label>
-            Подтверждённая версия тарифа
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={fields.tariff_version}
-              onChange={(event) => edit('tariff_version', event.target.value)}
-            />
-          </label>
+          <ProductTariffs
+            draft={fields.tariff_options}
+            editable={editable}
+            onChange={(value) => edit('tariff_options', value)}
+          />
         </EditorSection>
-        {showTechnical && product ? (
+        {showTechnical ? (
           <details className={styles.details}>
             <summary>Технические данные</summary>
-            <dl>
-              <dt>Версия карточки</dt>
-              <dd>{product.version}</dd>
-              <dt>Подтверждённые интеграции</dt>
-              <dd>{product.integration_refs.join(', ') || '—'}</dd>
-            </dl>
+            <label>
+              Подтверждённая версия тарифа
+              <input
+                type="number"
+                min={1}
+                max={Number.MAX_SAFE_INTEGER}
+                step={1}
+                value={fields.tariff_version}
+                onChange={(e) => edit('tariff_version', e.target.value)}
+              />
+            </label>
+            {product && (
+              <dl>
+                <dt>Версия карточки</dt>
+                <dd>{product.version}</dd>
+                <dt>Подтверждённые интеграции</dt>
+                <dd>{product.integration_refs.join(', ') || '—'}</dd>
+              </dl>
+            )}
           </details>
         ) : null}
         {showTechnical && editable ? (

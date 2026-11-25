@@ -32,6 +32,8 @@
 
 ## Текущая часть
 
+- [Тарифы и продление теста](manager-widget-tariffs.md).
+
 - [Каталог и модальные формы виджетов](manager-widget-dialog.md).
 
 - [Отзывы и продление в карточке аккаунта](account-widget-feedback.md).

@@ -87,7 +87,7 @@ func readManagerAccountRequest(w http.ResponseWriter, r *http.Request, endpoint 
 			return meta, nil, managerplatform.ErrInvalid
 		}
 	}
-	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, managerplatform.ManagerAccountBodyLimit))
+	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, endpoint.BodyLimit()))
 	if err != nil {
 		return meta, nil, managerplatform.ErrInvalid
 	}

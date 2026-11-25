@@ -11,6 +11,7 @@ import (
 )
 
 type managerInstallationDTO struct {
+	TrialExtensionDays *int                                `json:"trial_extension_days,omitempty"`
 	InstalledBy        *string                             `json:"installed_by,omitempty"`
 	ID                 uuid.UUID                           `json:"id"`
 	AccountID          uuid.UUID                           `json:"account_id"`
@@ -100,7 +101,7 @@ func toManagerInstallationDTO(row *wire.Installation) managerInstallationDTO {
 		line = string(*row.ProductLine)
 	}
 	return managerInstallationDTO{
-		ID: row.Id, AccountID: row.AccountId, AmoAccountID: string(row.AmoAccountId),
+		TrialExtensionDays: row.TrialExtensionDays, ID: row.Id, AccountID: row.AccountId, AmoAccountID: string(row.AmoAccountId),
 		ProductID: row.ProductId, ProductCode: string(row.ProductCode), ProductName: row.ProductName, ProductLine: line,
 		AccountDomain: row.AccountDomain, AccountName: row.AccountName,
 		AccountClass: row.AccountClassification, AccountZone: row.AccountTimeZone,

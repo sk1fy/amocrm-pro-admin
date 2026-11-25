@@ -217,18 +217,22 @@ function Widget({
     (account.subscription.plan === 'unified' || row.product_line === 'TOP')
   const canRenewRow =
     canRenew && paid && !covered && row.lifecycle === 'current' && row.kind !== 'observed'
-  const fromSnapshot = selected.productCursor !== ''
   const product = row.product_id
   const current = useQuery({
     queryKey: [...accountsKey, scope, selected.id, 'widget-current', product],
     queryFn: ({ signal }) =>
       listWidgets(selected.id, '', signal, { kind: 'currentProduct', product }),
-    enabled: canRenewRow && fromSnapshot && renewing,
+    staleTime: 0,
+    enabled: canRenewRow && renewing,
     retry: false,
   })
   useAccountAccessError(current.error, actions.onExpired, actions.onForbidden)
   const latest = current.isError ? undefined : current.data?.items[0]
   const renewalRow = latest ?? row
+  const trialDays =
+    renewalRow.access.source === 'own_trial' && renewalRow.access.own_until
+      ? renewalRow.trial_extension_days
+      : undefined
   const authorizationInfoId = `widget-authorization-${row.id}`
   const reviewStamp = row.review.reviewed_at ? (
     <time dateTime={row.review.reviewed_at}>
@@ -374,22 +378,20 @@ function Widget({
               </button>
               {renewing && (
                 <>
-                  {fromSnapshot && renewing ? (
-                    current.isError ? (
-                      <ReadFailure error={current.error} retry={() => void current.refetch()} />
-                    ) : current.isPending ? (
-                      <p role="status">Проверяем текущий срок…</p>
-                    ) : !latest ? (
-                      <p role="alert">Текущая установка не найдена.</p>
-                    ) : null
+                  {current.isError ? (
+                    <ReadFailure error={current.error} retry={() => void current.refetch()} />
+                  ) : current.isPending ? (
+                    <p role="status">Проверяем текущий срок…</p>
+                  ) : !latest ? (
+                    <p role="alert">Текущая установка не найдена.</p>
                   ) : null}
-                  {!fromSnapshot || latest ? (
+                  {latest ? (
                     <AccountForm
                       {...actions}
                       id={selected.id + ':renewal:' + renewalRow.product_id}
                       title="Продление тарифа виджета"
                       version={renewalRow.entitlement_version}
-                      initial={{ until: '', reason: '' }}
+                      initial={{ until: '', reason: '', trialDays: '' }}
                       current={
                         <p>Текущий срок тарифа: {formatTime(renewalRow.access.own_until)}.</p>
                       }
@@ -404,20 +406,65 @@ function Widget({
                           product_id: renewalRow.product_id,
                           target_until: new Date(fields.until).toISOString(),
                           reason: fields.reason.trim(),
+                          ...(fields.trialDays ? { trial_days: Number(fields.trialDays) } : {}),
                         }),
                       })}
                     >
                       {(fields, edit) => (
                         <>
-                          <label>
-                            Продлить до
-                            <input
-                              type="datetime-local"
-                              required
-                              value={fields.until}
-                              onChange={(event) => edit('until', event.target.value)}
-                            />
-                          </label>
+                          {trialDays && (
+                            <button
+                              type="button"
+                              disabled={current.isFetching}
+                              onClick={async () => {
+                                const fresh = await current.refetch()
+                                const item = fresh.data?.items[0]
+                                if (
+                                  fresh.isError ||
+                                  !item ||
+                                  !item.access.own_until ||
+                                  item.access.source !== 'own_trial' ||
+                                  item.entitlement_version !== renewalRow.entitlement_version ||
+                                  item.trial_extension_days !== trialDays
+                                )
+                                  return
+                                const base = Math.max(
+                                  Date.parse(item.access.computed_at),
+                                  Date.parse(item.access.own_until),
+                                )
+                                edit('until', new Date(base + trialDays * 86400000).toISOString())
+                                edit('trialDays', String(trialDays))
+                                edit('reason', 'Продление теста на ' + trialDays + ' дн.')
+                              }}
+                            >
+                              Тест +{trialDays} дней
+                            </button>
+                          )}
+                          {fields.trialDays ? (
+                            <>
+                              <p role="status">Новый срок теста: {formatTime(fields.until)}</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  edit('trialDays', '')
+                                  edit('until', '')
+                                  edit('reason', '')
+                                }}
+                              >
+                                Выбрать дату вручную
+                              </button>
+                            </>
+                          ) : (
+                            <label>
+                              Продлить до
+                              <input
+                                type="datetime-local"
+                                required
+                                value={fields.until}
+                                onChange={(event) => edit('until', event.target.value)}
+                              />
+                            </label>
+                          )}
                           <label>
                             Причина продления
                             <input

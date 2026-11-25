@@ -348,3 +348,41 @@ it('renders monthly widget installations and keeps the overview while filtering'
   expect(filtered).toBe(true)
   expect(screen.getByRole('group', { name: 'Сводка каталога' })).toBeVisible()
 })
+
+it('locks the FREE trial and saves distinct tariff options in kopecks', async () => {
+  let sent: unknown
+  open(['catalog.manage'], 'section=widgets&product_new=1', (_url, init) => {
+    sent = JSON.parse(String(init?.body))
+    return Response.json(product, { status: 201, headers: { ETag: '"1"' } })
+  })
+  const trial = await screen.findByLabelText('Пробный период')
+  expect(trial).toBeDisabled()
+  expect(trial).toHaveDisplayValue('Бесплатный')
+  fireEvent.change(screen.getByLabelText('Код'), { target: { value: product.code } })
+  fireEvent.change(screen.getByLabelText('Название'), { target: { value: product.display_name } })
+  fireEvent.change(screen.getByLabelText('Категория'), { target: { value: 'PRO' } })
+  expect(trial).toBeEnabled()
+  fireEvent.change(screen.getByLabelText('Продление теста, дней'), { target: { value: '14' } })
+  const options = [
+    { name: 'За пользователя', months: '12', price: '99,95' },
+    { name: 'Акция', months: '1', price: '0' },
+  ]
+  for (const [index, option] of options.entries()) {
+    fireEvent.click(screen.getByRole('button', { name: '+ Добавить тариф' }))
+    const row = within(screen.getByRole('group', { name: 'Тариф ' + (index + 1) }))
+    fireEvent.change(row.getByLabelText('Название тарифа'), { target: { value: option.name } })
+    fireEvent.change(row.getByLabelText('Срок, мес'), { target: { value: option.months } })
+    fireEvent.change(row.getByLabelText('Цена, ₽'), { target: { value: option.price } })
+    if (index === 0) fireEvent.click(row.getByRole('checkbox'))
+  }
+  fireEvent.click(screen.getByRole('button', { name: 'Создать виджет' }))
+  await waitFor(() =>
+    expect(sent).toMatchObject({
+      trial_extension_days: 14,
+      tariff_options: [
+        { name: 'За пользователя', months: 12, price_kopecks: 9995, per_user: true },
+        { name: 'Акция', months: 1, price_kopecks: 0, per_user: false },
+      ],
+    }),
+  )
+})

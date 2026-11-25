@@ -272,13 +272,15 @@
 }
 
 .header .toggle {
-  padding: 5px 10px;
-  border: 1px solid var(--color-menu-text);
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid transparent;
   background: transparent;
-  color: white;
-  font-size: 12px;
+  color: var(--color-menu-text);
 }
-
 .header .toggle[aria-pressed='true'] {
   background: var(--color-accent-soft);
   color: var(--color-header);
@@ -290,4 +292,61 @@
 
 .footer button {
   font-weight: 700;
+}
+
+.header .toggle:hover {
+  color: white;
+  background: rgb(255 255 255 / 8%);
+}
+.form select:disabled {
+  background: var(--color-surface-2);
+  color: var(--color-muted);
+}
+.hint {
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.tariffRow {
+  display: grid;
+  grid-template-columns: minmax(90px, 1.65fr) minmax(56px, 0.8fr) minmax(74px, 1fr) auto auto;
+  align-items: end;
+  gap: 8px;
+}
+.form label.perUser {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.form .perUser input {
+  width: 16px;
+  min-height: 16px;
+  height: 16px;
+  margin: 0;
+}
+.removeTariff {
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 18px;
+}
+.addTariff {
+  justify-self: start;
+  color: var(--color-link);
+  border: 1px dashed var(--color-accent);
+  font-weight: 700;
+}
+@media (max-width: 520px) {
+  .tariffRow {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+  .tariffRow label:first-child {
+    grid-column: 1 / -1;
+  }
+  .tariffRow .perUser {
+    grid-column: 1 / 3;
+  }
 }
