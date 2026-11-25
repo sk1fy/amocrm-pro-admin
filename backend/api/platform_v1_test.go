@@ -13,7 +13,7 @@ import (
 )
 
 func TestPinnedPlatformContract(t *testing.T) {
-	const wantHash = "7b9e8a32d7ad91cde6899a900a50bf56dc344011d5822cb285ad1e279be7935a"
+	const wantHash = "5d73b08d6e2ee8a661cbaf46409c057c13140b51b7a881a1aed89bb7c7ad4be1"
 	body, err := os.ReadFile("platform-v1-openapi.yaml")
 	if err != nil {
 		t.Fatal(err)

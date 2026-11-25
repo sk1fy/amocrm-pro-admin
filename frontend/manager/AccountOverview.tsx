@@ -361,41 +361,6 @@ export function AccountOverview({
                 'Данные аккаунта ещё не обновлялись'
               )}
             </p>
-            {editable && (
-              <details className={card.profileFields}>
-                <summary>Название аккаунта</summary>
-                <AccountForm
-                  {...actions}
-                  inline
-                  actionsOnEdit
-                  title="Название аккаунта"
-                  id={account.account_id + ':name'}
-                  version={account.version}
-                  initial={{ name: account.display_name ?? '' }}
-                  command={(fields, _original, version, key) => ({
-                    kind: 'profile',
-                    account: account.account_id,
-                    version,
-                    key,
-                    body: JSON.stringify({
-                      display_name: fields.name.trim() || null,
-                      reason: 'Изменение названия аккаунта',
-                    }),
-                  })}
-                >
-                  {(fields, edit) => (
-                    <label>
-                      Название
-                      <input
-                        maxLength={512}
-                        value={fields.name}
-                        onChange={(e) => edit('name', e.target.value)}
-                      />
-                    </label>
-                  )}
-                </AccountForm>
-              </details>
-            )}
           </div>
           <ClientStatus account={account} editable={editable} {...actions} />
         </div>

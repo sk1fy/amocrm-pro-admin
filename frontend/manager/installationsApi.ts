@@ -29,6 +29,7 @@ export type Installation = {
   amo_account_id: AmoAccountId
   product_code: string
   product_name: string
+  widget_version?: string
   product_line?: string
   account_name?: string
   account_domain?: string
@@ -214,6 +215,7 @@ export function parseInstallation(value: unknown): Installation {
     amo_account_id: item.amo_account_id,
     product_code: string(item.product_code),
     product_name: string(item.product_name),
+    widget_version: optionalString(item.widget_version),
     product_line: optionalString(item.product_line),
     account_name: optionalString(item.account_name),
     account_domain: optionalString(item.account_domain),

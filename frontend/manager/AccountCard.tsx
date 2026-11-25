@@ -1,3 +1,6 @@
+import { createRequestKey } from '../src/features/operations/intents'
+import { CommandFeedback, useAccountCommand } from './accountCommands'
+import type { AccountDetail } from './accountsApi'
 import { WidgetAccessStatus } from './WidgetAccessStatus'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Timeline } from './Timeline'
@@ -57,10 +60,12 @@ function Widgets({
   navigate,
   scope,
   canReview,
+  account,
   canRenew,
   ...actions
 }: Omit<Props, 'grants'> &
   AccountActions & {
+    account: AccountDetail
     canReview: boolean
     canRenew: boolean
   }) {
@@ -132,7 +137,10 @@ function Widgets({
                 <th scope="col">Доступ до</th>
                 <th scope="col">Сделка</th>
                 <th scope="col">Контакт из формы активации</th>
-                <th scope="col">Проверка и действия</th>
+                <th scope="col">Отзыв</th>
+                <th scope="col" className={card.actionsHeading}>
+                  Действия
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -140,6 +148,7 @@ function Widgets({
                 <Widget
                   key={row.id}
                   row={row}
+                  account={account}
                   selected={selected}
                   scope={scope}
                   canRenew={canRenew}
@@ -172,7 +181,14 @@ function Widgets({
   )
 }
 
+const reviewDate = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+})
+
 function Widget({
+  account,
   row,
   selected,
   scope,
@@ -183,6 +199,7 @@ function Widget({
   retryingDeal,
   actions,
 }: {
+  account: AccountDetail
   row: AccountWidget
   selected: AccountLocation
   scope: string
@@ -194,7 +211,12 @@ function Widget({
   actions: AccountActions
 }) {
   const [renewing, setRenewing] = useState(false)
-  const canRenewRow = canRenew && row.lifecycle === 'current'
+  const paid = row.product_line === 'TOP' || row.product_line === 'PRO'
+  const covered =
+    account.subscription?.state === 'active' &&
+    (account.subscription.plan === 'unified' || row.product_line === 'TOP')
+  const canRenewRow =
+    canRenew && paid && !covered && row.lifecycle === 'current' && row.kind !== 'observed'
   const fromSnapshot = selected.productCursor !== ''
   const product = row.product_id
   const current = useQuery({
@@ -208,6 +230,13 @@ function Widget({
   const latest = current.isError ? undefined : current.data?.items[0]
   const renewalRow = latest ?? row
   const authorizationInfoId = `widget-authorization-${row.id}`
+  const reviewStamp = row.review.reviewed_at ? (
+    <time dateTime={row.review.reviewed_at}>
+      {'✓ проверен ' + reviewDate.format(new Date(row.review.reviewed_at))}
+    </time>
+  ) : (
+    '✓ проверен'
+  )
   const deal = row.deal
   return (
     <tr>
@@ -272,8 +301,7 @@ function Widget({
           <strong>{row.product_name || row.product_code}</strong>
         </div>
         <span className={card.cellSecondary}>
-          {row.product_code}
-          {row.kind === 'observed' ? ' · Наблюдение Core' : ' · Эпизод ' + row.generation}
+          {row.widget_version ? 'Версия ' + row.widget_version : 'Версия не получена'}
         </span>
       </td>
       <td>
@@ -303,94 +331,160 @@ function Widget({
       <td className={card.widgetDetails}>
         <ContactCell contact={row.contact} />
       </td>
+      <td>
+        <FeedbackSwitch
+          account={account}
+          row={row}
+          actions={actions}
+          editable={
+            !!onReview &&
+            account.capabilities.some((c) => c.action === 'account.profile' && c.allowed)
+          }
+        />
+      </td>
       <td className={card.widgetActions}>
-        {row.kind === 'observed' ? (
-          <StatusBadge
-            domain="installation_event"
-            state={row.last_lifecycle_event}
-            variant="text"
-          />
-        ) : (
-          <>
+        <div className={card.actionStatus}>
+          {row.kind === 'observed' ? (
+            <StatusBadge
+              domain="installation_event"
+              state={row.last_lifecycle_event}
+              variant="text"
+            />
+          ) : row.review.reviewed ? (
+            <span className={card.reviewStamp}>{reviewStamp}</span>
+          ) : (
             <ReviewBadge row={row} />
-            {row.review.reviewed_at ? (
-              <time className={card.cellSecondary} dateTime={row.review.reviewed_at}>
-                {formatTime(row.review.reviewed_at)}
-              </time>
-            ) : null}
-            {onReview ? (
-              <button type="button" onClick={() => onReview(row)} disabled={reviewLocked}>
-                {row.review.reviewed ? 'Снять отметку' : 'Отметить проверку'}
-              </button>
-            ) : null}
-          </>
-        )}
-        {canRenewRow ? (
-          <details
-            onToggle={(event) => {
-              if (event.currentTarget.open) setRenewing(true)
-            }}
-          >
-            <summary>Продлить</summary>
-            {fromSnapshot && renewing ? (
-              current.isError ? (
-                <ReadFailure error={current.error} retry={() => void current.refetch()} />
-              ) : current.isPending ? (
-                <p role="status">Проверяем текущий срок…</p>
-              ) : !latest ? (
-                <p role="alert">Текущая установка не найдена.</p>
-              ) : null
-            ) : null}
-            {!fromSnapshot || latest ? (
-              <AccountForm
-                {...actions}
-                id={selected.id + ':renewal:' + renewalRow.product_id}
-                title="Ручное продление"
-                version={renewalRow.entitlement_version}
-                initial={{ until: '', reason: '' }}
-                current={<p>Текущий срок: {formatTime(renewalRow.access.valid_until)}.</p>}
-                submitLabel="Продлить доступ"
-                command={(fields, _, version, key) => ({
-                  kind: 'renewal',
-                  account: selected.id,
-                  product: renewalRow.product_id,
-                  version,
-                  key,
-                  body: JSON.stringify({
-                    product_id: renewalRow.product_id,
-                    target_until: new Date(fields.until).toISOString(),
-                    reason: fields.reason.trim(),
-                  }),
-                })}
+          )}
+        </div>
+        <div className={card.actionStack}>
+          {row.kind !== 'observed' && onReview && (
+            <button type="button" onClick={() => onReview(row)} disabled={reviewLocked}>
+              {row.review.reviewed ? 'Снять отметку' : 'Отметить проверку'}
+            </button>
+          )}
+          {canRenewRow ? (
+            <div>
+              <button
+                type="button"
+                className={card.renewButton}
+                aria-expanded={renewing}
+                onClick={() => setRenewing(!renewing)}
               >
-                {(fields, edit) => (
-                  <>
-                    <label>
-                      Продлить до
-                      <input
-                        type="datetime-local"
-                        required
-                        value={fields.until}
-                        onChange={(event) => edit('until', event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      Причина продления
-                      <input
-                        required
-                        maxLength={1000}
-                        value={fields.reason}
-                        onChange={(event) => edit('reason', event.target.value)}
-                      />
-                    </label>
-                  </>
-                )}
-              </AccountForm>
-            ) : null}
-          </details>
-        ) : null}
+                Продлить
+              </button>
+              {renewing && (
+                <>
+                  {fromSnapshot && renewing ? (
+                    current.isError ? (
+                      <ReadFailure error={current.error} retry={() => void current.refetch()} />
+                    ) : current.isPending ? (
+                      <p role="status">Проверяем текущий срок…</p>
+                    ) : !latest ? (
+                      <p role="alert">Текущая установка не найдена.</p>
+                    ) : null
+                  ) : null}
+                  {!fromSnapshot || latest ? (
+                    <AccountForm
+                      {...actions}
+                      id={selected.id + ':renewal:' + renewalRow.product_id}
+                      title="Продление тарифа виджета"
+                      version={renewalRow.entitlement_version}
+                      initial={{ until: '', reason: '' }}
+                      current={
+                        <p>Текущий срок тарифа: {formatTime(renewalRow.access.own_until)}.</p>
+                      }
+                      submitLabel="Продлить доступ"
+                      command={(fields, _, version, key) => ({
+                        kind: 'renewal',
+                        account: selected.id,
+                        product: renewalRow.product_id,
+                        version,
+                        key,
+                        body: JSON.stringify({
+                          product_id: renewalRow.product_id,
+                          target_until: new Date(fields.until).toISOString(),
+                          reason: fields.reason.trim(),
+                        }),
+                      })}
+                    >
+                      {(fields, edit) => (
+                        <>
+                          <label>
+                            Продлить до
+                            <input
+                              type="datetime-local"
+                              required
+                              value={fields.until}
+                              onChange={(event) => edit('until', event.target.value)}
+                            />
+                          </label>
+                          <label>
+                            Причина продления
+                            <input
+                              required
+                              maxLength={1000}
+                              value={fields.reason}
+                              onChange={(event) => edit('reason', event.target.value)}
+                            />
+                          </label>
+                        </>
+                      )}
+                    </AccountForm>
+                  ) : null}
+                </>
+              )}
+            </div>
+          ) : null}
+        </div>
       </td>
     </tr>
+  )
+}
+
+function FeedbackSwitch({
+  account,
+  row,
+  actions,
+  editable,
+}: {
+  account: AccountDetail
+  row: AccountWidget
+  actions: AccountActions
+  editable: boolean
+}) {
+  const cmd = useAccountCommand(account.account_id + ':feedback:' + row.product_id, actions)
+  const checked = account.feedbackProducts?.includes(row.product_id) ?? false
+  const conflict = cmd.entry.state.kind === 'conflict'
+  return (
+    <>
+      <input
+        className={card.feedbackSwitch}
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        aria-checked={checked}
+        aria-label={'Отзыв о виджете ' + row.product_name}
+        disabled={!editable || !account.feedbackProducts || cmd.locked || conflict}
+        onChange={() =>
+          cmd.start({
+            kind: 'profile',
+            account: account.account_id,
+            version: account.version,
+            key: createRequestKey(),
+            body: JSON.stringify({
+              widget_feedback: { product_id: row.product_id, left: !checked },
+              reason: checked ? 'Снята отметка об отзыве' : 'Клиент оставил отзыв о виджете',
+            }),
+          })
+        }
+      />
+      {conflict && (
+        <button type="button" onClick={cmd.discardDraft}>
+          Проверить обновлённую отметку
+        </button>
+      )}
+      {cmd.entry.state.kind !== 'saved' && <CommandFeedback command={cmd} />}
+    </>
   )
 }
 
@@ -706,6 +800,7 @@ export function ManagerAccountCard({
             />
           ) : selected.tab === 'widgets' ? (
             <Widgets
+              account={account}
               selected={selected}
               scope={scope}
               search={search}

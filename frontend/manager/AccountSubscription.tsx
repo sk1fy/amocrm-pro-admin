@@ -29,6 +29,18 @@ function dealID(value: string) {
     value.trim(),
   )?.[1]
 }
+export function defaultSubscriptionEnd(now: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Moscow',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(now)
+  const part = (key: string) => Number(parts.find((p) => p.type === key)?.value)
+  const last = new Date(Date.UTC(part('year'), part('month') + 3, 0))
+  last.setUTCDate(Math.min(part('day'), last.getUTCDate()))
+  return last.toISOString().slice(0, 10)
+}
 function calendar(value: string) {
   return value.split('-').reverse().join('.')
 }
@@ -51,7 +63,7 @@ export function AccountSubscription({
       action,
       version: account.version,
       plan: current?.plan ?? 'top',
-      ends: current?.ends_on ?? account.license.value?.license_until?.slice(0, 10) ?? '',
+      ends: action === 'grant' ? defaultSubscriptionEnd(new Date()) : (current?.ends_on ?? ''),
       seats: String(current?.seats ?? count ?? ''),
       deal: '',
     })

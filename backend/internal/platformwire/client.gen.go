@@ -1827,6 +1827,7 @@ type AccountDetail struct {
 	CurrentDomain       nullable.Nullable[string]   `json:"current_domain"`
 	DisplayName         nullable.Nullable[string]   `json:"display_name"`
 	DomainAliases       nullable.Nullable[[]string] `json:"domain_aliases"`
+	FeedbackProductIds  *[]openapi_types.UUID       `json:"feedback_product_ids,omitempty"`
 
 	// IdentityObservedAt Время последнего наблюдения домена, имени и часового пояса аккаунта в amoCRM.
 	IdentityObservedAt   *time.Time                `json:"identity_observed_at,omitempty"`
@@ -2227,6 +2228,7 @@ type Installation struct {
 	RemovedAt             nullable.Nullable[time.Time]   `json:"removed_at"`
 	Review                Review                         `json:"review"`
 	Version               int                            `json:"version"`
+	WidgetVersion         *string                        `json:"widget_version,omitempty"`
 }
 
 // InstallationActivationStatus defines model for Installation.ActivationStatus.
@@ -2941,6 +2943,10 @@ type UpdateAccountProfileJSONBody struct {
 	Note           nullable.Nullable[string]                                     `json:"note,omitempty"`
 	PartnerName    nullable.Nullable[string]                                     `json:"partner_name,omitempty"`
 	Reason         string                                                        `json:"reason"`
+	WidgetFeedback *struct {
+		Left      bool               `json:"left"`
+		ProductId openapi_types.UUID `json:"product_id"`
+	} `json:"widget_feedback,omitempty"`
 }
 
 // UpdateAccountProfileParams defines parameters for UpdateAccountProfile.
