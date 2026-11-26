@@ -25,6 +25,12 @@ const licenseDateFormat = new Intl.DateTimeFormat('ru-RU', {
 
 const licenseCalendarDay = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Moscow' })
 
+const trialDateFormat = new Intl.DateTimeFormat('ru-RU', {
+  dateStyle: 'short',
+  timeStyle: 'short',
+  timeZone: 'Europe/Moscow',
+})
+
 function observedValue<T>(value: AccountObservation<T>) {
   return value.state === 'fresh' || value.state === 'stale' ? value.value : undefined
 }
@@ -147,6 +153,7 @@ function ClientStatus({
   const partnerName = account.partner_name ?? ''
   const isKnown = clientStatuses.some((value) => value === classification)
   const statusChange = account.classification_change
+  const automaticBan = statusChange?.reason === 'technical_tariff_detected'
 
   return (
     <div className={card.classification}>
@@ -160,7 +167,7 @@ function ClientStatus({
           id={account.account_id + ':classification'}
           title="Изменение статуса"
           version={account.version}
-          initial={{ classification, partnerName }}
+          initial={{ classification, partnerName, confirmBan: '' }}
           current={
             <StatusBadge domain="client_classification" state={classification || 'unknown'} calm />
           }
@@ -171,7 +178,7 @@ function ClientStatus({
             key,
             body: JSON.stringify({
               classification:
-                fields.classification === original.classification
+                fields.classification === original.classification && !fields.confirmBan
                   ? undefined
                   : fields.classification,
               partner_name:
@@ -201,6 +208,16 @@ function ClientStatus({
                   </option>
                 ))}
               </select>
+              {automaticBan && fields.classification === 'Запрет работы' ? (
+                <label className={card.confirmBan}>
+                  <input
+                    type="checkbox"
+                    checked={fields.confirmBan === 'yes'}
+                    onChange={(event) => edit('confirmBan', event.target.checked ? 'yes' : '')}
+                  />
+                  Сохранить запрет вручную
+                </label>
+              ) : null}
               {fields.classification === 'Клиент партнёра' ? (
                 <label>
                   Название партнёра
@@ -223,9 +240,19 @@ function ClientStatus({
       )}
       {statusChange ? (
         <p className={card.statusHistory}>
-          {statusChange.source === 'subscription' ? 'По подписке' : 'Вручную'} ·{' '}
-          <time dateTime={statusChange.occurred_at}>{formatTime(statusChange.occurred_at)}</time> ·{' '}
-          {statusChange.previous ?? 'Не указан'} → {statusChange.current ?? 'Не указан'}
+          {
+            lookupState('client_classification_change', statusChange.reason ?? statusChange.source)
+              .label
+          }{' '}
+          · <time dateTime={statusChange.occurred_at}>{formatTime(statusChange.occurred_at)}</time>{' '}
+          ·{' '}
+          {statusChange.previous !== statusChange.current ? (
+            <>
+              {statusChange.previous ?? 'Не указан'} → {statusChange.current ?? 'Не указан'}
+            </>
+          ) : (
+            (statusChange.current ?? 'Не указан')
+          )}
         </p>
       ) : null}
     </div>
@@ -322,6 +349,7 @@ export function AccountOverview({
     account.identity_observed_at,
     account.active_users.observed_at,
     account.license.observed_at,
+    account.amo_license_status?.observed_at,
     ...(account.checks ?? [])
       .filter((check) => check.component !== 'installations')
       .map((check) => check.succeeded_at),
@@ -330,9 +358,16 @@ export function AccountOverview({
     .sort((a, b) => Date.parse(b) - Date.parse(a))[0]
   const title = accountTitle(account)
   const license = observedValue(account.license)
+  const licenseStatus = account.amo_license_status
+  const trialEnd =
+    licenseStatus?.state === 'trial' || licenseStatus?.state === 'expired_pending'
+      ? licenseStatus.trial_end
+      : undefined
   const licenseDate = license?.license_until ? new Date(license.license_until) : null
   const licenseExpired =
-    licenseDate && licenseCalendarDay.format(licenseDate) < licenseCalendarDay.format(new Date())
+    !licenseStatus &&
+    licenseDate &&
+    licenseCalendarDay.format(licenseDate) < licenseCalendarDay.format(new Date())
   const licenseError = account.license.error_code
   const activeUsers = observedValue(account.active_users)
   const editable =
@@ -396,13 +431,57 @@ export function AccountOverview({
               <ObservationSource value={account.license} />
             </div>
             <div>
-              <dt>Действует до</dt>
-              <dd>{licenseDate ? licenseDateFormat.format(licenseDate) : '—'}</dd>
+              <dt>{licenseStatus ? 'Лицензия amoCRM' : 'Действует до'}</dt>
+              <dd>
+                {licenseStatus ? (
+                  <StatusBadge domain="amo_license" state={licenseStatus.state} calm />
+                ) : licenseDate ? (
+                  licenseDateFormat.format(licenseDate)
+                ) : (
+                  '—'
+                )}
+              </dd>
+              {trialEnd ? (
+                <span className={styles.meta}>
+                  Окончание{' '}
+                  <time dateTime={trialEnd}>{trialDateFormat.format(new Date(trialEnd))}</time>
+                </span>
+              ) : licenseStatus?.state === 'trial' ? (
+                <span className={styles.meta}>Дата окончания неизвестна</span>
+              ) : null}
+              {licenseStatus &&
+              licenseDate &&
+              (licenseStatus.state === 'paid' || licenseStatus.state === 'unknown') ? (
+                <span className={styles.meta}>
+                  {licenseStatus.state === 'paid'
+                    ? 'Действует до '
+                    : 'Последний срок по данным amoSTART '}
+                  <time dateTime={license?.license_until ?? undefined}>
+                    {licenseDateFormat.format(licenseDate)}
+                  </time>
+                </span>
+              ) : null}
               {licenseExpired ? <span className={styles.meta}>Лицензия истекла</span> : null}
-              {license?.paid_seat_limit != null ? (
+              {license?.paid_seat_limit != null &&
+              (!licenseStatus || licenseStatus.state === 'paid') ? (
                 <span className={styles.meta}>Оплаченных мест {license.paid_seat_limit}</span>
               ) : null}
-              <ObservationSource value={account.license} />
+              {licenseStatus?.source === 'widget' || licenseStatus?.source === 'amocrm' ? (
+                <span className={styles.meta}>
+                  {licenseStatus.source === 'widget' ? 'Виджет amoCRM' : 'amoCRM'}
+                  {licenseStatus.observed_at ? (
+                    <>
+                      {' '}
+                      ·{' '}
+                      <time dateTime={licenseStatus.observed_at}>
+                        {formatTime(licenseStatus.observed_at)}
+                      </time>
+                    </>
+                  ) : null}
+                </span>
+              ) : (
+                <ObservationSource value={account.license} />
+              )}
               {licenseError?.startsWith('amostart_') ? (
                 <span className={styles.meta}>
                   {licenseError === 'amostart_not_configured'

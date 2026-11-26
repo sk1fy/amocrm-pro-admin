@@ -47,3 +47,4 @@
 - [0034. Право на чтение каталога виджетов](0034-manager-catalog-read.md).
 
 - [0040. Предупреждение о лимите подписки](0040-subscription-seat-warning.md).
+- [0041. Тариф amoCRM в кабинете менеджеров](0041-amocrm-account-license.md).

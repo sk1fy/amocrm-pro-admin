@@ -32,6 +32,7 @@
 
 ## Текущая часть
 
+- [Тариф и пробный период amoCRM](account-license.md).
 - [Проверка при переустановке](installation-review-continuity.md).
 - [Статус клиента при подписке «Все TOP»](manager-client-status-during-top.md).
 - [Проверка лимита пользователей подписки](account-subscription-seat-checks.md).

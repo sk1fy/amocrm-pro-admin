@@ -91,6 +91,24 @@ function listedValue<T extends string>(value: unknown, allowed: readonly T[]): T
   return known
 }
 
+function parseAmoLicenseStatus(raw: unknown) {
+  const item = record(raw)
+  return {
+    state: listedValue(item.state, [
+      'unknown',
+      'trial',
+      'expired_pending',
+      'unpaid',
+      'paid',
+    ] as const),
+    source: optional(item.source, (value) =>
+      listedValue(value, ['widget', 'amocrm', 'amostart'] as const),
+    ),
+    observed_at: optional(item.observed_at, date),
+    trial_end: optional(item.trial_end, date),
+  }
+}
+
 const checkComponents = ['installations', 'identity', 'users'] as const
 
 function parseAccountCheck(raw: unknown) {
@@ -185,11 +203,15 @@ function parseAccount(raw: unknown) {
     subscription: optional(item.subscription, parseSubscription),
     previous_subscription: optional(item.previous_subscription, parseSubscription),
     identity_observed_at: optional(item.identity_observed_at, date),
+    technical_tariff: optional(item.technical_tariff, boolean),
     classification_change: optional(item.classification_change, (raw) => {
       const change = record(raw)
       return {
         occurred_at: date(change.occurred_at),
-        source: listedValue(change.source, ['manual', 'subscription'] as const),
+        source: listedValue(change.source, ['manual', 'subscription', 'widget_tariff'] as const),
+        reason: optional(change.reason, (value) =>
+          listedValue(value, ['technical_tariff_detected', 'ordinary_tariff_detected'] as const),
+        ),
         previous: optional(change.previous, text),
         current: optional(change.current, text),
       }
@@ -198,6 +220,7 @@ function parseAccount(raw: unknown) {
     region: nullable(item.region, text),
     time_zone: nullable(item.time_zone, text),
     amostart: parseObservation(item.amostart, date),
+    amo_license_status: optional(item.amo_license_status, parseAmoLicenseStatus),
     capabilities: array(item.capabilities, (value) => {
       const capability = record(value)
       return { action: text(capability.action), allowed: boolean(capability.allowed) }

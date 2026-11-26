@@ -82,6 +82,8 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 		data := summary()
 		data["note"], data["region"], data["time_zone"] = "saved", nil, nil
 		data["amostart"] = map[string]any{"state": "unsupported", "source": "amo"}
+		data["amo_license_status"] = map[string]any{"state": "expired_pending", "source": "widget",
+			"observed_at": now.Add(-time.Hour), "trial_end": now.Add(-time.Minute)}
 		data["capabilities"] = []any{}
 		return data
 	}
@@ -284,6 +286,10 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 	if !strings.Contains(granted.Body.String(), `"ends_on":"2030-12-31"`) ||
 		!strings.Contains(granted.Body.String(), `"seats_warning":true`) {
 		t.Fatalf("subscription lost in manager response: %s", granted.Body.String())
+	}
+	if !strings.Contains(granted.Body.String(), `"state":"expired_pending"`) ||
+		!strings.Contains(granted.Body.String(), `"trial_end":"`+now.Add(-time.Minute).Format(time.RFC3339)+`"`) {
+		t.Fatalf("amoCRM license status lost in manager response: %s", granted.Body.String())
 	}
 
 	const patch = `{"reason":"fixture","note":null}`

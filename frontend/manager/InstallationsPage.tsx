@@ -77,9 +77,14 @@ export function DealCell({
       </a>
     )
   }
+  const waitingForTariff = deal?.state === 'pending' && deal.reason === 'deal_tariff_unknown'
+  const technicalAccount = deal?.state === 'skipped' && deal.reason === 'deal_technical_account'
+  const status = waitingForTariff ? deal.reason : (deal?.state ?? 'unavailable')
   return (
     <>
-      <StatusBadge domain="installation_deal" state={deal?.state ?? 'unavailable'} variant="text" />
+      <StatusBadge domain="installation_deal" state={status} variant="text" />
+      {waitingForTariff ? <small>Запустите поддерживаемый виджет в amoCRM</small> : null}
+      {technicalAccount ? <small>Технический аккаунт</small> : null}
       {deal?.next_run_at ? (
         <small>
           <ObservedTime value={deal.next_run_at} />

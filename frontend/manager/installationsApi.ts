@@ -18,6 +18,7 @@ export type InstallationDeal = {
   state: string
   id?: string
   url?: string
+  reason?: string
   next_run_at?: string
   retry_version: number
   can_retry: boolean
@@ -181,6 +182,7 @@ function parseDeal(value: unknown): InstallationDeal | undefined {
     state: string(deal.state),
     id,
     url,
+    reason: optionalString(deal.reason),
     next_run_at: deal.next_run_at === undefined ? undefined : date(deal.next_run_at),
     retry_version: integer(deal.retry_version, 1),
     can_retry: deal.can_retry,

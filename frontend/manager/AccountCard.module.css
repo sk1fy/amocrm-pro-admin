@@ -101,6 +101,13 @@
   font-weight: 700;
 }
 
+.classification .confirmBan {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+}
+
 .classification > section p:last-child {
   margin-bottom: 0;
 }

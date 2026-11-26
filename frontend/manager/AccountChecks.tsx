@@ -5,6 +5,7 @@ const reasons: Record<string, string> = {
   catalog_binding_missing: 'Привязка виджета не подтверждена',
   source_scope_changed: 'Привязка виджета не подтверждена',
   source_permission_denied: 'Требуется авторизация',
+  source_payment_required: 'amoCRM сообщает, что нужна оплата',
   source_rate_limited: 'Лимит запросов amoCRM',
   source_unavailable: 'Источник недоступен',
   source_timeout: 'Источник не ответил вовремя',

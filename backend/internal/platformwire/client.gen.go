@@ -70,10 +70,29 @@ func (e AccountCheckComponent) Valid() bool {
 	}
 }
 
+// Defines values for AccountDetailClassificationChangeReason.
+const (
+	OrdinaryTariffDetected  AccountDetailClassificationChangeReason = "ordinary_tariff_detected"
+	TechnicalTariffDetected AccountDetailClassificationChangeReason = "technical_tariff_detected"
+)
+
+// Valid indicates whether the value is a known member of the AccountDetailClassificationChangeReason enum.
+func (e AccountDetailClassificationChangeReason) Valid() bool {
+	switch e {
+	case OrdinaryTariffDetected:
+		return true
+	case TechnicalTariffDetected:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AccountDetailClassificationChangeSource.
 const (
 	AccountDetailClassificationChangeSourceManual       AccountDetailClassificationChangeSource = "manual"
 	AccountDetailClassificationChangeSourceSubscription AccountDetailClassificationChangeSource = "subscription"
+	AccountDetailClassificationChangeSourceWidgetTariff AccountDetailClassificationChangeSource = "widget_tariff"
 )
 
 // Valid indicates whether the value is a known member of the AccountDetailClassificationChangeSource enum.
@@ -82,6 +101,8 @@ func (e AccountDetailClassificationChangeSource) Valid() bool {
 	case AccountDetailClassificationChangeSourceManual:
 		return true
 	case AccountDetailClassificationChangeSourceSubscription:
+		return true
+	case AccountDetailClassificationChangeSourceWidgetTariff:
 		return true
 	default:
 		return false
@@ -205,6 +226,54 @@ const (
 func (e ActivationStatus) Valid() bool {
 	switch e {
 	case ActivationStatusActivated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AmoLicenseStatusSource.
+const (
+	AmoLicenseStatusSourceAmocrm   AmoLicenseStatusSource = "amocrm"
+	AmoLicenseStatusSourceAmostart AmoLicenseStatusSource = "amostart"
+	AmoLicenseStatusSourceWidget   AmoLicenseStatusSource = "widget"
+)
+
+// Valid indicates whether the value is a known member of the AmoLicenseStatusSource enum.
+func (e AmoLicenseStatusSource) Valid() bool {
+	switch e {
+	case AmoLicenseStatusSourceAmocrm:
+		return true
+	case AmoLicenseStatusSourceAmostart:
+		return true
+	case AmoLicenseStatusSourceWidget:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AmoLicenseStatusState.
+const (
+	AmoLicenseStatusStateExpiredPending AmoLicenseStatusState = "expired_pending"
+	AmoLicenseStatusStatePaid           AmoLicenseStatusState = "paid"
+	AmoLicenseStatusStateTrial          AmoLicenseStatusState = "trial"
+	AmoLicenseStatusStateUnknown        AmoLicenseStatusState = "unknown"
+	AmoLicenseStatusStateUnpaid         AmoLicenseStatusState = "unpaid"
+)
+
+// Valid indicates whether the value is a known member of the AmoLicenseStatusState enum.
+func (e AmoLicenseStatusState) Valid() bool {
+	switch e {
+	case AmoLicenseStatusStateExpiredPending:
+		return true
+	case AmoLicenseStatusStatePaid:
+		return true
+	case AmoLicenseStatusStateTrial:
+		return true
+	case AmoLicenseStatusStateUnknown:
+		return true
+	case AmoLicenseStatusStateUnpaid:
 		return true
 	default:
 		return false
@@ -1837,19 +1906,23 @@ type AccountCheckComponent string
 
 // AccountDetail defines model for AccountDetail.
 type AccountDetail struct {
-	AccountId            openapi_types.UUID        `json:"account_id"`
-	ActiveProductsCount  int                       `json:"active_products_count"`
-	ActiveUsers          ObservationCount          `json:"active_users"`
-	AmoAccountId         AmoID                     `json:"amo_account_id"`
+	AccountId           openapi_types.UUID `json:"account_id"`
+	ActiveProductsCount int                `json:"active_products_count"`
+	ActiveUsers         ObservationCount   `json:"active_users"`
+	AmoAccountId        AmoID              `json:"amo_account_id"`
+
+	// AmoLicenseStatus Состояние лицензии amoCRM по наблюдениям на момент чтения Platform.
+	AmoLicenseStatus     *AmoLicenseStatus         `json:"amo_license_status,omitempty"`
 	Amostart             ObservationDate           `json:"amostart"`
 	Capabilities         []Capability              `json:"capabilities"`
 	Checks               *[]AccountCheck           `json:"checks,omitempty"`
 	Classification       nullable.Nullable[string] `json:"classification"`
 	ClassificationChange *struct {
-		Current    *string                                 `json:"current,omitempty"`
-		OccurredAt time.Time                               `json:"occurred_at"`
-		Previous   *string                                 `json:"previous,omitempty"`
-		Source     AccountDetailClassificationChangeSource `json:"source"`
+		Current    *string                                  `json:"current,omitempty"`
+		OccurredAt time.Time                                `json:"occurred_at"`
+		Previous   *string                                  `json:"previous,omitempty"`
+		Reason     *AccountDetailClassificationChangeReason `json:"reason,omitempty"`
+		Source     AccountDetailClassificationChangeSource  `json:"source"`
 	} `json:"classification_change,omitempty"`
 	CurrentDomain      nullable.Nullable[string]   `json:"current_domain"`
 	DisplayName        nullable.Nullable[string]   `json:"display_name"`
@@ -1864,9 +1937,15 @@ type AccountDetail struct {
 	PreviousSubscription *AccountSubscription      `json:"previous_subscription,omitempty"`
 	Region               nullable.Nullable[string] `json:"region"`
 	Subscription         *AccountSubscription      `json:"subscription,omitempty"`
-	TimeZone             nullable.Nullable[string] `json:"time_zone"`
-	Version              int                       `json:"version"`
+
+	// TechnicalTariff Последнее сохранённое наблюдение тарифа виджетом относится к техническому тарифу amoCRM.
+	TechnicalTariff *bool                     `json:"technical_tariff,omitempty"`
+	TimeZone        nullable.Nullable[string] `json:"time_zone"`
+	Version         int                       `json:"version"`
 }
+
+// AccountDetailClassificationChangeReason defines model for AccountDetail.ClassificationChange.Reason.
+type AccountDetailClassificationChangeReason string
 
 // AccountDetailClassificationChangeSource defines model for AccountDetail.ClassificationChange.Source.
 type AccountDetailClassificationChangeSource string
@@ -1952,6 +2031,22 @@ type ActivationStatus string
 
 // AmoID defines model for AmoID.
 type AmoID = string
+
+// AmoLicenseStatus Состояние лицензии amoCRM по наблюдениям на момент чтения Platform.
+type AmoLicenseStatus struct {
+	ObservedAt *time.Time              `json:"observed_at,omitempty"`
+	Source     *AmoLicenseStatusSource `json:"source,omitempty"`
+	State      AmoLicenseStatusState   `json:"state"`
+
+	// TrialEnd Дата amoCRM для действующего или завершившегося пробного периода.
+	TrialEnd *time.Time `json:"trial_end,omitempty"`
+}
+
+// AmoLicenseStatusSource defines model for AmoLicenseStatus.Source.
+type AmoLicenseStatusSource string
+
+// AmoLicenseStatusState defines model for AmoLicenseStatus.State.
+type AmoLicenseStatusState string
 
 // AuditDate defines model for AuditDate.
 type AuditDate struct {
@@ -2297,9 +2392,11 @@ type InstallationActivationContact struct {
 
 // InstallationDeal defines model for InstallationDeal.
 type InstallationDeal struct {
-	CanRetry     bool                  `json:"can_retry"`
-	Id           *string               `json:"id,omitempty"`
-	NextRunAt    *time.Time            `json:"next_run_at,omitempty"`
+	CanRetry  bool       `json:"can_retry"`
+	Id        *string    `json:"id,omitempty"`
+	NextRunAt *time.Time `json:"next_run_at,omitempty"`
+
+	// Reason Machine-readable reason. A pending deal waiting for a fresh tariff reports deal_tariff_unknown after 24 hours. A deal skipped for a technical account reports deal_technical_account.
 	Reason       *string               `json:"reason,omitempty"`
 	RetryVersion int                   `json:"retry_version"`
 	State        InstallationDealState `json:"state"`
@@ -2786,6 +2883,16 @@ type TrialPolicyKind string
 
 // Version defines model for Version.
 type Version = int
+
+// WidgetAccountLicenseHints defines model for WidgetAccountLicenseHints.
+type WidgetAccountLicenseHints struct {
+	// PayType Trimmed provider value of up to 64 UTF-8 bytes without control characters.
+	PayType  *string `json:"pay_type,omitempty"`
+	TariffId *int    `json:"tariff_id,omitempty"`
+
+	// TrialEnd End of the amoCRM trial in Unix seconds.
+	TrialEnd *int `json:"trial_end,omitempty"`
+}
 
 // WidgetActivationStatus defines model for WidgetActivationStatus.
 type WidgetActivationStatus struct {
