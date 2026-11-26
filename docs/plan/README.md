@@ -32,6 +32,10 @@
 
 ## Текущая часть
 
+- [Проверка при переустановке](installation-review-continuity.md).
+- [Статус клиента при подписке «Все TOP»](manager-client-status-during-top.md).
+- [Проверка лимита пользователей подписки](account-subscription-seat-checks.md).
+
 - [Окно приглашения сотрудника](manager-staff-invite-dialog.md).
 
 - [Тарифы и продление теста](manager-widget-tariffs.md).

@@ -604,6 +604,9 @@
   border-radius: 6px;
 }
 .overLimit {
+  color: var(--tone-attention);
+}
+.overLimit[data-suspended='true'] {
   color: var(--tone-error);
   border-color: color-mix(in srgb, var(--tone-error) 35%, var(--color-border));
   background: var(--tone-error-bg);

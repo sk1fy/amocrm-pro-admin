@@ -361,7 +361,7 @@ function Widget({
           )}
         </div>
         <div className={card.actionStack}>
-          {row.kind !== 'observed' && onReview && (
+          {row.lifecycle === 'current' && row.kind !== 'observed' && onReview && (
             <button type="button" onClick={() => onReview(row)} disabled={reviewLocked}>
               {row.review.reviewed ? 'Снять отметку' : 'Отметить проверку'}
             </button>

@@ -137,7 +137,7 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 				return
 			}
 			response := detail()
-			response["subscription"] = map[string]any{"plan": "top", "ends_on": "2030-12-31", "state": "active", "deal_id": "123", "seats": 3, "changed_at": now}
+			response["subscription"] = map[string]any{"plan": "top", "ends_on": "2030-12-31", "state": "active", "deal_id": "123", "seats": 3, "changed_at": now, "seats_warning": true}
 			w.Header().Set("ETag", `"2"`)
 			httpx.WriteJSON(w, http.StatusOK, response)
 		case "/accounts/" + accountID.String() + "/profile":
@@ -281,7 +281,8 @@ func TestManagerClientWorkspaceAcrossOwnerBoundary(t *testing.T) {
 	const grantSubscription = `{"action":"grant","plan":"top","ends_on":"2030-12-31","seats":3,"deal_id":"123"}`
 	call(http.MethodPost, accountPath+"/subscription", readerCookie, grantSubscription, uuid.New(), `"1"`, true, http.StatusForbidden)
 	granted := call(http.MethodPost, accountPath+"/subscription", writerCookie, grantSubscription, uuid.New(), `"1"`, true, http.StatusOK)
-	if !strings.Contains(granted.Body.String(), `"ends_on":"2030-12-31"`) {
+	if !strings.Contains(granted.Body.String(), `"ends_on":"2030-12-31"`) ||
+		!strings.Contains(granted.Body.String(), `"seats_warning":true`) {
 		t.Fatalf("subscription lost in manager response: %s", granted.Body.String())
 	}
 
