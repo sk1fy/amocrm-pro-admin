@@ -1894,12 +1894,15 @@ type AccountOverviewGroup struct {
 
 // AccountSubscription defines model for AccountSubscription.
 type AccountSubscription struct {
-	ChangedAt time.Time                `json:"changed_at"`
-	DealId    string                   `json:"deal_id"`
-	EndsOn    openapi_types.Date       `json:"ends_on"`
-	Plan      AccountSubscriptionPlan  `json:"plan"`
-	Seats     int                      `json:"seats"`
-	State     AccountSubscriptionState `json:"state"`
+	ChangedAt time.Time               `json:"changed_at"`
+	DealId    string                  `json:"deal_id"`
+	EndsOn    openapi_types.Date      `json:"ends_on"`
+	Plan      AccountSubscriptionPlan `json:"plan"`
+	Seats     int                     `json:"seats"`
+
+	// SeatsWarning First consecutive observation over the seat limit
+	SeatsWarning *bool                    `json:"seats_warning,omitempty"`
+	State        AccountSubscriptionState `json:"state"`
 }
 
 // AccountSubscriptionPlan defines model for AccountSubscription.Plan.

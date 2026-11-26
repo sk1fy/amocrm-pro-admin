@@ -8,7 +8,7 @@ import { formatTime } from '../src/lib/format'
 import card from './AccountCard.module.css'
 import styles from './Accounts.module.css'
 
-const plans = { top: 'Все TOP — «Наш клиент»', unified: 'Единая подписка — все виджеты' }
+const plans = { top: 'Все TOP — «Наш клиент»', unified: 'Единая подписка — TOP и PRO' }
 const buttons = {
   grant: 'Выдать',
   renew: 'Продлить',
@@ -98,11 +98,16 @@ export function AccountSubscription({
           · Пользователи: {count ?? '—'} из {current.seats}
         </p>
       )}
-      {current?.state === 'suspended' && count !== undefined && count !== null && (
+      {current?.state === 'active' && current.seats_warning && (
         <p role="status" className={card.overLimit}>
-          В аккаунте {count}, по подписке {current.seats}. Превышение на {count - current.seats}.
-          Действуют собственные сроки виджетов. Проверено{' '}
-          {formatTime(account.active_users.observed_at)}.
+          Последняя проверка выявила превышение лимита пользователей. Подписка пока действует. Если
+          следующая проверка подтвердит превышение, подписка приостановится.
+        </p>
+      )}
+      {current?.state === 'suspended' && (
+        <p role="status" className={card.overLimit} data-suspended="true">
+          Лимит пользователей превышен на двух проверках подряд. Действуют собственные сроки
+          виджетов.
         </p>
       )}
       {editable && !form && (

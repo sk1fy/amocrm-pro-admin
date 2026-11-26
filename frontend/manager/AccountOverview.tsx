@@ -147,15 +147,11 @@ function ClientStatus({
   const partnerName = account.partner_name ?? ''
   const isKnown = clientStatuses.some((value) => value === classification)
   const statusChange = account.classification_change
-  const subscription = account.subscription
-  const lockedByTop =
-    subscription?.plan === 'top' &&
-    ['active', 'suspended', 'awaiting_users'].includes(subscription.state)
 
   return (
     <div className={card.classification}>
       <p className={card.fieldTitle}>Статус клиента</p>
-      {editable && !lockedByTop ? (
+      {editable ? (
         <AccountForm
           {...actions}
           inline
@@ -225,9 +221,6 @@ function ClientStatus({
           {partnerName ? <p className={styles.meta}>{partnerName}</p> : null}
         </>
       )}
-      {lockedByTop ? (
-        <p className={card.statusHistory}>Статус закреплён подпиской «Все TOP — Наш клиент».</p>
-      ) : null}
       {statusChange ? (
         <p className={card.statusHistory}>
           {statusChange.source === 'subscription' ? 'По подписке' : 'Вручную'} ·{' '}

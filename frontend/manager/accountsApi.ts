@@ -173,6 +173,7 @@ function parseSubscription(raw: unknown) {
     seats: integer(item.seats, 1),
     deal_id: text(item.deal_id),
     state: text(item.state),
+    seats_warning: optional(item.seats_warning, boolean),
     changed_at: date(item.changed_at),
   }
 }

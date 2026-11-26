@@ -121,9 +121,7 @@ it.each([
   const cell = (await screen.findByText(row.product_name)).closest('td')!
   expect(Boolean(within(cell).queryByText('Переустановка'))).toBe(afterRemoval)
   expect(within(cell).queryByText('после удаления')).toBeNull()
-  expect(Boolean(within(cell).queryByText('Повторная авторизация'))).toBe(
-    !afterRemoval && event === 'reauthorized',
-  )
+  expect(Boolean(within(cell).queryByText('Повторная авторизация'))).toBe(event === 'reauthorized')
 })
 
 it.each([

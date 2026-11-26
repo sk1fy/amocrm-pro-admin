@@ -336,6 +336,32 @@ it('defaults to three Moscow calendar months and clamps to the last day of Febru
   expect(defaultSubscriptionEnd(new Date('2023-11-30T12:00:00Z'))).toBe('2024-02-29')
 })
 
+it.each([
+  { state: 'active', seats_warning: true, text: /Подписка пока действует/ },
+  { state: 'suspended', seats_warning: undefined, text: /на двух проверках подряд/ },
+])('shows the subscription limit result for $state', async ({ state, seats_warning, text }) => {
+  managerCard(
+    () => new Response(null, { status: 503 }),
+    () => ({
+      version: 1,
+      note: null,
+      active_users: { state: 'fresh', value: 2, source: 'amoCRM' },
+      subscription: {
+        plan: 'unified',
+        seats: 3,
+        deal_id: '123',
+        ends_on: '2030-12-31',
+        changed_at: '2026-11-25T00:00:00Z',
+        state,
+        seats_warning,
+      },
+    }),
+  )
+  const section = within(await screen.findByRole('region', { name: 'Подписка клиента' }))
+  expect(section.getByRole('status')).toHaveTextContent(text)
+  expect(section.getByText(/Единая подписка — TOP и PRO/)).toBeVisible()
+})
+
 it('refreshes account data, users and amoSTART together and shows the confirmed date', async () => {
   let refreshed = false
   const update = vi.fn((init?: RequestInit) => {
@@ -414,6 +440,54 @@ it('confirms or cancels a status change without asking for a reason', async () =
   expect(await screen.findByText(/Не указан → Свободный клиент/)).toBeVisible()
   expect(update).toHaveBeenCalledTimes(1)
 })
+
+it.each(['active', 'suspended', 'awaiting_users'])(
+  'changes the client status with a %s TOP subscription',
+  async (state) => {
+    let changed = false
+    const update = vi.fn((init?: RequestInit) => {
+      expect(init?.method).toBe('PATCH')
+      expect(new Headers(init?.headers).get('If-Match')).toBe('"2"')
+      expect(JSON.parse(String(init?.body))).toEqual({
+        classification: 'Свободный клиент',
+        reason: 'Изменение статуса клиента',
+      })
+      changed = true
+      return Response.json({ account_id: account, version: 3 }, { headers: { ETag: '"3"' } })
+    })
+    managerCard(update, () => ({
+      version: changed ? 3 : 2,
+      note: null,
+      classification: changed ? 'Свободный клиент' : 'Наш клиент',
+      subscription: {
+        plan: 'top',
+        seats: 3,
+        deal_id: '123',
+        ends_on: '2030-12-31',
+        state,
+        changed_at: '2026-11-25T00:00:00Z',
+      },
+      ...(changed
+        ? {
+            classification_change: {
+              occurred_at: '2026-11-26T00:00:00Z',
+              source: 'manual',
+              previous: 'Наш клиент',
+              current: 'Свободный клиент',
+            },
+          }
+        : {}),
+    }))
+
+    const select = await screen.findByRole('combobox', { name: 'Статус клиента' })
+    fireEvent.change(select, { target: { value: 'Свободный клиент' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить изменение статуса' }))
+
+    expect(await screen.findByText(/Наш клиент → Свободный клиент/)).toBeVisible()
+    expect(screen.getByRole('link', { name: /123/ })).toBeVisible()
+    expect(update).toHaveBeenCalledTimes(1)
+  },
+)
 
 it('previews an expired trial from the Platform snapshot and waits for confirmation', async () => {
   const product = '11111111-1111-4111-8111-111111111111'

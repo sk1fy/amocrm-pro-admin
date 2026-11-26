@@ -508,12 +508,13 @@ export function InstallationsPage({
                                     <span className={styles.tags}>
                                       {row.kind === 'reinstall' ? (
                                         <StatusBadge domain="installation_kind" state="reinstall" />
-                                      ) : (
+                                      ) : null}
+                                      {row.last_lifecycle_event === 'reauthorized' ? (
                                         <StatusBadge
                                           domain="installation_event"
                                           state="reauthorized"
                                         />
-                                      )}
+                                      ) : null}
                                     </span>
                                   )}
                                 </td>
