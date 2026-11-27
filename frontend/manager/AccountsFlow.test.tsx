@@ -390,6 +390,11 @@ it('refreshes account data, users and amoSTART together and shows the confirmed 
               observed_at: '2026-11-18T19:30:00Z',
               value: { license_until: '2030-03-14T21:00:00Z', tariff: 'Расширенный' },
             },
+            amo_license_status: {
+              state: 'paid',
+              source: 'amostart',
+              observed_at: '2026-11-18T19:30:00Z',
+            },
           }
         : {}),
     }),
@@ -399,6 +404,7 @@ it('refreshes account data, users and amoSTART together and shows the confirmed 
   const refreshButton = await screen.findByRole('button', { name: 'Обновить' })
   fireEvent.click(refreshButton)
   expect(await screen.findByText('15.03.2030')).toBeVisible()
+  expect(screen.getByText('Оплата подтверждена')).toBeVisible()
   expect(screen.getByText(/Данные аккаунта обновлены/)).toBeVisible()
   expect(screen.getByText('Расширенный')).toBeVisible()
   fireEvent.click(screen.getByRole('button', { name: 'Закрыть сообщение об обновлении' }))
@@ -406,6 +412,46 @@ it('refreshes account data, users and amoSTART together and shows the confirmed 
   expect(refreshButton).toHaveFocus()
   expect(update).toHaveBeenCalledTimes(1)
 })
+
+it.each([
+  ['trial', 'widget', '2026-11-27T09:30:00Z', 'Пробный период'],
+  ['trial', 'widget', undefined, 'Дата окончания неизвестна'],
+  [
+    'expired_pending',
+    'widget',
+    '2026-11-27T09:30:00Z',
+    'Пробный период закончился · статус лицензии уточняется',
+  ],
+  ['unpaid', 'amocrm', undefined, 'Лицензия не оплачена'],
+])(
+  'shows %s from Platform even with an older amoSTART observation',
+  async (state, source, trialEnd, label) => {
+    managerCard(
+      () => Response.error(),
+      () => ({
+        version: 1,
+        note: null,
+        license: {
+          state: 'stale',
+          source: 'amoSTART',
+          observed_at: '2026-11-22T15:00:00Z',
+          value: { license_until: '2030-03-14T21:00:00Z', tariff: 'Расширенный' },
+        },
+        amo_license_status: {
+          state,
+          source,
+          observed_at: '2026-11-26T15:00:00Z',
+          trial_end: trialEnd,
+        },
+      }),
+    )
+    expect(await screen.findByText(label)).toBeVisible()
+    if (trialEnd)
+      expect(screen.getByText('27.11.2026, 12:30')).toHaveAttribute('datetime', trialEnd)
+    expect(screen.queryByText('15.03.2030')).not.toBeInTheDocument()
+    expect(screen.queryByText('Оплата подтверждена')).not.toBeInTheDocument()
+  },
+)
 
 it('confirms or cancels a status change without asking for a reason', async () => {
   let changed = false
@@ -440,6 +486,62 @@ it('confirms or cancels a status change without asking for a reason', async () =
   expect(await screen.findByText(/Не указан → Свободный клиент/)).toBeVisible()
   expect(update).toHaveBeenCalledTimes(1)
 })
+
+it('shows the widget reason and lets the manager keep an automatic ban manually', async () => {
+  let confirmed = false
+  const update = vi.fn((init?: RequestInit) => {
+    expect(new Headers(init?.headers).get('If-Match')).toBe('"3"')
+    expect(JSON.parse(String(init?.body))).toEqual({
+      classification: 'Запрет работы',
+      reason: 'Изменение статуса клиента',
+    })
+    confirmed = true
+    return Response.json({ account_id: account, version: 4 }, { headers: { ETag: '"4"' } })
+  })
+  managerCard(update, () => ({
+    version: confirmed ? 4 : 3,
+    note: null,
+    classification: 'Запрет работы',
+    technical_tariff: true,
+    classification_change: confirmed
+      ? {
+          occurred_at: '2026-11-27T00:00:00Z',
+          source: 'manual',
+          previous: 'Запрет работы',
+          current: 'Запрет работы',
+        }
+      : {
+          occurred_at: '2026-11-26T00:00:00Z',
+          source: 'widget_tariff',
+          reason: 'technical_tariff_detected',
+          previous: 'Клиент партнёра',
+          current: 'Запрет работы',
+        },
+  }))
+
+  expect(await screen.findByText(/Обнаружен технический тариф amoCRM/)).toHaveTextContent(
+    'Клиент партнёра → Запрет работы',
+  )
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Сохранить запрет вручную' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Подтвердить изменение статуса' }))
+  expect(await screen.findByText(/Вручную/)).toHaveTextContent('Запрет работы')
+  expect(screen.queryByRole('checkbox', { name: 'Сохранить запрет вручную' })).toBeNull()
+  expect(update).toHaveBeenCalledTimes(1)
+})
+
+it.each([
+  { classification: 'Запрет работы', technical_tariff: false },
+  { classification: 'Свободный клиент', technical_tariff: true },
+])(
+  'does not preview a TOP status change with $classification and tariff $technical_tariff',
+  async (profile) => {
+    const update = vi.fn(() => new Response(null, { status: 503 }))
+    managerCard(update, () => ({ version: 1, note: null, ...profile }), true)
+    fireEvent.click(await screen.findByRole('button', { name: 'Выдать подписку' }))
+    expect(screen.getByLabelText('Действует до')).toBeVisible()
+    expect(screen.queryByText(/После выдачи статус клиента изменится/)).toBeNull()
+  },
+)
 
 it.each(['active', 'suspended', 'awaiting_users'])(
   'changes the client status with a %s TOP subscription',

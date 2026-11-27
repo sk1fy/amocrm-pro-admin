@@ -394,7 +394,7 @@ Origin кабинета, `X-Requested-With: admin-ui`, UUID в `Idempotency-Key`
 | Маршрут | Право | Результат |
 | --- | --- | --- |
 | `GET /accounts`, `POST /accounts/search` | `clients.read` | Список, итог Platform, курсор, время снимка и `sources` |
-| `GET /accounts/{id}` | `clients.read` | Карточка и `ETag` профиля |
+| `GET /accounts/{id}` | `clients.read` | Карточка, статус лицензии amoCRM и `ETag` профиля |
 | `GET /accounts/{id}/widgets` | `clients.read` | Собственные виджеты с версиями сроков |
 | `GET /accounts/{id}/license-history` | `clients.read` | Подтверждённые наблюдения лицензии |
 | `GET /accounts/{id}/crm-users` | `clients.read` | Последний полный список пользователей и его свежесть |
@@ -418,6 +418,11 @@ Origin кабинета, `X-Requested-With: admin-ui`, UUID в `Idempotency-Key`
 доступную выборку. Оба значения сохраняются в курсорном снимке.
 Для ручной отметки «Клиент партнёра» в PATCH профиля требуется
 `partner_name`. Изменение использует прежние версию, права и аудит.
+Карточка возвращает последнее изменение в `classification_change`.
+`source=widget_tariff` содержит причину перехода `reason`. Опциональное
+`technical_tariff` обозначает технический тариф по последнему наблюдению
+виджета. PATCH с `classification="Запрет работы"` переводит действующий
+автоматический запрет в ручной с новой версией профиля.
 
 Мутации дополнительно требуют UUID `Idempotency-Key`. Для обновления
 ресурса нужен сильный `If-Match` соответствующей версии. Для продления

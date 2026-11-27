@@ -228,6 +228,25 @@ it('keeps future sections out of the workspace and uses the real review filter',
 })
 
 describe('manager installation queue', () => {
+  it.each([
+    ['pending', undefined, 'Ожидает создания', false],
+    ['pending', 'deal_tariff_unknown', 'Тариф не определён', true],
+    ['skipped', 'deal_technical_account', 'Без сделки', false],
+  ])('shows %s deals with reason %s', async (state, reason, label, prompt) => {
+    const item = { ...row, deal: { state, reason, retry_version: 1, can_retry: false } }
+    replaceFetch((url) =>
+      url.pathname.endsWith('/me') ? Response.json(manager) : installationPage(item),
+    )
+    openManager('?section=installations')
+    expect(await screen.findByText(label)).toBeVisible()
+    const instruction = screen.queryByText('Запустите поддерживаемый виджет в amoCRM')
+    if (prompt) expect(instruction).toBeVisible()
+    else expect(instruction).not.toBeInTheDocument()
+    if (reason === 'deal_technical_account')
+      expect(screen.getByText('Технический аккаунт')).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Повторить' })).not.toBeInTheDocument()
+  })
+
   it('shows the verified activation contact and allows a versioned deal retry', async () => {
     const contact = {
       amo_user_id: '42',

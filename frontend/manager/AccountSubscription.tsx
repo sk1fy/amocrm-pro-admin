@@ -209,12 +209,16 @@ export function AccountSubscription({
               </label>
             )}
           </fieldset>
-          {grant && form.plan === 'top' && account.classification !== 'Наш клиент' && (
-            <p>
-              После выдачи статус клиента изменится: {account.classification ?? 'Не указан'} →{' '}
-              <strong>Наш клиент</strong>.
-            </p>
-          )}
+          {grant &&
+            form.plan === 'top' &&
+            !account.technical_tariff &&
+            account.classification !== 'Запрет работы' &&
+            account.classification !== 'Наш клиент' && (
+              <p>
+                После выдачи статус клиента изменится: {account.classification ?? 'Не указан'} →{' '}
+                <strong>Наш клиент</strong>.
+              </p>
+            )}
           {form.action === 'renew' && current && (
             <p>
               Срок подписки: {calendar(current.ends_on)} → {form.ends ? calendar(form.ends) : '—'}.

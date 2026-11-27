@@ -4828,6 +4828,19 @@ components:
         state: {type: string, enum: [active, suspended, expired, revoked, awaiting_users]}
         seats_warning: {type: boolean, description: First consecutive observation over the seat limit}
         changed_at: {type: string, format: date-time}
+    ManagerAmoLicenseStatus:
+      type: object
+      additionalProperties: false
+      required: [state]
+      description: Состояние лицензии amoCRM по наблюдениям на момент чтения Platform.
+      properties:
+        state: {type: string, enum: [unknown, trial, expired_pending, unpaid, paid]}
+        source: {type: string, enum: [widget, amocrm, amostart]}
+        observed_at: {type: string, format: date-time}
+        trial_end:
+          type: string
+          format: date-time
+          description: Дата amoCRM для действующего или завершившегося пробного периода.
     ManagerAccountDetail:
       type: object
       additionalProperties: false
@@ -4848,13 +4861,17 @@ components:
           type:
           - string
           - 'null'
+        technical_tariff:
+          type: boolean
+          description: Последнее сохранённое наблюдение тарифа виджетом относится к техническому тарифу amoCRM.
         classification_change:
           type: object
           additionalProperties: false
           required: [occurred_at, source]
           properties:
             occurred_at: {type: string, format: date-time}
-            source: {type: string, enum: [manual, subscription]}
+            source: {type: string, enum: [manual, subscription, widget_tariff]}
+            reason: {type: string, enum: [technical_tariff_detected, ordinary_tariff_detected]}
             previous: {type: string}
             current: {type: string}
         identity_observed_at:
@@ -4900,6 +4917,7 @@ components:
           - 'null'
         amostart:
           $ref: '#/components/schemas/ManagerObservationDate'
+        amo_license_status: {$ref: '#/components/schemas/ManagerAmoLicenseStatus'}
         capabilities:
           type: array
           items:
@@ -5387,7 +5405,12 @@ components:
         state: {type: string, enum: [pending, reconciling, failed, skipped, succeeded]}
         url: {type: string, format: uri}
         id: {type: string, pattern: '^[1-9][0-9]{0,18}$'}
-        reason: {type: string}
+        reason:
+          type: string
+          description: >-
+            Machine-readable reason. A pending deal waiting for a fresh tariff reports
+            deal_tariff_unknown after 24 hours. A deal skipped for a technical account
+            reports deal_technical_account.
         next_run_at: {type: string, format: date-time}
         retry_version: {type: integer, minimum: 1, maximum: 2147483647}
         can_retry: {type: boolean}

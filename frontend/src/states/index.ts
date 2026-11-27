@@ -44,6 +44,8 @@ export type StateDomain =
   | 'installation_deal'
   | 'product_line'
   | 'client_classification'
+  | 'amo_license'
+  | 'client_classification_change'
   | 'client_data'
   | 'client_renewal'
   | 'product_access'
@@ -59,6 +61,16 @@ export type StateDomain =
 const unknownEntry: StateEntry = { tone: 'unknown', label: 'Неизвестно' }
 
 const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
+  amo_license: {
+    unknown: { tone: 'unknown', label: 'Статус лицензии неизвестен' },
+    trial: { tone: 'attention', label: 'Пробный период' },
+    expired_pending: {
+      tone: 'attention',
+      label: 'Пробный период закончился · статус лицензии уточняется',
+    },
+    unpaid: { tone: 'error', label: 'Лицензия не оплачена' },
+    paid: { tone: 'ok', label: 'Оплата подтверждена' },
+  },
   company_source: {
     fresh: { tone: 'ok', label: 'Актуально' },
     stale: { tone: 'attention', label: 'Данные устарели' },
@@ -307,6 +319,7 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
   installation_deal: {
     unavailable: { tone: 'unknown', label: 'Нет данных' },
     pending: { tone: 'attention', label: 'Ожидает создания' },
+    deal_tariff_unknown: { tone: 'attention', label: 'Тариф не определён' },
     reconciling: { tone: 'attention', label: 'Уточняем наличие сделки' },
     failed: { tone: 'error', label: 'Ошибка создания сделки' },
     skipped: { tone: 'off', label: 'Без сделки' },
@@ -330,6 +343,13 @@ const dictionaries: Record<StateDomain, Record<string, StateEntry>> = {
     'Наш клиент': { tone: 'ok', label: 'Наш клиент' },
     'Запрет работы': { tone: 'off', label: 'Запрет работы' },
     unknown: { tone: 'unknown', label: 'Не указано' },
+  },
+  client_classification_change: {
+    manual: { tone: 'off', label: 'Вручную' },
+    subscription: { tone: 'off', label: 'По подписке' },
+    widget_tariff: { tone: 'off', label: 'По тарифу amoCRM' },
+    technical_tariff_detected: { tone: 'off', label: 'Обнаружен технический тариф amoCRM' },
+    ordinary_tariff_detected: { tone: 'off', label: 'Обнаружен обычный тариф amoCRM' },
   },
   client_data: {
     receiving: { tone: 'ok', label: 'Получаем данные' },
