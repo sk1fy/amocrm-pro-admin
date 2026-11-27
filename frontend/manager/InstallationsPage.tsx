@@ -52,10 +52,7 @@ export function ContactCell({ contact }: { contact: Installation['contact'] }) {
   return (
     <>
       <a href={'tel:' + contact.phone}>{contact.phone}</a>
-      <small>
-        Активировал: {contact.name}
-        {contact.role ? ' · ' + contact.role : null}
-      </small>
+      <small>Активировал: {contact.name}</small>
       {contact.email ? <small>{contact.email}</small> : null}
     </>
   )
