@@ -277,7 +277,9 @@ describe('manager installation queue', () => {
       'href',
       'tel:' + contact.phone,
     )
-    expect(screen.getByText('Активировал: Сотрудник amoCRM · Менеджер')).toBeVisible()
+    expect(screen.getByText('Активировал: Сотрудник amoCRM')).toBeVisible()
+    expect(screen.getByText(contact.email)).toBeVisible()
+    expect(screen.queryByText(/Активировал:.*Менеджер/)).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Проверить сделку' }))
     expect(await screen.findByRole('link', { name: /^№123/ })).toHaveAttribute('href', target)
   })
